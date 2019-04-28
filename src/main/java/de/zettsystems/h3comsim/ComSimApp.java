@@ -1,8 +1,8 @@
 package de.zettsystems.h3comsim;
 
 import de.zettsystems.h3comsim.arena.Arena;
-import de.zettsystems.h3comsim.unit.ArchMagi;
-import de.zettsystems.h3comsim.unit.MedusaQueen;
+import de.zettsystems.h3comsim.unit.concrete.ArchMagi;
+import de.zettsystems.h3comsim.unit.concrete.MedusaQueen;
 
 public class ComSimApp {
     public static void main(String[] args) {
