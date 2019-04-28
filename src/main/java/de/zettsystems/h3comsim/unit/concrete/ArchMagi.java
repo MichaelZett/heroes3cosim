@@ -5,9 +5,11 @@ import de.zettsystems.h3comsim.unit.common.AttackType;
 import de.zettsystems.h3comsim.unit.common.Movement;
 import de.zettsystems.h3comsim.unit.values.ArchMagiValues;
 
+import java.util.Collections;
+
 public class ArchMagi extends AbstractUnit {
     public ArchMagi() {
-        super(ArchMagiValues.HEALTH);
+        super(ArchMagiValues.HEALTH, Collections.emptySet());
     }
 
     @Override

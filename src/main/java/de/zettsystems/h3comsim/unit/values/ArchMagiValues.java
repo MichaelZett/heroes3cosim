@@ -3,7 +3,8 @@ package de.zettsystems.h3comsim.unit.values;
 import de.zettsystems.h3comsim.unit.common.AttackType;
 import de.zettsystems.h3comsim.unit.common.Movement;
 
-public class ArchMagiValues {
+public final class ArchMagiValues {
+
     public final static String NAME = "Arch Magi";
     public final static int ATTACK = 12;
     public final static int DEFENSE = 9;
@@ -16,4 +17,7 @@ public class ArchMagiValues {
     public final static int COST = 350;
     public final static AttackType ATTACK_TYPE = AttackType.LONG_RANGE;
 
+    private ArchMagiValues() {
+        //not intended
+    }
 }

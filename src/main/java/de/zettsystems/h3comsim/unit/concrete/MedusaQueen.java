@@ -5,9 +5,11 @@ import de.zettsystems.h3comsim.unit.common.AttackType;
 import de.zettsystems.h3comsim.unit.common.Movement;
 import de.zettsystems.h3comsim.unit.values.MedusaQueenValues;
 
+import java.util.Collections;
+
 public class MedusaQueen extends AbstractUnit {
     public MedusaQueen() {
-        super(MedusaQueenValues.HEALTH);
+        super(MedusaQueenValues.HEALTH, Collections.emptySet());
     }
 
     @Override

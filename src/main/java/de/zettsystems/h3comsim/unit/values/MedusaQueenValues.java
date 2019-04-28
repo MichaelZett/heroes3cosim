@@ -3,7 +3,7 @@ package de.zettsystems.h3comsim.unit.values;
 import de.zettsystems.h3comsim.unit.common.AttackType;
 import de.zettsystems.h3comsim.unit.common.Movement;
 
-public class MedusaQueenValues {
+public final class MedusaQueenValues {
     public final static String NAME = "Medusa Queen";
     public final static int ATTACK = 10;
     public final static int DEFENSE = 10;
@@ -16,4 +16,7 @@ public class MedusaQueenValues {
     public final static int COST = 330;
     public final static AttackType ATTACK_TYPE = AttackType.LONG_RANGE;
 
+    private MedusaQueenValues() {
+        //not intended
+    }
 }
