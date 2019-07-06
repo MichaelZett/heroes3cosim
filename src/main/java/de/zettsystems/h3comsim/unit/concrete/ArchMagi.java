@@ -3,67 +3,84 @@ package de.zettsystems.h3comsim.unit.concrete;
 import de.zettsystems.h3comsim.unit.common.AbstractUnit;
 import de.zettsystems.h3comsim.unit.common.AttackType;
 import de.zettsystems.h3comsim.unit.common.Movement;
-import de.zettsystems.h3comsim.unit.values.ArchMagiValues;
 
 import java.util.Collections;
 
+import static de.zettsystems.h3comsim.unit.common.UnitSpeciality.NO_HAND_TO_HAND_PENALTY;
+
 public class ArchMagi extends AbstractUnit {
+    // TODO
+//    Arch mage units suffer no  damage penalty for attacking adjacent enemies and reduce the casting cost of allied hero spells by two.
+//    Arch mage attacks penetrate cover and deal full damage to enemies behind siege walls.
+
+    private final static String NAME = "Arch Magi";
+    private final static int ATTACK = 12;
+    private final static int DEFENSE = 9;
+    private final static int HEALTH = 30;
+    private final static int SPEED = 7;
+    private final static int MIN_DAMAGE = 7;
+    private final static int MAX_DAMAGE = 9;
+    private final static Movement MOVEMENT = Movement.GROUND;
+    private final static int SHOTS = 24;
+    private final static int COST = 350;
+    private final static AttackType ATTACK_TYPE = AttackType.LONG_RANGE;
+
     public ArchMagi() {
-        super(ArchMagiValues.HEALTH, Collections.emptySet());
+        super(HEALTH, Collections.singleton(NO_HAND_TO_HAND_PENALTY));
     }
 
     @Override
     public String getName() {
-        return ArchMagiValues.NAME;
+        return NAME;
     }
 
     @Override
     public int getAttack() {
-        return ArchMagiValues.ATTACK;
+        return ATTACK;
     }
 
     @Override
     public int getDefense() {
-        return ArchMagiValues.DEFENSE;
+        return DEFENSE;
     }
 
     @Override
     public int getHealth() {
-        return ArchMagiValues.HEALTH;
+        return HEALTH;
     }
 
     @Override
     public int getSpeed() {
-        return ArchMagiValues.SPEED;
+        return SPEED;
     }
 
     @Override
     public int getMinDamage() {
-        return ArchMagiValues.MIN_DAMAGE;
+        return MIN_DAMAGE;
     }
 
     @Override
     public int getMaxDamage() {
-        return ArchMagiValues.MAX_DAMAGE;
+        return MAX_DAMAGE;
     }
 
     @Override
     public Movement getMovement() {
-        return ArchMagiValues.MOVEMENT;
+        return MOVEMENT;
     }
 
     @Override
     public int getShots() {
-        return ArchMagiValues.SHOTS;
+        return SHOTS;
     }
 
     @Override
     public int getCost() {
-        return ArchMagiValues.COST;
+        return COST;
     }
 
     @Override
     public AttackType getAttackType() {
-        return ArchMagiValues.ATTACK_TYPE;
+        return ATTACK_TYPE;
     }
 }

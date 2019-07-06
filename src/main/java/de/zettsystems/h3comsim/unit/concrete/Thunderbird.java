@@ -1,26 +1,27 @@
 package de.zettsystems.h3comsim.unit.concrete;
 
-import com.google.common.collect.ImmutableSet;
 import de.zettsystems.h3comsim.unit.common.AbstractUnit;
 import de.zettsystems.h3comsim.unit.common.AttackType;
 import de.zettsystems.h3comsim.unit.common.Movement;
 import de.zettsystems.h3comsim.unit.common.UnitSpeciality;
 
-public class MedusaQueen extends AbstractUnit {
-    private final static String NAME = "Medusa Queen";
-    private final static int ATTACK = 10;
-    private final static int DEFENSE = 10;
-    private final static int HEALTH = 30;
-    private final static int SPEED = 6;
-    private final static int MIN_DAMAGE = 6;
-    private final static int MAX_DAMAGE = 8;
-    private final static Movement MOVEMENT = Movement.GROUND;
-    private final static int SHOTS = 24;
-    private final static int COST = 330;
-    private final static AttackType ATTACK_TYPE = AttackType.LONG_RANGE;
-    
-    public MedusaQueen() {
-        super(HEALTH, ImmutableSet.of(UnitSpeciality.PETRYFYING, UnitSpeciality.NO_HAND_TO_HAND_PENALTY));
+import java.util.Collections;
+
+public class Thunderbird extends AbstractUnit {
+    private final static String NAME = "Thunderbird";
+    private final static int ATTACK = 13;
+    private final static int DEFENSE = 11;
+    private final static int HEALTH = 60;
+    private final static int SPEED = 11;
+    private final static int MIN_DAMAGE = 11;
+    private final static int MAX_DAMAGE = 15;
+    private final static Movement MOVEMENT = Movement.FLYING;
+    private final static int SHOTS = 0;
+    private final static int COST = 700;
+    private final static AttackType ATTACK_TYPE = AttackType.HAND_TO_HAND;
+
+    public Thunderbird() {
+        super(HEALTH, Collections.singleton(UnitSpeciality.THUNDERBOLTS));
     }
 
     @Override
@@ -77,5 +78,4 @@ public class MedusaQueen extends AbstractUnit {
     public AttackType getAttackType() {
         return ATTACK_TYPE;
     }
-
 }

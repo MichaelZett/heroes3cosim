@@ -32,4 +32,14 @@ public interface Unit {
     int getCurrentHealth();
 
     boolean hasSpeciality(UnitSpeciality unitSpeciality);
+
+    void retrieveDamageToDeath();
+
+    void petrify();
+
+    boolean isPetrified();
+
+    void endTurn();
+
+    void curse();
 }

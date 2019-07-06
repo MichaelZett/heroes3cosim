@@ -6,21 +6,21 @@ import de.zettsystems.h3comsim.unit.common.AttackType;
 import de.zettsystems.h3comsim.unit.common.Movement;
 import de.zettsystems.h3comsim.unit.common.UnitSpeciality;
 
-public class MedusaQueen extends AbstractUnit {
-    private final static String NAME = "Medusa Queen";
-    private final static int ATTACK = 10;
-    private final static int DEFENSE = 10;
-    private final static int HEALTH = 30;
-    private final static int SPEED = 6;
-    private final static int MIN_DAMAGE = 6;
-    private final static int MAX_DAMAGE = 8;
+public class DreadKnight extends AbstractUnit {
+    private final static String NAME = "Dread Knight";
+    private final static int ATTACK = 18;
+    private final static int DEFENSE = 18;
+    private final static int HEALTH = 120;
+    private final static int SPEED = 9;
+    private final static int MIN_DAMAGE = 15;
+    private final static int MAX_DAMAGE = 30;
     private final static Movement MOVEMENT = Movement.GROUND;
-    private final static int SHOTS = 24;
-    private final static int COST = 330;
-    private final static AttackType ATTACK_TYPE = AttackType.LONG_RANGE;
-    
-    public MedusaQueen() {
-        super(HEALTH, ImmutableSet.of(UnitSpeciality.PETRYFYING, UnitSpeciality.NO_HAND_TO_HAND_PENALTY));
+    private final static int SHOTS = 0;
+    private final static int COST = 1500;
+    private final static AttackType ATTACK_TYPE = AttackType.HAND_TO_HAND;
+
+    public DreadKnight() {
+        super(HEALTH, ImmutableSet.of(UnitSpeciality.DEATH_BLOW, UnitSpeciality.CURSING));
     }
 
     @Override
@@ -77,5 +77,4 @@ public class MedusaQueen extends AbstractUnit {
     public AttackType getAttackType() {
         return ATTACK_TYPE;
     }
-
 }
