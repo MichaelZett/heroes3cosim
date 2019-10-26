@@ -1,7 +1,7 @@
 package de.zettsystems.h3comsim.combat;
 
 import de.zettsystems.h3comsim.arena.Arena;
-import de.zettsystems.h3comsim.unit.common.Unit;
+import de.zettsystems.h3comsim.unit.common.Stack;
 import de.zettsystems.h3comsim.unit.common.UnitSpeciality;
 
 import java.util.LinkedList;
@@ -10,19 +10,19 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class CombatEngine {
     public static void solveCombat(Arena arena) {
-        System.out.println("Heute ein Kampf zwischen " + arena.getAttacker().getName()
-                + " und " + arena.getDefender().getName() + "!");
+        System.out.println("Heute ein Kampf zwischen " + arena.getAttackerName()
+                + " und " + arena.getDefenderName() + "!");
         System.out.println("------------------------------------------------------------------------");
-        Queue<Unit> queue = determineMoveOrder(arena.getAttacker(), arena.getDefender());
+        Queue<Stack> queue = determineMoveOrder(arena.getAttacker(), arena.getDefender());
 
-        while (arena.getAttacker().getCurrentHealth() > 0 && arena.getDefender().getCurrentHealth() > 0) {
-            Unit currentAttacker = queue.poll();
-            Unit currentDefender = queue.poll();
+        while (arena.isAttackerAlive() && arena.isDefenderAlive()) {
+            Stack currentAttacker = queue.poll();
+            Stack currentDefender = queue.poll();
             queue.offer(currentDefender);
             queue.offer(currentAttacker);
             attack(currentAttacker, currentDefender, false);
             //check whether counterattack takes place
-            if (retaliationPossible(currentAttacker) && bothAlive(arena.getAttacker(), arena.getDefender()) && !currentAttacker.isPetrified()) {
+            if (retaliationPossible(currentAttacker) && arena.bothAlive() && !currentAttacker.isPetrified()) {
                 attack(currentDefender, currentAttacker, true);
             } else if (!retaliationPossible(currentAttacker)) {
                 System.out.println(currentAttacker.getName() + " ist immun gegen Rueckschlag.");
@@ -32,18 +32,14 @@ public class CombatEngine {
         }
         System.out.println("-----------------------------------------------------------------------");
 
-        queue.stream().filter(u -> u.getCurrentHealth() <= 0).forEach(u -> System.out.println(u.getName() + " ist gestorben."));
+        queue.stream().filter(u -> !u.isAlive()).forEach(u -> System.out.println(u.getName() + " ist gestorben."));
     }
 
-    private static boolean retaliationPossible(Unit currentAttacker) {
+    private static boolean retaliationPossible(Stack currentAttacker) {
         return !currentAttacker.hasSpeciality(UnitSpeciality.NO_RETALIATION);
     }
 
-    private static boolean bothAlive(Unit attacker, Unit defender) {
-        return attacker.getCurrentHealth() > 0 && defender.getCurrentHealth() > 0;
-    }
-
-    private static void attack(Unit currentAttacker, Unit currentDefender, boolean counterattack) {
+    private static void attack(Stack currentAttacker, Stack currentDefender, boolean counterattack) {
         if (currentAttacker.isPetrified()) {
             System.out.println(currentAttacker.getName() + " ist versteinert und macht nichts.");
         } else {
@@ -67,7 +63,7 @@ public class CombatEngine {
         }
     }
 
-    private static void doDeathStare(Unit currentAttacker, Unit currentDefender) {
+    private static void doDeathStare(Stack currentAttacker, Stack currentDefender) {
         if (currentAttacker.hasSpeciality(UnitSpeciality.DEATH_STARE)) {
             int value = ThreadLocalRandom.current().nextInt(1, 101);
             if (value <= 10) {
@@ -77,7 +73,7 @@ public class CombatEngine {
         }
     }
 
-    private static void doThunderbolts(Unit currentAttacker, Unit currentDefender) {
+    private static void doThunderbolts(Stack currentAttacker, Stack currentDefender) {
         if (currentAttacker.hasSpeciality(UnitSpeciality.THUNDERBOLTS)) {
             int value = ThreadLocalRandom.current().nextInt(1, 101);
             if (value <= 20) {
@@ -88,7 +84,7 @@ public class CombatEngine {
         }
     }
 
-    private static void doPetryfing(Unit currentAttacker, Unit currentDefender) {
+    private static void doPetryfing(Stack currentAttacker, Stack currentDefender) {
         if (currentAttacker.hasSpeciality(UnitSpeciality.PETRYFYING)) {
             int value = ThreadLocalRandom.current().nextInt(1, 101);
             if (value <= 20) {
@@ -98,7 +94,7 @@ public class CombatEngine {
         }
     }
 
-    private static void doCursing(Unit currentAttacker, Unit currentDefender) {
+    private static void doCursing(Stack currentAttacker, Stack currentDefender) {
         if (currentAttacker.hasSpeciality(UnitSpeciality.CURSING)) {
             int value = ThreadLocalRandom.current().nextInt(1, 101);
             if (value <= 20) {
@@ -108,8 +104,8 @@ public class CombatEngine {
         }
     }
 
-    private static Queue<Unit> determineMoveOrder(Unit attacker, Unit defender) {
-        Queue<Unit> units = new LinkedList<>();
+    private static Queue<Stack> determineMoveOrder(Stack attacker, Stack defender) {
+        Queue<Stack> units = new LinkedList<>();
         if (attacker.getSpeed() >= defender.getSpeed()) {
             units.offer(attacker);
             units.offer(defender);
