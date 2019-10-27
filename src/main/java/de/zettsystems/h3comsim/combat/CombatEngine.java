@@ -10,9 +10,9 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class CombatEngine {
     public static void solveCombat(Arena arena) {
-        System.out.println("Heute ein Kampf zwischen " + arena.getAttackerName()
-                + " und " + arena.getDefenderName() + "!");
-        System.out.println("------------------------------------------------------------------------");
+        System.out.println("Heute ein Kampf zwischen Stack von " + arena.getAttackerName()
+                + " mit " + arena.getAttackerCount() + " Einheiten und Stack von " + arena.getDefenderName() + " mit " + arena.getDefenderCount() + " Einheiten!");
+        System.out.println("---------------------------------------------------------------------------------------------------------------------");
         Queue<Stack> queue = determineMoveOrder(arena.getAttacker(), arena.getDefender());
 
         while (arena.isAttackerAlive() && arena.isDefenderAlive()) {
@@ -32,7 +32,7 @@ public class CombatEngine {
         }
         System.out.println("-----------------------------------------------------------------------");
 
-        queue.stream().filter(u -> !u.isAlive()).forEach(u -> System.out.println(u.getName() + " ist gestorben."));
+        queue.stream().filter(u -> !u.isAlive()).forEach(u -> System.out.println("Stack von " + u.getName() + " ist gestorben."));
     }
 
     private static boolean retaliationPossible(Stack currentAttacker) {
@@ -41,18 +41,22 @@ public class CombatEngine {
 
     private static void attack(Stack currentAttacker, Stack currentDefender, boolean counterattack) {
         if (currentAttacker.isPetrified()) {
-            System.out.println(currentAttacker.getName() + " ist versteinert und macht nichts.");
+            System.out.println("Stack von " + currentAttacker.getName() + " ist versteinert und macht nichts.");
         } else {
             int currentDamage = currentAttacker.calculateCurrentDamage();
             int boniMaliPercentage = currentAttacker.calculateAttackBoniMaliPercentage(currentDefender.getDefense());
             int realDamage = (currentDamage * (100 + boniMaliPercentage)) / 100;
             if (counterattack) {
-                System.out.println(currentAttacker.getName() + " schlaegt zurueck.");
+                System.out.println("Stack von " + currentAttacker.getName() + " schlaegt zurueck.");
             } else {
-                System.out.println(currentAttacker.getName() + " greift " + currentDefender.getName() + " an.");
+                System.out.println("Stack von " + currentAttacker.getName() + " greift Stack von " + currentDefender.getName() + " an.");
             }
             currentDefender.retrieveDamage(realDamage);
-            System.out.println(currentDefender.getName() + " hat noch " + currentDefender.getCurrentHealth() + " Gesundheit.");
+            if (currentDefender.isAlive()) {
+                System.out.println("Oberste Einheit vom Stack von " + currentDefender.getName() + " hat noch " + currentDefender.getCurrentHealth() + " Gesundheit.");
+            } else {
+                System.out.println("Letzte Einheit vom Stack von " + currentDefender.getName() + " wurde getoetet.");
+            }
 
             if (!counterattack) {
                 doDeathStare(currentAttacker, currentDefender);
@@ -68,7 +72,7 @@ public class CombatEngine {
             int value = ThreadLocalRandom.current().nextInt(1, 101);
             if (value <= 10) {
                 currentDefender.retrieveDamageToDeath();
-                System.out.println(currentAttacker.getName() + " toetet 1 " + currentDefender.getName() + " durch Death Stare.");
+                System.out.println("Stack von " + currentAttacker.getName() + " toetet 1 Einheit vom Stack von " + currentDefender.getName() + " durch Death Stare.");
             }
         }
     }
@@ -78,7 +82,7 @@ public class CombatEngine {
             int value = ThreadLocalRandom.current().nextInt(1, 101);
             if (value <= 20) {
                 currentDefender.retrieveDamage(10);
-                System.out.println(currentAttacker.getName() + " fuegt zusaetzlich 10 Schaden durch Thunderbolts zu. "
+                System.out.println("Stack von " + currentAttacker.getName() + " fuegt zusaetzlich 10 Schaden durch Thunderbolts zu. Oberste Einheit vom Stack von "
                         + currentDefender.getName() + " hat noch " + currentDefender.getCurrentHealth() + " Gesundheit.");
             }
         }
@@ -89,7 +93,7 @@ public class CombatEngine {
             int value = ThreadLocalRandom.current().nextInt(1, 101);
             if (value <= 20) {
                 currentDefender.petrify();
-                System.out.println(currentAttacker.getName() + " versteinert " + currentDefender.getName() + ".");
+                System.out.println("Stack von " + currentAttacker.getName() + " versteinert Stack von " + currentDefender.getName() + ".");
             }
         }
     }
@@ -99,7 +103,7 @@ public class CombatEngine {
             int value = ThreadLocalRandom.current().nextInt(1, 101);
             if (value <= 20) {
                 currentDefender.curse();
-                System.out.println(currentAttacker.getName() + " verflucht " + currentDefender.getName() + ".");
+                System.out.println("Stack von " + currentAttacker.getName() + " verflucht Stack von " + currentDefender.getName() + ".");
             }
         }
     }

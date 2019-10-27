@@ -18,8 +18,10 @@ public abstract class AbstractUnit implements Unit {
     }
 
     @Override
-    public void retrieveDamage(int damage) {
-        this.currentHealth = this.getCurrentHealth() - damage;
+    public int retrieveDamage(int damage) {
+        int realDamage = Math.min(this.currentHealth, damage);
+        this.currentHealth = this.currentHealth - realDamage;
+        return damage - realDamage;
     }
 
     @Override
@@ -32,4 +34,8 @@ public abstract class AbstractUnit implements Unit {
         return unitSpecialities.contains(unitSpeciality);
     }
 
+    @Override
+    public boolean isDead() {
+        return currentHealth <= 0;
+    }
 }

@@ -1,22 +1,21 @@
 package de.zettsystems.h3comsim.arena;
 
 import de.zettsystems.h3comsim.unit.common.Stack;
-import de.zettsystems.h3comsim.unit.common.Unit;
 
 public class Arena {
-    private Stack<Unit> attacker;
-    private Stack<Unit> defender;
+    private Stack attacker;
+    private Stack defender;
 
-    public Arena(Stack<Unit> attacker, Stack<Unit> defender) {
+    public Arena(Stack attacker, Stack defender) {
         this.attacker = attacker;
         this.defender = defender;
     }
 
-    public Stack<Unit> getAttacker() {
+    public Stack getAttacker() {
         return attacker;
     }
 
-    public Stack<Unit> getDefender() {
+    public Stack getDefender() {
         return defender;
     }
 
@@ -38,5 +37,13 @@ public class Arena {
 
     public boolean bothAlive() {
         return isAttackerAlive() && isDefenderAlive();
+    }
+
+    public int getAttackerCount() {
+        return this.attacker.getCount();
+    }
+
+    public int getDefenderCount() {
+        return this.defender.getCount();
     }
 }

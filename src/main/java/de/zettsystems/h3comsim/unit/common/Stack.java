@@ -32,7 +32,7 @@ public class Stack {
     }
 
     public static Stack createStack(Unit unit, int number) {
-        return new Stack(createDequeOfUnits(unit, 1));
+        return new Stack(createDequeOfUnits(unit, number));
     }
 
     private Stack(Deque<Unit> stackOfUnit) {
@@ -71,7 +71,11 @@ public class Stack {
     }
 
     public int getCurrentHealth() {
-        return this.units.getFirst().getCurrentHealth();
+        if (this.units.isEmpty()) {
+            return 0;
+        } else {
+            return this.units.getFirst().getCurrentHealth();
+        }
     }
 
 
@@ -86,7 +90,7 @@ public class Stack {
             int value = ThreadLocalRandom.current().nextInt(1, 101);
             if (value <= 20) {
                 baseValue = baseValue * 2;
-                System.out.println(this.getName() + " nutzt Death Blow.");
+                System.out.println("Stack von " + this.getName() + " nutzt Death Blow, verdoppelt also den Schaden.");
             }
         }
         return baseValue;
@@ -121,20 +125,33 @@ public class Stack {
     }
 
     public void retrieveDamage(int realDamage) {
-        // TODO unitwechsel
         if (this.petrified) {
             int reducedDamage = (int) Math.round(0.5 * realDamage);
-            this.units.getFirst().retrieveDamage(reducedDamage);
-            System.out.println(this.getName() + " erhaelt " + reducedDamage + " Schaden.");
+            doDamageRetrieving(reducedDamage);
             unpetrify();
         } else {
-            this.units.getFirst().retrieveDamage(realDamage);
-            System.out.println(this.getName() + " erhaelt " + realDamage + " Schaden.");
+            doDamageRetrieving(realDamage);
         }
     }
 
+    private void doDamageRetrieving(int damage) {
+        int restDamage = damage;
+        int countBefore = this.units.size();
+        while (restDamage > 0) {
+            restDamage = this.units.getFirst().retrieveDamage(damage);
+            if (this.units.getFirst().isDead()) {
+                deadUnits.add(this.units.pop());
+                if (this.units.isEmpty()) {
+                    break;
+                }
+            }
+        }
+        int countAfter = this.units.size();
+        System.out.println("Stack von " + this.getName() + " erhaelt " + damage + " Schaden. " + (countBefore - countAfter) + " wurden getoetet.");
+    }
+
     public void retrieveDamageToDeath() {
-        Unit unitToKill = this.units.poll();
+        Unit unitToKill = this.units.pop();
         unitToKill.retrieveDamageToDeath();
         deadUnits.add(unitToKill);
     }
@@ -159,5 +176,9 @@ public class Stack {
         this.petrifiedCounter = 0;
         this.petrified = false;
         System.out.println(this.getName() + " wurde entsteinert.");
+    }
+
+    public int getCount() {
+        return this.units.size();
     }
 }

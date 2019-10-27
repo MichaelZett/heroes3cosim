@@ -23,7 +23,7 @@ public interface Unit {
 
     AttackType getAttackType();
 
-    void retrieveDamage(int realDamage);
+    int retrieveDamage(int realDamage);
 
     int getCurrentHealth();
 
@@ -31,4 +31,5 @@ public interface Unit {
 
     void retrieveDamageToDeath();
 
+    boolean isDead();
 }
