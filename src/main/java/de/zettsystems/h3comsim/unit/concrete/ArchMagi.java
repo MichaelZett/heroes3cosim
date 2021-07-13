@@ -4,9 +4,9 @@ import de.zettsystems.h3comsim.unit.common.AbstractUnit;
 import de.zettsystems.h3comsim.unit.common.AttackType;
 import de.zettsystems.h3comsim.unit.common.Movement;
 
-import java.util.Collections;
+import java.util.Set;
 
-import static de.zettsystems.h3comsim.unit.common.UnitSpeciality.NO_HAND_TO_HAND_PENALTY;
+import static de.zettsystems.h3comsim.unit.common.UnitSpeciality.*;
 
 public class ArchMagi extends AbstractUnit {
     // TODO
@@ -26,7 +26,7 @@ public class ArchMagi extends AbstractUnit {
     private final static AttackType ATTACK_TYPE = AttackType.LONG_RANGE;
 
     public ArchMagi() {
-        super(HEALTH, Collections.singleton(NO_HAND_TO_HAND_PENALTY));
+        super(HEALTH, Set.of(NO_OBSTACLE_PENALTY, SPELL_COST_REDUCTION, NO_HAND_TO_HAND_PENALTY));
     }
 
     @Override
