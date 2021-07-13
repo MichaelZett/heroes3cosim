@@ -138,12 +138,15 @@ public class Stack {
         int restDamage = damage;
         int countBefore = this.units.size();
         while (restDamage > 0) {
-            restDamage = this.units.getFirst().retrieveDamage(damage);
-            if (this.units.getFirst().isDead()) {
-                deadUnits.add(this.units.pop());
+            final Unit currentUnit = this.units.pop();
+            restDamage = currentUnit.retrieveDamage(restDamage);
+            if (currentUnit.isDead()) {
+                deadUnits.add(currentUnit);
                 if (this.units.isEmpty()) {
                     break;
                 }
+            } else {
+                units.offerFirst(currentUnit);
             }
         }
         int countAfter = this.units.size();
