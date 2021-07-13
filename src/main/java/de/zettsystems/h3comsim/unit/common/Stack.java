@@ -93,7 +93,7 @@ public class Stack {
                 System.out.println("Stack von " + this.getName() + " nutzt Death Blow, verdoppelt also den Schaden.");
             }
         }
-        return baseValue;
+        return baseValue * units.size();
     }
 
     public void endTurn() {
