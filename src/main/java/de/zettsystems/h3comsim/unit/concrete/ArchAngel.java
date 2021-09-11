@@ -4,9 +4,9 @@ import de.zettsystems.h3comsim.unit.common.AbstractUnit;
 import de.zettsystems.h3comsim.unit.common.AttackType;
 import de.zettsystems.h3comsim.unit.common.Movement;
 
-import java.util.Collections;
+import java.util.Set;
 
-import static de.zettsystems.h3comsim.unit.common.UnitSpeciality.NO_HAND_TO_HAND_PENALTY;
+import static de.zettsystems.h3comsim.unit.common.UnitSpeciality.*;
 
 public class ArchAngel extends AbstractUnit {
 
@@ -23,7 +23,7 @@ public class ArchAngel extends AbstractUnit {
     private final static AttackType ATTACK_TYPE = AttackType.HAND_TO_HAND;
 
     public ArchAngel() {
-        super(HEALTH, Collections.singleton(NO_HAND_TO_HAND_PENALTY));
+        super(HEALTH, Set.of(RESURRECTION, MORALE, DEVIL_HATE));
     }
 
     @Override

@@ -6,8 +6,6 @@ import de.zettsystems.h3comsim.unit.common.Movement;
 
 import java.util.Collections;
 
-import static de.zettsystems.h3comsim.unit.common.UnitSpeciality.NO_HAND_TO_HAND_PENALTY;
-
 public class Peasant extends AbstractUnit {
 
     private final static String NAME = "Peasant";
@@ -23,7 +21,7 @@ public class Peasant extends AbstractUnit {
     private final static AttackType ATTACK_TYPE = AttackType.HAND_TO_HAND;
 
     public Peasant() {
-        super(HEALTH, Collections.singleton(NO_HAND_TO_HAND_PENALTY));
+        super(HEALTH, Collections.emptySet());
     }
 
     @Override

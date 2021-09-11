@@ -26,6 +26,8 @@ public class CombatEngine {
                 attack(currentDefender, currentAttacker, true);
             } else if (!retaliationPossible(currentAttacker)) {
                 System.out.println(currentAttacker.getName() + " ist immun gegen Rueckschlag.");
+            } else if (currentAttacker.isPetrified()) {
+                System.out.println(currentDefender.getName() + " greift versteinerten Gegner nicht an.");
             }
             System.out.println("---------");
             queue.stream().forEach(u -> u.endTurn());
