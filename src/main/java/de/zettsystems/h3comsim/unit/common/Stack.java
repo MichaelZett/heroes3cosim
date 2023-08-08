@@ -78,7 +78,6 @@ public class Stack {
         }
     }
 
-
     public int calculateCurrentDamage() {
         int baseValue;
         if (cursed) {
