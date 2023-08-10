@@ -6,7 +6,9 @@ import de.zettsystems.h3comsim.unit.common.Movement;
 
 import java.util.Set;
 
-import static de.zettsystems.h3comsim.unit.common.UnitSpeciality.*;
+import static de.zettsystems.h3comsim.unit.common.UnitSpeciality.DEVIL_HATE;
+import static de.zettsystems.h3comsim.unit.common.UnitSpeciality.MORALE;
+import static de.zettsystems.h3comsim.unit.common.UnitSpeciality.RESURRECTION;
 
 public class ArchAngel extends AbstractUnit {
 

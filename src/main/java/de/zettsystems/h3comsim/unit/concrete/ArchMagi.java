@@ -6,7 +6,9 @@ import de.zettsystems.h3comsim.unit.common.Movement;
 
 import java.util.Set;
 
-import static de.zettsystems.h3comsim.unit.common.UnitSpeciality.*;
+import static de.zettsystems.h3comsim.unit.common.UnitSpeciality.NO_HAND_TO_HAND_PENALTY;
+import static de.zettsystems.h3comsim.unit.common.UnitSpeciality.NO_OBSTACLE_PENALTY;
+import static de.zettsystems.h3comsim.unit.common.UnitSpeciality.SPELL_COST_REDUCTION;
 
 public class ArchMagi extends AbstractUnit {
     // TODO

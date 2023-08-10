@@ -23,6 +23,7 @@ public final class CombatLogger {
     static void logDoNotRetaliateAgainstPetrified(Stack currentDefender) {
         LOG.info("{} greift versteinerten Gegner nicht an.", currentDefender);
     }
+
     static void logDeath(String name) {
         LOG.info("Stack von {} ist gestorben.", name);
     }
@@ -46,6 +47,7 @@ public final class CombatLogger {
     static void logPetrified(String name) {
         LOG.info("Stack von {} ist versteinert und macht nichts.", name);
     }
+
     static void logDeathStare(String attackerName, String defenderName) {
         LOG.info("Stack von {} toetet 1 Einheit vom Stack von {} durch Death Stare.", attackerName, defenderName);
     }
@@ -53,9 +55,11 @@ public final class CombatLogger {
     static void logCurse(String currentAttacker, String currentDefender) {
         LOG.info("Stack von {} verflucht Stack von {}.", currentAttacker, currentDefender);
     }
+
     static void logPetrifying(String attackerName, String defenderName) {
         LOG.info("Stack von {} versteinert Stack von {}.", attackerName, defenderName);
     }
+
     static void logThunderbolting(String attackerName, String defenderName, int currentDefenderCurrentHealth) {
         LOG.info("Stack von {} fuegt zusaetzlich 10 Schaden durch Thunderbolts zu. " +
                 "Oberste Einheit vom Stack von {} hat noch {} Gesundheit.", attackerName, defenderName, currentDefenderCurrentHealth);

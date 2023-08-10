@@ -18,7 +18,7 @@ public class MedusaQueen extends AbstractUnit {
     private final static int SHOTS = 24;
     private final static int COST = 330;
     private final static AttackType ATTACK_TYPE = AttackType.LONG_RANGE;
-    
+
     public MedusaQueen() {
         super(HEALTH, ImmutableSet.of(UnitSpeciality.PETRYFYING, UnitSpeciality.NO_HAND_TO_HAND_PENALTY));
     }
