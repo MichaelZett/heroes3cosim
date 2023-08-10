@@ -1,12 +1,12 @@
-package de.zettsystems.h3comsim.arena;
+package de.zettsystems.h3comsim.combat;
 
 import de.zettsystems.h3comsim.unit.common.Stack;
 
-public class Arena {
+public class CombatSetup {
     private Stack attacker;
     private Stack defender;
 
-    public Arena(Stack attacker, Stack defender) {
+    public CombatSetup(Stack attacker, Stack defender) {
         this.attacker = attacker;
         this.defender = defender;
     }
@@ -45,5 +45,13 @@ public class Arena {
 
     public int getDefenderCount() {
         return this.defender.getCount();
+    }
+
+    public Stack getTarget(Stack activeStack) {
+        if (attacker.equals(activeStack)) {
+            return defender;
+        } else {
+            return attacker;
+        }
     }
 }

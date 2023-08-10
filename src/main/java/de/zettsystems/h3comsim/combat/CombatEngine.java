@@ -1,6 +1,5 @@
 package de.zettsystems.h3comsim.combat;
 
-import de.zettsystems.h3comsim.arena.Arena;
 import de.zettsystems.h3comsim.unit.common.Stack;
 import de.zettsystems.h3comsim.unit.common.UnitSpeciality;
 
@@ -13,104 +12,108 @@ public final class CombatEngine {
     private CombatEngine() {
         //not intended
     }
-    public static void solveCombat(Arena arena) {
+
+    public static void solveCombat(CombatSetup arena) {
         CombatLogger.logStartOfCombat(arena.getAttackerName(), arena.getAttackerCount(), arena.getDefenderName(), arena.getDefenderCount());
 
-        Queue<Stack> queue = determineMoveOrder(arena.getAttacker(), arena.getDefender());
-
-        while (arena.isAttackerAlive() && arena.isDefenderAlive()) {
-            Stack currentAttacker = queue.poll();
-            assert currentAttacker != null;
-            Stack currentDefender = queue.poll();
-            assert currentDefender != null;
-            queue.offer(currentDefender);
-            queue.offer(currentAttacker);
-            attack(currentAttacker, currentDefender, false);
-            //check whether counterattack takes place
-            if (retaliationPossible(currentAttacker) && arena.bothAlive() && !currentAttacker.isPetrified()) {
-                attack(currentDefender, currentAttacker, true);
-            } else if (!retaliationPossible(currentAttacker)) {
-                CombatLogger.logImmuneToRetaliation(currentAttacker.getName());
-            } else if (currentAttacker.isPetrified()) {
-                CombatLogger.logDoNotRetaliateAgainstPetrified(currentDefender);
-            }
-            CombatLogger.logShortDelimiter();
-            queue.forEach(Stack::endTurn);
+        while (arena.bothAlive()) {
+            doTurn(arena);
         }
         CombatLogger.logMiddleDelimiter();
 
-        queue.stream().filter(u -> !u.isAlive()).forEach(u -> CombatLogger.logDeath(u.getName()));
-    }
-
-    private static boolean retaliationPossible(Stack currentAttacker) {
-        return !currentAttacker.hasSpeciality(UnitSpeciality.NO_RETALIATION);
-    }
-
-    private static void attack(Stack currentAttacker, Stack currentDefender, boolean counterattack) {
-        if (currentAttacker.isPetrified()) {
-            CombatLogger.logPetrified(currentAttacker.getName());
+        if (arena.isAttackerAlive()) {
+            CombatLogger.logDeath(arena.getDefenderName());
         } else {
-            int currentDamage = currentAttacker.calculateCurrentDamage();
-            int boniMaliPercentage = currentAttacker.calculateAttackBoniMaliPercentage(currentDefender.getDefense());
-            int realDamage = (currentDamage * (100 + boniMaliPercentage)) / 100;
-            if (counterattack) {
-                CombatLogger.logCounterAttack(currentAttacker.getName());
-            } else {
-                CombatLogger.logAttack(currentAttacker.getName(), currentDefender.getName());
-            }
-            currentDefender.retrieveDamage(realDamage);
-            if (currentDefender.isAlive()) {
-                CombatLogger.logRemainingHealth(currentDefender.getName(), currentDefender.getCurrentHealth());
-            } else {
-                CombatLogger.logLastUnitDead(currentDefender.getName());
-            }
-
-            if (!counterattack) {
-                doDeathStare(currentAttacker, currentDefender);
-                doThunderbolts(currentAttacker, currentDefender);
-                doPetryfing(currentAttacker, currentDefender);
-            }
-            doCursing(currentAttacker, currentDefender);
+            CombatLogger.logDeath(arena.getAttackerName());
         }
     }
 
-    static void doDeathStare(Stack currentAttacker, Stack currentDefender) {
-        if (currentAttacker.hasSpeciality(UnitSpeciality.DEATH_STARE)) {
+    private static void doTurn(CombatSetup arena) {
+        Queue<Stack> queue = determineMoveOrder(arena.getAttacker(), arena.getDefender());
+        for (Stack activeStack : queue) {
+            if (activeStack.isAbleToAct()) {
+                Stack passiveStack = arena.getTarget(activeStack);
+                attack(activeStack, passiveStack);
+            }
+            CombatLogger.logShortDelimiter();
+        }
+        queue.forEach(Stack::endTurn);
+    }
+
+    private static boolean retaliationPossible(Stack activeStack) {
+        return !activeStack.hasSpeciality(UnitSpeciality.NO_RETALIATION);
+    }
+
+    private static void attack(Stack activeStack, Stack passiveStack) {
+        dealDamage(activeStack, passiveStack);
+        //check whether counterattack takes place
+        if (!retaliationPossible(activeStack)) {
+            CombatLogger.logImmuneToRetaliation(activeStack.getName());
+        } else if (passiveStack.isAbleToAct()) {
+            CombatLogger.logRetaliation(passiveStack.getName());
+            dealDamage(passiveStack, activeStack);
+        }
+    }
+
+    private static void dealDamage(Stack activeStack, Stack passiveStack) {
+        int currentDamage = activeStack.calculateCurrentDamage();
+        int boniMaliPercentage = activeStack.calculateAttackBoniMaliPercentage(passiveStack.getDefense());
+        int realDamage = (currentDamage * (100 + boniMaliPercentage)) / 100;
+
+        CombatLogger.logAttack(activeStack.getName(), passiveStack.getName());
+        passiveStack.retrieveDamage(realDamage);
+
+        if (passiveStack.isAlive()) {
+            doDeathStare(activeStack, passiveStack);
+            doThunderbolts(activeStack, passiveStack);
+            doPetrifying(activeStack, passiveStack);
+            doCursing(activeStack, passiveStack);
+            if (passiveStack.isAlive()) {
+                CombatLogger.logRemainingHealth(passiveStack.getName(), passiveStack.getCurrentHealth());
+            } else {
+                CombatLogger.logLastUnitDead(passiveStack.getName());
+            }
+        } else {
+            CombatLogger.logLastUnitDead(passiveStack.getName());
+        }
+    }
+
+    static void doDeathStare(Stack activeStack, Stack currentDefender) {
+        if (activeStack.hasSpeciality(UnitSpeciality.DEATH_STARE)) {
             int value = ThreadLocalRandom.current().nextInt(1, 101);
             if (value <= 10) {
                 currentDefender.retrieveDamageToDeath();
-                CombatLogger.logDeathStare(currentAttacker.getName(), currentDefender.getName());
+                CombatLogger.logDeathStare(activeStack.getName(), currentDefender.getName());
             }
         }
     }
 
-    private static void doThunderbolts(Stack currentAttacker, Stack currentDefender) {
-        if (currentAttacker.hasSpeciality(UnitSpeciality.THUNDERBOLTS)) {
+    private static void doThunderbolts(Stack activeStack, Stack currentDefender) {
+        if (activeStack.hasSpeciality(UnitSpeciality.THUNDERBOLTS)) {
             int value = ThreadLocalRandom.current().nextInt(1, 101);
             if (value <= 20) {
                 currentDefender.retrieveDamage(10);
-                CombatLogger.logThunderbolting(currentAttacker.getName(), currentDefender.getName(), currentDefender.getCurrentHealth());
+                CombatLogger.logThunderbolting(activeStack.getName(), currentDefender.getName(), currentDefender.getCurrentHealth());
             }
         }
     }
 
-
-    private static void doPetryfing(Stack currentAttacker, Stack currentDefender) {
-        if (currentAttacker.hasSpeciality(UnitSpeciality.PETRYFYING)) {
+    private static void doPetrifying(Stack activeStack, Stack currentDefender) {
+        if (activeStack.hasSpeciality(UnitSpeciality.PETRYFYING)) {
             int value = ThreadLocalRandom.current().nextInt(1, 101);
             if (value <= 20) {
                 currentDefender.petrify();
-                CombatLogger.logPetrifying(currentAttacker.getName(), currentDefender.getName());
+                CombatLogger.logPetrifying(activeStack.getName(), currentDefender.getName());
             }
         }
     }
 
-    private static void doCursing(Stack currentAttacker, Stack currentDefender) {
-        if (currentAttacker.hasSpeciality(UnitSpeciality.CURSING)) {
+    private static void doCursing(Stack activeStack, Stack currentDefender) {
+        if (activeStack.hasSpeciality(UnitSpeciality.CURSING)) {
             int value = ThreadLocalRandom.current().nextInt(1, 101);
             if (value <= 20) {
                 currentDefender.curse();
-                CombatLogger.logCurse(currentAttacker.getName(), currentDefender.getName());
+                CombatLogger.logCurse(activeStack.getName(), currentDefender.getName());
             }
         }
     }

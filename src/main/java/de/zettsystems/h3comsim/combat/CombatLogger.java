@@ -39,7 +39,7 @@ public final class CombatLogger {
         LOG.info("Stack von {} greift Stack von {} an.", attackerName, defenderName);
     }
 
-    static void logCounterAttack(String name) {
+    static void logRetaliation(String name) {
         LOG.info("Stack von {} schlaegt zurueck.", name);
     }
 

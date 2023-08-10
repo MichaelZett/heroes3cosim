@@ -1,10 +1,13 @@
 package de.zettsystems.h3comsim.unit.common;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
+@Slf4j
 public class Stack {
     private final String name;
     private final int speed;
@@ -182,5 +185,17 @@ public class Stack {
 
     public int getCount() {
         return this.units.size();
+    }
+
+    public boolean isAbleToAct() {
+        if (!isAlive()) {
+            LOG.info("Stack von {} ist bereits tot und macht nichts.", name);
+            return false;
+        } else if (isPetrified()) {
+            LOG.info("Stack von {} ist versteinert und macht nichts.", name);
+            return false;
+        } else {
+            return true;
+        }
     }
 }
