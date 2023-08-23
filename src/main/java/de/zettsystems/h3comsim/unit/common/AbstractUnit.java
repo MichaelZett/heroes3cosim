@@ -1,6 +1,7 @@
 package de.zettsystems.h3comsim.unit.common;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public abstract class AbstractUnit implements Unit {
 
@@ -37,5 +38,10 @@ public abstract class AbstractUnit implements Unit {
     @Override
     public boolean isDead() {
         return currentHealth <= 0;
+    }
+
+    @Override
+    public Set<UnitSpeciality> retrieveAttackerSpecialities() {
+        return unitSpecialities.stream().filter(UnitSpeciality::isAttack).collect(Collectors.toSet());
     }
 }

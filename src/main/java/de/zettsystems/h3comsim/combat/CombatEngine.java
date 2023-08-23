@@ -61,7 +61,7 @@ public final class CombatEngine {
         int realDamage = (currentDamage * (100 + boniMaliPercentage)) / 100;
 
         CombatLogger.logAttack(activeStack.getName(), passiveStack.getName());
-        passiveStack.retrieveDamage(realDamage);
+        passiveStack.retrieveDamage(realDamage, activeStack.getAttackerSpecialities());
 
         if (passiveStack.isAlive()) {
             doDeathStare(activeStack, passiveStack);
@@ -92,7 +92,7 @@ public final class CombatEngine {
         if (activeStack.hasSpeciality(UnitSpeciality.THUNDERBOLTS)) {
             int value = ThreadLocalRandom.current().nextInt(1, 101);
             if (value <= 20) {
-                currentDefender.retrieveDamage(10);
+                currentDefender.retrieveDamage(10, activeStack.getAttackerSpecialities());
                 CombatLogger.logThunderbolting(activeStack.getName(), currentDefender.getName(), currentDefender.getCurrentHealth());
             }
         }

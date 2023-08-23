@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Slf4j
@@ -126,7 +127,12 @@ public class Stack {
         }
     }
 
-    public void retrieveDamage(int realDamage) {
+    public void retrieveDamage(int baseDamage, Set<UnitSpeciality> attackersSpecialities) {
+        int realDamage = baseDamage;
+        if (this.isDevil() && attackersSpecialities.contains(UnitSpeciality.DEVIL_HATE)
+                || this.isAngel() && attackersSpecialities.contains(UnitSpeciality.ANGEL_HATE)) {
+            realDamage = (int) Math.round(1.5 * realDamage);
+        }
         if (this.petrified) {
             int reducedDamage = (int) Math.round(0.5 * realDamage);
             doDamageRetrieving(reducedDamage);
@@ -134,6 +140,12 @@ public class Stack {
         } else {
             doDamageRetrieving(realDamage);
         }
+    }
+
+    private boolean isAngel() {
+    }
+
+    private boolean isDevil() {
     }
 
     private void doDamageRetrieving(int damage) {
@@ -197,5 +209,10 @@ public class Stack {
         } else {
             return true;
         }
+    }
+
+    public Set<UnitSpeciality> getAttackerSpecialities() {
+        final Unit first = units.getFirst();
+        return first.retrieveAttackerSpecialities();
     }
 }

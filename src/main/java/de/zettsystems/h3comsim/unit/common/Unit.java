@@ -1,5 +1,7 @@
 package de.zettsystems.h3comsim.unit.common;
 
+import java.util.Set;
+
 public interface Unit {
     String getName();
 
@@ -32,4 +34,6 @@ public interface Unit {
     void retrieveDamageToDeath();
 
     boolean isDead();
+
+    Set<UnitSpeciality> retrieveAttackerSpecialities();
 }
