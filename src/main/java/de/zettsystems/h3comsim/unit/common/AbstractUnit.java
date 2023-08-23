@@ -44,4 +44,9 @@ public abstract class AbstractUnit implements Unit {
     public Set<UnitSpeciality> retrieveAttackerSpecialities() {
         return unitSpecialities.stream().filter(UnitSpeciality::isAttack).collect(Collectors.toSet());
     }
+
+    @Override
+    public boolean hasPenality(AttackType usedAttackType) {
+        return usedAttackType.HAND_TO_HAND == this.getAttackType();
+    }
 }

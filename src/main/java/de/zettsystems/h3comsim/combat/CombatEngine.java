@@ -1,5 +1,6 @@
 package de.zettsystems.h3comsim.combat;
 
+import de.zettsystems.h3comsim.unit.common.AttackType;
 import de.zettsystems.h3comsim.unit.common.Stack;
 import de.zettsystems.h3comsim.unit.common.UnitSpeciality;
 
@@ -56,7 +57,7 @@ public final class CombatEngine {
     }
 
     private static void dealDamage(Stack activeStack, Stack passiveStack) {
-        int currentDamage = activeStack.calculateCurrentDamage();
+        int currentDamage = activeStack.calculateCurrentDamage(AttackType.HAND_TO_HAND);
         int boniMaliPercentage = activeStack.calculateAttackBoniMaliPercentage(passiveStack.getDefense());
         int realDamage = (currentDamage * (100 + boniMaliPercentage)) / 100;
 

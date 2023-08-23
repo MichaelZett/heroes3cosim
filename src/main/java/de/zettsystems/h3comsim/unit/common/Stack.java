@@ -82,12 +82,17 @@ public class Stack {
         }
     }
 
-    public int calculateCurrentDamage() {
+    public int calculateCurrentDamage(AttackType usedAttackType) {
         int baseValue;
         if (cursed) {
             baseValue = minDamage;
         } else {
             baseValue = ThreadLocalRandom.current().nextInt(minDamage, maxDamage + 1);
+        }
+        final Unit first = units.getFirst();
+        if (first.hasPenality(usedAttackType)) {
+            baseValue = (int) Math.round(0.5 * baseValue);
+            System.out.println("Stack von " + this.getName() + " hat Nachteil, halbiert also den Schaden.");
         }
         if (this.hasSpeciality(UnitSpeciality.DEATH_BLOW)) {
             int value = ThreadLocalRandom.current().nextInt(1, 101);
@@ -132,6 +137,7 @@ public class Stack {
         if (this.isDevil() && attackersSpecialities.contains(UnitSpeciality.DEVIL_HATE)
                 || this.isAngel() && attackersSpecialities.contains(UnitSpeciality.ANGEL_HATE)) {
             realDamage = (int) Math.round(1.5 * realDamage);
+            System.out.println("Stack von " + this.getName() + " wird vom Gegner gehasst, bekommt deoppelten Schaden.");
         }
         if (this.petrified) {
             int reducedDamage = (int) Math.round(0.5 * realDamage);
@@ -143,9 +149,11 @@ public class Stack {
     }
 
     private boolean isAngel() {
+        return units.getFirst().getName().equals("Angel") || units.getFirst().getName().equals("Arch Angel");
     }
 
     private boolean isDevil() {
+        return units.getFirst().getName().equals("Devil") || units.getFirst().getName().equals("Arch Devil");
     }
 
     private void doDamageRetrieving(int damage) {

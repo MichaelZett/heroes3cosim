@@ -36,4 +36,6 @@ public interface Unit {
     boolean isDead();
 
     Set<UnitSpeciality> retrieveAttackerSpecialities();
+
+    boolean hasPenality(AttackType usedAttackType);
 }
