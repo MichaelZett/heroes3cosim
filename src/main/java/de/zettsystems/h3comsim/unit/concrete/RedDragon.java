@@ -3,29 +3,25 @@ package de.zettsystems.h3comsim.unit.concrete;
 import de.zettsystems.h3comsim.unit.common.AbstractUnit;
 import de.zettsystems.h3comsim.unit.common.AttackType;
 import de.zettsystems.h3comsim.unit.common.Movement;
-import de.zettsystems.h3comsim.unit.common.UnitSpeciality;
 
-import java.util.Set;
+import java.util.Collections;
 
-import static de.zettsystems.h3comsim.unit.common.UnitSpeciality.MOVE_BACK;
-import static de.zettsystems.h3comsim.unit.common.UnitSpeciality.NO_RETALIATION;
+public class RedDragon extends AbstractUnit {
 
-public class HarpyHag extends AbstractUnit {
-
-    private final static String NAME = "Harpy Hag";
-    private final static int ATTACK = 6;
-    private final static int DEFENSE = 6;
-    private final static int HEALTH = 14;
-    private final static int SPEED = 9;
-    private final static int MIN_DAMAGE = 1;
-    private final static int MAX_DAMAGE = 4;
+    private final static String NAME = "Red Dragon";
+    private final static int ATTACK = 19;
+    private final static int DEFENSE = 19;
+    private final static int HEALTH = 180;
+    private final static int SPEED = 11;
+    private final static int MIN_DAMAGE = 40;
+    private final static int MAX_DAMAGE = 50;
     private final static Movement MOVEMENT = Movement.FLYING;
     private final static int SHOTS = 0;
-    private final static int COST = 170;
+    private final static int COST = 2500;
     private final static AttackType ATTACK_TYPE = AttackType.HAND_TO_HAND;
 
-    public HarpyHag() {
-        super(HEALTH, Set.of(MOVE_BACK, NO_RETALIATION));
+    public RedDragon() {
+        super(HEALTH, Collections.emptySet());
     }
 
     @Override

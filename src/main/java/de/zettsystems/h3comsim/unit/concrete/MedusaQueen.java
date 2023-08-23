@@ -16,7 +16,7 @@ public class MedusaQueen extends AbstractUnit {
     private final static int MIN_DAMAGE = 6;
     private final static int MAX_DAMAGE = 8;
     private final static Movement MOVEMENT = Movement.GROUND;
-    private final static int SHOTS = 24;
+    private final static int SHOTS = 8;
     private final static int COST = 330;
     private final static AttackType ATTACK_TYPE = AttackType.LONG_RANGE;
 

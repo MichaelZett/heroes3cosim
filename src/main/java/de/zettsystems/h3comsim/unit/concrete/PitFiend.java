@@ -3,29 +3,25 @@ package de.zettsystems.h3comsim.unit.concrete;
 import de.zettsystems.h3comsim.unit.common.AbstractUnit;
 import de.zettsystems.h3comsim.unit.common.AttackType;
 import de.zettsystems.h3comsim.unit.common.Movement;
-import de.zettsystems.h3comsim.unit.common.UnitSpeciality;
 
-import java.util.Set;
+import java.util.Collections;
 
-import static de.zettsystems.h3comsim.unit.common.UnitSpeciality.MOVE_BACK;
-import static de.zettsystems.h3comsim.unit.common.UnitSpeciality.NO_RETALIATION;
+public class PitFiend extends AbstractUnit {
 
-public class HarpyHag extends AbstractUnit {
-
-    private final static String NAME = "Harpy Hag";
-    private final static int ATTACK = 6;
-    private final static int DEFENSE = 6;
-    private final static int HEALTH = 14;
-    private final static int SPEED = 9;
-    private final static int MIN_DAMAGE = 1;
-    private final static int MAX_DAMAGE = 4;
-    private final static Movement MOVEMENT = Movement.FLYING;
+    private final static String NAME = "PitFiend";
+    private final static int ATTACK = 13;
+    private final static int DEFENSE = 13;
+    private final static int HEALTH = 45;
+    private final static int SPEED = 6;
+    private final static int MIN_DAMAGE = 13;
+    private final static int MAX_DAMAGE = 17;
+    private final static Movement MOVEMENT = Movement.GROUND;
     private final static int SHOTS = 0;
-    private final static int COST = 170;
+    private final static int COST = 500;
     private final static AttackType ATTACK_TYPE = AttackType.HAND_TO_HAND;
 
-    public HarpyHag() {
-        super(HEALTH, Set.of(MOVE_BACK, NO_RETALIATION));
+    public PitFiend() {
+        super(HEALTH, Collections.emptySet());
     }
 
     @Override

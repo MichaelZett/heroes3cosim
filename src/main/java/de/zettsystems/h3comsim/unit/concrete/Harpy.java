@@ -3,6 +3,7 @@ package de.zettsystems.h3comsim.unit.concrete;
 import de.zettsystems.h3comsim.unit.common.AbstractUnit;
 import de.zettsystems.h3comsim.unit.common.AttackType;
 import de.zettsystems.h3comsim.unit.common.Movement;
+import de.zettsystems.h3comsim.unit.common.UnitSpeciality;
 
 import java.util.Set;
 
