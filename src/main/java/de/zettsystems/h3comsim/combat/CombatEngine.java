@@ -35,6 +35,12 @@ public final class CombatEngine {
             if (activeStack.isAbleToAct()) {
                 Stack passiveStack = arena.getTarget(activeStack);
                 attack(activeStack, passiveStack);
+                if (activeStack.hasSpeciality(UnitSpeciality.TWO_BLOWS)) {
+                    if (activeStack.isAbleToAct()) {
+                        CombatLogger.logTwoBlows(passiveStack.getName());
+                        attack(activeStack, passiveStack);
+                    }
+                }
             }
             CombatLogger.logShortDelimiter();
         }

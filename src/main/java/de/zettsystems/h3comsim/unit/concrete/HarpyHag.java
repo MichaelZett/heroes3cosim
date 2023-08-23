@@ -4,7 +4,10 @@ import de.zettsystems.h3comsim.unit.common.AbstractUnit;
 import de.zettsystems.h3comsim.unit.common.AttackType;
 import de.zettsystems.h3comsim.unit.common.Movement;
 
-import java.util.Collections;
+import java.util.Set;
+
+import static de.zettsystems.h3comsim.unit.common.UnitSpeciality.MOVE_BACK;
+import static de.zettsystems.h3comsim.unit.common.UnitSpeciality.NO_RETALIATION;
 
 public class HarpyHag extends AbstractUnit {
 
@@ -21,7 +24,7 @@ public class HarpyHag extends AbstractUnit {
     private final static AttackType ATTACK_TYPE = AttackType.HAND_TO_HAND;
 
     public HarpyHag() {
-        super(HEALTH, Collections.emptySet());
+        super(HEALTH, Set.of(MOVE_BACK, NO_RETALIATION));
     }
 
     @Override

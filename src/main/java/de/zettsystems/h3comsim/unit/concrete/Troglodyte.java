@@ -4,7 +4,9 @@ import de.zettsystems.h3comsim.unit.common.AbstractUnit;
 import de.zettsystems.h3comsim.unit.common.AttackType;
 import de.zettsystems.h3comsim.unit.common.Movement;
 
-import java.util.Collections;
+import java.util.Set;
+
+import static de.zettsystems.h3comsim.unit.common.UnitSpeciality.IMMUNE_TO_BLIND;
 
 public class Troglodyte extends AbstractUnit {
 
@@ -21,7 +23,7 @@ public class Troglodyte extends AbstractUnit {
     private final static AttackType ATTACK_TYPE = AttackType.HAND_TO_HAND;
 
     public Troglodyte() {
-        super(HEALTH, Collections.emptySet());
+        super(HEALTH, Set.of(IMMUNE_TO_BLIND));
     }
 
     @Override

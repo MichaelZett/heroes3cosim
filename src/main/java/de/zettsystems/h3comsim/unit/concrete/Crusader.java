@@ -4,7 +4,9 @@ import de.zettsystems.h3comsim.unit.common.AbstractUnit;
 import de.zettsystems.h3comsim.unit.common.AttackType;
 import de.zettsystems.h3comsim.unit.common.Movement;
 
-import java.util.Collections;
+import java.util.Set;
+
+import static de.zettsystems.h3comsim.unit.common.UnitSpeciality.TWO_BLOWS;
 
 public class Crusader extends AbstractUnit {
 
@@ -21,7 +23,7 @@ public class Crusader extends AbstractUnit {
     private final static AttackType ATTACK_TYPE = AttackType.HAND_TO_HAND;
 
     public Crusader() {
-        super(HEALTH, Collections.emptySet());
+        super(HEALTH, Set.of(TWO_BLOWS));
     }
 
     @Override

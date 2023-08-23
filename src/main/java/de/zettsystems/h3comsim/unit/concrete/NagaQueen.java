@@ -1,10 +1,11 @@
 package de.zettsystems.h3comsim.unit.concrete;
 
-import com.google.common.collect.ImmutableSet;
 import de.zettsystems.h3comsim.unit.common.AbstractUnit;
 import de.zettsystems.h3comsim.unit.common.AttackType;
 import de.zettsystems.h3comsim.unit.common.Movement;
 import de.zettsystems.h3comsim.unit.common.UnitSpeciality;
+
+import java.util.Set;
 
 public class NagaQueen extends AbstractUnit {
     private final static String NAME = "Naga Queen";
@@ -20,7 +21,7 @@ public class NagaQueen extends AbstractUnit {
     private final static AttackType ATTACK_TYPE = AttackType.HAND_TO_HAND;
 
     public NagaQueen() {
-        super(HEALTH, ImmutableSet.of(UnitSpeciality.NO_RETALIATION));
+        super(HEALTH, Set.of(UnitSpeciality.NO_RETALIATION));
     }
 
     @Override
