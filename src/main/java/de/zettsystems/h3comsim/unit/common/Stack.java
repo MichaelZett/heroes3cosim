@@ -137,7 +137,7 @@ public class Stack {
         if (this.isDevil() && attackersSpecialities.contains(UnitSpeciality.DEVIL_HATE)
                 || this.isAngel() && attackersSpecialities.contains(UnitSpeciality.ANGEL_HATE)) {
             realDamage = (int) Math.round(1.5 * realDamage);
-            System.out.println("Stack von " + this.getName() + " wird vom Gegner gehasst, bekommt deoppelten Schaden.");
+            System.out.println("Stack von " + this.getName() + " wird vom Gegner gehasst, bekommt doppelten Schaden.");
         }
         if (this.petrified) {
             int reducedDamage = (int) Math.round(0.5 * realDamage);

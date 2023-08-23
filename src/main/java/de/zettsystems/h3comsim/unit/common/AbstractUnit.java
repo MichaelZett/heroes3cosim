@@ -47,6 +47,11 @@ public abstract class AbstractUnit implements Unit {
 
     @Override
     public boolean hasPenality(AttackType usedAttackType) {
-        return usedAttackType.HAND_TO_HAND == this.getAttackType();
+        if (AttackType.HAND_TO_HAND == usedAttackType) {
+            return this.getAttackType() == AttackType.LONG_RANGE && !this.hasSpeciality(UnitSpeciality.NO_HAND_TO_HAND_PENALTY);
+        } else {
+            // TODO
+            return false;
+        }
     }
 }
