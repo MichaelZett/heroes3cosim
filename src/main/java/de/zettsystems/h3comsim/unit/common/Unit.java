@@ -38,4 +38,6 @@ public interface Unit {
     Set<UnitSpeciality> retrieveAttackerSpecialities();
 
     boolean hasPenality(AttackType usedAttackType);
+
+    int getMorale();
 }

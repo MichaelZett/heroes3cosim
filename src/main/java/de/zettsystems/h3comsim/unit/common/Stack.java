@@ -223,4 +223,13 @@ public class Stack {
         final Unit first = units.getFirst();
         return first.retrieveAttackerSpecialities();
     }
+
+    public boolean hasGoodMorale() {
+        final Unit first = units.getFirst();
+        if (first.getMorale() > 0) {
+            int random = ThreadLocalRandom.current().nextInt(1000);
+            return first.getMorale() == 3 && random <= 125 || first.getMorale() == 2 && random <= 83 || first.getMorale() == 1 && random <= 42;
+        }
+        return false;
+    }
 }

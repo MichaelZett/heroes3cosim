@@ -32,12 +32,16 @@ public final class CombatEngine {
     private static void doTurn(CombatSetup arena) {
         Queue<Stack> queue = determineMoveOrder(arena.getAttacker(), arena.getDefender());
         for (Stack activeStack : queue) {
+            // check for bad morale
             if (activeStack.isAbleToAct()) {
                 Stack passiveStack = arena.getTarget(activeStack);
                 attack(activeStack, passiveStack);
-                if (activeStack.hasSpeciality(UnitSpeciality.TWO_BLOWS)) {
-                    if (activeStack.isAbleToAct()) {
-                        CombatLogger.logTwoBlows(passiveStack.getName());
+                if (activeStack.isAbleToAct()) {
+                    if (activeStack.hasSpeciality(UnitSpeciality.TWO_BLOWS)) {
+                        CombatLogger.logTwoBlows(activeStack.getName());
+                        attack(activeStack, passiveStack);
+                    } else if (activeStack.hasGoodMorale()) {
+                        CombatLogger.logGoodMorale(activeStack.getName());
                         attack(activeStack, passiveStack);
                     }
                 }

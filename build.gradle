@@ -18,11 +18,11 @@ repositories {
 dependencies {
     implementation group: 'com.google.guava', name: 'guava', version: '32.1.2-jre'
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '2.0.7'
-    implementation group: 'ch.qos.logback', name: 'logback-core', version: '1.4.9'
+    implementation group: 'ch.qos.logback', name: 'logback-core', version: '1.4.11'
 
     compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.28'
 
-    runtimeOnly group: 'ch.qos.logback', name: 'logback-classic', version: '1.4.9'
+    runtimeOnly group: 'ch.qos.logback', name: 'logback-classic', version: '1.4.11'
 
     annotationProcessor group: 'org.projectlombok', name: 'lombok', version: '1.18.28'
 }

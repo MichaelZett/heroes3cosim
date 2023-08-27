@@ -76,4 +76,8 @@ public final class CombatLogger {
     public static void logTwoBlows(String name) {
         LOG.info("Stack von {} greift mit seinem 2.Schlag erneut an.", name);
     }
+
+    public static void logGoodMorale(String name) {
+        LOG.info("Stack von {} hat gute Moral und greift erneut an.", name);
+    }
 }

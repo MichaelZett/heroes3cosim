@@ -3,8 +3,10 @@ package de.zettsystems.h3comsim.unit.concrete;
 import de.zettsystems.h3comsim.unit.common.AbstractUnit;
 import de.zettsystems.h3comsim.unit.common.AttackType;
 import de.zettsystems.h3comsim.unit.common.Movement;
+import de.zettsystems.h3comsim.unit.common.UnitSpeciality;
 
 import java.util.Collections;
+import java.util.Set;
 
 public class BlackDragon extends AbstractUnit {
 
@@ -21,7 +23,7 @@ public class BlackDragon extends AbstractUnit {
     private final static AttackType ATTACK_TYPE = AttackType.HAND_TO_HAND;
 
     public BlackDragon() {
-        super(HEALTH, Collections.emptySet());
+        super(HEALTH, Set.of(UnitSpeciality.IMMUNE_TO_SPELLS_BELOW_4, UnitSpeciality.TITAN_HATE));
     }
 
     @Override

@@ -7,7 +7,7 @@ import de.zettsystems.h3comsim.unit.common.Movement;
 import java.util.Set;
 
 import static de.zettsystems.h3comsim.unit.common.UnitSpeciality.DEVIL_HATE;
-import static de.zettsystems.h3comsim.unit.common.UnitSpeciality.MORALE;
+import static de.zettsystems.h3comsim.unit.common.UnitSpeciality.GOOD_ARMY_MORALE;
 import static de.zettsystems.h3comsim.unit.common.UnitSpeciality.RESURRECTION;
 
 public class Angel extends AbstractUnit {
@@ -25,7 +25,7 @@ public class Angel extends AbstractUnit {
     private final static AttackType ATTACK_TYPE = AttackType.HAND_TO_HAND;
 
     public Angel() {
-        super(HEALTH, Set.of(RESURRECTION, MORALE, DEVIL_HATE));
+        super(HEALTH, Set.of(RESURRECTION, GOOD_ARMY_MORALE, DEVIL_HATE));
     }
 
     @Override
