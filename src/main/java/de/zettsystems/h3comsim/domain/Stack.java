@@ -2,6 +2,7 @@ package de.zettsystems.h3comsim.domain;
 
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Objects;
 import java.util.Set;
 import java.util.random.RandomGenerator;
 
@@ -18,11 +19,12 @@ public class Stack {
     private boolean cursed;
     private int cursedCounter;
 
-    public Stack(Unit unit, int count) {
+    public Stack(Unit unit, int count, Hex position) {
         if (count < 0) {
             throw new IllegalArgumentException("count must be >= 0, was " + count);
         }
-        this.unit = unit;
+        this.unit = Objects.requireNonNull(unit, "unit");
+        this.position = Objects.requireNonNull(position, "position");
         this.aliveCount = count;
         this.topUnitCurrentHealth = unit.health();
         this.shotsRemaining = unit.shots();
@@ -37,7 +39,7 @@ public class Stack {
     }
 
     public void setPosition(Hex position) {
-        this.position = position;
+        this.position = Objects.requireNonNull(position, "position");
     }
 
     public int shotsRemaining() {

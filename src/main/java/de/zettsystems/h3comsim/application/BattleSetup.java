@@ -3,6 +3,7 @@ package de.zettsystems.h3comsim.application;
 import de.zettsystems.h3comsim.domain.Battlefield;
 import de.zettsystems.h3comsim.domain.Hex;
 import de.zettsystems.h3comsim.domain.Stack;
+import de.zettsystems.h3comsim.domain.Unit;
 
 public class BattleSetup {
 
@@ -13,18 +14,18 @@ public class BattleSetup {
     private final Stack defender;
     private final Battlefield battlefield;
 
-    public BattleSetup(Stack attacker, Stack defender) {
-        this(attacker, defender, Battlefield.STANDARD,
-                DEFAULT_ATTACKER_POSITION, DEFAULT_DEFENDER_POSITION);
+    public BattleSetup(Unit attackerUnit, int attackerCount,
+                       Unit defenderUnit, int defenderCount) {
+        this(attackerUnit, attackerCount, defenderUnit, defenderCount,
+                Battlefield.STANDARD, DEFAULT_ATTACKER_POSITION, DEFAULT_DEFENDER_POSITION);
     }
 
-    public BattleSetup(Stack attacker, Stack defender, Battlefield battlefield,
-                       Hex attackerPosition, Hex defenderPosition) {
-        this.attacker = attacker;
-        this.defender = defender;
+    public BattleSetup(Unit attackerUnit, int attackerCount,
+                       Unit defenderUnit, int defenderCount,
+                       Battlefield battlefield, Hex attackerPosition, Hex defenderPosition) {
         this.battlefield = battlefield;
-        attacker.setPosition(attackerPosition);
-        defender.setPosition(defenderPosition);
+        this.attacker = new Stack(attackerUnit, attackerCount, attackerPosition);
+        this.defender = new Stack(defenderUnit, defenderCount, defenderPosition);
     }
 
     public Stack getAttacker() {
