@@ -1,6 +1,6 @@
 package de.zettsystems.h3comsim.application;
 
-import de.zettsystems.h3comsim.domain.Stack;
+import de.zettsystems.h3comsim.domain.Unit;
 import de.zettsystems.h3comsim.domain.UnitCatalog;
 import org.junit.jupiter.api.Test;
 
@@ -29,9 +29,7 @@ class BattleTest {
 
     @Test
     void titan_kills_pikeman_at_distance_without_taking_damage() {
-        Stack attacker = new Stack(UnitCatalog.TITAN, 1);
-        Stack defender = new Stack(UnitCatalog.PIKEMAN, 1);
-        BattleSetup setup = new BattleSetup(attacker, defender);
+        BattleSetup setup = new BattleSetup(UnitCatalog.TITAN, 1, UnitCatalog.PIKEMAN, 1);
 
         BattleResult result = new Battle(new Random(7L)).simulate(setup);
 
@@ -42,21 +40,18 @@ class BattleTest {
 
     @Test
     void ranged_attacker_uses_a_shot_per_turn() {
-        Stack titan = new Stack(UnitCatalog.TITAN, 1);
-        Stack pikeman = new Stack(UnitCatalog.PIKEMAN, 5);
-        BattleSetup setup = new BattleSetup(titan, pikeman);
+        BattleSetup setup = new BattleSetup(UnitCatalog.TITAN, 1, UnitCatalog.PIKEMAN, 5);
 
-        int initialShots = titan.shotsRemaining();
+        int initialShots = setup.getAttacker().shotsRemaining();
         new Battle(new Random(5L)).simulate(setup);
 
-        assertThat(titan.shotsRemaining()).isLessThan(initialShots);
+        assertThat(setup.getAttacker().shotsRemaining()).isLessThan(initialShots);
     }
 
-    private BattleResult simulate(de.zettsystems.h3comsim.domain.Unit attackerUnit, int attackerCount,
-                                  de.zettsystems.h3comsim.domain.Unit defenderUnit, int defenderCount,
+    private BattleResult simulate(Unit attackerUnit, int attackerCount,
+                                  Unit defenderUnit, int defenderCount,
                                   long seed) {
-        Stack attacker = new Stack(attackerUnit, attackerCount);
-        Stack defender = new Stack(defenderUnit, defenderCount);
-        return new Battle(new Random(seed)).simulate(new BattleSetup(attacker, defender));
+        BattleSetup setup = new BattleSetup(attackerUnit, attackerCount, defenderUnit, defenderCount);
+        return new Battle(new Random(seed)).simulate(setup);
     }
 }

@@ -52,10 +52,8 @@ import net.ltgt.gradle.errorprone.CheckSeverity
 
 tasks.withType(JavaCompile).configureEach {
     options.errorprone {
-        // Initial WARN-only — clean up the codebase first, then promote to ERROR.
-        allErrorsAsWarnings = true
         nullaway {
-            severity = CheckSeverity.WARN
+            severity = CheckSeverity.ERROR
             annotatedPackages.add("de.zettsystems.h3comsim")
         }
     }
