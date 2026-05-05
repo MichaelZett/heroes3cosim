@@ -11,6 +11,8 @@ public class Stack {
     private final Unit unit;
     private int aliveCount;
     private int topUnitCurrentHealth;
+    private int shotsRemaining;
+    private Hex position;
     private boolean petrified;
     private int petrifiedCounter;
     private boolean cursed;
@@ -23,10 +25,33 @@ public class Stack {
         this.unit = unit;
         this.aliveCount = count;
         this.topUnitCurrentHealth = unit.health();
+        this.shotsRemaining = unit.shots();
     }
 
     public Unit unit() {
         return unit;
+    }
+
+    public Hex position() {
+        return position;
+    }
+
+    public void setPosition(Hex position) {
+        this.position = position;
+    }
+
+    public int shotsRemaining() {
+        return shotsRemaining;
+    }
+
+    public void useShot() {
+        if (shotsRemaining > 0) {
+            shotsRemaining--;
+        }
+    }
+
+    public boolean canShoot() {
+        return unit.attackType() == AttackType.LONG_RANGE && shotsRemaining > 0;
     }
 
     public String getName() {

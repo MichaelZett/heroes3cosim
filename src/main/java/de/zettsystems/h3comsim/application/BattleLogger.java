@@ -33,6 +33,18 @@ public final class BattleLogger {
         LOG.info("Stack von {} greift Stack von {} an.", attackerName, defenderName);
     }
 
+    static void logShoot(String attackerName, String defenderName, int distance) {
+        LOG.info("Stack von {} schiesst auf Stack von {} (Distanz {}).", attackerName, defenderName, distance);
+    }
+
+    static void logMove(String name, int fromQ, int fromR, int toQ, int toR) {
+        LOG.info("Stack von {} bewegt sich von ({},{}) nach ({},{}).", name, fromQ, fromR, toQ, toR);
+    }
+
+    static void logWait(String name) {
+        LOG.info("Stack von {} wartet.", name);
+    }
+
     static void logRetaliation(String name) {
         LOG.info("Stack von {} schlaegt zurueck.", name);
     }

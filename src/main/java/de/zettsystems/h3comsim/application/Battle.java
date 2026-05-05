@@ -1,6 +1,8 @@
 package de.zettsystems.h3comsim.application;
 
 import de.zettsystems.h3comsim.domain.AttackType;
+import de.zettsystems.h3comsim.domain.Battlefield;
+import de.zettsystems.h3comsim.domain.Hex;
 import de.zettsystems.h3comsim.domain.Stack;
 import de.zettsystems.h3comsim.domain.UnitSpeciality;
 
@@ -11,9 +13,15 @@ import java.util.random.RandomGenerator;
 public final class Battle {
 
     private final RandomGenerator rng;
+    private final AutoSolver autoSolver;
 
     public Battle(RandomGenerator rng) {
+        this(rng, new GreedyAutoSolver());
+    }
+
+    public Battle(RandomGenerator rng, AutoSolver autoSolver) {
         this.rng = rng;
+        this.autoSolver = autoSolver;
     }
 
     public BattleResult simulate(BattleSetup setup) {
@@ -50,18 +58,19 @@ public final class Battle {
     }
 
     private void doTurn(BattleSetup setup) {
+        Battlefield battlefield = setup.battlefield();
         Queue<Stack> queue = determineMoveOrder(setup.getAttacker(), setup.getDefender());
         for (Stack activeStack : queue) {
-            if (activeStack.isAbleToAct()) {
-                Stack passiveStack = setup.getTarget(activeStack);
-                attack(activeStack, passiveStack);
-                if (activeStack.isAbleToAct()) {
+            if (activeStack.isAbleToAct() && setup.bothAlive()) {
+                Stack opponent = setup.getTarget(activeStack);
+                takeAction(activeStack, opponent, battlefield);
+                if (activeStack.isAbleToAct() && opponent.isAlive()) {
                     if (activeStack.hasSpeciality(UnitSpeciality.TWO_BLOWS)) {
                         BattleLogger.logTwoBlows(activeStack.getName());
-                        attack(activeStack, passiveStack);
+                        takeAction(activeStack, opponent, battlefield);
                     } else if (activeStack.hasGoodMorale(rng)) {
                         BattleLogger.logGoodMorale(activeStack.getName());
-                        attack(activeStack, passiveStack);
+                        takeAction(activeStack, opponent, battlefield);
                     }
                 }
             }
@@ -70,36 +79,63 @@ public final class Battle {
         queue.forEach(Stack::endTurn);
     }
 
-    private void attack(Stack activeStack, Stack passiveStack) {
-        dealDamage(activeStack, passiveStack);
-        if (activeStack.hasSpeciality(UnitSpeciality.NO_RETALIATION)) {
-            BattleLogger.logImmuneToRetaliation(activeStack.getName());
-        } else if (passiveStack.isAbleToAct()) {
-            BattleLogger.logRetaliation(passiveStack.getName());
-            dealDamage(passiveStack, activeStack);
+    private void takeAction(Stack active, Stack opponent, Battlefield battlefield) {
+        Action action = autoSolver.decide(active, opponent, battlefield);
+        switch (action) {
+            case Action.Wait ignored -> BattleLogger.logWait(active.getName());
+            case Action.Move move -> moveTo(active, move.destination());
+            case Action.MoveAndMelee moveAndMelee -> {
+                moveTo(active, moveAndMelee.destination());
+                meleeAttack(active, moveAndMelee.target());
+            }
+            case Action.Melee melee -> meleeAttack(active, melee.target());
+            case Action.Shoot shoot -> rangedAttack(active, shoot.target());
         }
     }
 
-    private void dealDamage(Stack activeStack, Stack passiveStack) {
-        int currentDamage = activeStack.calculateCurrentDamage(AttackType.HAND_TO_HAND, rng);
-        int boniMaliPercentage = activeStack.calculateAttackBoniMaliPercentage(passiveStack.getDefense());
+    private void moveTo(Stack active, Hex destination) {
+        Hex from = active.position();
+        BattleLogger.logMove(active.getName(), from.q(), from.r(), destination.q(), destination.r());
+        active.setPosition(destination);
+    }
+
+    private void meleeAttack(Stack active, Stack passive) {
+        dealDamage(active, passive, AttackType.HAND_TO_HAND);
+        if (active.hasSpeciality(UnitSpeciality.NO_RETALIATION)) {
+            BattleLogger.logImmuneToRetaliation(active.getName());
+        } else if (passive.isAbleToAct() && passive.position().isAdjacent(active.position())) {
+            BattleLogger.logRetaliation(passive.getName());
+            dealDamage(passive, active, AttackType.HAND_TO_HAND);
+        }
+    }
+
+    private void rangedAttack(Stack active, Stack passive) {
+        BattleLogger.logShoot(active.getName(), passive.getName(),
+                active.position().distanceTo(passive.position()));
+        dealDamage(active, passive, AttackType.LONG_RANGE);
+        active.useShot();
+    }
+
+    private void dealDamage(Stack active, Stack passive, AttackType attackType) {
+        int currentDamage = active.calculateCurrentDamage(attackType, rng);
+        int boniMaliPercentage = active.calculateAttackBoniMaliPercentage(passive.getDefense());
         int realDamage = (currentDamage * (100 + boniMaliPercentage)) / 100;
 
-        BattleLogger.logAttack(activeStack.getName(), passiveStack.getName());
-        passiveStack.retrieveDamage(realDamage, activeStack.getAttackerSpecialities());
+        BattleLogger.logAttack(active.getName(), passive.getName());
+        passive.retrieveDamage(realDamage, active.getAttackerSpecialities());
 
-        if (passiveStack.isAlive()) {
-            doDeathStare(activeStack, passiveStack);
-            doThunderbolts(activeStack, passiveStack);
-            doPetrifying(activeStack, passiveStack);
-            doCursing(activeStack, passiveStack);
-            if (passiveStack.isAlive()) {
-                BattleLogger.logRemainingHealth(passiveStack.getName(), passiveStack.getCurrentHealth());
+        if (passive.isAlive()) {
+            doDeathStare(active, passive);
+            doThunderbolts(active, passive);
+            doPetrifying(active, passive);
+            doCursing(active, passive);
+            if (passive.isAlive()) {
+                BattleLogger.logRemainingHealth(passive.getName(), passive.getCurrentHealth());
             } else {
-                BattleLogger.logLastUnitDead(passiveStack.getName());
+                BattleLogger.logLastUnitDead(passive.getName());
             }
         } else {
-            BattleLogger.logLastUnitDead(passiveStack.getName());
+            BattleLogger.logLastUnitDead(passive.getName());
         }
     }
 

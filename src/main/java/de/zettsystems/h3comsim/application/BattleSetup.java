@@ -1,15 +1,30 @@
 package de.zettsystems.h3comsim.application;
 
+import de.zettsystems.h3comsim.domain.Battlefield;
+import de.zettsystems.h3comsim.domain.Hex;
 import de.zettsystems.h3comsim.domain.Stack;
 
 public class BattleSetup {
 
+    private static final Hex DEFAULT_ATTACKER_POSITION = new Hex(0, 5);
+    private static final Hex DEFAULT_DEFENDER_POSITION = new Hex(14, 5);
+
     private final Stack attacker;
     private final Stack defender;
+    private final Battlefield battlefield;
 
     public BattleSetup(Stack attacker, Stack defender) {
+        this(attacker, defender, Battlefield.STANDARD,
+                DEFAULT_ATTACKER_POSITION, DEFAULT_DEFENDER_POSITION);
+    }
+
+    public BattleSetup(Stack attacker, Stack defender, Battlefield battlefield,
+                       Hex attackerPosition, Hex defenderPosition) {
         this.attacker = attacker;
         this.defender = defender;
+        this.battlefield = battlefield;
+        attacker.setPosition(attackerPosition);
+        defender.setPosition(defenderPosition);
     }
 
     public Stack getAttacker() {
@@ -18,6 +33,10 @@ public class BattleSetup {
 
     public Stack getDefender() {
         return defender;
+    }
+
+    public Battlefield battlefield() {
+        return battlefield;
     }
 
     public String getAttackerName() {
