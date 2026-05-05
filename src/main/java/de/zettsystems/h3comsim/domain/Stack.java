@@ -112,9 +112,9 @@ public class Stack {
         int morale = unit.morale();
         if (morale > 0) {
             int random = rng.nextInt(1000);
-            return morale == 3 && random <= 125
-                    || morale == 2 && random <= 83
-                    || morale == 1 && random <= 42;
+            return (morale == 3 && random <= 125)
+                    || (morale == 2 && random <= 83)
+                    || (morale == 1 && random <= 42);
         }
         return false;
     }

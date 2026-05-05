@@ -1,7 +1,11 @@
 plugins {
     id 'java'
     id 'application'
+    id 'jacoco'
     id "com.github.ben-manes.versions" version "${benmanesVersion}"
+    id "net.ltgt.errorprone" version "${errorpronePluginVersion}"
+    id "net.ltgt.nullaway" version "${nullawayPluginVersion}"
+    id "com.github.spotbugs" version "${spotbugsPluginVersion}"
 }
 
 group = 'de.zettsystems'
@@ -25,10 +29,14 @@ dependencies {
     implementation "com.google.guava:guava:${guavaVersion}"
     implementation "org.slf4j:slf4j-api:${slf4jVersion}"
     implementation "ch.qos.logback:logback-core:${logbackVersion}"
+    implementation "org.jspecify:jspecify:${jspecifyVersion}"
     runtimeOnly "ch.qos.logback:logback-classic:${logbackVersion}"
 
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+
+    errorprone "com.google.errorprone:error_prone_core:${errorproneVersion}"
+    errorprone "com.uber.nullaway:nullaway:${nullawayVersion}"
 
     testImplementation "org.junit.jupiter:junit-jupiter:${junitVersion}"
     testImplementation "org.assertj:assertj-core:${assertjVersion}"
@@ -37,6 +45,50 @@ dependencies {
 
 test {
     useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
+
+import net.ltgt.gradle.errorprone.CheckSeverity
+
+tasks.withType(JavaCompile).configureEach {
+    options.errorprone {
+        // Initial WARN-only — clean up the codebase first, then promote to ERROR.
+        allErrorsAsWarnings = true
+        nullaway {
+            severity = CheckSeverity.WARN
+            annotatedPackages.add("de.zettsystems.h3comsim")
+        }
+    }
+}
+
+tasks.named("compileTestJava") {
+    options.errorprone.enabled = false
+}
+
+spotbugs {
+    effort = 'MAX'
+    reportLevel = 'LOW'
+    ignoreFailures = true
+    excludeFilter = file('config/spotbugs/exclude.xml')
+}
+
+tasks.withType(com.github.spotbugs.snom.SpotBugsTask).configureEach {
+    reports {
+        html { required = true }
+        sarif { required = true }
+    }
+}
+
+jacoco {
+    toolVersion = '0.8.13'
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        html.required = true
+    }
 }
 
 def depUpdateIsUnstable = { String version ->
