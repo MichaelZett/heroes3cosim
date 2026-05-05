@@ -1,14 +1,20 @@
 plugins {
     id 'java'
+    id 'application'
     id "com.github.ben-manes.versions" version "${benmanesVersion}"
 }
 
-group 'de.zettsystems'
-version '1.0-SNAPSHOT'
-sourceCompatibility = "${javaVersion}"
+group = 'de.zettsystems'
+version = '1.0-SNAPSHOT'
 
 java {
-    sourceCompatibility = "${javaVersion}"
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(javaVersion as int)
+    }
+}
+
+application {
+    mainClass = 'de.zettsystems.h3comsim.ComSimApp'
 }
 
 repositories {
@@ -16,13 +22,47 @@ repositories {
 }
 
 dependencies {
-    implementation group: 'com.google.guava', name: 'guava', version: '32.1.2-jre'
-    implementation group: 'org.slf4j', name: 'slf4j-api', version: '2.0.7'
-    implementation group: 'ch.qos.logback', name: 'logback-core', version: '1.4.11'
+    implementation "com.google.guava:guava:${guavaVersion}"
+    implementation "org.slf4j:slf4j-api:${slf4jVersion}"
+    implementation "ch.qos.logback:logback-core:${logbackVersion}"
+    runtimeOnly "ch.qos.logback:logback-classic:${logbackVersion}"
 
-    compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.28'
+    compileOnly "org.projectlombok:lombok:${lombokVersion}"
+    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
-    runtimeOnly group: 'ch.qos.logback', name: 'logback-classic', version: '1.4.11'
+    testImplementation "org.junit.jupiter:junit-jupiter:${junitVersion}"
+    testImplementation "org.assertj:assertj-core:${assertjVersion}"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+}
 
-    annotationProcessor group: 'org.projectlombok', name: 'lombok', version: '1.18.28'
+test {
+    useJUnitPlatform()
+}
+
+def depUpdateIsUnstable = { String version ->
+    def stableKeywords = ['RELEASE', 'FINAL', 'GA']
+    def stable = stableKeywords.any { version.toUpperCase().contains(it) }
+    def numericLooking = version ==~ /^[0-9,.v-]+(-r)?$/
+    return !stable && !numericLooking
+}
+def depUpdateIsMajorBump = { String current, String candidate ->
+    def cur = current.split(/[.\-]/, 2)[0]
+    def cand = candidate.split(/[.\-]/, 2)[0]
+    return cur.isInteger() && cand.isInteger() && cand.toInteger() > cur.toInteger()
+}
+dependencyUpdates {
+    rejectVersionIf { selection ->
+        def allowUnstable = project.hasProperty('unstable')
+        def allowMajor = project.hasProperty('major')
+        if (!allowUnstable
+                && depUpdateIsUnstable(selection.candidate.version)
+                && !depUpdateIsUnstable(selection.currentVersion)) {
+            return true
+        }
+        if (!allowMajor
+                && depUpdateIsMajorBump(selection.currentVersion, selection.candidate.version)) {
+            return true
+        }
+        return false
+    }
 }
