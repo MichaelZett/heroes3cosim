@@ -6,8 +6,8 @@ import de.zettsystems.h3comsim.domain.Hex;
 import de.zettsystems.h3comsim.domain.Stack;
 import de.zettsystems.h3comsim.domain.UnitSpeciality;
 
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.random.RandomGenerator;
 
 public final class Battle {
@@ -59,7 +59,7 @@ public final class Battle {
 
     private void doTurn(BattleSetup setup) {
         Battlefield battlefield = setup.battlefield();
-        Queue<Stack> queue = determineMoveOrder(setup.getAttacker(), setup.getDefender());
+        Deque<Stack> queue = determineMoveOrder(setup.getAttacker(), setup.getDefender());
         for (Stack activeStack : queue) {
             if (activeStack.isAbleToAct() && setup.bothAlive()) {
                 Stack opponent = setup.getTarget(activeStack);
@@ -167,14 +167,14 @@ public final class Battle {
         }
     }
 
-    private static Queue<Stack> determineMoveOrder(Stack attacker, Stack defender) {
-        Queue<Stack> units = new LinkedList<>();
+    private static Deque<Stack> determineMoveOrder(Stack attacker, Stack defender) {
+        Deque<Stack> units = new ArrayDeque<>(2);
         if (attacker.getSpeed() >= defender.getSpeed()) {
-            units.offer(attacker);
-            units.offer(defender);
+            units.addLast(attacker);
+            units.addLast(defender);
         } else {
-            units.offer(defender);
-            units.offer(attacker);
+            units.addLast(defender);
+            units.addLast(attacker);
         }
         return units;
     }
