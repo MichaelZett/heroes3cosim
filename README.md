@@ -1,81 +1,81 @@
 # heroes3-combat-simulator
 
 Auto-Solver für taktische Kämpfe aus *Heroes of Might and Magic III*.
-Konfiguration eines Setups → deterministische Simulation → Ergebnis +
-Event-Log. Kein menschlicher Spieler-Input während des Kampfs.
+Konfiguration eines Setups, deterministische Simulation, Ausgabe sind
+Ergebnis und Event-Log. Während des Kampfs gibt es keinen
+Spieler-Input.
 
-Das Endziel: Truppen-, Helden- und Fraktions-Vergleiche per Monte-Carlo
-über viele Kämpfe entscheiden — *welche Einheit ist gold-effizient?
-welche Fraktion gewinnt im Schnitt? welche Held-Spec-Kombi rocked?* Eine
-HTTP-API plus React-Frontend ergänzen die Engine später.
+Endziel: Truppen-, Helden- und Fraktionsvergleiche per Monte-Carlo
+über viele Kämpfe entscheiden — welche Einheit ist gold-effizient,
+welche Fraktion gewinnt im Schnitt, welche Kombination aus Held und
+Spezialisierung zahlt sich aus. Eine HTTP-Schnittstelle und ein
+React-Frontend sollen die Engine später ergänzen.
 
-## Tech-Stack
+## Stack
 
-- **Java 25** (LTS), Gradle 9.2 (Groovy DSL).
-- Plain Java aktuell — Spring Boot 4 wird ergänzt, sobald die HTTP-API
-  beginnt.
+- Java 25, Gradle 9.2 (Groovy DSL).
+- Aktuell reines Java; Spring Boot 4 kommt dazu, sobald die
+  HTTP-Schnittstelle gebraucht wird.
 - SLF4J + Logback, Guava, JSpecify.
-- **Tests**: JUnit 5 + AssertJ.
-- **Code-Qualität**: ErrorProne + NullAway (severity `WARN` während der
-  Aufbauphase), SpotBugs (`ignoreFailures = true` initial), JaCoCo.
+- Tests: JUnit 5 + AssertJ.
+- Statische Analyse: ErrorProne mit NullAway, SpotBugs, JaCoCo.
 
-## Schnellstart
+## Build und Ausführung
 
 ```pwsh
-# Voraussetzung: JDK 25 auf dem PATH (oder Gradle Toolchain lädt nach).
-.\gradlew.bat build       # Compile + Tests + JaCoCo + SpotBugs
-.\gradlew.bat run         # Demo-Battle (Grand Elf vs Arch Angel)
-.\gradlew.bat test        # nur Tests
-.\gradlew.bat dependencyUpdates  # Library-/Plugin-Updates checken
+# Voraussetzung: JDK 25 auf dem PATH, sonst lädt die Gradle-Toolchain nach.
+.\gradlew.bat build              # Übersetzen, Tests, JaCoCo, SpotBugs
+.\gradlew.bat run                # Beispielkampf (Grand Elf vs Arch Angel)
+.\gradlew.bat test               # nur Tests
+.\gradlew.bat dependencyUpdates  # Versionen der Bibliotheken prüfen
 ```
 
-Reports landen in `build/reports/`:
+Berichte landen unter `build/reports/`:
 `jacoco/test/html/index.html`, `spotbugs/main.html`,
 `tests/test/index.html`.
 
-## Was schon funktioniert
+## Stand der Engine
 
-- 59 H3-Einheiten im `UnitCatalog` (Castle, Rampart, Inferno teilweise,
-  Dungeon teilweise, Tower teilweise, Stronghold teilweise — siehe
-  BACKLOG für Vollständigkeit).
-- 1-Stack-vs-1-Stack auf einem 15×11-Hex-Battlefield mit
-  Bewegungsreichweite per Speed.
-- Long-Range-Combat: Schützen schießen aus Distanz ohne Retaliation,
-  schalten bei Distanz 1 in den Nahkampf-Modus mit
-  `HAND_TO_HAND`-Penalty.
-- Speciality-Subset: `NO_RETALIATION`, `TWO_BLOWS`, `GOOD_MORALE`,
-  `DEATH_STARE`, `THUNDERBOLTS`, `PETRYFYING` (sic — H3-Schreibweise),
-  `CURSING`, `DEATH_BLOW`, `ANGEL_HATE` / `DEVIL_HATE`,
-  `NO_HAND_TO_HAND_PENALTY`. Restliche Specialities sind im Enum
-  vorhanden, aber von der Engine noch nicht ausgewertet.
-- Deterministische Simulation per `RandomGenerator`-Injection — gleicher
-  Seed liefert identisches `BattleResult`. Voraussetzung für
-  Monte-Carlo-Experimente und Replay.
+- 59 Einheiten im `UnitCatalog`. Castle und Rampart sind vollständig,
+  Inferno, Dungeon, Tower und Stronghold teilweise.
+- Ein Stack gegen einen Stack auf einem 15×11-Hex-Feld.
+  Bewegungsweite ergibt sich aus der Geschwindigkeit der Einheit.
+- Fernkampf: Schützen feuern aus Distanz ohne Vergeltung. Auf
+  Distanz 1 wechselt der Schütze in den Nahkampf mit
+  `HAND_TO_HAND`-Malus.
+- Umgesetzte Spezialfähigkeiten: `NO_RETALIATION`, `TWO_BLOWS`,
+  `GOOD_MORALE`, `DEATH_STARE`, `THUNDERBOLTS`, `PETRYFYING` (sic,
+  Heroes-3-Schreibweise), `CURSING`, `DEATH_BLOW`, `ANGEL_HATE`,
+  `DEVIL_HATE`, `NO_HAND_TO_HAND_PENALTY`. Die übrigen Einträge im
+  Enum sind angelegt, werden von der Engine aber noch nicht
+  ausgewertet.
+- Deterministische Simulation: Der `RandomGenerator` wird in `Battle`
+  injiziert, gleicher Seed liefert identisches `BattleResult`.
+  Grundlage für Monte-Carlo-Auswertungen und Wiederholungen.
 
-## Was fehlt (Auswahl, vollständig in `BACKLOG.md`)
+## Offene Themen
 
-- Mixed Armies (mehrere Stacks pro Seite) plus Initiative über alle
-  Stacks.
-- Helden mit Primary-Stats, Secondary Skills, Spell Book.
-- Spruchsystem (Mana, Wisdom-Gate, Combat-Spells).
-- Distanz-/Obstacle-Penalty für Schützen, Belagerungen.
-- Spring-Boot-API + OpenAPI-Generator → REST-Adapter im
-  `adapter`-Paket.
-- React-Frontend (Army-Builder, Replay-Viewer, Experiment-Dashboard).
+- Mehrere Stacks pro Seite und Initiative über alle Stacks.
+- Helden mit Primärwerten, Sekundärfertigkeiten, Zauberbuch.
+- Zaubersystem (Mana, Wisdom-Schwelle, Kampfzauber).
+- Distanz- und Hindernismalus für Schützen, Belagerungen.
+- Spring-Boot-Schnittstelle samt OpenAPI-Generator im Paket
+  `adapter`.
+- React-Frontend (Armee-Editor, Wiederholungsanzeige,
+  Auswertungs-Dashboard).
 
 ## Projektstruktur
 
 ```
 src/main/java/de/zettsystems/h3comsim/
-├─ ComSimApp.java       — Demo-CLI-Entry
-├─ domain/              — Unit (Record), UnitCatalog, Stack, Hex,
-│                         Battlefield, Enums (AttackType, Movement,
-│                         UnitSpeciality(Type))
-├─ application/         — Battle, BattleSetup, BattleResult,
-│                         BattleLogger, Action (sealed), AutoSolver,
-│                         GreedyAutoSolver
-└─ adapter/             — (geplant) OpenAPI-Spring-RestController
+├─ ComSimApp.java     — Beispielkampf als CLI-Einstieg
+├─ domain/            — Unit (Record), UnitCatalog, Stack, Hex,
+│                       Battlefield, Enums (AttackType, Movement,
+│                       UnitSpeciality, UnitSpecialityType)
+└─ application/       — Battle, BattleSetup, BattleResult,
+                        BattleLogger, Action (sealed), AutoSolver,
+                        GreedyAutoSolver
 ```
 
-`AGENTS.md` beschreibt die Konventionen für Coding-Agenten,
-`BACKLOG.md` führt forward-looking Items.
+Das Paket `adapter` ist für die HTTP-Schicht vorgesehen und aktuell
+noch leer.
