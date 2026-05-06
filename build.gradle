@@ -6,6 +6,7 @@ plugins {
     id "net.ltgt.errorprone" version "${errorpronePluginVersion}"
     id "net.ltgt.nullaway" version "${nullawayPluginVersion}"
     id "com.github.spotbugs" version "${spotbugsPluginVersion}"
+    id "org.sonarqube" version "${sonarqubePluginVersion}"
 }
 
 group = 'de.zettsystems'
@@ -90,6 +91,26 @@ jacocoTestReport {
         xml.required = true
         html.required = true
     }
+}
+
+sonar {
+    properties {
+        property 'sonar.projectKey', 'heroes3cosim'
+        property 'sonar.projectName', 'heroes3-combat-simulator'
+        property 'sonar.host.url', 'http://localhost:9000'
+
+        def sonarTokenValue = findProperty('sonar.token') ?: System.getenv('SONAR_TOKEN')
+        if (sonarTokenValue) {
+            property 'sonar.token', sonarTokenValue
+        }
+
+        property 'sonar.coverage.jacoco.xmlReportPaths',
+                "${layout.buildDirectory.get()}/reports/jacoco/test/jacocoTestReport.xml"
+    }
+}
+
+tasks.named('sonar').configure {
+    dependsOn 'test', 'jacocoTestReport', 'spotbugsMain', 'spotbugsTest'
 }
 
 def depUpdateIsUnstable = { String version ->

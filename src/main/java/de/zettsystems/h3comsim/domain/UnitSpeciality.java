@@ -24,7 +24,7 @@ public enum UnitSpeciality {
     ANGEL_RACE(SPECIAL),
     DEVIL_RACE(SPECIAL),
 
-    // TODO not yet evaluated by the engine
+    // Not yet evaluated by the engine — defined for unit catalog tagging only.
     IMMUNE_TO_BLIND(DEFENSE),
     PARALYZING_VENOM(AFTER_ATTACK),
     TITAN_HATE(ATTACK),

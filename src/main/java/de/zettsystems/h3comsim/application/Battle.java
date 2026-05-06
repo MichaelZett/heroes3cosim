@@ -82,14 +82,14 @@ public final class Battle {
     private void takeAction(Stack active, Stack opponent, Battlefield battlefield) {
         Action action = autoSolver.decide(active, opponent, battlefield);
         switch (action) {
-            case Action.Wait ignored -> BattleLogger.logWait(active.getName());
-            case Action.Move move -> moveTo(active, move.destination());
-            case Action.MoveAndMelee moveAndMelee -> {
-                moveTo(active, moveAndMelee.destination());
-                meleeAttack(active, moveAndMelee.target());
+            case Action.Wait() -> BattleLogger.logWait(active.getName());
+            case Action.Move(Hex destination) -> moveTo(active, destination);
+            case Action.MoveAndMelee(Hex destination, Stack target) -> {
+                moveTo(active, destination);
+                meleeAttack(active, target);
             }
-            case Action.Melee melee -> meleeAttack(active, melee.target());
-            case Action.Shoot shoot -> rangedAttack(active, shoot.target());
+            case Action.Melee(Stack target) -> meleeAttack(active, target);
+            case Action.Shoot(Stack target) -> rangedAttack(active, target);
         }
     }
 
