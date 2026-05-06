@@ -48,6 +48,8 @@ test {
     finalizedBy jacocoTestReport
 }
 
+
+import com.github.spotbugs.snom.SpotBugsTask
 import net.ltgt.gradle.errorprone.CheckSeverity
 
 tasks.withType(JavaCompile).configureEach {
@@ -70,7 +72,8 @@ spotbugs {
     excludeFilter = file('config/spotbugs/exclude.xml')
 }
 
-tasks.withType(com.github.spotbugs.snom.SpotBugsTask).configureEach {
+//noinspection GroovyAssignabilityCheck
+tasks.withType(SpotBugsTask).configureEach {
     reports {
         html { required = true }
         sarif { required = true }
@@ -101,6 +104,7 @@ def depUpdateIsMajorBump = { String current, String candidate ->
     return cur.isInteger() && cand.isInteger() && cand.toInteger() > cur.toInteger()
 }
 dependencyUpdates {
+    //noinspection GroovyAssignabilityCheck
     rejectVersionIf { selection ->
         def allowUnstable = project.hasProperty('unstable')
         def allowMajor = project.hasProperty('major')
