@@ -16,7 +16,7 @@ public record Battlefield(int width, int height) {
      */
     public Hex moveToward(Hex from, Hex target, int maxHexes) {
         int distance = from.distanceTo(target);
-        int hexesToMove = Math.min(maxHexes, Math.max(0, distance - 1));
+        int hexesToMove = Math.clamp(distance - 1L, 0, maxHexes);
         if (hexesToMove == 0) {
             return from;
         }

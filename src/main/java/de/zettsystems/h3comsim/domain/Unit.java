@@ -6,24 +6,51 @@ import java.util.stream.Collectors;
 
 public record Unit(
         String name,
-        int attack,
-        int defense,
-        int health,
-        int speed,
-        int minDamage,
-        int maxDamage,
+        Stats stats,
+        Combat combat,
         Movement movement,
-        int shots,
         int cost,
-        AttackType attackType,
         Set<UnitSpeciality> specialities
 ) {
     public Unit {
         Objects.requireNonNull(name, "name");
+        Objects.requireNonNull(stats, "stats");
+        Objects.requireNonNull(combat, "combat");
         Objects.requireNonNull(movement, "movement");
-        Objects.requireNonNull(attackType, "attackType");
         Objects.requireNonNull(specialities, "specialities");
         specialities = Set.copyOf(specialities);
+    }
+
+    public int attack() {
+        return stats.attack();
+    }
+
+    public int defense() {
+        return stats.defense();
+    }
+
+    public int health() {
+        return stats.health();
+    }
+
+    public int speed() {
+        return stats.speed();
+    }
+
+    public int minDamage() {
+        return combat.minDamage();
+    }
+
+    public int maxDamage() {
+        return combat.maxDamage();
+    }
+
+    public int shots() {
+        return combat.shots();
+    }
+
+    public AttackType attackType() {
+        return combat.attackType();
     }
 
     public int morale() {
@@ -42,7 +69,7 @@ public record Unit(
 
     public boolean hasPenality(AttackType usedAttackType) {
         if (usedAttackType == AttackType.HAND_TO_HAND) {
-            return attackType == AttackType.LONG_RANGE
+            return attackType() == AttackType.LONG_RANGE
                     && !hasSpeciality(UnitSpeciality.NO_HAND_TO_HAND_PENALTY);
         }
         return false;
