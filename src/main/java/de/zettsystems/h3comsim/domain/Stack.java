@@ -18,6 +18,8 @@ public class Stack {
     private int petrifiedCounter;
     private boolean cursed;
     private int cursedCounter;
+    private boolean poisoned;
+    private int poisonedCounter;
 
     public Stack(Unit unit, int count, Hex position) {
         if (count < 0) {
@@ -38,7 +40,7 @@ public class Stack {
         return position;
     }
 
-    public void setPosition(Hex position) {
+    public void moveTo(Hex position) {
         this.position = Objects.requireNonNull(position, "position");
     }
 
@@ -121,13 +123,15 @@ public class Stack {
         return false;
     }
 
-    public void retrieveDamage(int baseDamage, Set<UnitSpeciality> attackerSpecialities) {
+    public void takeDamage(int baseDamage, Set<UnitSpeciality> attackerSpecialities) {
         int realDamage = baseDamage;
         boolean angelHate = unit.hasSpeciality(UnitSpeciality.ANGEL_RACE)
                 && attackerSpecialities.contains(UnitSpeciality.ANGEL_HATE);
         boolean devilHate = unit.hasSpeciality(UnitSpeciality.DEVIL_RACE)
                 && attackerSpecialities.contains(UnitSpeciality.DEVIL_HATE);
-        if (angelHate || devilHate) {
+        boolean titanHate = unit.hasSpeciality(UnitSpeciality.TITAN_RACE)
+                && attackerSpecialities.contains(UnitSpeciality.TITAN_HATE);
+        if (angelHate || devilHate || titanHate) {
             realDamage = (int) Math.round(1.5 * realDamage);
             LOG.info("Stack von {} wird vom Gegner gehasst, bekommt 1,5x Schaden.", getName());
         }
@@ -139,11 +143,10 @@ public class Stack {
         }
     }
 
-    public void retrieveDamageToDeath() {
-        if (aliveCount > 0) {
-            aliveCount--;
-            topUnitCurrentHealth = aliveCount > 0 ? unit.health() : 0;
-        }
+    public void loseTopCreatures(int killCount) {
+        int actualKills = Math.min(killCount, aliveCount);
+        aliveCount -= actualKills;
+        topUnitCurrentHealth = aliveCount > 0 ? unit.health() : 0;
     }
 
     public void petrify() {
@@ -156,12 +159,27 @@ public class Stack {
         cursedCounter = 3;
     }
 
+    public void poison() {
+        poisoned = true;
+        poisonedCounter = 3;
+    }
+
+    public boolean isPoisoned() {
+        return poisoned;
+    }
+
     public void endTurn() {
         if (petrifiedCounter > 0 && --petrifiedCounter == 0) {
             unpetrify();
         }
         if (cursedCounter > 0 && --cursedCounter == 0) {
             uncurse();
+        }
+        if (poisonedCounter > 0) {
+            applyPoisonTick();
+            if (--poisonedCounter == 0) {
+                unpoison();
+            }
         }
     }
 
@@ -205,5 +223,20 @@ public class Stack {
         petrified = false;
         petrifiedCounter = 0;
         LOG.info("{} wurde entsteinert.", getName());
+    }
+
+    private void unpoison() {
+        poisoned = false;
+        poisonedCounter = 0;
+        LOG.info("{} ist nicht mehr vergiftet.", getName());
+    }
+
+    private void applyPoisonTick() {
+        if (!isAlive()) {
+            return;
+        }
+        int loss = unit.health() / 2;
+        LOG.info("{} verliert {} Gesundheit durch Gift.", getName(), loss);
+        applyDamage(loss);
     }
 }

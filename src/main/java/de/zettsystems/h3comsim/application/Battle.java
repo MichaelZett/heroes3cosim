@@ -64,14 +64,9 @@ public final class Battle {
             if (activeStack.isAbleToAct() && setup.bothAlive()) {
                 Stack opponent = setup.getTarget(activeStack);
                 takeAction(activeStack, opponent, battlefield);
-                if (activeStack.isAbleToAct() && opponent.isAlive()) {
-                    if (activeStack.hasSpeciality(UnitSpeciality.TWO_BLOWS)) {
-                        BattleLogger.logTwoBlows(activeStack.getName());
-                        takeAction(activeStack, opponent, battlefield);
-                    } else if (activeStack.hasGoodMorale(rng)) {
-                        BattleLogger.logGoodMorale(activeStack.getName());
-                        takeAction(activeStack, opponent, battlefield);
-                    }
+                if (activeStack.isAbleToAct() && opponent.isAlive() && activeStack.hasGoodMorale(rng)) {
+                    BattleLogger.logGoodMorale(activeStack.getName());
+                    takeAction(activeStack, opponent, battlefield);
                 }
             }
             BattleLogger.logShortDelimiter();
@@ -96,11 +91,15 @@ public final class Battle {
     private void moveTo(Stack active, Hex destination) {
         Hex from = active.position();
         BattleLogger.logMove(active.getName(), from.q(), from.r(), destination.q(), destination.r());
-        active.setPosition(destination);
+        active.moveTo(destination);
     }
 
     private void meleeAttack(Stack active, Stack passive) {
         dealDamage(active, passive, AttackType.HAND_TO_HAND);
+        if (active.hasSpeciality(UnitSpeciality.TWO_BLOWS) && passive.isAlive()) {
+            BattleLogger.logTwoBlows(active.getName());
+            dealDamage(active, passive, AttackType.HAND_TO_HAND);
+        }
         if (active.hasSpeciality(UnitSpeciality.NO_RETALIATION)) {
             BattleLogger.logImmuneToRetaliation(active.getName());
         } else if (passive.isAbleToAct() && passive.position().isAdjacent(active.position())) {
@@ -114,6 +113,13 @@ public final class Battle {
                 active.position().distanceTo(passive.position()));
         dealDamage(active, passive, AttackType.LONG_RANGE);
         active.useShot();
+        if (active.hasSpeciality(UnitSpeciality.TWO_SHOTS) && active.canShoot() && passive.isAlive()) {
+            BattleLogger.logTwoShots(active.getName());
+            BattleLogger.logShoot(active.getName(), passive.getName(),
+                    active.position().distanceTo(passive.position()));
+            dealDamage(active, passive, AttackType.LONG_RANGE);
+            active.useShot();
+        }
     }
 
     private void dealDamage(Stack active, Stack passive, AttackType attackType) {
@@ -122,13 +128,14 @@ public final class Battle {
         int realDamage = (currentDamage * (100 + boniMaliPercentage)) / 100;
 
         BattleLogger.logAttack(active.getName(), passive.getName());
-        passive.retrieveDamage(realDamage, active.getAttackerSpecialities());
+        passive.takeDamage(realDamage, active.getAttackerSpecialities());
 
         if (passive.isAlive()) {
-            doDeathStare(active, passive);
-            doThunderbolts(active, passive);
+            doDeathStare(active, passive, attackType);
+            doThunderbolts(active, passive, attackType);
             doPetrifying(active, passive);
             doCursing(active, passive);
+            doPoisoning(active, passive);
             if (passive.isAlive()) {
                 BattleLogger.logRemainingHealth(passive.getName(), passive.getCurrentHealth());
             } else {
@@ -139,17 +146,37 @@ public final class Battle {
         }
     }
 
-    private void doDeathStare(Stack active, Stack target) {
+    private void doDeathStare(Stack active, Stack target, AttackType attackType) {
+        // H3: Death Stare triggert nur bei Nahkampf.
+        if (attackType != AttackType.HAND_TO_HAND) {
+            return;
+        }
         if (active.hasSpeciality(UnitSpeciality.DEATH_STARE) && rng.nextInt(100) < 10) {
-            target.retrieveDamageToDeath();
-            BattleLogger.logDeathStare(active.getName(), target.getName());
+            int kills = Math.max(1, active.getCount() / 10);
+            target.loseTopCreatures(kills);
+            BattleLogger.logDeathStare(active.getName(), target.getName(), kills);
         }
     }
 
-    private void doThunderbolts(Stack active, Stack target) {
-        if (active.hasSpeciality(UnitSpeciality.THUNDERBOLTS) && rng.nextInt(100) < 20) {
-            target.retrieveDamage(10, active.getAttackerSpecialities());
-            BattleLogger.logThunderbolting(active.getName(), target.getName(), target.getCurrentHealth());
+    private void doThunderbolts(Stack active, Stack target, AttackType attackType) {
+        // H3: Thunderbolts triggern nur bei Nahkampf.
+        if (attackType != AttackType.HAND_TO_HAND) {
+            return;
+        }
+        if (!active.hasSpeciality(UnitSpeciality.THUNDERBOLTS)) {
+            return;
+        }
+        int hits = 0;
+        int count = active.getCount();
+        for (int i = 0; i < count; i++) {
+            if (rng.nextInt(100) < 20) {
+                hits++;
+            }
+        }
+        if (hits > 0) {
+            int damage = hits * 10;
+            target.takeDamage(damage, active.getAttackerSpecialities());
+            BattleLogger.logThunderbolting(active.getName(), target.getName(), damage, target.getCurrentHealth());
         }
     }
 
@@ -164,6 +191,13 @@ public final class Battle {
         if (active.hasSpeciality(UnitSpeciality.CURSING) && rng.nextInt(100) < 20) {
             target.curse();
             BattleLogger.logCurse(active.getName(), target.getName());
+        }
+    }
+
+    private void doPoisoning(Stack active, Stack target) {
+        if (active.hasSpeciality(UnitSpeciality.POISONOUS) && rng.nextInt(100) < 25) {
+            target.poison();
+            BattleLogger.logPoisoning(active.getName(), target.getName());
         }
     }
 

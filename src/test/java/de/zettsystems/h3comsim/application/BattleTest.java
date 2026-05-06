@@ -48,6 +48,21 @@ class BattleTest {
         assertThat(setup.getAttacker().shotsRemaining()).isLessThan(initialShots);
     }
 
+    @Test
+    void marksman_with_two_shots_consumes_two_shots_per_turn() {
+        BattleSetup setup = new BattleSetup(UnitCatalog.MARKSMAN, 1, UnitCatalog.PIKEMAN, 50);
+
+        int initialShots = setup.getAttacker().shotsRemaining();
+        BattleResult result = new Battle(new Random(11L)).simulate(setup);
+        int shotsUsed = initialShots - setup.getAttacker().shotsRemaining();
+
+        // Marksman shoots from start (distance 14, ranged). Two shots per turn means
+        // shotsUsed grows by 2 per turn — must therefore be even.
+        assertThat(shotsUsed).isPositive();
+        assertThat(shotsUsed % 2).isZero();
+        assertThat(result.turnsTaken()).isPositive();
+    }
+
     private BattleResult simulate(Unit attackerUnit, int attackerCount,
                                   Unit defenderUnit, int defenderCount,
                                   long seed) {
