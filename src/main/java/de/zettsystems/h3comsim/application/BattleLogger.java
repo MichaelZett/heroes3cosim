@@ -49,8 +49,9 @@ public final class BattleLogger {
         LOG.info("Stack von {} schlaegt zurueck.", name);
     }
 
-    static void logDeathStare(String attackerName, String defenderName) {
-        LOG.info("Stack von {} toetet 1 Einheit vom Stack von {} durch Death Stare.", attackerName, defenderName);
+    static void logDeathStare(String attackerName, String defenderName, int kills) {
+        LOG.info("Stack von {} toetet {} Einheit(en) vom Stack von {} durch Death Stare.",
+                attackerName, kills, defenderName);
     }
 
     static void logCurse(String currentAttacker, String currentDefender) {
@@ -61,10 +62,18 @@ public final class BattleLogger {
         LOG.info("Stack von {} versteinert Stack von {}.", attackerName, defenderName);
     }
 
-    static void logThunderbolting(String attackerName, String defenderName, int currentDefenderCurrentHealth) {
-        LOG.info("Stack von {} fuegt zusaetzlich 10 Schaden durch Thunderbolts zu. " +
+    static void logThunderbolting(String attackerName, String defenderName, int damage, int currentDefenderCurrentHealth) {
+        LOG.info("Stack von {} fuegt zusaetzlich {} Schaden durch Thunderbolts zu. " +
                         "Oberste Einheit vom Stack von {} hat noch {} Gesundheit.",
-                attackerName, defenderName, currentDefenderCurrentHealth);
+                attackerName, damage, defenderName, currentDefenderCurrentHealth);
+    }
+
+    static void logPoisoning(String attackerName, String defenderName) {
+        LOG.info("Stack von {} vergiftet Stack von {}.", attackerName, defenderName);
+    }
+
+    static void logTwoShots(String name) {
+        LOG.info("Stack von {} schiesst ein zweites Mal.", name);
     }
 
     static void logShortDelimiter() {

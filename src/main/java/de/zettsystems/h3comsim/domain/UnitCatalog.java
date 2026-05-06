@@ -29,12 +29,13 @@ import static de.zettsystems.h3comsim.domain.UnitSpeciality.MOVE_BACK;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.NO_HAND_TO_HAND_PENALTY;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.NO_OBSTACLE_PENALTY;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.NO_RETALIATION;
-import static de.zettsystems.h3comsim.domain.UnitSpeciality.PARALYZING_VENOM;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.PETRYFYING;
+import static de.zettsystems.h3comsim.domain.UnitSpeciality.POISONOUS;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.RESURRECTION;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.SPELL_COST_REDUCTION;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.THUNDERBOLTS;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.TITAN_HATE;
+import static de.zettsystems.h3comsim.domain.UnitSpeciality.TITAN_RACE;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.TWO_BLOWS;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.TWO_SHOTS;
 
@@ -97,11 +98,11 @@ public final class UnitCatalog {
     public static final Unit PIT_FIEND = unit("Pit Fiend", new Stats(13, 13, 45, 6), melee(13, 17), GROUND, 500);
     public static final Unit RED_DRAGON = unit("Red Dragon", new Stats(19, 19, 180, 11), melee(40, 50), FLYING, 2500, IMMUNE_TO_SPELLS_BELOW_4);
     public static final Unit ROYAL_GRIFFIN = unit("Royal Griffin", new Stats(9, 9, 25, 9), melee(3, 6), FLYING, 240, COUNERSTRIKE_UNLIMITED);
-    public static final Unit SCORPICORE = unit("Scorpicore", new Stats(16, 14, 80, 11), melee(14, 20), FLYING, 1050, PARALYZING_VENOM);
+    public static final Unit SCORPICORE = unit("Scorpicore", new Stats(16, 14, 80, 11), melee(14, 20), FLYING, 1050, PETRYFYING);
     public static final Unit SILVER_PEGASUS = unit("Silver Pegasus", new Stats(9, 10, 30, 12), melee(5, 9), FLYING, 275);
     public static final Unit SWORDSMAN = unit("Swordsman", new Stats(10, 12, 35, 5), melee(6, 9), GROUND, 300);
     public static final Unit THUNDERBIRD = unit("Thunderbird", new Stats(13, 11, 60, 11), melee(11, 15), FLYING, 700, THUNDERBOLTS);
-    public static final Unit TITAN = unit("Titan", new Stats(24, 24, 300, 11), ranged(40, 60, 24), GROUND, 5000, NO_HAND_TO_HAND_PENALTY);
+    public static final Unit TITAN = unit("Titan", new Stats(24, 24, 300, 11), ranged(40, 60, 24), GROUND, 5000, NO_HAND_TO_HAND_PENALTY, TITAN_RACE);
     public static final Unit TROGLODYTE = unit("Troglodyte", new Stats(4, 3, 5, 4), melee(1, 3), GROUND, 50, IMMUNE_TO_BLIND);
     public static final Unit UNICORN = unit("Unicorn", new Stats(15, 14, 90, 7), melee(18, 22), GROUND, 850);
     public static final Unit VAMPIRE = unit("Vampire", new Stats(10, 9, 30, 6), melee(5, 8), FLYING, 360, NO_RETALIATION);
@@ -109,7 +110,7 @@ public final class UnitCatalog {
     public static final Unit WAR_UNICORN = unit("War Unicorn", new Stats(15, 14, 110, 9), melee(18, 22), GROUND, 950);
     public static final Unit WOLF_RAIDER = unit("Wolf Raider", new Stats(8, 5, 10, 8), melee(3, 4), GROUND, 140, TWO_BLOWS);
     public static final Unit WOOD_ELF = unit("Wood Elf", new Stats(9, 5, 15, 6), ranged(3, 5, 24), GROUND, 200);
-    public static final Unit WYVERN_MONARCH = unit("Wyvern Monarch", new Stats(14, 14, 70, 11), melee(18, 22), FLYING, 1100, PARALYZING_VENOM);
+    public static final Unit WYVERN_MONARCH = unit("Wyvern Monarch", new Stats(14, 14, 70, 11), melee(18, 22), FLYING, 1100, POISONOUS);
     public static final Unit ZEALOT = unit("Zealot", new Stats(12, 10, 30, 7), ranged(10, 12, 24), GROUND, 450, NO_HAND_TO_HAND_PENALTY);
 
     private static final List<Unit> ALL = List.of(
