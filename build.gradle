@@ -55,11 +55,16 @@ import net.ltgt.gradle.errorprone.CheckSeverity
 
 tasks.withType(JavaCompile).configureEach {
     options.errorprone {
+        disableWarningsInGeneratedCode = true
         nullaway {
             severity = CheckSeverity.ERROR
             annotatedPackages.add("de.zettsystems.h3comsim")
         }
     }
+}
+
+tasks.named("compileJava").configure {
+    options.compilerArgs << '-Werror'
 }
 
 tasks.named("compileTestJava") {
@@ -69,7 +74,6 @@ tasks.named("compileTestJava") {
 spotbugs {
     effort = 'MAX'
     reportLevel = 'LOW'
-    ignoreFailures = true
     excludeFilter = file('config/spotbugs/exclude.xml')
 }
 
