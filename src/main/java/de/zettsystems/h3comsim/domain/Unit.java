@@ -10,6 +10,7 @@ public record Unit(
         Combat combat,
         Movement movement,
         int cost,
+        Faction faction,
         Set<UnitSpeciality> specialities
 ) {
     public Unit {
@@ -17,6 +18,7 @@ public record Unit(
         Objects.requireNonNull(stats, "stats");
         Objects.requireNonNull(combat, "combat");
         Objects.requireNonNull(movement, "movement");
+        Objects.requireNonNull(faction, "faction");
         Objects.requireNonNull(specialities, "specialities");
         specialities = Set.copyOf(specialities);
     }
