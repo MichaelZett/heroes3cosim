@@ -249,4 +249,60 @@ class StackTest {
 
         assertThat(ghostDragon.getCurrentHealth()).isEqualTo(healthAfterAging - 50);
     }
+
+    @Test
+    void efreet_sultan_fire_shield_returns_20_percent_of_damage() {
+        Stack efreet = new Stack(UnitCatalog.EFREET_SULTAN, 1, ORIGIN);
+
+        assertThat(efreet.fireShieldDamageFor(100)).isEqualTo(20);
+        assertThat(efreet.fireShieldDamageFor(50)).isEqualTo(10);
+    }
+
+    @Test
+    void unit_without_fire_shield_returns_zero() {
+        Stack pikeman = new Stack(UnitCatalog.PIKEMAN, 1, ORIGIN);
+
+        assertThat(pikeman.fireShieldDamageFor(100)).isZero();
+    }
+
+    @Test
+    void phoenix_revives_with_20_percent_of_start_count_on_first_death() {
+        Stack phoenix = new Stack(UnitCatalog.PHOENIX, 10, ORIGIN);
+
+        phoenix.takeDamage(10_000, Set.of());
+
+        assertThat(phoenix.isAlive()).isTrue();
+        assertThat(phoenix.getCount()).isEqualTo(2);
+        assertThat(phoenix.getCurrentHealth()).isEqualTo(UnitCatalog.PHOENIX.health());
+    }
+
+    @Test
+    void phoenix_revives_only_once_per_battle() {
+        Stack phoenix = new Stack(UnitCatalog.PHOENIX, 10, ORIGIN);
+        phoenix.takeDamage(10_000, Set.of());
+        assertThat(phoenix.getCount()).isPositive();
+
+        phoenix.takeDamage(10_000, Set.of());
+
+        assertThat(phoenix.isAlive()).isFalse();
+        assertThat(phoenix.getCount()).isZero();
+    }
+
+    @Test
+    void phoenix_revives_at_least_one_unit_for_small_start_counts() {
+        Stack phoenix = new Stack(UnitCatalog.PHOENIX, 3, ORIGIN);
+
+        phoenix.takeDamage(10_000, Set.of());
+
+        assertThat(phoenix.getCount()).isEqualTo(1);
+    }
+
+    @Test
+    void firebird_without_rebirth_marker_stays_dead() {
+        Stack firebird = new Stack(UnitCatalog.FIREBIRD, 5, ORIGIN);
+
+        firebird.takeDamage(10_000, Set.of());
+
+        assertThat(firebird.isAlive()).isFalse();
+    }
 }

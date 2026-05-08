@@ -8,6 +8,7 @@ import de.zettsystems.h3comsim.domain.UnitSpeciality;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Set;
 import java.util.random.RandomGenerator;
 
 public final class Battle {
@@ -101,14 +102,28 @@ public final class Battle {
     }
 
     private void meleeAttack(Stack active, Stack passive, int hexesMoved) {
-        dealDamage(active, passive, AttackType.HAND_TO_HAND, hexesMoved);
+        int dealt = dealDamage(active, passive, AttackType.HAND_TO_HAND, hexesMoved);
+        applyFireShield(active, passive, dealt);
         triggerRetaliation(active, passive);
         if (active.hasSpeciality(UnitSpeciality.TWO_BLOWS) && passive.isAlive() && active.isAlive()) {
             BattleLogger.logTwoBlows(active.getName());
             // Second blow does not gain Jousting-Bonus — kein erneutes Anfahren.
-            dealDamage(active, passive, AttackType.HAND_TO_HAND, 0);
+            int dealtSecond = dealDamage(active, passive, AttackType.HAND_TO_HAND, 0);
+            applyFireShield(active, passive, dealtSecond);
             triggerRetaliation(active, passive);
         }
+    }
+
+    private void applyFireShield(Stack active, Stack passive, int damageDealt) {
+        if (damageDealt <= 0 || !active.isAlive()) {
+            return;
+        }
+        int reverse = passive.fireShieldDamageFor(damageDealt);
+        if (reverse <= 0) {
+            return;
+        }
+        BattleLogger.logFireShield(passive.getName(), active.getName(), reverse);
+        active.takeDamage(reverse, Set.of());
     }
 
     private void triggerRetaliation(Stack active, Stack passive) {
@@ -142,7 +157,7 @@ public final class Battle {
         }
     }
 
-    private void dealDamage(Stack active, Stack passive, AttackType attackType, int hexesMoved) {
+    private int dealDamage(Stack active, Stack passive, AttackType attackType, int hexesMoved) {
         int currentDamage = active.calculateCurrentDamage(attackType, hexesMoved, rng);
         int effectiveDefense = passive.effectiveDefenseAgainst(active.getAttackerSpecialities());
         int boniMaliPercentage = active.calculateAttackBoniMaliPercentage(effectiveDefense);
@@ -167,6 +182,7 @@ public final class Battle {
         } else {
             BattleLogger.logLastUnitDead(passive.getName());
         }
+        return realDamage;
     }
 
     private void doDeathStare(Stack active, Stack target, AttackType attackType) {

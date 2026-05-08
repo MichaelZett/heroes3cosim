@@ -35,6 +35,7 @@ import static de.zettsystems.h3comsim.domain.UnitSpeciality.DEFENSE_REDUCTION_80
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.DEVIL_HATE;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.DEVIL_RACE;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.DISEASES;
+import static de.zettsystems.h3comsim.domain.UnitSpeciality.FIRE_SHIELD;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.GOOD_ARMY_MORALE;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.GOOD_MORALE;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.IMMUNE_TO_BLIND;
@@ -47,6 +48,7 @@ import static de.zettsystems.h3comsim.domain.UnitSpeciality.NO_OBSTACLE_PENALTY;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.NO_RETALIATION;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.PETRYFYING;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.POISONOUS;
+import static de.zettsystems.h3comsim.domain.UnitSpeciality.REBIRTH;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.REGENERATION;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.RESURRECTION;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.SPELL_COST_REDUCTION;
@@ -90,7 +92,7 @@ public final class UnitCatalog {
     public static final Unit DWARF = unit("Dwarf", new Stats(6, 7, 20, 3), melee(2, 4), GROUND, RAMPART, 120);
     public static final Unit EARTH_ELEMENTAL = unit("Earth Elemental", new Stats(10, 10, 40, 4), melee(4, 8), GROUND, CONFLUX, 400);
     public static final Unit EFREET = unit("Efreet", new Stats(16, 12, 90, 9), melee(16, 24), FLYING, INFERNO, 900);
-    public static final Unit EFREET_SULTAN = unit("Efreet Sultan", new Stats(16, 14, 90, 13), melee(16, 24), FLYING, INFERNO, 1100);
+    public static final Unit EFREET_SULTAN = unit("Efreet Sultan", new Stats(16, 14, 90, 13), melee(16, 24), FLYING, INFERNO, 1100, FIRE_SHIELD);
     public static final Unit ENERGY_ELEMENTAL = unit("Energy Elemental", new Stats(12, 8, 35, 8), melee(4, 6), FLYING, CONFLUX, 400);
     public static final Unit EVIL_EYE = unit("Evil Eye", new Stats(10, 8, 22, 7), ranged(3, 5, 24), GROUND, DUNGEON, 280, NO_HAND_TO_HAND_PENALTY);
     public static final Unit FAMILIAR = unit("Familiar", new Stats(4, 4, 4, 7), melee(1, 2), GROUND, INFERNO, 60);
@@ -147,7 +149,7 @@ public final class UnitCatalog {
     public static final Unit ORC_CHIEFTAIN = unit("Orc Chieftain", new Stats(8, 4, 20, 5), ranged(2, 5, 24), GROUND, STRONGHOLD, 165);
     public static final Unit PEASANT = unit("Peasant", new Stats(1, 1, 1, 3), melee(1, 1), GROUND, NEUTRAL, 10);
     public static final Unit PEGASUS = unit("Pegasus", new Stats(9, 8, 30, 8), melee(5, 9), FLYING, RAMPART, 250);
-    public static final Unit PHOENIX = unit("Phoenix", new Stats(21, 18, 200, 21), melee(30, 40), FLYING, CONFLUX, 2000, RESURRECTION);
+    public static final Unit PHOENIX = unit("Phoenix", new Stats(21, 18, 200, 21), melee(30, 40), FLYING, CONFLUX, 2000, REBIRTH);
     public static final Unit PIKEMAN = unit("Pikeman", new Stats(4, 5, 10, 4), melee(1, 3), GROUND, CASTLE, 60);
     public static final Unit PIT_FIEND = unit("Pit Fiend", new Stats(13, 13, 45, 6), melee(13, 17), GROUND, INFERNO, 500);
     public static final Unit PIXIE = unit("Pixie", new Stats(2, 2, 3, 7), melee(1, 2), FLYING, CONFLUX, 25);
