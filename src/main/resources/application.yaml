@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: heroes3-combat-simulator
+
+server:
+  shutdown: graceful
+  compression:
+    enabled: true
+    mime-types: application/json
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  info:
+    build:
+      enabled: true
+    git:
+      enabled: true
+      mode: simple
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    de.zettsystems.h3comsim: INFO

@@ -2,6 +2,8 @@ plugins {
     id 'java'
     id 'application'
     id 'jacoco'
+    id "org.springframework.boot" version "${springBootVersion}"
+    id "io.spring.dependency-management" version "${springDependencyManagementVersion}"
     id "com.github.ben-manes.versions" version "${benmanesVersion}"
     id "net.ltgt.errorprone" version "${errorpronePluginVersion}"
     id "net.ltgt.nullaway" version "${nullawayPluginVersion}"
@@ -27,6 +29,9 @@ repositories {
 }
 
 dependencies {
+    implementation "org.springframework.boot:spring-boot-starter-web"
+    implementation "org.springframework.boot:spring-boot-starter-validation"
+    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
     implementation "com.google.guava:guava:${guavaVersion}"
     implementation "org.slf4j:slf4j-api:${slf4jVersion}"
     implementation "ch.qos.logback:logback-core:${logbackVersion}"
@@ -35,11 +40,12 @@ dependencies {
 
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+    annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
 
     errorprone "com.google.errorprone:error_prone_core:${errorproneVersion}"
     errorprone "com.uber.nullaway:nullaway:${nullawayVersion}"
 
-    testImplementation "org.junit.jupiter:junit-jupiter:${junitVersion}"
+    testImplementation "org.springframework.boot:spring-boot-starter-test"
     testImplementation "org.assertj:assertj-core:${assertjVersion}"
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }

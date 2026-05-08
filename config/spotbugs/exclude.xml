@@ -20,6 +20,13 @@
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
     </Match>
 
+    <!-- DTO-Records am REST-Boundary: Listen/Sets durchgereicht ohne Defensiv-Kopie,
+         Jackson serialisiert sie ohnehin direkt zu JSON. -->
+    <Match>
+        <Class name="~.*\.adapter\.web\.dto\..*"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+
     <!-- Konstruktor-Validation per IllegalArgumentException ist gewollt; CT_CONSTRUCTOR_THROW
          meldet das pauschal. -->
     <Match>
