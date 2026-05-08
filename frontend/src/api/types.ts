@@ -65,12 +65,41 @@ export interface StackSnapshot {
 
 // Discriminated Union — mirror BattleEvent sealed interface mit `type`-Discriminator.
 export type BattleEvent =
-  | { type: 'BattleStart'; battlefieldWidth: number; battlefieldHeight: number; attacker: StackSnapshot; defender: StackSnapshot }
+    | {
+    type: 'BattleStart';
+    battlefieldWidth: number;
+    battlefieldHeight: number;
+    attacker: StackSnapshot;
+    defender: StackSnapshot;
+}
   | { type: 'Move'; actor: Side; fromQ: number; fromR: number; toQ: number; toR: number }
   | { type: 'Wait'; actor: Side }
-  | { type: 'Shoot'; actor: Side; target: Side; distance: number; damage: number; killed: number; targetAfter: StackSnapshot }
-  | { type: 'Melee'; actor: Side; target: Side; hexesMoved: number; damage: number; killed: number; targetAfter: StackSnapshot }
-  | { type: 'Retaliation'; retaliator: Side; target: Side; damage: number; killed: number; targetAfter: StackSnapshot }
+    | {
+    type: 'Shoot';
+    actor: Side;
+    target: Side;
+    distance: number;
+    damage: number;
+    killed: number;
+    targetAfter: StackSnapshot;
+}
+    | {
+    type: 'Melee';
+    actor: Side;
+    target: Side;
+    hexesMoved: number;
+    damage: number;
+    killed: number;
+    targetAfter: StackSnapshot;
+}
+    | {
+    type: 'Retaliation';
+    retaliator: Side;
+    target: Side;
+    damage: number;
+    killed: number;
+    targetAfter: StackSnapshot;
+}
   | { type: 'TwoBlows'; actor: Side }
   | { type: 'TwoShots'; actor: Side }
   | { type: 'GoodMorale'; actor: Side }
@@ -82,9 +111,21 @@ export type BattleEvent =
   | { type: 'Poisoning'; actor: Side; target: Side }
   | { type: 'Diseasing'; actor: Side; target: Side }
   | { type: 'Aging'; actor: Side; target: Side }
-  | { type: 'FireShield'; shielded: Side; attacker: Side; damage: number; attackerAfter: StackSnapshot }
+    | {
+    type: 'FireShield';
+    shielded: Side;
+    attacker: Side;
+    damage: number;
+    attackerAfter: StackSnapshot;
+}
   | { type: 'Rebirth'; actor: Side; restoredCount: number; actorAfter: StackSnapshot }
-  | { type: 'BattleEnd'; winner: Winner; attackerSurvivors: number; defenderSurvivors: number; turns: number };
+    | {
+    type: 'BattleEnd';
+    winner: Winner;
+    attackerSurvivors: number;
+    defenderSurvivors: number;
+    turns: number;
+};
 
 export interface BattleSimulationDto {
   result: BattleResult;

@@ -1,5 +1,5 @@
-import type { SideState } from './state';
-import { hexToPixel, HEX_SIZE } from './hex';
+import type {SideState} from './state';
+import {HEX_SIZE, hexToPixel} from './hex';
 
 interface StackTokenProps {
   side: SideState;
@@ -45,12 +45,7 @@ export default function StackToken({ side, color, transitionMs }: StackTokenProp
       </text>
       <g transform={`translate(${-barWidth / 2}, ${radius + 2})`}>
         <rect width={barWidth} height={barHeight} fill="rgb(30 41 59)" rx={1} />
-        <rect
-          width={barWidth * hpRatio}
-          height={barHeight}
-          fill={COLOR_FILL[color]}
-          rx={1}
-        />
+          <rect width={barWidth * hpRatio} height={barHeight} fill={COLOR_FILL[color]} rx={1}/>
       </g>
     </g>
   );
