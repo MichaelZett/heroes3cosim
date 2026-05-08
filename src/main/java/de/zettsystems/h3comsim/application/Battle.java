@@ -157,6 +157,8 @@ public final class Battle {
             doPetrifying(active, passive);
             doCursing(active, passive);
             doPoisoning(active, passive);
+            doDiseasing(active, passive);
+            doAging(active, passive);
             if (passive.isAlive()) {
                 BattleLogger.logRemainingHealth(passive.getName(), passive.getCurrentHealth());
             } else {
@@ -219,6 +221,20 @@ public final class Battle {
         if (active.hasSpeciality(UnitSpeciality.POISONOUS) && rng.nextInt(100) < 25) {
             target.poison();
             BattleLogger.logPoisoning(active.getName(), target.getName());
+        }
+    }
+
+    private void doDiseasing(Stack active, Stack target) {
+        if (active.hasSpeciality(UnitSpeciality.DISEASES) && rng.nextInt(100) < 20) {
+            target.disease();
+            BattleLogger.logDiseasing(active.getName(), target.getName());
+        }
+    }
+
+    private void doAging(Stack active, Stack target) {
+        if (active.hasSpeciality(UnitSpeciality.AGING) && rng.nextInt(100) < 20) {
+            target.age();
+            BattleLogger.logAging(active.getName(), target.getName());
         }
     }
 

@@ -179,4 +179,74 @@ class StackTest {
         assertThat(againstBehemoth).isEqualTo(3);  // 5 × 0.6 = 3
         assertThat(againstAncient).isEqualTo(1);   // 5 × 0.2 = 1
     }
+
+    @Test
+    void wight_regenerates_top_creature_at_end_of_turn() {
+        Stack wights = new Stack(UnitCatalog.WIGHT, 5, ORIGIN);
+        // Wight HP 18, partial damage on top.
+        wights.takeDamage(10, Set.of());
+        assertThat(wights.getCurrentHealth()).isEqualTo(8);
+
+        wights.endTurn();
+
+        assertThat(wights.getCurrentHealth()).isEqualTo(UnitCatalog.WIGHT.health());
+        assertThat(wights.getCount()).isEqualTo(5);
+    }
+
+    @Test
+    void regeneration_does_not_revive_dead_stack() {
+        Stack wight = new Stack(UnitCatalog.WIGHT, 1, ORIGIN);
+        wight.takeDamage(100, Set.of());
+
+        wight.endTurn();
+
+        assertThat(wight.isAlive()).isFalse();
+        assertThat(wight.getCount()).isZero();
+    }
+
+    @Test
+    void diseased_stack_has_reduced_attack_and_defense() {
+        Stack pikemen = new Stack(UnitCatalog.PIKEMAN, 10, ORIGIN);
+
+        pikemen.disease();
+
+        assertThat(pikemen.isDiseased()).isTrue();
+        assertThat(pikemen.getAttack()).isEqualTo(UnitCatalog.PIKEMAN.attack() - 2);
+        assertThat(pikemen.getDefense()).isEqualTo(UnitCatalog.PIKEMAN.defense() - 2);
+    }
+
+    @Test
+    void disease_clears_after_three_turns() {
+        Stack pikemen = new Stack(UnitCatalog.PIKEMAN, 10, ORIGIN);
+        pikemen.disease();
+
+        pikemen.endTurn();
+        pikemen.endTurn();
+        pikemen.endTurn();
+
+        assertThat(pikemen.isDiseased()).isFalse();
+        assertThat(pikemen.getDefense()).isEqualTo(UnitCatalog.PIKEMAN.defense());
+    }
+
+    @Test
+    void aged_dragon_loses_half_of_current_top_health() {
+        Stack ghostDragon = new Stack(UnitCatalog.GHOST_DRAGON, 1, ORIGIN);
+        int before = ghostDragon.getCurrentHealth();
+
+        ghostDragon.age();
+
+        assertThat(ghostDragon.isAged()).isTrue();
+        assertThat(ghostDragon.getCurrentHealth()).isEqualTo(before / 2);
+    }
+
+    @Test
+    void aging_does_not_affect_max_hp_for_subsequent_damage_calc() {
+        Stack ghostDragon = new Stack(UnitCatalog.GHOST_DRAGON, 1, ORIGIN);
+        ghostDragon.age();
+        int healthAfterAging = ghostDragon.getCurrentHealth();
+
+        ghostDragon.takeDamage(50, Set.of());
+
+        assertThat(ghostDragon.getCurrentHealth()).isEqualTo(healthAfterAging - 50);
+    }
 }

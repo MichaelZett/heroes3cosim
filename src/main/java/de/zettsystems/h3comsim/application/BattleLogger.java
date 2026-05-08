@@ -95,4 +95,12 @@ public final class BattleLogger {
     static void logMoveBack(String name, int q, int r) {
         LOG.info("Stack von {} fliegt zurueck nach ({},{}).", name, q, r);
     }
+
+    static void logDiseasing(String attackerName, String defenderName) {
+        LOG.info("Stack von {} infiziert Stack von {} mit Krankheit.", attackerName, defenderName);
+    }
+
+    static void logAging(String attackerName, String defenderName) {
+        LOG.info("Stack von {} laesst Stack von {} altern.", attackerName, defenderName);
+    }
 }
