@@ -10,6 +10,7 @@ import java.util.random.RandomGenerator;
 public class Stack {
 
     private final Unit unit;
+    private final int startCount;
     private int aliveCount;
     private int topUnitCurrentHealth;
     private int shotsRemaining;
@@ -24,6 +25,7 @@ public class Stack {
     private boolean diseased;
     private int diseasedCounter;
     private boolean aged;
+    private boolean rebirthUsed;
 
     public Stack(Unit unit, int count, Hex position) {
         if (count < 0) {
@@ -31,6 +33,7 @@ public class Stack {
         }
         this.unit = Objects.requireNonNull(unit, "unit");
         this.position = Objects.requireNonNull(position, "position");
+        this.startCount = count;
         this.aliveCount = count;
         this.topUnitCurrentHealth = unit.health();
         this.shotsRemaining = unit.shots();
@@ -184,12 +187,32 @@ public class Stack {
         } else {
             applyDamage(realDamage);
         }
+        tryRebirth();
     }
 
     public void loseTopCreatures(int killCount) {
         int actualKills = Math.min(killCount, aliveCount);
         aliveCount -= actualKills;
         topUnitCurrentHealth = aliveCount > 0 ? unit.health() : 0;
+        tryRebirth();
+    }
+
+    public int fireShieldDamageFor(int incomingDamage) {
+        if (!unit.hasSpeciality(UnitSpeciality.FIRE_SHIELD)) {
+            return 0;
+        }
+        return (int) Math.round(incomingDamage * 0.2);
+    }
+
+    private void tryRebirth() {
+        if (aliveCount > 0 || rebirthUsed || !unit.hasSpeciality(UnitSpeciality.REBIRTH)) {
+            return;
+        }
+        int restored = Math.max(1, startCount / 5);
+        aliveCount = restored;
+        topUnitCurrentHealth = unit.health();
+        rebirthUsed = true;
+        LOG.info("{} wird durch Wiedergeburt mit {} Einheiten zurueckgebracht.", getName(), restored);
     }
 
     public void petrify() {

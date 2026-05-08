@@ -25,6 +25,8 @@ public enum UnitSpeciality {
     TWO_SHOTS(ATTACK),
     GOOD_MORALE(AFTER_ATTACK),
     REGENERATION(SPECIAL),
+    REBIRTH(SPECIAL),
+    FIRE_SHIELD(DEFENSE),
 
     // Race markers — set on the defender to enable hate-based damage modifiers from the attacker.
     ANGEL_RACE(SPECIAL),

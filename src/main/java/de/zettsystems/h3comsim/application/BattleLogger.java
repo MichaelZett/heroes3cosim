@@ -103,4 +103,9 @@ public final class BattleLogger {
     static void logAging(String attackerName, String defenderName) {
         LOG.info("Stack von {} laesst Stack von {} altern.", attackerName, defenderName);
     }
+
+    static void logFireShield(String shieldedName, String attackerName, int reverseDamage) {
+        LOG.info("Stack von {} reflektiert {} Schaden durch Feuerschild auf Stack von {}.",
+                shieldedName, reverseDamage, attackerName);
+    }
 }
