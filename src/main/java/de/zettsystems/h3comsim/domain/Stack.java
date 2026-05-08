@@ -20,6 +20,7 @@ public class Stack {
     private int cursedCounter;
     private boolean poisoned;
     private int poisonedCounter;
+    private int retaliationsThisTurn;
 
     public Stack(Unit unit, int count, Hex position) {
         if (count < 0) {
@@ -94,7 +95,7 @@ public class Stack {
         return unit.attackerSpecialities();
     }
 
-    public int calculateCurrentDamage(AttackType usedAttackType, RandomGenerator rng) {
+    public int calculateCurrentDamage(AttackType usedAttackType, int hexesMoved, RandomGenerator rng) {
         int baseValue = cursed ? unit.minDamage() : rng.nextInt(unit.minDamage(), unit.maxDamage() + 1);
         if (unit.hasPenality(usedAttackType)) {
             baseValue = (int) Math.round(0.5 * baseValue);
@@ -104,12 +105,47 @@ public class Stack {
             baseValue = baseValue * 2;
             LOG.info("Stack von {} nutzt Death Blow, verdoppelt also den Schaden.", getName());
         }
+        if (unit.hasSpeciality(UnitSpeciality.IMPACT_DAMAGE) && hexesMoved > 0) {
+            // H3 Jousting: +5 % pro Hex Bewegung, gedeckelt bei +50 %.
+            int bonusPercent = Math.min(50, hexesMoved * 5);
+            baseValue = (int) Math.round(baseValue * (1.0 + bonusPercent / 100.0));
+            LOG.info("Stack von {} bekommt {}% Jousting-Bonus durch {} Hex Bewegung.",
+                    getName(), bonusPercent, hexesMoved);
+        }
         return baseValue * aliveCount;
     }
 
     public int calculateAttackBoniMaliPercentage(int defense) {
         int diff = unit.attack() - defense;
         return diff >= 0 ? diff * 5 : diff * 2;
+    }
+
+    public int effectiveDefenseAgainst(Set<UnitSpeciality> attackerSpecialities) {
+        int reductionPercent = 0;
+        if (attackerSpecialities.contains(UnitSpeciality.DEFENSE_REDUCTION_80)) {
+            reductionPercent = 80;
+        } else if (attackerSpecialities.contains(UnitSpeciality.DEFENSE_REDUCTION_40)) {
+            reductionPercent = 40;
+        }
+        return (getDefense() * (100 - reductionPercent)) / 100;
+    }
+
+    public boolean canRetaliate() {
+        return retaliationsThisTurn < maxRetaliationsPerTurn();
+    }
+
+    public void recordRetaliation() {
+        retaliationsThisTurn++;
+    }
+
+    private int maxRetaliationsPerTurn() {
+        if (unit.hasSpeciality(UnitSpeciality.COUNERSTRIKE_UNLIMITED)) {
+            return Integer.MAX_VALUE;
+        }
+        if (unit.hasSpeciality(UnitSpeciality.COUNTERSTRIKE_TWICE)) {
+            return 2;
+        }
+        return 1;
     }
 
     public boolean hasGoodMorale(RandomGenerator rng) {
@@ -181,6 +217,7 @@ public class Stack {
                 unpoison();
             }
         }
+        retaliationsThisTurn = 0;
     }
 
     public boolean isAbleToAct() {
