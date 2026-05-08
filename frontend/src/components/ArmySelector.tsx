@@ -1,0 +1,128 @@
+import type { Faction, UnitDto } from '../api/types';
+
+interface ArmySelectorProps {
+  title: string;
+  factions: Faction[];
+  units: UnitDto[];
+  selectedFaction: Faction | 'ALL';
+  selectedUnit: string;
+  count: number;
+  onFactionChange: (faction: Faction | 'ALL') => void;
+  onUnitChange: (unitName: string) => void;
+  onCountChange: (count: number) => void;
+}
+
+const FACTION_LABEL: Record<Faction | 'ALL', string> = {
+  ALL: 'Alle Faktionen',
+  CASTLE: 'Castle',
+  RAMPART: 'Rampart',
+  TOWER: 'Tower',
+  INFERNO: 'Inferno',
+  NECROPOLIS: 'Necropolis',
+  DUNGEON: 'Dungeon',
+  STRONGHOLD: 'Stronghold',
+  FORTRESS: 'Fortress',
+  CONFLUX: 'Conflux',
+  NEUTRAL: 'Neutral',
+};
+
+export default function ArmySelector(props: ArmySelectorProps) {
+  const filteredUnits =
+    props.selectedFaction === 'ALL'
+      ? props.units
+      : props.units.filter((u) => u.faction === props.selectedFaction);
+  const sorted = [...filteredUnits].sort((a, b) => a.name.localeCompare(b.name));
+  const selected = props.units.find((u) => u.name === props.selectedUnit);
+
+  return (
+    <fieldset className="rounded-lg border border-slate-800 bg-slate-900 p-6">
+      <legend className="px-2 text-lg font-semibold text-slate-100">{props.title}</legend>
+
+      <div className="mt-2 space-y-4">
+        <label className="block">
+          <span className="text-sm text-slate-400">Faktion</span>
+          <select
+            className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-amber-500 focus:outline-none"
+            value={props.selectedFaction}
+            onChange={(e) => {
+              props.onFactionChange(e.target.value as Faction | 'ALL');
+              props.onUnitChange('');
+            }}
+          >
+            <option value="ALL">{FACTION_LABEL.ALL}</option>
+            {props.factions.map((f) => (
+              <option key={f} value={f}>
+                {FACTION_LABEL[f]}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="text-sm text-slate-400">Einheit</span>
+          <select
+            className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-amber-500 focus:outline-none"
+            value={props.selectedUnit}
+            onChange={(e) => props.onUnitChange(e.target.value)}
+          >
+            <option value="">— wählen —</option>
+            {sorted.map((u) => (
+              <option key={u.name} value={u.name}>
+                {u.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="text-sm text-slate-400">Anzahl</span>
+          <input
+            type="number"
+            min={1}
+            max={999}
+            className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-amber-500 focus:outline-none"
+            value={props.count}
+            onChange={(e) => props.onCountChange(Math.max(1, Number(e.target.value) || 1))}
+          />
+        </label>
+
+        {selected && <UnitStats unit={selected} />}
+      </div>
+    </fieldset>
+  );
+}
+
+function UnitStats({ unit }: { unit: UnitDto }) {
+  return (
+    <div className="rounded-md border border-slate-800 bg-slate-950 p-3 text-sm text-slate-300">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+        <span className="text-slate-500">Angriff / Verteidigung</span>
+        <span>
+          {unit.attack} / {unit.defense}
+        </span>
+        <span className="text-slate-500">HP</span>
+        <span>{unit.health}</span>
+        <span className="text-slate-500">Schaden</span>
+        <span>
+          {unit.minDamage}–{unit.maxDamage}
+          {unit.shots > 0 ? ` (${unit.shots} Schuss)` : ''}
+        </span>
+        <span className="text-slate-500">Speed</span>
+        <span>
+          {unit.speed} ({unit.movement === 'FLYING' ? 'fliegt' : 'läuft'})
+        </span>
+        <span className="text-slate-500">Kosten</span>
+        <span>{unit.cost} G</span>
+      </div>
+      {unit.specialities.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1">
+          {unit.specialities.map((s) => (
+            <span key={s} className="rounded bg-slate-800 px-2 py-0.5 text-xs text-slate-300">
+              {s}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
