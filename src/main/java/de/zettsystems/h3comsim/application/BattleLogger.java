@@ -108,4 +108,9 @@ public final class BattleLogger {
         LOG.info("Stack von {} reflektiert {} Schaden durch Feuerschild auf Stack von {}.",
                 shieldedName, reverseDamage, attackerName);
     }
+
+    static void logRebirth(String name, int restoredCount) {
+        LOG.info("Stack von {} wird durch Wiedergeburt mit {} Einheiten zurueckgebracht.",
+                name, restoredCount);
+    }
 }
