@@ -1,13 +1,15 @@
 import { useEffect, useRef } from 'react';
 import type { BattleEvent } from '../api/types';
-import { eventToText } from './eventText';
+import { eventToNode } from './eventText';
+import type { SideNames } from './eventText';
 
 interface EventLogProps {
   events: readonly BattleEvent[];
   cursor: number;
+  names: SideNames;
 }
 
-export default function EventLog({ events, cursor }: EventLogProps) {
+export default function EventLog({ events, cursor, names }: EventLogProps) {
   const listRef = useRef<HTMLOListElement>(null);
 
   useEffect(() => {
@@ -30,11 +32,11 @@ export default function EventLog({ events, cursor }: EventLogProps) {
             key={idx}
             className={
               isCurrent
-                ? 'rounded bg-amber-500/10 px-2 py-1 text-amber-200'
+                ? 'rounded bg-amber-500/10 px-2 py-1 text-slate-200'
                 : 'px-2 py-1 text-slate-400'
             }
           >
-            <span className="text-slate-600">▸</span> {eventToText(event)}
+            <span className="text-slate-600">▸</span> {eventToNode(event, names)}
           </li>
         );
       })}

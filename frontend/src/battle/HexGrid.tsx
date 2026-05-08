@@ -4,9 +4,10 @@ import StackToken from './StackToken';
 
 interface HexGridProps {
   state: BattleState;
+  transitionMs: number;
 }
 
-export default function HexGrid({ state }: HexGridProps) {
+export default function HexGrid({ state, transitionMs }: HexGridProps) {
   const { w, h } = gridDimensions(state.width, state.height);
   const padding = HEX_SIZE;
   const viewBox = `${-padding} ${-padding} ${w + padding} ${h + padding}`;
@@ -41,8 +42,8 @@ export default function HexGrid({ state }: HexGridProps) {
         />
       ))}
 
-      <StackToken side={state.attacker} color="amber" />
-      <StackToken side={state.defender} color="blue" />
+      <StackToken side={state.attacker} color="amber" transitionMs={transitionMs} />
+      <StackToken side={state.defender} color="blue" transitionMs={transitionMs} />
     </svg>
   );
 }

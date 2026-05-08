@@ -10,17 +10,23 @@ interface PlaybackControlsProps {
 
 const MIN_MS = 50;
 const MAX_MS = 2000;
+const REFERENCE_MS = 1000; // 1× Geschwindigkeit = 1000 ms zwischen Events
 
 export default function PlaybackControls(props: PlaybackControlsProps) {
-  // Logarithmischer Slider — gleiche optische Schritte oben/unten am Range.
+  // Logarithmischer Slider, invertiert: links = langsam (lange Pause),
+  // rechts = schnell (kurze Pause).
   const minLog = Math.log(MIN_MS);
   const maxLog = Math.log(MAX_MS);
-  const sliderValue = Math.round(((Math.log(props.speedMs) - minLog) / (maxLog - minLog)) * 100);
+  const sliderValue = Math.round(
+    (1 - (Math.log(props.speedMs) - minLog) / (maxLog - minLog)) * 100,
+  );
 
   function handleSliderChange(v: number) {
-    const ms = Math.round(Math.exp(minLog + (v / 100) * (maxLog - minLog)));
+    const ms = Math.round(Math.exp(minLog + ((100 - v) / 100) * (maxLog - minLog)));
     props.onSpeedChange(ms);
   }
+
+  const speedFactor = REFERENCE_MS / props.speedMs;
 
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-lg border border-slate-800 bg-slate-900 p-4">
@@ -34,7 +40,9 @@ export default function PlaybackControls(props: PlaybackControlsProps) {
           onChange={(e) => handleSliderChange(Number(e.target.value))}
           className="flex-1 accent-amber-500"
         />
-        <span className="w-16 text-right font-mono text-xs text-slate-500">{props.speedMs} ms</span>
+        <span className="w-16 text-right font-mono text-xs text-slate-500">
+          {speedFactor >= 1 ? `${speedFactor.toFixed(1)}×` : `${speedFactor.toFixed(2)}×`}
+        </span>
       </label>
 
       <div className="flex gap-2">

@@ -5,12 +5,16 @@ interface ArmySelectorProps {
   factions: Faction[];
   units: UnitDto[];
   selectedFaction: Faction | 'ALL';
+  selectedTier: number | 'ALL';
   selectedUnit: string;
   count: number;
   onFactionChange: (faction: Faction | 'ALL') => void;
+  onTierChange: (tier: number | 'ALL') => void;
   onUnitChange: (unitName: string) => void;
   onCountChange: (count: number) => void;
 }
+
+const TIERS: Array<number | 'ALL'> = ['ALL', 1, 2, 3, 4, 5, 6, 7];
 
 const FACTION_LABEL: Record<Faction | 'ALL', string> = {
   ALL: 'Alle Faktionen',
@@ -27,10 +31,11 @@ const FACTION_LABEL: Record<Faction | 'ALL', string> = {
 };
 
 export default function ArmySelector(props: ArmySelectorProps) {
-  const filteredUnits =
-    props.selectedFaction === 'ALL'
-      ? props.units
-      : props.units.filter((u) => u.faction === props.selectedFaction);
+  const filteredUnits = props.units.filter((u) => {
+    if (props.selectedFaction !== 'ALL' && u.faction !== props.selectedFaction) return false;
+    if (props.selectedTier !== 'ALL' && u.tier !== props.selectedTier) return false;
+    return true;
+  });
   // Bei einer einzelnen Faktion nach Tier (1→7, basic vor upgrade) sortieren —
   // bei "Alle Faktionen" alphabetisch, sonst wäre die Liste chaotisch.
   const sorted = [...filteredUnits].sort((a, b) => {
@@ -46,24 +51,45 @@ export default function ArmySelector(props: ArmySelectorProps) {
       <h2 className="text-lg font-semibold text-slate-100">{props.title}</h2>
 
       <div className="mt-4 space-y-4">
-        <label className="block">
-          <span className="text-sm text-slate-400">Faktion</span>
-          <select
-            className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-amber-500 focus:outline-none"
-            value={props.selectedFaction}
-            onChange={(e) => {
-              props.onFactionChange(e.target.value as Faction | 'ALL');
-              props.onUnitChange('');
-            }}
-          >
-            <option value="ALL">{FACTION_LABEL.ALL}</option>
-            {props.factions.map((f) => (
-              <option key={f} value={f}>
-                {FACTION_LABEL[f]}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="block">
+            <span className="text-sm text-slate-400">Faktion</span>
+            <select
+              className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-amber-500 focus:outline-none"
+              value={props.selectedFaction}
+              onChange={(e) => {
+                props.onFactionChange(e.target.value as Faction | 'ALL');
+                props.onUnitChange('');
+              }}
+            >
+              <option value="ALL">{FACTION_LABEL.ALL}</option>
+              {props.factions.map((f) => (
+                <option key={f} value={f}>
+                  {FACTION_LABEL[f]}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="text-sm text-slate-400">Tier</span>
+            <select
+              className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-amber-500 focus:outline-none"
+              value={String(props.selectedTier)}
+              onChange={(e) => {
+                const v = e.target.value;
+                props.onTierChange(v === 'ALL' ? 'ALL' : Number(v));
+                props.onUnitChange('');
+              }}
+            >
+              {TIERS.map((t) => (
+                <option key={String(t)} value={String(t)}>
+                  {t === 'ALL' ? 'Alle Tiers' : `Tier ${t}`}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
 
         <label className="block">
           <span className="text-sm text-slate-400">Einheit</span>
