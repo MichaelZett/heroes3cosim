@@ -4,6 +4,8 @@ import { hexToPixel, HEX_SIZE } from './hex';
 interface StackTokenProps {
   side: SideState;
   color: 'amber' | 'blue';
+  /** Animationsdauer für Move-Transitions in ms (an die Replay-Geschwindigkeit gekoppelt). */
+  transitionMs: number;
 }
 
 const COLOR_FILL: Record<'amber' | 'blue', string> = {
@@ -15,7 +17,7 @@ const COLOR_RING: Record<'amber' | 'blue', string> = {
   blue: 'rgb(147 197 253)',
 };
 
-export default function StackToken({ side, color }: StackTokenProps) {
+export default function StackToken({ side, color, transitionMs }: StackTokenProps) {
   if (side.count <= 0) return null;
   const { x, y } = hexToPixel(side.q, side.r);
   const radius = HEX_SIZE * 0.7;
@@ -28,7 +30,7 @@ export default function StackToken({ side, color }: StackTokenProps) {
 
   return (
     <g
-      style={{ transition: 'transform 300ms ease-in-out' }}
+      style={{ transition: `transform ${transitionMs}ms ease-in-out` }}
       transform={`translate(${x}, ${y})`}
     >
       <circle r={radius} fill={COLOR_FILL[color]} stroke={COLOR_RING[color]} strokeWidth={1.5} />

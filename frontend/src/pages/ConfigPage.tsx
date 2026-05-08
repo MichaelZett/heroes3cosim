@@ -14,9 +14,11 @@ export default function ConfigPage() {
   const factionsQuery = useFactions();
 
   const [attackerFaction, setAttackerFaction] = useState<Faction | 'ALL'>('ALL');
+  const [attackerTier, setAttackerTier] = useState<number | 'ALL'>('ALL');
   const [attackerUnit, setAttackerUnit] = useState('');
   const [attackerCount, setAttackerCount] = useState(50);
   const [defenderFaction, setDefenderFaction] = useState<Faction | 'ALL'>('ALL');
+  const [defenderTier, setDefenderTier] = useState<number | 'ALL'>('ALL');
   const [defenderUnit, setDefenderUnit] = useState('');
   const [defenderCount, setDefenderCount] = useState(50);
   const [seedText, setSeedText] = useState('');
@@ -72,9 +74,11 @@ export default function ConfigPage() {
             factions={factionsQuery.data}
             units={unitsQuery.data}
             selectedFaction={attackerFaction}
+            selectedTier={attackerTier}
             selectedUnit={attackerUnit}
             count={attackerCount}
             onFactionChange={setAttackerFaction}
+            onTierChange={setAttackerTier}
             onUnitChange={setAttackerUnit}
             onCountChange={setAttackerCount}
           />
@@ -83,9 +87,11 @@ export default function ConfigPage() {
             factions={factionsQuery.data}
             units={unitsQuery.data}
             selectedFaction={defenderFaction}
+            selectedTier={defenderTier}
             selectedUnit={defenderUnit}
             count={defenderCount}
             onFactionChange={setDefenderFaction}
+            onTierChange={setDefenderTier}
             onUnitChange={setDefenderUnit}
             onCountChange={setDefenderCount}
           />
