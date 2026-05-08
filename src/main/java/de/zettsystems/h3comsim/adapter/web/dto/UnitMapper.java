@@ -15,6 +15,8 @@ public final class UnitMapper {
                 unit.name(),
                 unit.name(),
                 unit.faction(),
+                unit.tier(),
+                unit.upgrade(),
                 unit.attack(),
                 unit.defense(),
                 unit.health(),

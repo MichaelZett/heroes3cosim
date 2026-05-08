@@ -11,6 +11,8 @@ public record Unit(
         Movement movement,
         int cost,
         Faction faction,
+        int tier,
+        boolean upgrade,
         Set<UnitSpeciality> specialities
 ) {
     public Unit {
@@ -20,6 +22,9 @@ public record Unit(
         Objects.requireNonNull(movement, "movement");
         Objects.requireNonNull(faction, "faction");
         Objects.requireNonNull(specialities, "specialities");
+        if (tier < 1 || tier > 7) {
+            throw new IllegalArgumentException("tier must be 1..7, was " + tier);
+        }
         specialities = Set.copyOf(specialities);
     }
 

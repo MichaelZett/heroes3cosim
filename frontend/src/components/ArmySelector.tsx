@@ -31,14 +31,21 @@ export default function ArmySelector(props: ArmySelectorProps) {
     props.selectedFaction === 'ALL'
       ? props.units
       : props.units.filter((u) => u.faction === props.selectedFaction);
-  const sorted = [...filteredUnits].sort((a, b) => a.name.localeCompare(b.name));
+  // Bei einer einzelnen Faktion nach Tier (1→7, basic vor upgrade) sortieren —
+  // bei "Alle Faktionen" alphabetisch, sonst wäre die Liste chaotisch.
+  const sorted = [...filteredUnits].sort((a, b) => {
+    if (props.selectedFaction === 'ALL') return a.name.localeCompare(b.name);
+    if (a.tier !== b.tier) return a.tier - b.tier;
+    if (a.upgrade !== b.upgrade) return a.upgrade ? 1 : -1;
+    return a.name.localeCompare(b.name);
+  });
   const selected = props.units.find((u) => u.name === props.selectedUnit);
 
   return (
-    <fieldset className="rounded-lg border border-slate-800 bg-slate-900 p-6">
-      <legend className="px-2 text-lg font-semibold text-slate-100">{props.title}</legend>
+    <section className="rounded-lg border border-slate-800 bg-slate-900 p-6">
+      <h2 className="text-lg font-semibold text-slate-100">{props.title}</h2>
 
-      <div className="mt-2 space-y-4">
+      <div className="mt-4 space-y-4">
         <label className="block">
           <span className="text-sm text-slate-400">Faktion</span>
           <select
@@ -68,7 +75,7 @@ export default function ArmySelector(props: ArmySelectorProps) {
             <option value="">— wählen —</option>
             {sorted.map((u) => (
               <option key={u.name} value={u.name}>
-                {u.name}
+                {formatUnitOption(u)}
               </option>
             ))}
           </select>
@@ -88,13 +95,29 @@ export default function ArmySelector(props: ArmySelectorProps) {
 
         {selected && <UnitStats unit={selected} />}
       </div>
-    </fieldset>
+    </section>
   );
+}
+
+function formatUnitOption(unit: UnitDto): string {
+  const tier = `T${unit.tier}`;
+  const upgrade = unit.upgrade ? ' ★' : '';
+  return `${unit.name} — ${tier}${upgrade}`;
 }
 
 function UnitStats({ unit }: { unit: UnitDto }) {
   return (
     <div className="rounded-md border border-slate-800 bg-slate-950 p-3 text-sm text-slate-300">
+      <div className="mb-2 flex items-center gap-2">
+        <span className="rounded bg-amber-500/20 px-2 py-0.5 text-xs font-semibold text-amber-300">
+          Tier {unit.tier}
+        </span>
+        {unit.upgrade && (
+          <span className="rounded bg-emerald-500/20 px-2 py-0.5 text-xs font-semibold text-emerald-300">
+            Upgrade
+          </span>
+        )}
+      </div>
       <div className="grid grid-cols-2 gap-x-4 gap-y-1">
         <span className="text-slate-500">Angriff / Verteidigung</span>
         <span>

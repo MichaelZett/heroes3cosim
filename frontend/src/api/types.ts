@@ -19,6 +19,8 @@ export interface UnitDto {
   id: string;
   name: string;
   faction: Faction;
+  tier: number;
+  upgrade: boolean;
   attack: number;
   defense: number;
   health: number;
