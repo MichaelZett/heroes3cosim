@@ -91,9 +91,9 @@ export default function ConfigPage() {
           />
         </div>
 
-        <fieldset className="rounded-lg border border-slate-800 bg-slate-900 p-6">
-          <legend className="px-2 text-lg font-semibold">Seed</legend>
-          <div className="mt-2 flex items-end gap-3">
+        <section className="rounded-lg border border-slate-800 bg-slate-900 p-6">
+          <h2 className="text-lg font-semibold text-slate-100">Seed</h2>
+          <div className="mt-4 flex items-end gap-3">
             <label className="flex-1">
               <span className="text-sm text-slate-400">
                 Optional — leer lassen für Zufalls-Seed
@@ -115,7 +115,7 @@ export default function ConfigPage() {
               Würfeln
             </button>
           </div>
-        </fieldset>
+        </section>
 
         {simulate.isError && (
           <p className="text-sm text-red-400">

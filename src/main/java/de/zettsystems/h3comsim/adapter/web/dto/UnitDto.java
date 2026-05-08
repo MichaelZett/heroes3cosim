@@ -9,6 +9,8 @@ public record UnitDto(
         String id,
         String name,
         Faction faction,
+        int tier,
+        boolean upgrade,
         int attack,
         int defense,
         int health,
