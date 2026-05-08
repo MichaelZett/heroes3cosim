@@ -1,0 +1,67 @@
+interface PlaybackControlsProps {
+  speedMs: number;
+  onSpeedChange: (ms: number) => void;
+  paused: boolean;
+  onTogglePaused: () => void;
+  onRestart: () => void;
+  onStep: () => void;
+  finished: boolean;
+}
+
+const MIN_MS = 50;
+const MAX_MS = 2000;
+
+export default function PlaybackControls(props: PlaybackControlsProps) {
+  // Logarithmischer Slider — gleiche optische Schritte oben/unten am Range.
+  const minLog = Math.log(MIN_MS);
+  const maxLog = Math.log(MAX_MS);
+  const sliderValue = Math.round(((Math.log(props.speedMs) - minLog) / (maxLog - minLog)) * 100);
+
+  function handleSliderChange(v: number) {
+    const ms = Math.round(Math.exp(minLog + (v / 100) * (maxLog - minLog)));
+    props.onSpeedChange(ms);
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-4 rounded-lg border border-slate-800 bg-slate-900 p-4">
+      <label className="flex flex-1 items-center gap-3 min-w-64">
+        <span className="text-sm text-slate-400">Geschwindigkeit</span>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          value={sliderValue}
+          onChange={(e) => handleSliderChange(Number(e.target.value))}
+          className="flex-1 accent-amber-500"
+        />
+        <span className="w-16 text-right font-mono text-xs text-slate-500">{props.speedMs} ms</span>
+      </label>
+
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={props.onTogglePaused}
+          disabled={props.finished}
+          className="rounded-md border border-slate-700 px-3 py-1.5 text-sm text-slate-200 hover:border-amber-500 hover:text-amber-400 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {props.paused ? '▶ Weiter' : '⏸ Pause'}
+        </button>
+        <button
+          type="button"
+          onClick={props.onStep}
+          disabled={props.finished}
+          className="rounded-md border border-slate-700 px-3 py-1.5 text-sm text-slate-200 hover:border-amber-500 hover:text-amber-400 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          ⏭ Schritt
+        </button>
+        <button
+          type="button"
+          onClick={props.onRestart}
+          className="rounded-md border border-slate-700 px-3 py-1.5 text-sm text-slate-200 hover:border-amber-500 hover:text-amber-400"
+        >
+          ↻ Neustart
+        </button>
+      </div>
+    </div>
+  );
+}
