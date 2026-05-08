@@ -91,4 +91,8 @@ public final class BattleLogger {
     static void logGoodMorale(String name) {
         LOG.info("Stack von {} hat gute Moral und greift erneut an.", name);
     }
+
+    static void logMoveBack(String name, int q, int r) {
+        LOG.info("Stack von {} fliegt zurueck nach ({},{}).", name, q, r);
+    }
 }

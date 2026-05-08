@@ -97,6 +97,28 @@ jacocoTestReport {
     }
 }
 
+jacocoTestCoverageVerification {
+    dependsOn test
+    violationRules {
+        rule {
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.80
+            }
+            limit {
+                counter = 'BRANCH'
+                value = 'COVEREDRATIO'
+                minimum = 0.60
+            }
+        }
+    }
+}
+
+tasks.named('check').configure {
+    dependsOn 'jacocoTestCoverageVerification'
+}
+
 sonar {
     properties {
         property 'sonar.projectKey', 'heroes3cosim'

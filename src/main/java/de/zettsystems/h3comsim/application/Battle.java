@@ -80,10 +80,16 @@ public final class Battle {
             case Action.Wait() -> BattleLogger.logWait(active.getName());
             case Action.Move(Hex destination) -> moveTo(active, destination);
             case Action.MoveAndMelee(Hex destination, Stack target) -> {
+                Hex startPos = active.position();
+                int hexesMoved = startPos.distanceTo(destination);
                 moveTo(active, destination);
-                meleeAttack(active, target);
+                meleeAttack(active, target, hexesMoved);
+                if (active.hasSpeciality(UnitSpeciality.MOVE_BACK) && active.isAlive()) {
+                    BattleLogger.logMoveBack(active.getName(), startPos.q(), startPos.r());
+                    active.moveTo(startPos);
+                }
             }
-            case Action.Melee(Stack target) -> meleeAttack(active, target);
+            case Action.Melee(Stack target) -> meleeAttack(active, target, 0);
             case Action.Shoot(Stack target) -> rangedAttack(active, target);
         }
     }
@@ -94,37 +100,52 @@ public final class Battle {
         active.moveTo(destination);
     }
 
-    private void meleeAttack(Stack active, Stack passive) {
-        dealDamage(active, passive, AttackType.HAND_TO_HAND);
-        if (active.hasSpeciality(UnitSpeciality.TWO_BLOWS) && passive.isAlive()) {
+    private void meleeAttack(Stack active, Stack passive, int hexesMoved) {
+        dealDamage(active, passive, AttackType.HAND_TO_HAND, hexesMoved);
+        triggerRetaliation(active, passive);
+        if (active.hasSpeciality(UnitSpeciality.TWO_BLOWS) && passive.isAlive() && active.isAlive()) {
             BattleLogger.logTwoBlows(active.getName());
-            dealDamage(active, passive, AttackType.HAND_TO_HAND);
+            // Second blow does not gain Jousting-Bonus — kein erneutes Anfahren.
+            dealDamage(active, passive, AttackType.HAND_TO_HAND, 0);
+            triggerRetaliation(active, passive);
         }
+    }
+
+    private void triggerRetaliation(Stack active, Stack passive) {
         if (active.hasSpeciality(UnitSpeciality.NO_RETALIATION)) {
             BattleLogger.logImmuneToRetaliation(active.getName());
-        } else if (passive.isAbleToAct() && passive.position().isAdjacent(active.position())) {
-            BattleLogger.logRetaliation(passive.getName());
-            dealDamage(passive, active, AttackType.HAND_TO_HAND);
+            return;
         }
+        if (!passive.isAbleToAct() || !passive.position().isAdjacent(active.position())) {
+            return;
+        }
+        if (!passive.canRetaliate()) {
+            return;
+        }
+        BattleLogger.logRetaliation(passive.getName());
+        passive.recordRetaliation();
+        // Retaliation kehrt aktiv/passiv bewusst um — passive schlaegt zurueck.
+        dealDamage(/* active= */ passive, /* passive= */ active, AttackType.HAND_TO_HAND, 0);
     }
 
     private void rangedAttack(Stack active, Stack passive) {
         BattleLogger.logShoot(active.getName(), passive.getName(),
                 active.position().distanceTo(passive.position()));
-        dealDamage(active, passive, AttackType.LONG_RANGE);
+        dealDamage(active, passive, AttackType.LONG_RANGE, 0);
         active.useShot();
         if (active.hasSpeciality(UnitSpeciality.TWO_SHOTS) && active.canShoot() && passive.isAlive()) {
             BattleLogger.logTwoShots(active.getName());
             BattleLogger.logShoot(active.getName(), passive.getName(),
                     active.position().distanceTo(passive.position()));
-            dealDamage(active, passive, AttackType.LONG_RANGE);
+            dealDamage(active, passive, AttackType.LONG_RANGE, 0);
             active.useShot();
         }
     }
 
-    private void dealDamage(Stack active, Stack passive, AttackType attackType) {
-        int currentDamage = active.calculateCurrentDamage(attackType, rng);
-        int boniMaliPercentage = active.calculateAttackBoniMaliPercentage(passive.getDefense());
+    private void dealDamage(Stack active, Stack passive, AttackType attackType, int hexesMoved) {
+        int currentDamage = active.calculateCurrentDamage(attackType, hexesMoved, rng);
+        int effectiveDefense = passive.effectiveDefenseAgainst(active.getAttackerSpecialities());
+        int boniMaliPercentage = active.calculateAttackBoniMaliPercentage(effectiveDefense);
         int realDamage = (currentDamage * (100 + boniMaliPercentage)) / 100;
 
         BattleLogger.logAttack(active.getName(), passive.getName());

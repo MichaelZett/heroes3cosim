@@ -2,6 +2,9 @@ package de.zettsystems.h3comsim.domain;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Random;
+import java.util.Set;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class StackTest {
@@ -96,5 +99,84 @@ class StackTest {
 
         // Poison is HP-loss only; affected stacks still act normally.
         assertThat(pikemen.isAbleToAct()).isTrue();
+    }
+
+    @Test
+    void cavalier_with_impact_damage_deals_more_damage_after_movement() {
+        Stack cavalier = new Stack(UnitCatalog.CAVALIER, 1, ORIGIN);
+
+        int damage0 = cavalier.calculateCurrentDamage(AttackType.HAND_TO_HAND, 0, new Random(42L));
+        int damage5 = cavalier.calculateCurrentDamage(AttackType.HAND_TO_HAND, 5, new Random(42L));
+
+        // 5 hexes × 5 % = +25 % bonus.
+        assertThat(damage5).isEqualTo((int) Math.round(damage0 * 1.25));
+    }
+
+    @Test
+    void impact_damage_is_capped_at_50_percent() {
+        Stack champion = new Stack(UnitCatalog.CHAMPION, 1, ORIGIN);
+
+        int damage0 = champion.calculateCurrentDamage(AttackType.HAND_TO_HAND, 0, new Random(7L));
+        int damage10 = champion.calculateCurrentDamage(AttackType.HAND_TO_HAND, 10, new Random(7L));
+        int damage20 = champion.calculateCurrentDamage(AttackType.HAND_TO_HAND, 20, new Random(7L));
+
+        assertThat(damage10).isEqualTo((int) Math.round(damage0 * 1.5));
+        assertThat(damage20).isEqualTo((int) Math.round(damage0 * 1.5));
+    }
+
+    @Test
+    void unit_without_impact_damage_ignores_movement() {
+        Stack pikeman = new Stack(UnitCatalog.PIKEMAN, 1, ORIGIN);
+
+        int damage0 = pikeman.calculateCurrentDamage(AttackType.HAND_TO_HAND, 0, new Random(13L));
+        int damage5 = pikeman.calculateCurrentDamage(AttackType.HAND_TO_HAND, 5, new Random(13L));
+
+        assertThat(damage5).isEqualTo(damage0);
+    }
+
+    @Test
+    void normal_unit_has_one_retaliation_per_turn() {
+        Stack pikemen = new Stack(UnitCatalog.PIKEMAN, 1, ORIGIN);
+
+        assertThat(pikemen.canRetaliate()).isTrue();
+        pikemen.recordRetaliation();
+        assertThat(pikemen.canRetaliate()).isFalse();
+
+        pikemen.endTurn();
+        assertThat(pikemen.canRetaliate()).isTrue();
+    }
+
+    @Test
+    void griffin_with_counterstrike_twice_can_retaliate_two_times_per_turn() {
+        Stack griffin = new Stack(UnitCatalog.GRIFFIN, 1, ORIGIN);
+
+        assertThat(griffin.canRetaliate()).isTrue();
+        griffin.recordRetaliation();
+        assertThat(griffin.canRetaliate()).isTrue();
+        griffin.recordRetaliation();
+        assertThat(griffin.canRetaliate()).isFalse();
+    }
+
+    @Test
+    void royal_griffin_retaliates_unlimited_times_per_turn() {
+        Stack royalGriffin = new Stack(UnitCatalog.ROYAL_GRIFFIN, 1, ORIGIN);
+
+        for (int i = 0; i < 100; i++) {
+            assertThat(royalGriffin.canRetaliate()).isTrue();
+            royalGriffin.recordRetaliation();
+        }
+    }
+
+    @Test
+    void pikeman_defense_is_reduced_against_behemoth_attacker() {
+        Stack pikeman = new Stack(UnitCatalog.PIKEMAN, 1, ORIGIN);
+
+        int normal = pikeman.effectiveDefenseAgainst(Set.of());
+        int againstBehemoth = pikeman.effectiveDefenseAgainst(UnitCatalog.BEHEMOTH.attackerSpecialities());
+        int againstAncient = pikeman.effectiveDefenseAgainst(UnitCatalog.ANCIENT_BEHEMOTH.attackerSpecialities());
+
+        assertThat(normal).isEqualTo(5);
+        assertThat(againstBehemoth).isEqualTo(3);  // 5 × 0.6 = 3
+        assertThat(againstAncient).isEqualTo(1);   // 5 × 0.2 = 1
     }
 }

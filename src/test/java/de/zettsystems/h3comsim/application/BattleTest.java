@@ -1,5 +1,8 @@
 package de.zettsystems.h3comsim.application;
 
+import de.zettsystems.h3comsim.domain.Battlefield;
+import de.zettsystems.h3comsim.domain.Hex;
+import de.zettsystems.h3comsim.domain.Stack;
 import de.zettsystems.h3comsim.domain.Unit;
 import de.zettsystems.h3comsim.domain.UnitCatalog;
 import org.junit.jupiter.api.Test;
@@ -61,6 +64,40 @@ class BattleTest {
         assertThat(shotsUsed).isPositive();
         assertThat(shotsUsed % 2).isZero();
         assertThat(result.turnsTaken()).isPositive();
+    }
+
+    @Test
+    void harpy_returns_to_start_position_after_killing_blow() {
+        // Distanz 7, Harpy-Speed 6 → reach distance 1 in one turn → MoveAndMelee + return.
+        // 50 Harpies töten 5 Pikemen in einem Schlag, Battle endet nach Harpys Move-and-Melee.
+        Hex harpyStart = new Hex(0, 5);
+        Hex pikemenPos = new Hex(7, 5);
+        BattleSetup setup = new BattleSetup(UnitCatalog.HARPY, 50, UnitCatalog.PIKEMAN, 5,
+                Battlefield.STANDARD, harpyStart, pikemenPos);
+        Stack harpy = setup.getAttacker();
+
+        BattleResult result = new Battle(new Random(1L)).simulate(setup);
+
+        assertThat(result.winner()).isEqualTo(BattleResult.Side.ATTACKER);
+        assertThat(harpy.position()).isEqualTo(harpyStart);
+    }
+
+    @Test
+    void behemoth_kills_pikemen_faster_than_baseline_attacker() {
+        // Behemoth has DEFENSE_REDUCTION_40 — Pikeman defense 5 → 3 → bigger Attack-Defense diff
+        // → higher % bonus. Behemoth should out-damage a defenseless attacker comparison hard;
+        // simpler check: against the same defender, fewer turns than without the marker.
+        BattleSetup withReduction = new BattleSetup(UnitCatalog.BEHEMOTH, 5, UnitCatalog.PIKEMAN, 200);
+        BattleSetup withoutReduction = new BattleSetup(UnitCatalog.OGRE, 5, UnitCatalog.PIKEMAN, 200);
+
+        BattleResult resBehemoth = new Battle(new Random(3L)).simulate(withReduction);
+        BattleResult resOgre = new Battle(new Random(3L)).simulate(withoutReduction);
+
+        // Both attackers have similar attack stats (Behemoth 17 / Ogre 13) and same speed bracket.
+        // Behemoth deals more damage per attack thanks to the defense reduction.
+        int pikemenKilledByBehemoth = 200 - resBehemoth.defenderSurvivors();
+        int pikemenKilledByOgre = 200 - resOgre.defenderSurvivors();
+        assertThat(pikemenKilledByBehemoth).isGreaterThan(pikemenKilledByOgre);
     }
 
     private BattleResult simulate(Unit attackerUnit, int attackerCount,
