@@ -20,6 +20,7 @@ import static de.zettsystems.h3comsim.domain.Faction.STRONGHOLD;
 import static de.zettsystems.h3comsim.domain.Faction.TOWER;
 import static de.zettsystems.h3comsim.domain.Movement.FLYING;
 import static de.zettsystems.h3comsim.domain.Movement.GROUND;
+import static de.zettsystems.h3comsim.domain.UnitSpeciality.AGING;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.ANGEL_HATE;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.ANGEL_RACE;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.ATTACKS_WALLS;
@@ -33,6 +34,7 @@ import static de.zettsystems.h3comsim.domain.UnitSpeciality.DEFENSE_REDUCTION_40
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.DEFENSE_REDUCTION_80;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.DEVIL_HATE;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.DEVIL_RACE;
+import static de.zettsystems.h3comsim.domain.UnitSpeciality.DISEASES;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.GOOD_ARMY_MORALE;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.GOOD_MORALE;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.IMMUNE_TO_BLIND;
@@ -45,6 +47,7 @@ import static de.zettsystems.h3comsim.domain.UnitSpeciality.NO_OBSTACLE_PENALTY;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.NO_RETALIATION;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.PETRYFYING;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.POISONOUS;
+import static de.zettsystems.h3comsim.domain.UnitSpeciality.REGENERATION;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.RESURRECTION;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.SPELL_COST_REDUCTION;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.THUNDERBOLTS;
@@ -94,7 +97,7 @@ public final class UnitCatalog {
     public static final Unit FIREBIRD = unit("Firebird", new Stats(18, 18, 150, 15), melee(30, 40), FLYING, CONFLUX, 1500);
     public static final Unit FIRE_ELEMENTAL = unit("Fire Elemental", new Stats(10, 8, 35, 6), melee(4, 6), GROUND, CONFLUX, 350);
     public static final Unit GENIE = unit("Genie", new Stats(12, 12, 40, 7), melee(13, 16), FLYING, TOWER, 550);
-    public static final Unit GHOST_DRAGON = unit("Ghost Dragon", new Stats(19, 17, 200, 14), melee(25, 50), FLYING, NECROPOLIS, 3000);
+    public static final Unit GHOST_DRAGON = unit("Ghost Dragon", new Stats(19, 17, 200, 14), melee(25, 50), FLYING, NECROPOLIS, 3000, AGING);
     public static final Unit GIANT = unit("Giant", new Stats(19, 16, 150, 7), melee(40, 60), GROUND, TOWER, 2000);
     public static final Unit GNOLL = unit("Gnoll", new Stats(3, 5, 6, 4), melee(2, 3), GROUND, FORTRESS, 50);
     public static final Unit GNOLL_MARAUDER = unit("Gnoll Marauder", new Stats(4, 6, 6, 5), melee(2, 3), GROUND, FORTRESS, 70);
@@ -172,15 +175,15 @@ public final class UnitCatalog {
     public static final Unit WALKING_DEAD = unit("Walking Dead", new Stats(5, 5, 15, 3), melee(2, 3), GROUND, NECROPOLIS, 100);
     public static final Unit WAR_UNICORN = unit("War Unicorn", new Stats(15, 14, 110, 9), melee(18, 22), GROUND, RAMPART, 950);
     public static final Unit WATER_ELEMENTAL = unit("Water Elemental", new Stats(8, 10, 30, 5), melee(3, 7), GROUND, CONFLUX, 300);
-    public static final Unit WIGHT = unit("Wight", new Stats(7, 7, 18, 5), melee(3, 5), FLYING, NECROPOLIS, 200);
+    public static final Unit WIGHT = unit("Wight", new Stats(7, 7, 18, 5), melee(3, 5), FLYING, NECROPOLIS, 200, REGENERATION);
     public static final Unit WOLF_RAIDER = unit("Wolf Raider", new Stats(8, 5, 10, 8), melee(3, 4), GROUND, STRONGHOLD, 140, TWO_BLOWS);
     public static final Unit WOLF_RIDER = unit("Wolf Rider", new Stats(7, 5, 10, 6), melee(2, 4), GROUND, STRONGHOLD, 100);
     public static final Unit WOOD_ELF = unit("Wood Elf", new Stats(9, 5, 15, 6), ranged(3, 5, 24), GROUND, RAMPART, 200);
-    public static final Unit WRAITH = unit("Wraith", new Stats(7, 7, 18, 7), melee(3, 5), FLYING, NECROPOLIS, 230);
+    public static final Unit WRAITH = unit("Wraith", new Stats(7, 7, 18, 7), melee(3, 5), FLYING, NECROPOLIS, 230, REGENERATION);
     public static final Unit WYVERN = unit("Wyvern", new Stats(14, 14, 70, 7), melee(14, 18), FLYING, FORTRESS, 800);
     public static final Unit WYVERN_MONARCH = unit("Wyvern Monarch", new Stats(14, 14, 70, 11), melee(18, 22), FLYING, FORTRESS, 1100, POISONOUS);
     public static final Unit ZEALOT = unit("Zealot", new Stats(12, 10, 30, 7), ranged(10, 12, 24), GROUND, CASTLE, 450, NO_HAND_TO_HAND_PENALTY);
-    public static final Unit ZOMBIE = unit("Zombie", new Stats(5, 5, 20, 4), melee(2, 3), GROUND, NECROPOLIS, 125);
+    public static final Unit ZOMBIE = unit("Zombie", new Stats(5, 5, 20, 4), melee(2, 3), GROUND, NECROPOLIS, 125, DISEASES);
 
     private static final List<Unit> ALL = List.of(
             AIR_ELEMENTAL, ANCIENT_BEHEMOTH, ANGEL, ARCHER, ARCH_ANGEL, ARCH_DEVIL, ARCH_MAGI,

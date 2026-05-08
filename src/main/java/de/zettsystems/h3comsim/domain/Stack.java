@@ -21,6 +21,9 @@ public class Stack {
     private boolean poisoned;
     private int poisonedCounter;
     private int retaliationsThisTurn;
+    private boolean diseased;
+    private int diseasedCounter;
+    private boolean aged;
 
     public Stack(Unit unit, int count, Hex position) {
         if (count < 0) {
@@ -67,8 +70,12 @@ public class Stack {
         return unit.speed();
     }
 
+    public int getAttack() {
+        return unit.attack() - (diseased ? 2 : 0);
+    }
+
     public int getDefense() {
-        return unit.defense();
+        return unit.defense() - (diseased ? 2 : 0);
     }
 
     public int getCount() {
@@ -116,7 +123,7 @@ public class Stack {
     }
 
     public int calculateAttackBoniMaliPercentage(int defense) {
-        int diff = unit.attack() - defense;
+        int diff = getAttack() - defense;
         return diff >= 0 ? diff * 5 : diff * 2;
     }
 
@@ -204,6 +211,24 @@ public class Stack {
         return poisoned;
     }
 
+    public void disease() {
+        diseased = true;
+        diseasedCounter = 3;
+    }
+
+    public boolean isDiseased() {
+        return diseased;
+    }
+
+    public void age() {
+        aged = true;
+        topUnitCurrentHealth = Math.max(1, topUnitCurrentHealth / 2);
+    }
+
+    public boolean isAged() {
+        return aged;
+    }
+
     public void endTurn() {
         if (petrifiedCounter > 0 && --petrifiedCounter == 0) {
             unpetrify();
@@ -216,6 +241,12 @@ public class Stack {
             if (--poisonedCounter == 0) {
                 unpoison();
             }
+        }
+        if (diseasedCounter > 0 && --diseasedCounter == 0) {
+            undisease();
+        }
+        if (unit.hasSpeciality(UnitSpeciality.REGENERATION) && isAlive()) {
+            topUnitCurrentHealth = unit.health();
         }
         retaliationsThisTurn = 0;
     }
@@ -266,6 +297,12 @@ public class Stack {
         poisoned = false;
         poisonedCounter = 0;
         LOG.info("{} ist nicht mehr vergiftet.", getName());
+    }
+
+    private void undisease() {
+        diseased = false;
+        diseasedCounter = 0;
+        LOG.info("{} ist nicht mehr krank.", getName());
     }
 
     private void applyPoisonTick() {

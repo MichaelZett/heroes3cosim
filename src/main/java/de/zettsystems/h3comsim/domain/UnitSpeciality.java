@@ -14,6 +14,8 @@ public enum UnitSpeciality {
     PETRYFYING(AFTER_ATTACK),
     POISONOUS(AFTER_ATTACK),
     CURSING(AFTER_ATTACK),
+    DISEASES(AFTER_ATTACK),
+    AGING(AFTER_ATTACK),
     DEATH_BLOW(AFTER_ATTACK),
     DEVIL_HATE(ATTACK),
     ANGEL_HATE(ATTACK),
@@ -22,6 +24,7 @@ public enum UnitSpeciality {
     TWO_BLOWS(ATTACK),
     TWO_SHOTS(ATTACK),
     GOOD_MORALE(AFTER_ATTACK),
+    REGENERATION(SPECIAL),
 
     // Race markers — set on the defender to enable hate-based damage modifiers from the attacker.
     ANGEL_RACE(SPECIAL),
