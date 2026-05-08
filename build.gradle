@@ -92,6 +92,49 @@ tasks.withType(SpotBugsTask).configureEach {
     }
 }
 
+// ----- Frontend integration: build React/Vite assets and ship them inside the boot jar.
+import org.gradle.internal.os.OperatingSystem
+
+def npmExecutable = OperatingSystem.current().isWindows() ? 'npm.cmd' : 'npm'
+def frontendDir = file('frontend')
+def frontendDist = file('frontend/dist')
+
+tasks.register('frontendInstall', Exec) {
+    group = 'frontend'
+    description = 'npm install im frontend/'
+    workingDir = frontendDir
+    inputs.file('frontend/package.json')
+    inputs.file('frontend/package-lock.json')
+    outputs.dir('frontend/node_modules')
+    commandLine npmExecutable, 'install', '--no-audit', '--no-fund'
+}
+
+tasks.register('frontendBuild', Exec) {
+    group = 'frontend'
+    description = 'Vite-Build → frontend/dist'
+    dependsOn 'frontendInstall'
+    workingDir = frontendDir
+    inputs.dir('frontend/src')
+    inputs.file('frontend/index.html')
+    inputs.file('frontend/vite.config.ts')
+    inputs.file('frontend/tsconfig.json')
+    inputs.file('frontend/tsconfig.app.json')
+    inputs.file('frontend/package.json')
+    outputs.dir(frontendDist)
+    commandLine npmExecutable, 'run', 'build'
+}
+
+processResources {
+    dependsOn 'frontendBuild'
+    from(frontendDist) {
+        into 'static'
+    }
+}
+
+clean {
+    delete frontendDist
+}
+
 jacoco {
     toolVersion = '0.8.13'
 }
