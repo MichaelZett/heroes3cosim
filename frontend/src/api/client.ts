@@ -1,9 +1,4 @@
-import type {
-  BattleConfigRequest,
-  BattleSimulationDto,
-  Faction,
-  UnitDto,
-} from './types';
+import type {BattleConfigRequest, BattleSimulationDto, Faction, UnitDto} from './types';
 
 // Im Dev-Modus reicht Vite das `/api`-Präfix transparent an Spring auf 8080 weiter
 // (siehe vite.config.ts), in Prod liegt das Frontend hinter dem gleichen Origin.

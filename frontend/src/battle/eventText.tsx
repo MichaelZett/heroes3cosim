@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import type { BattleEvent, Side } from '../api/types';
+import type {ReactNode} from 'react';
+import type {BattleEvent, Side} from '../api/types';
 
 export interface SideNames {
   attacker: string;
@@ -19,10 +19,7 @@ function actor(side: Side, names: SideNames): ReactNode {
   );
 }
 
-function winnerLabel(
-  winner: 'ATTACKER' | 'DEFENDER' | 'DRAW',
-  names: SideNames,
-): ReactNode {
+function winnerLabel(winner: 'ATTACKER' | 'DEFENDER' | 'DRAW', names: SideNames): ReactNode {
   if (winner === 'DRAW') return <span className="font-semibold text-slate-300">Unentschieden</span>;
   return actor(winner, names);
 }
@@ -68,8 +65,8 @@ export function eventToNode(event: BattleEvent, names: SideNames): ReactNode {
     case 'Retaliation':
       return (
         <>
-          {actor(event.retaliator, names)} schlägt zurück — {event.damage} Schaden,{' '}
-          {event.killed} getötet.
+            {actor(event.retaliator, names)} schlägt zurück — {event.damage} Schaden, {event.killed}{' '}
+            getötet.
         </>
       );
     case 'TwoBlows':
