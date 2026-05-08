@@ -1,5 +1,6 @@
 package de.zettsystems.h3comsim.domain;
 
+import de.zettsystems.h3comsim.domain.events.Side;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Objects;
@@ -10,6 +11,7 @@ import java.util.random.RandomGenerator;
 public class Stack {
 
     private final Unit unit;
+    private final Side side;
     private final int startCount;
     private int aliveCount;
     private int topUnitCurrentHealth;
@@ -27,12 +29,18 @@ public class Stack {
     private boolean aged;
     private boolean rebirthUsed;
 
+    /** Convenience constructor — defaults the side to {@link Side#ATTACKER}. */
     public Stack(Unit unit, int count, Hex position) {
+        this(unit, count, position, Side.ATTACKER);
+    }
+
+    public Stack(Unit unit, int count, Hex position, Side side) {
         if (count < 0) {
             throw new IllegalArgumentException("count must be >= 0, was " + count);
         }
         this.unit = Objects.requireNonNull(unit, "unit");
         this.position = Objects.requireNonNull(position, "position");
+        this.side = Objects.requireNonNull(side, "side");
         this.startCount = count;
         this.aliveCount = count;
         this.topUnitCurrentHealth = unit.health();
@@ -41,6 +49,10 @@ public class Stack {
 
     public Unit unit() {
         return unit;
+    }
+
+    public Side side() {
+        return side;
     }
 
     public Hex position() {
@@ -202,6 +214,10 @@ public class Stack {
             return 0;
         }
         return (int) Math.round(incomingDamage * 0.2);
+    }
+
+    public boolean isRebirthUsed() {
+        return rebirthUsed;
     }
 
     private void tryRebirth() {

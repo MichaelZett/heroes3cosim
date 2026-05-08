@@ -5,6 +5,7 @@ import de.zettsystems.h3comsim.domain.Hex;
 import de.zettsystems.h3comsim.domain.Stack;
 import de.zettsystems.h3comsim.domain.Unit;
 import de.zettsystems.h3comsim.domain.UnitCatalog;
+import de.zettsystems.h3comsim.domain.events.Winner;
 import org.junit.jupiter.api.Test;
 
 import java.util.Random;
@@ -17,7 +18,7 @@ class BattleTest {
     void single_archAngel_overpowers_ten_grand_elves() {
         BattleResult result = simulate(UnitCatalog.GRAND_ELF, 10, UnitCatalog.ARCH_ANGEL, 1, 42L);
 
-        assertThat(result.winner()).isEqualTo(BattleResult.Side.DEFENDER);
+        assertThat(result.winner()).isEqualTo(Winner.DEFENDER);
         assertThat(result.attackerSurvivors()).isZero();
         assertThat(result.defenderSurvivors()).isEqualTo(1);
     }
@@ -36,7 +37,7 @@ class BattleTest {
 
         BattleResult result = new Battle(new Random(7L)).simulate(setup);
 
-        assertThat(result.winner()).isEqualTo(BattleResult.Side.ATTACKER);
+        assertThat(result.winner()).isEqualTo(Winner.ATTACKER);
         assertThat(result.attackerSurvivors()).isEqualTo(1);
         assertThat(result.defenderSurvivors()).isZero();
     }
@@ -78,7 +79,7 @@ class BattleTest {
 
         BattleResult result = new Battle(new Random(1L)).simulate(setup);
 
-        assertThat(result.winner()).isEqualTo(BattleResult.Side.ATTACKER);
+        assertThat(result.winner()).isEqualTo(Winner.ATTACKER);
         assertThat(harpy.position()).isEqualTo(harpyStart);
     }
 
