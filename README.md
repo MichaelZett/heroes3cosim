@@ -23,19 +23,31 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Defense Reduction (Behemoth), Move Back (Harpy), Counterstrike
   Twice/Unlimited (Griffin), Regeneration (Wight), Fire Shield (Efreet
   Sultan), Rebirth (Phoenix), No Hand-to-Hand Penalty.
-- **Hex-Schlachtfeld 15 × 11**, lineare Bewegung in Geschwindigkeitsweite,
-  Fernkampf mit `shotsRemaining` und Nahkampf-Penalty bei Distanz 1.
+- **Hex-Schlachtfeld 15 × 11** mit zufälligen Hindernissen pro Sim,
+  Hex-A*-Pathfinding um Obstacles herum, zugbasierte Move-Sequenz pro
+  Hex (Token wandert sichtbar Schritt für Schritt).
+- **Fernkampf** mit `shotsRemaining`, Nahkampf-Penalty bei Distanz 1,
+  ½-Schaden ab >10 Hex Distanz und nochmal ½ wenn ein Hindernis in der
+  Schusslinie liegt — beide negierbar durch entsprechende Marker.
 - **HTTP-API** über Spring Boot 4 mit
   [Swagger-UI](http://localhost:8080/swagger-ui.html): `GET /api/units`,
-  `GET /api/factions`, `POST /api/battles/simulate`. Antwort enthält
-  Ergebnis plus strukturierten `BattleEvent`-Stream (sealed Interface,
-  Jackson-polymorph serialisiert).
-- **Replay-UI** — React 19 + Vite + Tailwind. Truppenkonfiguration,
-  Seed-Wahl, Hex-Replay mit Step/Pause/Geschwindigkeitsslider, scrollender
-  Combat-Log. Deutsch und Englisch umschaltbar.
+  `GET /api/factions`, `POST /api/battles/simulate` für einzelne Kämpfe,
+  `POST /api/experiments/matrix` für Matrix-Auswertungen. Antworten
+  enthalten Ergebnis plus strukturierten `BattleEvent`-Stream (sealed
+  Interface, Jackson-polymorph serialisiert).
+- **Matrix-Auswertung** — jede Einheit gegen jede andere, pro Match-up
+  mehrere Seeds und automatisch getauschte Attacker-/Defender-Rollen.
+  Parallel über Work-Stealing-Pool; Report listet Win-Rate, mittlere
+  Überlebensquote und „Anomalien" (Truppen, die mehrheitlich gegen die
+  nächstniedrigere Tier-Klasse verlieren).
+- **Replay-UI** — React 19 + Vite + Tailwind. Truppenkonfiguration mit
+  Seed-Wahl, Hex-Replay mit Step/Pause/Geschwindigkeitsslider, Rückspiel-
+  Button (gleicher Seed, getauschte Seiten), scrollender Combat-Log.
+  Dazu eine eigene Matrix-Seite mit Faction-/Unit-Excludes und
+  sortierbarer Ergebnis-Tabelle. Deutsch und Englisch umschaltbar.
 - **Deterministisch über Seed**: gleicher Seed → identische
-  `BattleResult` + identischer Event-Stream. Voraussetzung für die
-  geplante Monte-Carlo-Auswertung.
+  `BattleResult` + identischer Event-Stream + identische Obstacle-
+  Verteilung. Voraussetzung für reproduzierbare Auswertungen.
 
 ## Schnellstart
 
@@ -94,14 +106,17 @@ Reports landen unter `build/reports/`: JaCoCo, SpotBugs, Tests.
 Hexagonal-light:
 
 - **`domain`** — pure Combat-Domäne ohne Spring-Abhängigkeit. `Unit`,
-  `UnitCatalog`, `Stack`, `Hex`, `Battlefield`, Enums + Event-Records
-  unter `domain.events`.
+  `UnitCatalog`, `Stack`, `Hex`, `Battlefield`, `PathFinder`,
+  `ObstacleGenerator`, Enums + Event-Records unter `domain.events`.
 - **`application`** — `Battle.simulate(...)` als Orchestrator,
-  `BattleSetup`, `BattleResult`, `AutoSolver` (Default `GreedyAutoSolver`).
-- **`adapter.web`** — `BattleController`, DTOs, CORS-Config für den
-  Vite-Dev-Proxy.
+  `BattleSetup`, `BattleResult`, `AutoSolver` (Default
+  `GreedyAutoSolver`). Unter `application.experiment` der parallele
+  `MatrixExperimentService`.
+- **`adapter.web`** — `BattleController`, `ExperimentController`,
+  DTOs, CORS-Config für den Vite-Dev-Proxy.
 - **`frontend/`** — eigenständiges Vite-Projekt, vom Gradle-Build als
-  statisches Resource gebündelt.
+  statisches Resource gebündelt. Feature-Buckets: `battle-config`,
+  `battle-replay`, `matrix-experiment`.
 
 ## Was als nächstes kommt
 
@@ -109,10 +124,9 @@ Hexagonal-light:
   Initiative, Voraussetzung für AoE-Effekte (Lich Death Cloud) und
   echte Truppenkombinationen.
 - **Helden** mit Primärwerten, Sekundärfertigkeiten und Zauberbuch.
-- **Belagerung**: Mauern, Distanz-Penalty (>10 Hex = halber Schaden),
-  Obstacle-Penalty.
-- **Monte-Carlo-Runner** für aggregierte Statistik über viele Seeds
-  (Win-Rate, Survivors, Gold-Effizienz).
+- **Belagerung**: Mauern, Catapult, Wall-Penalty für Schützen.
+- **Gold-Effizienz-Modus** für die Matrix: Stack-Größe aus Gold-Budget
+  ableiten, nicht aus festem Count.
 
 ## Quellen
 
