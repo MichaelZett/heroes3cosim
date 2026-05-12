@@ -33,6 +33,8 @@ public final class GreedyAutoSolver implements AutoSolver {
         Hex from = active.position();
         Hex to = opponent.position();
         int distance = from.distanceTo(to);
+        int speed = active.unit().speed();
+        Movement movement = active.unit().movement();
 
         if (distance == 1) {
             return new Action.Melee(opponent);
@@ -40,7 +42,15 @@ public final class GreedyAutoSolver implements AutoSolver {
         if (active.canShoot()) {
             return decideShooter(active, opponent, battlefield, from, to, distance);
         }
-        Hex moveTarget = battlefield.moveToward(from, to, active.unit().speed(), active.unit().movement());
+        // IMPACT_DAMAGE-Units (Cavalier/Champion): maximalen Run-up wählen statt direkter Linie.
+        // Engine zählt {@code hexesMoved = startPos.distanceTo(destination)} → straight-line.
+        if (active.hasSpeciality(UnitSpeciality.IMPACT_DAMAGE)) {
+            Hex charge = findMaxRunupCharge(from, to, battlefield, speed, movement);
+            if (charge != null) {
+                return new Action.MoveAndMelee(charge, opponent);
+            }
+        }
+        Hex moveTarget = battlefield.moveToward(from, to, speed, movement);
         if (moveTarget.equals(from)) {
             return new Action.Wait();
         }
@@ -48,6 +58,37 @@ public final class GreedyAutoSolver implements AutoSolver {
             return new Action.MoveAndMelee(moveTarget, opponent);
         }
         return new Action.Move(moveTarget);
+    }
+
+    /**
+     * Sucht unter den sechs adjazenten Hexen des Gegners das mit der größten geraden Distanz vom
+     * Startfeld — bei IMPACT_DAMAGE-Einheiten gibt jeder Hex Anlauf +5 % Schaden (gekappt bei +50 %
+     * = 10 Hex). Kandidat muss passable und in einer Runde erreichbar sein (sowohl straight-line
+     * als auch A*-Pfad ≤ Speed). Liefert {@code null}, wenn kein adjazenter Hex erreichbar ist —
+     * dann fällt der Solver auf den normalen Move-Pfad zurück.
+     */
+    private static @Nullable Hex findMaxRunupCharge(Hex from, Hex to, Battlefield bf, int speed,
+                                                    Movement movement) {
+        Hex best = null;
+        int bestRunup = 0;
+        for (Hex candidate : to.neighbors()) {
+            if (!bf.isPassable(candidate)) {
+                continue;
+            }
+            int runup = from.distanceTo(candidate);
+            if (runup <= 0 || runup > speed) {
+                continue;
+            }
+            if (bf.findPath(from, candidate, movement).size() > speed) {
+                continue;
+            }
+            int score = Math.min(runup, 10);
+            if (score > bestRunup) {
+                bestRunup = score;
+                best = candidate;
+            }
+        }
+        return best;
     }
 
     private static Action decideShooter(Stack active, Stack opponent, Battlefield bf,
@@ -65,6 +106,11 @@ public final class GreedyAutoSolver implements AutoSolver {
         }
         // Wir sind nicht schneller — Kiten würde nichts bringen, lieber schießen.
         if (mySpeed <= opponentSpeed) {
+            return new Action.Shoot(opponent);
+        }
+        // DPS-Race: Wenn wir den Gegner schätzungsweise erledigen, bevor er uns erreicht,
+        // hat Kiten keinen Sinn — der verlorene Schuss wäre vermutlich der entscheidende.
+        if (willOutpaceOpponent(active, opponent, distance)) {
             return new Action.Shoot(opponent);
         }
         // Kite nur bei wirklicher Lebensgefahr — wenn ein eingehender Treffer den Top-Creature
@@ -89,6 +135,27 @@ public final class GreedyAutoSolver implements AutoSolver {
         int avgBase = (opponent.unit().minDamage() + opponent.unit().maxDamage()) / 2;
         int avgIncoming = opponent.getCount() * avgBase;
         return avgIncoming >= active.getCurrentHealth();
+    }
+
+    /**
+     * Erwartet der Schütze, den Gegner mit den verbleibenden Schüssen während dessen Anlauf zu
+     * töten? Konservative Schätzung: avg-Schadens-Range × Stack-Count × Schüsse-pro-Runde ×
+     * Runden-bis-Engagement gegen die Gesamt-HP des Gegners. Att/Def und Penalties bleiben außen
+     * vor — die Heuristik soll Kite/Shoot-Loops abbrechen, sobald sich der Race klar abzeichnet.
+     */
+    private static boolean willOutpaceOpponent(Stack active, Stack opponent, int distance) {
+        int opponentSpeed = Math.max(1, opponent.getSpeed());
+        // Aufgerundete Runden bis Engagement; Engagement = Distanz 1.
+        int turnsUntilMelee = Math.max(1, (distance - 1 + opponentSpeed - 1) / opponentSpeed);
+        double avgPerShot = (active.unit().minDamage() + active.unit().maxDamage()) / 2.0;
+        int shotsPerTurn = active.hasSpeciality(UnitSpeciality.TWO_SHOTS) ? 2 : 1;
+        int shotsAvailable = Math.min(active.shotsRemaining(), turnsUntilMelee * shotsPerTurn);
+        double projectedDamage = active.getCount() * avgPerShot * shotsAvailable;
+
+        int opponentMaxHp = opponent.unit().health();
+        int opponentTotalHp = Math.max(0, opponent.getCount() - 1) * opponentMaxHp
+                + opponent.getCurrentHealth();
+        return projectedDamage >= opponentTotalHp;
     }
 
     private static Action decideShooterVsShooter(Stack active, Stack opponent, Battlefield bf,

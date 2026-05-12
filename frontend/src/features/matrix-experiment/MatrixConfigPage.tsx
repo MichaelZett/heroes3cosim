@@ -1,5 +1,5 @@
 import type {FormEvent} from 'react';
-import {useMemo, useState} from 'react';
+import {useMemo} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {useTranslation} from 'react-i18next';
 import {useFactions, useRunMatrix, useUnits} from '../../shared/api/hooks';
@@ -8,22 +8,22 @@ import LanguageSwitcher from '../../shared/ui/LanguageSwitcher';
 import ModeSwitcher from '../../shared/ui/ModeSwitcher';
 import {useMatrixStore} from './matrixStore';
 
+const TIERS = [1, 2, 3, 4, 5, 6, 7] as const;
+const MODES: StackSizingMode[] = ['EQUAL_COUNT', 'EQUAL_GOLD', 'WEEKLY_PRODUCTION', 'EQUAL_GOLD_WEEKLY'];
+
 export default function MatrixConfigPage() {
     const navigate = useNavigate();
     const {t} = useTranslation();
     const loadReport = useMatrixStore((s) => s.loadReport);
+    const form = useMatrixStore((s) => s.form);
+    const setForm = useMatrixStore((s) => s.setForm);
 
     const unitsQuery = useUnits();
     const factionsQuery = useFactions();
 
-    const [unitCount, setUnitCount] = useState(20);
-    const [seedsPerMatchup, setSeedsPerMatchup] = useState(20);
-    const [excludedFactions, setExcludedFactions] = useState<Set<Faction>>(new Set());
-    const [excludedTiers, setExcludedTiers] = useState<Set<number>>(new Set());
-    const [excludedUnits, setExcludedUnits] = useState<Set<string>>(new Set());
-    const [mode, setMode] = useState<StackSizingMode>('EQUAL_COUNT');
-    const TIERS = [1, 2, 3, 4, 5, 6, 7] as const;
-    const MODES: StackSizingMode[] = ['EQUAL_COUNT', 'EQUAL_GOLD', 'WEEKLY_PRODUCTION', 'EQUAL_GOLD_WEEKLY'];
+    const excludedFactions = useMemo(() => new Set(form.excludedFactions), [form.excludedFactions]);
+    const excludedTiers = useMemo(() => new Set(form.excludedTiers), [form.excludedTiers]);
+    const excludedUnits = useMemo(() => new Set(form.excludedUnits), [form.excludedUnits]);
 
     const runMatrix = useRunMatrix((report, request) => {
         loadReport(report, request);
@@ -39,41 +39,38 @@ export default function MatrixConfigPage() {
     }, [unitsQuery.data, excludedFactions, excludedTiers]);
 
     function toggleFaction(faction: Faction) {
-        setExcludedFactions((prev) => {
-            const next = new Set(prev);
-            if (next.has(faction)) next.delete(faction);
-            else next.add(faction);
-            return next;
+        setForm({
+            excludedFactions: excludedFactions.has(faction)
+                ? form.excludedFactions.filter((f) => f !== faction)
+                : [...form.excludedFactions, faction],
         });
     }
 
     function toggleTier(tier: number) {
-        setExcludedTiers((prev) => {
-            const next = new Set(prev);
-            if (next.has(tier)) next.delete(tier);
-            else next.add(tier);
-            return next;
+        setForm({
+            excludedTiers: excludedTiers.has(tier)
+                ? form.excludedTiers.filter((x) => x !== tier)
+                : [...form.excludedTiers, tier],
         });
     }
 
     function toggleUnit(name: string) {
-        setExcludedUnits((prev) => {
-            const next = new Set(prev);
-            if (next.has(name)) next.delete(name);
-            else next.add(name);
-            return next;
+        setForm({
+            excludedUnits: excludedUnits.has(name)
+                ? form.excludedUnits.filter((u) => u !== name)
+                : [...form.excludedUnits, name],
         });
     }
 
     function handleSubmit(e: FormEvent) {
         e.preventDefault();
         runMatrix.mutate({
-            unitCount,
-            seedsPerMatchup,
-            excludeFactions: Array.from(excludedFactions),
-            excludeTiers: Array.from(excludedTiers),
-            excludeUnits: Array.from(excludedUnits),
-            mode,
+            unitCount: form.unitCount,
+            seedsPerMatchup: form.seedsPerMatchup,
+            excludeFactions: form.excludedFactions,
+            excludeTiers: form.excludedTiers,
+            excludeUnits: form.excludedUnits,
+            mode: form.mode,
         });
     }
 
@@ -94,7 +91,7 @@ export default function MatrixConfigPage() {
 
     const eligibleUnitCount = visibleUnits.length - excludedUnits.size;
     const totalMatchups = eligibleUnitCount > 1 ? (eligibleUnitCount * (eligibleUnitCount - 1)) / 2 : 0;
-    const totalSims = totalMatchups * seedsPerMatchup * 2;
+    const totalSims = totalMatchups * form.seedsPerMatchup * 2;
 
     return (
         <main className="mx-auto max-w-5xl space-y-6 p-8">
@@ -114,28 +111,28 @@ export default function MatrixConfigPage() {
                     <div className="grid gap-4 md:grid-cols-2">
                         <label className="block">
               <span className="text-sm text-slate-400">
-                {t('matrix.unitCountLabel')}: <span className="font-mono">{unitCount}</span>
+                {t('matrix.unitCountLabel')}: <span className="font-mono">{form.unitCount}</span>
               </span>
                             <input
                                 type="range"
                                 min={1}
                                 max={200}
-                                value={unitCount}
-                                onChange={(e) => setUnitCount(Number(e.target.value))}
+                                value={form.unitCount}
+                                onChange={(e) => setForm({unitCount: Number(e.target.value)})}
                                 className="mt-1 w-full accent-amber-500"
                             />
                             <span className="text-xs text-slate-500">{t('matrix.unitCountHint')}</span>
                         </label>
                         <label className="block">
               <span className="text-sm text-slate-400">
-                {t('matrix.seedsLabel')}: <span className="font-mono">{seedsPerMatchup}</span>
+                {t('matrix.seedsLabel')}: <span className="font-mono">{form.seedsPerMatchup}</span>
               </span>
                             <input
                                 type="range"
                                 min={1}
                                 max={100}
-                                value={seedsPerMatchup}
-                                onChange={(e) => setSeedsPerMatchup(Number(e.target.value))}
+                                value={form.seedsPerMatchup}
+                                onChange={(e) => setForm({seedsPerMatchup: Number(e.target.value)})}
                                 className="mt-1 w-full accent-amber-500"
                             />
                             <span className="text-xs text-slate-500">{t('matrix.seedsHint')}</span>
@@ -155,7 +152,7 @@ export default function MatrixConfigPage() {
                                 <label
                                     key={m}
                                     className={`flex cursor-pointer items-start gap-2 rounded-md border px-3 py-2 text-sm ${
-                                        mode === m
+                                        form.mode === m
                                             ? 'border-amber-500 bg-amber-500/10 text-amber-100'
                                             : 'border-slate-800 bg-slate-950 text-slate-200 hover:border-slate-700'
                                     }`}
@@ -164,8 +161,8 @@ export default function MatrixConfigPage() {
                                         type="radio"
                                         name="sizing-mode"
                                         value={m}
-                                        checked={mode === m}
-                                        onChange={() => setMode(m)}
+                                        checked={form.mode === m}
+                                        onChange={() => setForm({mode: m})}
                                         className="mt-1 accent-amber-500"
                                     />
                                     <span>
@@ -227,9 +224,9 @@ export default function MatrixConfigPage() {
                         <button
                             type="button"
                             onClick={() =>
-                                setExcludedUnits(
-                                    new Set(visibleUnits.filter((u) => u.upgrade).map((u) => u.name)),
-                                )
+                                setForm({
+                                    excludedUnits: visibleUnits.filter((u) => u.upgrade).map((u) => u.name),
+                                })
                             }
                             className="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-200 hover:border-amber-500 hover:text-amber-400"
                         >
@@ -246,7 +243,7 @@ export default function MatrixConfigPage() {
                                                 other.faction === u.faction && other.tier === u.tier && other.upgrade,
                                         ),
                                 );
-                                setExcludedUnits(new Set(basicsWithUpgradePeer.map((u) => u.name)));
+                                setForm({excludedUnits: basicsWithUpgradePeer.map((u) => u.name)});
                             }}
                             className="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-200 hover:border-amber-500 hover:text-amber-400"
                         >
@@ -254,7 +251,7 @@ export default function MatrixConfigPage() {
                         </button>
                         <button
                             type="button"
-                            onClick={() => setExcludedUnits(new Set())}
+                            onClick={() => setForm({excludedUnits: []})}
                             className="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-200 hover:border-amber-500 hover:text-amber-400"
                         >
                             {t('matrix.bulkClear')}

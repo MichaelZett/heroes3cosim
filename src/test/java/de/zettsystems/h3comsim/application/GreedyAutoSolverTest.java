@@ -70,6 +70,37 @@ class GreedyAutoSolverTest {
     }
 
     @Test
+    void impact_damage_unit_picks_max_runup_adjacent_hex() {
+        // Champion (Speed 9, IMPACT_DAMAGE) bei (0,5), Ziel bei (4,5).
+        // Direkter Pfad würde (3,5) wählen → 3 Hex Anlauf, +15 %.
+        // Optimum sind die „hinteren" Nachbarn (5,5)/(5,4)/(4,6) mit Distanz 5 → +25 %.
+        Stack champion = new Stack(UnitCatalog.CHAMPION, 5, new Hex(0, 5));
+        Stack target = new Stack(UnitCatalog.PIKEMAN, 5, new Hex(4, 5));
+
+        Action action = solver.decide(champion, target, battlefield);
+
+        assertThat(action).isInstanceOfSatisfying(Action.MoveAndMelee.class, mm -> {
+            assertThat(mm.target()).isSameAs(target);
+            assertThat(mm.destination().distanceTo(target.position())).isEqualTo(1);
+            // Run-up = Distanz vom Start; mindestens 5 (besser als direkte 3).
+            assertThat(champion.position().distanceTo(mm.destination())).isGreaterThanOrEqualTo(5);
+        });
+    }
+
+    @Test
+    void impact_damage_unit_falls_back_to_normal_move_when_target_unreachable() {
+        // Champion (Speed 9) bei (0,5), Ziel weit weg bei (14,5) — Distanz 14, alle adjazenten
+        // Felder des Ziels sind > 9 Hex entfernt → kein Charge-Hex erreichbar. Fall-Through auf
+        // den normalen Move-Pfad (Move ohne Melee).
+        Stack champion = new Stack(UnitCatalog.CHAMPION, 5, new Hex(0, 5));
+        Stack target = new Stack(UnitCatalog.PIKEMAN, 5, new Hex(14, 5));
+
+        Action action = solver.decide(champion, target, battlefield);
+
+        assertThat(action).isInstanceOf(Action.Move.class);
+    }
+
+    @Test
     void plain_move_when_arrival_is_still_out_of_reach() {
         Stack active = new Stack(UnitCatalog.PIKEMAN, 10, new Hex(0, 5));
         Stack opponent = new Stack(UnitCatalog.PIKEMAN, 10, new Hex(14, 5));
@@ -94,6 +125,32 @@ class GreedyAutoSolverTest {
         // Nach der Kite-Bewegung muss die Distanz wieder > opponent.speed sein.
         assertThat(move.destination().distanceTo(opponent.position()))
                 .isGreaterThan(opponent.getSpeed());
+    }
+
+    @Test
+    void shooter_skips_kite_when_dps_race_is_won_anyway() {
+        // 20 Marksman (TWO_SHOTS, 2–3 Dmg, 10 HP) vs 5 Pikeman (1–3 Dmg, 10 HP) auf Distanz 2.
+        // Engagement nächste Runde (Pikeman speed 4), Marksman ist schneller.
+        // Threat-deadly: 5 × 2 = 10 ≥ 10 Top-HP → wäre Kite-Kandidat.
+        // ABER DPS-Race: 1 Runde bis Engagement, 20 × 2.5 × 2 = 100 erwartete Damage,
+        // Gegner hat 50 HP gesamt → wird ohnehin tot, also nicht kiten, schießen.
+        Stack shooter = new Stack(UnitCatalog.MARKSMAN, 20, new Hex(0, 5));
+        Stack opponent = new Stack(UnitCatalog.PIKEMAN, 5, new Hex(2, 5));
+
+        Action action = solver.decide(shooter, opponent, battlefield);
+
+        assertThat(action).isInstanceOf(Action.Shoot.class);
+    }
+
+    @Test
+    void shooter_still_kites_when_dps_race_is_not_winnable() {
+        // 5 Marksman vs 20 Pikeman: kein DPS-Race-Win, threatIsDeadly bleibt true → kiten.
+        Stack shooter = new Stack(UnitCatalog.MARKSMAN, 5, new Hex(0, 5));
+        Stack opponent = new Stack(UnitCatalog.PIKEMAN, 20, new Hex(2, 5));
+
+        Action action = solver.decide(shooter, opponent, battlefield);
+
+        assertThat(action).isInstanceOf(Action.Move.class);
     }
 
     @Test
