@@ -145,3 +145,70 @@ export interface BattleSimulationDto {
     result: BattleResult;
     events: BattleEvent[];
 }
+
+// Matrix-Experiment DTOs — Spiegel von application.experiment.*
+export interface MatrixRequestDto {
+    unitCount?: number | null;
+    excludeUnits?: string[] | null;
+    excludeFactions?: Faction[] | null;
+    excludeTiers?: number[] | null;
+    seedsPerMatchup?: number | null;
+}
+
+export interface UnitMatchupStats {
+    unitName: string;
+    faction: Faction;
+    tier: number;
+    upgrade: boolean;
+    totalSims: number;
+    wins: number;
+    losses: number;
+    draws: number;
+    winRate: number;
+    avgSurvivorRatio: number;
+}
+
+export interface TierAnomaly {
+    unitName: string;
+    tier: number;
+    againstTier: number;
+    winRate: number;
+    sampleSize: number;
+}
+
+export interface FactionMatchupStats {
+    faction: Faction;
+    unitCount: number;
+    totalSims: number;
+    wins: number;
+    losses: number;
+    draws: number;
+    winRate: number;
+    avgSurvivorRatio: number;
+}
+
+export interface MatrixReport {
+    totalMatchups: number;
+    seedsPerMatchup: number;
+    unitCount: number;
+    elapsedMs: number;
+    stats: UnitMatchupStats[];
+    factionStats: FactionMatchupStats[];
+    anomalies: TierAnomaly[];
+}
+
+export type MatrixJobStatus = 'RUNNING' | 'COMPLETED' | 'FAILED';
+
+export interface MatrixJobSnapshot {
+    jobId: string;
+    status: MatrixJobStatus;
+    completed: number;
+    total: number;
+    report: MatrixReport | null;
+    error: string | null;
+}
+
+export interface MatrixProgress {
+    completed: number;
+    total: number;
+}

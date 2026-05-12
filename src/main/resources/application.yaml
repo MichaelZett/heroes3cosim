@@ -27,3 +27,9 @@ springdoc:
 logging:
   level:
     de.zettsystems.h3comsim: INFO
+
+h3:
+  experiment:
+    # Prozentualer Anteil der verfügbaren CPU-Kerne, der für Matrix-Läufe genutzt wird
+    # (min. 1 Thread). Default 50 % — die andere Hälfte bleibt für IDE/Browser/OS frei.
+    parallelism-percent: 50

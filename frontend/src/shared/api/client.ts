@@ -1,4 +1,11 @@
-import type {BattleConfigRequest, BattleSimulationDto, Faction, UnitDto} from './types';
+import type {
+    BattleConfigRequest,
+    BattleSimulationDto,
+    Faction,
+    MatrixJobSnapshot,
+    MatrixRequestDto,
+    UnitDto,
+} from './types';
 
 // Im Dev-Modus reicht Vite das `/api`-Präfix transparent an Spring auf 8080 weiter
 // (siehe vite.config.ts), in Prod liegt das Frontend hinter dem gleichen Origin.
@@ -28,5 +35,14 @@ export const api = {
             method: 'POST',
             body: JSON.stringify(request),
         });
+    },
+    startMatrix(request: MatrixRequestDto): Promise<MatrixJobSnapshot> {
+        return jsonFetch<MatrixJobSnapshot>('/experiments/matrix', {
+            method: 'POST',
+            body: JSON.stringify(request),
+        });
+    },
+    getMatrixJob(jobId: string): Promise<MatrixJobSnapshot> {
+        return jsonFetch<MatrixJobSnapshot>(`/experiments/matrix/${jobId}`);
     },
 };

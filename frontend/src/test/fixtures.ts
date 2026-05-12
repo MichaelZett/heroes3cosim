@@ -1,4 +1,11 @@
-import type {BattleEvent, BattleSimulationDto, Faction, StackSnapshot, UnitDto,} from '../shared/api/types';
+import type {
+    BattleEvent,
+    BattleSimulationDto,
+    Faction,
+    MatrixReport,
+    StackSnapshot,
+    UnitDto,
+} from '../shared/api/types';
 
 export const TEST_FACTIONS: Faction[] = ['CASTLE', 'RAMPART', 'TOWER'];
 
@@ -72,5 +79,73 @@ export function simulationFixture(): BattleSimulationDto {
             turnsTaken: 1,
         },
         events,
+    };
+}
+
+export function matrixReportFixture(): MatrixReport {
+    return {
+        totalMatchups: 3,
+        seedsPerMatchup: 2,
+        unitCount: 20,
+        elapsedMs: 1234,
+        stats: [
+            {
+                unitName: 'Halberdier',
+                faction: 'CASTLE',
+                tier: 1,
+                upgrade: true,
+                totalSims: 4,
+                wins: 3,
+                losses: 1,
+                draws: 0,
+                winRate: 0.75,
+                avgSurvivorRatio: 0.6,
+            },
+            {
+                unitName: 'Pikeman',
+                faction: 'CASTLE',
+                tier: 1,
+                upgrade: false,
+                totalSims: 4,
+                wins: 2,
+                losses: 2,
+                draws: 0,
+                winRate: 0.5,
+                avgSurvivorRatio: 0.4,
+            },
+            {
+                unitName: 'Archer',
+                faction: 'CASTLE',
+                tier: 2,
+                upgrade: false,
+                totalSims: 4,
+                wins: 1,
+                losses: 3,
+                draws: 0,
+                winRate: 0.25,
+                avgSurvivorRatio: 0.2,
+            },
+        ],
+        factionStats: [
+            {
+                faction: 'CASTLE',
+                unitCount: 3,
+                totalSims: 12,
+                wins: 6,
+                losses: 6,
+                draws: 0,
+                winRate: 0.5,
+                avgSurvivorRatio: 0.4,
+            },
+        ],
+        anomalies: [
+            {
+                unitName: 'Archer',
+                tier: 2,
+                againstTier: 1,
+                winRate: 0.25,
+                sampleSize: 4,
+            },
+        ],
     };
 }

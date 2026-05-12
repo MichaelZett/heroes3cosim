@@ -4,6 +4,7 @@ import {useNavigate} from 'react-router-dom';
 import {useTranslation} from 'react-i18next';
 import ArmySelector from './ArmySelector';
 import LanguageSwitcher from '../../shared/ui/LanguageSwitcher';
+import ModeSwitcher from '../../shared/ui/ModeSwitcher';
 import {useFactions, useSimulateBattle, useUnits} from '../../shared/api/hooks';
 import type {Faction} from '../../shared/api/types';
 import {useBattleStore} from '../battle-replay/battleStore';
@@ -63,13 +64,17 @@ export default function ConfigPage() {
 
     return (
         <main className="mx-auto max-w-5xl p-8">
-            <header className="mb-8 flex items-start justify-between gap-4">
+            <header className="mb-6 flex items-start justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-100">{t('config.title')}</h1>
                     <p className="mt-2 text-slate-400">{t('config.subtitle')}</p>
                 </div>
                 <LanguageSwitcher/>
             </header>
+
+            <div className="mb-6">
+                <ModeSwitcher current="single"/>
+            </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid gap-6 md:grid-cols-2">
