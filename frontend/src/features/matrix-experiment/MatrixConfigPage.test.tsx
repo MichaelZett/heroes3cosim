@@ -29,7 +29,7 @@ async function waitForCatalog() {
 }
 
 beforeEach(() => {
-    useMatrixStore.setState({report: null, lastRequest: null});
+    useMatrixStore.getState().reset();
 });
 
 afterEach(() => {
@@ -69,6 +69,25 @@ describe('MatrixConfigPage', () => {
         expect(state.report).not.toBeNull();
         expect(state.lastRequest).not.toBeNull();
         expect(state.lastRequest!.unitCount).toBe(20);
+    });
+
+    it('restores form state after unmount/remount (config-persistence)', async () => {
+        const user = userEvent.setup();
+        const {unmount} = renderConfig();
+        await waitForCatalog();
+
+        // User exkludiert Tower (Faction) und Pikeman (Unit), dann simuliert „weg navigiert".
+        await user.click(screen.getByLabelText('Tower'));
+        await user.click(screen.getByLabelText('Pikeman'));
+        unmount();
+
+        // Erneut mounten — Form-State muss aus dem Store kommen.
+        renderConfig();
+        await waitForCatalog();
+        expect(screen.getByLabelText('Tower')).not.toBeChecked();
+        expect(screen.getByLabelText('Pikeman')).not.toBeChecked();
+        // Gremlin gehört zu Tower → durch Faction-Exklude aus der Liste raus.
+        expect(screen.queryByLabelText('Gremlin')).not.toBeInTheDocument();
     });
 
     it('shows an error when the experiment endpoint fails', async () => {

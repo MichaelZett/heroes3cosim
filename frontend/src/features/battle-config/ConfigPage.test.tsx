@@ -6,6 +6,7 @@ import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {http, HttpResponse} from 'msw';
 import ConfigPage from './ConfigPage';
 import {useBattleStore} from '../battle-replay/battleStore';
+import {useBattleConfigStore} from './battleConfigStore';
 import {server} from '../../test/setup';
 
 function renderConfigPage() {
@@ -30,6 +31,7 @@ async function waitForCatalogToLoad() {
 
 beforeEach(() => {
     useBattleStore.setState({simulation: null, cursor: 0, speedMs: 400, paused: false});
+    useBattleConfigStore.getState().reset();
 });
 
 afterEach(() => {
