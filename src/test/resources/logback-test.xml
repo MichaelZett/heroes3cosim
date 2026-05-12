@@ -1,0 +1,16 @@
+<configuration>
+    <!--
+        Tests sollen weder das Filesystem noch den allgemeinen App-Log fluten — nur Console-Output.
+        BattleLogger bleibt auf DEBUG (so wie main), wird aber nur ins selbe STDOUT geschickt, damit
+        Test-Failures volle Combat-Logs zeigen. Kein Rolling-File während `gradlew test`.
+    -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="info">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>

@@ -126,7 +126,8 @@ public final class Battle {
                 if (active.hasSpeciality(UnitSpeciality.MOVE_BACK) && active.isAlive()) {
                     BattleLogger.logMoveBack(active.getName(), startPos.q(), startPos.r());
                     Hex returnFrom = active.position();
-                    List<HexCoord> backPath = battlefield.findPath(returnFrom, startPos).stream()
+                    List<HexCoord> backPath = battlefield.findPath(returnFrom, startPos,
+                                    active.unit().movement()).stream()
                             .map(h -> new HexCoord(h.q(), h.r())).toList();
                     active.moveTo(startPos);
                     events.emit(new BattleEvent.MoveBack(active.side(),
@@ -140,7 +141,7 @@ public final class Battle {
 
     private void moveTo(Stack active, Hex destination, Battlefield battlefield) {
         Hex from = active.position();
-        List<HexCoord> path = battlefield.findPath(from, destination).stream()
+        List<HexCoord> path = battlefield.findPath(from, destination, active.unit().movement()).stream()
                 .map(h -> new HexCoord(h.q(), h.r())).toList();
         BattleLogger.logMove(active.getName(), from.q(), from.r(), destination.q(), destination.r());
         active.moveTo(destination);

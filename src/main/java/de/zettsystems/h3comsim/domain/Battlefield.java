@@ -35,12 +35,11 @@ public record Battlefield(int width, int height, Set<Hex> obstacles) {
      * {@code maxHexes} Schritte von {@code from} entfernt. Stoppt mindestens einen Hex vor dem
      * Ziel — Bewegung schließt nie auf das Zielfeld auf, weil dort der Gegner steht.
      *
-     * <p>Bei leerem Obstacle-Set wird die gerade Linie gewählt. Sonst übernimmt der A*-Pfadfinder:
-     * Bewegung folgt dem kürzesten obstaclefreien Pfad, der mindestens einen Hex vor dem Ziel
-     * endet. Findet er keinen Pfad, bleibt {@code from} unverändert (Wait-Fallback).
+     * <p>{@link Movement#FLYING} überspringt Hindernisse („surmount obstacles, including walls",
+     * Manual) → gerade Linie. {@link Movement#GROUND} muss A* um Hindernisse herum.
      */
-    public Hex moveToward(Hex from, Hex target, int maxHexes) {
-        if (obstacles.isEmpty()) {
+    public Hex moveToward(Hex from, Hex target, int maxHexes, Movement movement) {
+        if (movement == Movement.FLYING || obstacles.isEmpty()) {
             return straightMoveToward(from, target, maxHexes);
         }
         return PathFinder.stepToward(this, from, target, maxHexes);
@@ -60,16 +59,16 @@ public record Battlefield(int width, int height, Set<Hex> obstacles) {
 
     /**
      * Liefert die Hex-für-Hex-Sequenz zwischen {@code from} (exklusive) und {@code destination}
-     * (inklusive). Bei leerem Obstacle-Set wird die gerade Cube-Linie interpoliert, sonst der
-     * A*-Pfad. Wenn {@code destination == from} oder kein Pfad existiert, wird eine leere Liste
-     * zurückgegeben. Für die Replay-Animation, damit Tokens nicht einen Sprung machen, sondern
-     * sichtbar Schritt für Schritt laufen.
+     * (inklusive). {@link Movement#FLYING} fliegt direkte Cube-Linie (auch über Hindernisse),
+     * {@link Movement#GROUND} läuft den kürzesten obstaclefreien A*-Pfad. Bei
+     * {@code destination == from} oder fehlendem Pfad: leere Liste. Für die Replay-Animation,
+     * damit Tokens nicht einen Sprung machen, sondern sichtbar Schritt für Schritt laufen.
      */
-    public List<Hex> findPath(Hex from, Hex destination) {
+    public List<Hex> findPath(Hex from, Hex destination, Movement movement) {
         if (from.equals(destination)) {
             return List.of();
         }
-        if (obstacles.isEmpty()) {
+        if (movement == Movement.FLYING || obstacles.isEmpty()) {
             return straightLine(from, destination);
         }
         return PathFinder.findPath(this, from, destination);

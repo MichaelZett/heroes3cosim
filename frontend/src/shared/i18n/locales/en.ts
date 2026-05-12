@@ -118,9 +118,25 @@ export const en: Dictionary = {
         seedsLabel: 'Seeds per matchup',
         seedsHint: 'Each seed runs twice with swapped attacker/defender roles.',
         scopeSummary: '{{units}} units, {{matchups}} matchups, {{sims}} sims total.',
-        equalGoldLabel: 'Equal gold value per side',
-        equalGoldHint:
-            'Instead of equal stack sizes, budget = max(costA, costB) × creatures per stack; each side buys as many of its own unit as fits (min 1).',
+        modeTitle: 'Sizing mode',
+        mode: {
+            EQUAL_COUNT: {
+                label: 'Equal stack size',
+                hint: 'Both sides get exactly the count from the slider above.',
+            },
+            EQUAL_GOLD: {
+                label: 'Equal gold value',
+                hint: 'Budget = max(costA, costB) × slider, LCM-snap — both sides pay the same gold.',
+            },
+            WEEKLY_PRODUCTION: {
+                label: 'Weekly production',
+                hint: 'Stack = H3 weekly production × slider. Slider 1 = one week per side.',
+            },
+            EQUAL_GOLD_WEEKLY: {
+                label: 'Gold-norm weekly',
+                hint: 'Budget = max(wpA·costA, wpB·costB) × slider, LCM-snap — gold-normalized weekly output.',
+            },
+        },
         excludeFactionsTitle: 'Factions',
         excludeTiersTitle: 'Tiers',
         excludeTiersHint: 'Uncheck a tier to drop all of its units from the experiment.',

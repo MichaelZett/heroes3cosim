@@ -2,9 +2,11 @@ package de.zettsystems.h3comsim.application.experiment;
 
 import de.zettsystems.h3comsim.domain.UnitCatalog;
 import jakarta.annotation.PreDestroy;
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,6 +16,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
+@Slf4j
 public class DefaultMatrixJobService implements MatrixJobService {
 
     private final MatrixExperimentService experiment;
@@ -36,7 +39,7 @@ public class DefaultMatrixJobService implements MatrixJobService {
         int total = computeTotalSims(request);
         JobState state = new JobState(total);
         jobs.put(jobId, state);
-        jobRunner.execute(() -> runJob(request, state));
+        jobRunner.execute(() -> runJob(jobId, request, state));
         return state.snapshot(jobId);
     }
 
@@ -51,14 +54,79 @@ public class DefaultMatrixJobService implements MatrixJobService {
         jobRunner.shutdownNow();
     }
 
-    private void runJob(MatrixRequest request, JobState state) {
+    private void runJob(String jobId, MatrixRequest request, JobState state) {
+        LOG.info("Matrix run started:\n{}", configSummary(jobId, request, state.total));
         try {
             MatrixReport report = experiment.run(request,
                     (completed, total) -> state.recordProgress(completed));
             state.complete(report);
+            LOG.info("Matrix run completed:\n{}", reportSummary(jobId, request, report));
         } catch (RuntimeException ex) {
-            state.fail(ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName());
+            String message = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName();
+            state.fail(message);
+            LOG.warn("Matrix run failed: jobId={} reason={}", jobId, message, ex);
         }
+    }
+
+    private static String configSummary(String jobId, MatrixRequest request, int totalSims) {
+        return String.join("\n",
+                "  jobId           = " + jobId,
+                "  mode            = " + request.mode(),
+                "  unitCount       = " + request.unitCount(),
+                "  seedsPerMatchup = " + request.seedsPerMatchup(),
+                "  excludeFactions = " + request.excludeFactions(),
+                "  excludeTiers    = " + request.excludeTiers(),
+                "  excludeUnits    = " + request.excludeUnits().size() + " entries",
+                "  totalSims       = " + totalSims);
+    }
+
+    private static String reportSummary(String jobId, MatrixRequest request, MatrixReport report) {
+        StringBuilder sb = new StringBuilder(1024);
+        sb.append("  jobId           = ").append(jobId).append('\n');
+        sb.append("  mode            = ").append(request.mode()).append('\n');
+        sb.append("  elapsed         = ").append(String.format(Locale.ROOT, "%.1fs", report.elapsedMs() / 1000.0)).append('\n');
+        sb.append("  participants    = ").append(report.stats().size()).append(" units, ")
+                .append(report.factionStats().size()).append(" factions\n");
+        sb.append("  matchups        = ").append(report.totalMatchups())
+                .append(", seeds/matchup = ").append(report.seedsPerMatchup()).append('\n');
+
+        sb.append("  faction stats (sorted by win-rate desc):\n");
+        for (FactionMatchupStats fs : report.factionStats()) {
+            sb.append(String.format(Locale.ROOT,
+                    "    %-12s units=%-3d sims=%-6d W/L/D=%d/%d/%d  win-rate=%5.1f%%  avg-survivor=%5.1f%%%n",
+                    fs.faction(), fs.unitCount(), fs.totalSims(),
+                    fs.wins(), fs.losses(), fs.draws(),
+                    fs.winRate() * 100.0, fs.avgSurvivorRatio() * 100.0));
+        }
+
+        int topN = Math.min(10, report.stats().size());
+        sb.append("  top ").append(topN).append(" units by win-rate:\n");
+        for (int i = 0; i < topN; i++) {
+            UnitMatchupStats u = report.stats().get(i);
+            sb.append(String.format(Locale.ROOT,
+                    "    %-22s %-11s T%d  win-rate=%5.1f%%  avg-survivor=%5.1f%%%n",
+                    u.unitName(), u.faction(), u.tier(),
+                    u.winRate() * 100.0, u.avgSurvivorRatio() * 100.0));
+        }
+
+        int bottomN = Math.min(5, report.stats().size());
+        sb.append("  bottom ").append(bottomN).append(" units by win-rate:\n");
+        for (int i = report.stats().size() - bottomN; i < report.stats().size(); i++) {
+            UnitMatchupStats u = report.stats().get(i);
+            sb.append(String.format(Locale.ROOT,
+                    "    %-22s %-11s T%d  win-rate=%5.1f%%  avg-survivor=%5.1f%%%n",
+                    u.unitName(), u.faction(), u.tier(),
+                    u.winRate() * 100.0, u.avgSurvivorRatio() * 100.0));
+        }
+
+        sb.append("  anomalies (").append(report.anomalies().size()).append("):\n");
+        for (TierAnomaly a : report.anomalies()) {
+            sb.append(String.format(Locale.ROOT,
+                    "    %-22s T%d loses to T%d  win-rate=%5.1f%%  sample=%d%n",
+                    a.unitName(), a.tier(), a.againstTier(),
+                    a.winRate() * 100.0, a.sampleSize()));
+        }
+        return sb.toString();
     }
 
     private static int computeTotalSims(MatrixRequest request) {

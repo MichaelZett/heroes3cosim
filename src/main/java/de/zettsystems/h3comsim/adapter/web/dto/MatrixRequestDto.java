@@ -1,6 +1,7 @@
 package de.zettsystems.h3comsim.adapter.web.dto;
 
 import de.zettsystems.h3comsim.application.experiment.MatrixRequest;
+import de.zettsystems.h3comsim.application.experiment.StackSizingMode;
 import de.zettsystems.h3comsim.domain.Faction;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -17,7 +18,7 @@ public record MatrixRequestDto(
         @Nullable Set<String> excludeUnits,
         @Nullable Set<Faction> excludeFactions,
         @Nullable Set<Integer> excludeTiers,
-        @Nullable Boolean equalGold,
+        @Nullable StackSizingMode mode,
         @Nullable @Min(1) @Max(100) Integer seedsPerMatchup
 ) {
     public MatrixRequest toApplication() {
@@ -26,7 +27,7 @@ public record MatrixRequestDto(
                 excludeUnits != null ? excludeUnits : Set.of(),
                 excludeFactions != null ? excludeFactions : Set.of(),
                 excludeTiers != null ? excludeTiers : Set.of(),
-                equalGold != null && equalGold,
+                mode != null ? mode : StackSizingMode.EQUAL_COUNT,
                 seedsPerMatchup != null ? seedsPerMatchup : 20);
     }
 }
