@@ -45,7 +45,15 @@ export function simulationFixture(): BattleSimulationDto {
             attacker: snapshot('ATTACKER', 'Pikeman', 0, 5),
             defender: snapshot('DEFENDER', 'Centaur', 14, 5),
         },
-        {type: 'Move', actor: 'ATTACKER', fromQ: 0, fromR: 5, toQ: 4, toR: 5},
+        {
+            type: 'Move',
+            actor: 'ATTACKER',
+            fromQ: 0,
+            fromR: 5,
+            toQ: 4,
+            toR: 5,
+            path: [{q: 1, r: 5}, {q: 2, r: 5}, {q: 3, r: 5}, {q: 4, r: 5}]
+        },
         {
             type: 'BattleEnd',
             winner: 'ATTACKER',

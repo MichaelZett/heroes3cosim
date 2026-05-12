@@ -1,5 +1,6 @@
 import {create} from 'zustand';
 import type {BattleConfigRequest, BattleEvent, BattleSimulationDto} from '../../shared/api/types';
+import {explodeMoves} from './explodeMoves';
 
 export interface BattleStore {
     simulation: BattleSimulationDto | null;
@@ -26,7 +27,12 @@ export const useBattleStore = create<BattleStore>((set) => ({
     paused: false,
 
     loadSimulation: (sim, request) =>
-        set({simulation: sim, lastRequest: request, cursor: 0, paused: false}),
+        set({
+            simulation: {...sim, events: explodeMoves(sim.events)},
+            lastRequest: request,
+            cursor: 0,
+            paused: false,
+        }),
     reset: () => set({cursor: 0, paused: false}),
     step: () =>
         set((state) => {

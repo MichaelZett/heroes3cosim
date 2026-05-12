@@ -105,16 +105,20 @@ public final class Battle {
                 BattleLogger.logWait(active.getName());
                 events.emit(new BattleEvent.Wait(active.side()));
             }
-            case Action.Move(Hex destination) -> moveTo(active, destination);
+            case Action.Move(Hex destination) -> moveTo(active, destination, battlefield);
             case Action.MoveAndMelee(Hex destination, Stack target) -> {
                 Hex startPos = active.position();
                 int hexesMoved = startPos.distanceTo(destination);
-                moveTo(active, destination);
+                moveTo(active, destination, battlefield);
                 meleeAttack(active, target, hexesMoved);
                 if (active.hasSpeciality(UnitSpeciality.MOVE_BACK) && active.isAlive()) {
                     BattleLogger.logMoveBack(active.getName(), startPos.q(), startPos.r());
+                    Hex returnFrom = active.position();
+                    List<HexCoord> backPath = battlefield.findPath(returnFrom, startPos).stream()
+                            .map(h -> new HexCoord(h.q(), h.r())).toList();
                     active.moveTo(startPos);
-                    events.emit(new BattleEvent.MoveBack(active.side(), startPos.q(), startPos.r()));
+                    events.emit(new BattleEvent.MoveBack(active.side(),
+                            startPos.q(), startPos.r(), backPath));
                 }
             }
             case Action.Melee(Stack target) -> meleeAttack(active, target, 0);
@@ -122,12 +126,14 @@ public final class Battle {
         }
     }
 
-    private void moveTo(Stack active, Hex destination) {
+    private void moveTo(Stack active, Hex destination, Battlefield battlefield) {
         Hex from = active.position();
+        List<HexCoord> path = battlefield.findPath(from, destination).stream()
+                .map(h -> new HexCoord(h.q(), h.r())).toList();
         BattleLogger.logMove(active.getName(), from.q(), from.r(), destination.q(), destination.r());
         active.moveTo(destination);
         events.emit(new BattleEvent.Move(active.side(),
-                from.q(), from.r(), destination.q(), destination.r()));
+                from.q(), from.r(), destination.q(), destination.r(), path));
     }
 
     private void meleeAttack(Stack active, Stack passive, int hexesMoved) {

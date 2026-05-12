@@ -78,7 +78,15 @@ export type BattleEvent =
     attacker: StackSnapshot;
     defender: StackSnapshot;
 }
-    | { type: 'Move'; actor: Side; fromQ: number; fromR: number; toQ: number; toR: number }
+    | {
+    type: 'Move';
+    actor: Side;
+    fromQ: number;
+    fromR: number;
+    toQ: number;
+    toR: number;
+    path: HexCoord[];
+}
     | { type: 'Wait'; actor: Side }
     | {
     type: 'Shoot';
@@ -109,7 +117,7 @@ export type BattleEvent =
     | { type: 'TwoBlows'; actor: Side }
     | { type: 'TwoShots'; actor: Side }
     | { type: 'GoodMorale'; actor: Side }
-    | { type: 'MoveBack'; actor: Side; toQ: number; toR: number }
+    | { type: 'MoveBack'; actor: Side; toQ: number; toR: number; path: HexCoord[] }
     | { type: 'DeathStare'; actor: Side; target: Side; kills: number; targetAfter: StackSnapshot }
     | { type: 'Thunderbolts'; actor: Side; target: Side; damage: number; targetAfter: StackSnapshot }
     | { type: 'Petrifying'; actor: Side; target: Side }

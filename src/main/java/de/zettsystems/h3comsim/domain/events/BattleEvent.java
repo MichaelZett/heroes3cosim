@@ -38,7 +38,11 @@ public sealed interface BattleEvent {
         }
     }
 
-    record Move(Side actor, int fromQ, int fromR, int toQ, int toR) implements BattleEvent {
+    record Move(Side actor, int fromQ, int fromR, int toQ, int toR,
+                List<HexCoord> path) implements BattleEvent {
+        public Move {
+            path = List.copyOf(path);
+        }
     }
 
     record Wait(Side actor) implements BattleEvent {
@@ -65,7 +69,10 @@ public sealed interface BattleEvent {
     record GoodMorale(Side actor) implements BattleEvent {
     }
 
-    record MoveBack(Side actor, int toQ, int toR) implements BattleEvent {
+    record MoveBack(Side actor, int toQ, int toR, List<HexCoord> path) implements BattleEvent {
+        public MoveBack {
+            path = List.copyOf(path);
+        }
     }
 
     record DeathStare(Side actor, Side target, int kills, StackSnapshot targetAfter) implements BattleEvent {
