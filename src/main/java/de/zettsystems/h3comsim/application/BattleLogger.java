@@ -113,4 +113,12 @@ public final class BattleLogger {
         LOG.info("Stack von {} wird durch Wiedergeburt mit {} Einheiten zurueckgebracht.",
                 name, restoredCount);
     }
+
+    static void logDistancePenalty(String name, int distance) {
+        LOG.info("Stack von {} hat Distanz-Penalty ({} Hex) und halbiert den Schaden.", name, distance);
+    }
+
+    static void logObstaclePenalty(String name) {
+        LOG.info("Stack von {} hat ein Hindernis in der Schusslinie und halbiert den Schaden.", name);
+    }
 }
