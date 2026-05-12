@@ -1,31 +1,22 @@
 import type {FormEvent} from 'react';
-import {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {useTranslation} from 'react-i18next';
 import ArmySelector from './ArmySelector';
 import LanguageSwitcher from '../../shared/ui/LanguageSwitcher';
 import ModeSwitcher from '../../shared/ui/ModeSwitcher';
 import {useFactions, useSimulateBattle, useUnits} from '../../shared/api/hooks';
-import type {Faction} from '../../shared/api/types';
 import {useBattleStore} from '../battle-replay/battleStore';
+import {useBattleConfigStore} from './battleConfigStore';
 
 export default function ConfigPage() {
     const navigate = useNavigate();
     const {t} = useTranslation();
     const loadSimulation = useBattleStore((s) => s.loadSimulation);
+    const form = useBattleConfigStore((s) => s.form);
+    const setForm = useBattleConfigStore((s) => s.setForm);
 
     const unitsQuery = useUnits();
     const factionsQuery = useFactions();
-
-    const [attackerFaction, setAttackerFaction] = useState<Faction | 'ALL'>('ALL');
-    const [attackerTier, setAttackerTier] = useState<number | 'ALL'>('ALL');
-    const [attackerUnit, setAttackerUnit] = useState('');
-    const [attackerCount, setAttackerCount] = useState(50);
-    const [defenderFaction, setDefenderFaction] = useState<Faction | 'ALL'>('ALL');
-    const [defenderTier, setDefenderTier] = useState<number | 'ALL'>('ALL');
-    const [defenderUnit, setDefenderUnit] = useState('');
-    const [defenderCount, setDefenderCount] = useState(50);
-    const [seedText, setSeedText] = useState('');
 
     const simulate = useSimulateBattle((sim, request) => {
         loadSimulation(sim, request);
@@ -34,19 +25,19 @@ export default function ConfigPage() {
 
     function handleSubmit(e: FormEvent) {
         e.preventDefault();
-        if (!attackerUnit || !defenderUnit) return;
-        const seed = seedText.trim() === '' ? null : Number(seedText);
+        if (!form.attackerUnit || !form.defenderUnit) return;
+        const seed = form.seedText.trim() === '' ? null : Number(form.seedText);
         simulate.mutate({
-            attackerUnit,
-            attackerCount,
-            defenderUnit,
-            defenderCount,
+            attackerUnit: form.attackerUnit,
+            attackerCount: form.attackerCount,
+            defenderUnit: form.defenderUnit,
+            defenderCount: form.defenderCount,
             seed: Number.isFinite(seed as number) ? (seed as number) : null,
         });
     }
 
     function rollSeed() {
-        setSeedText(String(Math.floor(Math.random() * 1_000_000)));
+        setForm({seedText: String(Math.floor(Math.random() * 1_000_000))});
     }
 
     if (unitsQuery.isPending || factionsQuery.isPending) {
@@ -60,7 +51,7 @@ export default function ConfigPage() {
         );
     }
 
-    const submitDisabled = !attackerUnit || !defenderUnit || simulate.isPending;
+    const submitDisabled = !form.attackerUnit || !form.defenderUnit || simulate.isPending;
 
     return (
         <main className="mx-auto max-w-5xl p-8">
@@ -82,27 +73,27 @@ export default function ConfigPage() {
                         title={t('config.attackerTitle')}
                         factions={factionsQuery.data}
                         units={unitsQuery.data}
-                        selectedFaction={attackerFaction}
-                        selectedTier={attackerTier}
-                        selectedUnit={attackerUnit}
-                        count={attackerCount}
-                        onFactionChange={setAttackerFaction}
-                        onTierChange={setAttackerTier}
-                        onUnitChange={setAttackerUnit}
-                        onCountChange={setAttackerCount}
+                        selectedFaction={form.attackerFaction}
+                        selectedTier={form.attackerTier}
+                        selectedUnit={form.attackerUnit}
+                        count={form.attackerCount}
+                        onFactionChange={(v) => setForm({attackerFaction: v})}
+                        onTierChange={(v) => setForm({attackerTier: v})}
+                        onUnitChange={(v) => setForm({attackerUnit: v})}
+                        onCountChange={(v) => setForm({attackerCount: v})}
                     />
                     <ArmySelector
                         title={t('config.defenderTitle')}
                         factions={factionsQuery.data}
                         units={unitsQuery.data}
-                        selectedFaction={defenderFaction}
-                        selectedTier={defenderTier}
-                        selectedUnit={defenderUnit}
-                        count={defenderCount}
-                        onFactionChange={setDefenderFaction}
-                        onTierChange={setDefenderTier}
-                        onUnitChange={setDefenderUnit}
-                        onCountChange={setDefenderCount}
+                        selectedFaction={form.defenderFaction}
+                        selectedTier={form.defenderTier}
+                        selectedUnit={form.defenderUnit}
+                        count={form.defenderCount}
+                        onFactionChange={(v) => setForm({defenderFaction: v})}
+                        onTierChange={(v) => setForm({defenderTier: v})}
+                        onUnitChange={(v) => setForm({defenderUnit: v})}
+                        onCountChange={(v) => setForm({defenderCount: v})}
                     />
                 </div>
 
@@ -116,8 +107,8 @@ export default function ConfigPage() {
                                 inputMode="numeric"
                                 placeholder={t('config.seedPlaceholder')}
                                 className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-amber-500 focus:outline-none"
-                                value={seedText}
-                                onChange={(e) => setSeedText(e.target.value)}
+                                value={form.seedText}
+                                onChange={(e) => setForm({seedText: e.target.value})}
                             />
                         </label>
                         <button

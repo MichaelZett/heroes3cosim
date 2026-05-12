@@ -37,9 +37,14 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Interface, Jackson-polymorph serialisiert).
 - **Matrix-Auswertung** — jede Einheit gegen jede andere, pro Match-up
   mehrere Seeds und automatisch getauschte Attacker-/Defender-Rollen.
-  Parallel über Work-Stealing-Pool; Report listet Win-Rate, mittlere
-  Überlebensquote und „Anomalien" (Truppen, die mehrheitlich gegen die
-  nächstniedrigere Tier-Klasse verlieren).
+  Parallel über Work-Stealing-Pool (50 %-Auslastung der CPU-Kerne, per
+  `h3.experiment.parallelism-percent` justierbar), asynchron mit
+  Polling-Endpoint und Fortschrittsanzeige. Vier Stack-Sizing-Modi:
+  gleiche Stack-Größe, gleiches Gold (LCM-Snap), Wochenproduktion und
+  gold-normalisierte Wochenproduktion. Tier- und Faction-Filter im
+  Config; Report mit Per-Unit- und Per-Faction-Tabelle plus
+  „Anomalien" (Truppen, die mehrheitlich gegen die nächstniedrigere
+  Tier-Klasse verlieren).
 - **Replay-UI** — React 19 + Vite + Tailwind. Truppenkonfiguration mit
   Seed-Wahl, Hex-Replay mit Step/Pause/Geschwindigkeitsslider, Rückspiel-
   Button (gleicher Seed, getauschte Seiten), scrollender Combat-Log.
@@ -118,15 +123,77 @@ Hexagonal-light:
   statisches Resource gebündelt. Feature-Buckets: `battle-config`,
   `battle-replay`, `matrix-experiment`.
 
+## Erste Erkenntnisse aus der Matrix-Auswertung
+
+Vier vergleichbare Läufe gegen denselben Pool (63 Upgrade-Einheiten,
+9 Fraktionen × 7 Tiers, 20 Seeds, je Match-up beide Rollen → ≈ 78 k
+Sims pro Modus). Faction-Win-Rate gemittelt über alle Unit-vs-Unit-
+Match-ups:
+
+| Rang   | EQUAL_COUNT       | EQUAL_GOLD         | WEEKLY_PRODUCTION | EQUAL_GOLD_WEEKLY  |
+|--------|-------------------|--------------------|-------------------|--------------------|
+| 1      | Castle 52.6 %     | **Rampart 59.3 %** | **Castle 54.7 %** | **Rampart 59.2 %** |
+| 2      | Dungeon 50.8 %    | Tower 58.6 %       | Rampart 51.4 %    | Tower 58.1 %       |
+| 3      | Tower 50.2 %      | Castle 53.9 %      | Dungeon 51.1 %    | Castle 53.4 %      |
+| 4      | Inferno 50.1 %    | Stronghold 53.0 %  | Conflux 50.6 %    | Stronghold 53.3 %  |
+| 5      | Stronghold 49.7 % | Inferno 50.5 %     | Tower 50.0 %      | Inferno 50.7 %     |
+| 6      | Necropolis 49.5 % | Conflux 48.1 %     | Stronghold 49.7 % | Dungeon 48.3 %     |
+| 7      | Fortress 49.2 %   | Dungeon 47.4 %     | Fortress 49.3 %   | Conflux 48.0 %     |
+| 8      | Rampart 49.2 %    | Fortress 43.0 %    | Necropolis 47.4 % | Fortress 43.1 %    |
+| 9      | Conflux 48.7 %    | Necropolis 36.2 %  | Inferno 45.7 %    | Necropolis 35.8 %  |
+| Spread | 3.9 pp            | **23.1 pp**        | 9.0 pp            | **23.4 pp**        |
+
+**Was die Modi inhaltlich erzählen**:
+
+- **EQUAL_COUNT** ist für Faction-Ranking unaussagekräftig — alle neun
+  Factions liegen in einem 4-pp-Band um die 50 %. Jede Faction hat eine
+  starke T7 (Arch Angel 99 %, Arch Devil 97 %, Black Dragon 95 %, …),
+  und bei gleicher Stack-Größe mittelt sich das raus.
+- **EQUAL_GOLD** spreizt drastisch (23 pp). Rampart und Tower
+  führen, weil ihre Mid-Tier-Einheiten gold-effizient sind (Iron Golem
+  200 g/35 HP, Naga Queen, War Unicorn, Dendroid Soldier). Necropolis
+  bricht auf 36 % ein — Lich, Black Knight, Ghost Dragon sind teuer
+  gemessen an ihren Stats, und ihr eigentlicher Hebel (Necromancer-
+  Skill, Animate Dead) fehlt in der Engine.
+- **WEEKLY_PRODUCTION** bleibt nahe an der Tier-Hierarchie (9 pp Spread,
+  nur 2 Anomalien gegenüber 23 bei EQUAL_GOLD), weil die Produktionsraten
+  den Tier-Gap einpreisen (14 Pikemen pro Woche, 1 Angel pro Woche).
+- **EQUAL_GOLD_WEEKLY** liefert nahezu dieselbe Rangfolge wie EQUAL_GOLD
+  (Top 5 identisch, max ±0.8 pp Differenz). Mathematisch erwartbar — die
+  Wochengewichtung hebt sich im Budget weitgehend wieder auf. Der Modus
+  ist primär eine Plausibilitätskontrolle des Gold-Vergleichs.
+
+**Stabile Befunde**:
+
+- **Castle** ist die robusteste Faction (Top 3 in drei von vier Modi).
+- **Rampart + Tower** sind die gold-effizientesten Factions.
+- **Necropolis** verliert in jeder gold-normierten Auswertung — ein
+  Modell-Artefakt, weil Necromancy/Animate-Dead/Skeleton-Transformer
+  nicht modelliert sind.
+- **Magma Elemental** ist die einzige Anomalie über alle vier Modi
+  (T5 verliert mehrheitlich gegen T4) — bekanntermaßen die schwächste
+  Tier-5-Einheit, deren Fire-Immunity-Vorteil ohne Spells nicht zieht.
+
+**Modell-Grenzen, die diese Zahlen verzerren**:
+
+- Keine Sprüche → Necropolis (Animate Dead), Tower (Magi-Casts),
+  Conflux (Spell-Imm./Fire-Imm.), Black Dragon (Spell-Imm.) verlieren
+  ihren H3-Hauptvorteil.
+- Keine Hero-Skills → Necromancy, Tactics, Logistics, Sorcery wirken nicht.
+- Single-Stack-Armeen → Pit Lord Raise Demons, Lich Death Cloud,
+  Cerberus 3-Hex-Attack, Magog Splash-Shot fehlen alle.
+
+Die Werte sind also als „unter spell-/hero-freien 1-vs-1-Bedingungen"
+zu lesen, nicht als universelle H3-Tier-Liste.
+
 ## Was als nächstes kommt
 
 - **Mixed Armies** — mehrere Stacks pro Seite mit gemeinsamer
   Initiative, Voraussetzung für AoE-Effekte (Lich Death Cloud) und
-  echte Truppenkombinationen.
+  echte Truppenkombinationen. Erst damit lassen sich Stadt-vs-Stadt-
+  Battles sinnvoll auswerten.
 - **Helden** mit Primärwerten, Sekundärfertigkeiten und Zauberbuch.
 - **Belagerung**: Mauern, Catapult, Wall-Penalty für Schützen.
-- **Gold-Effizienz-Modus** für die Matrix: Stack-Größe aus Gold-Budget
-  ableiten, nicht aus festem Count.
 
 ## Quellen
 

@@ -18,7 +18,7 @@ function renderRoutes() {
 }
 
 beforeEach(() => {
-    useMatrixStore.setState({report: null, lastRequest: null});
+    useMatrixStore.getState().reset();
 });
 
 describe('MatrixResultPage', () => {
