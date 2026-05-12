@@ -1,81 +1,121 @@
 # heroes3-combat-simulator
 
-Auto-Solver für taktische Kämpfe aus *Heroes of Might and Magic III*.
-Konfiguration eines Setups, deterministische Simulation, Ausgabe sind
-Ergebnis und Event-Log. Während des Kampfs gibt es keinen
-Spieler-Input.
+Ein **Auto-Solver für taktische Kämpfe aus *Heroes of Might and Magic III***.
+Du wählst zwei Truppen, der Server simuliert den Kampf mit der gleichen
+Logik wie das Spiel und liefert Ergebnis plus vollständiges Replay zurück.
+Kein Spielerinput während des Kampfs — deterministische Engine über einen
+injizierten Zufallsgenerator, gleicher Seed liefert identischen Ablauf.
 
-Endziel: Truppen-, Helden- und Fraktionsvergleiche per Monte-Carlo
-über viele Kämpfe entscheiden — welche Einheit ist gold-effizient,
-welche Fraktion gewinnt im Schnitt, welche Kombination aus Held und
-Spezialisierung zahlt sich aus. Eine HTTP-Schnittstelle und ein
-React-Frontend sollen die Engine später ergänzen.
+Endziel sind belastbare Truppen-, Helden- und Fraktionsvergleiche per
+Monte-Carlo: welche Einheit ist gold-effizient, welche Fraktion gewinnt
+im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
+
+## Was drin ist
+
+- **Vollständiger SoD-Kreaturenkatalog** — alle 126 Einheiten der neun
+  Fraktionen (Castle, Rampart, Tower, Inferno, Necropolis, Dungeon,
+  Stronghold, Fortress, Conflux) inklusive Upgrade-Varianten, Stats aus
+  dem RoE-Manual.
+- **Engine-evaluierte Spezialfähigkeiten** unter anderem No Retaliation,
+  Two Blows / Two Shots, Good Morale, Death Stare, Thunderbolts,
+  Petryfying (Medusa/Scorpicore), Cursing, Poisonous, Diseases, Aging,
+  Death Blow, Angel/Devil/Titan Hate, Impact Damage (Cavalier-Jousting),
+  Defense Reduction (Behemoth), Move Back (Harpy), Counterstrike
+  Twice/Unlimited (Griffin), Regeneration (Wight), Fire Shield (Efreet
+  Sultan), Rebirth (Phoenix), No Hand-to-Hand Penalty.
+- **Hex-Schlachtfeld 15 × 11**, lineare Bewegung in Geschwindigkeitsweite,
+  Fernkampf mit `shotsRemaining` und Nahkampf-Penalty bei Distanz 1.
+- **HTTP-API** über Spring Boot 4 mit
+  [Swagger-UI](http://localhost:8080/swagger-ui.html): `GET /api/units`,
+  `GET /api/factions`, `POST /api/battles/simulate`. Antwort enthält
+  Ergebnis plus strukturierten `BattleEvent`-Stream (sealed Interface,
+  Jackson-polymorph serialisiert).
+- **Replay-UI** — React 19 + Vite + Tailwind. Truppenkonfiguration,
+  Seed-Wahl, Hex-Replay mit Step/Pause/Geschwindigkeitsslider, scrollender
+  Combat-Log. Deutsch und Englisch umschaltbar.
+- **Deterministisch über Seed**: gleicher Seed → identische
+  `BattleResult` + identischer Event-Stream. Voraussetzung für die
+  geplante Monte-Carlo-Auswertung.
+
+## Schnellstart
+
+Voraussetzung: JDK 25 auf dem PATH (sonst lädt die Gradle-Toolchain
+nach), Node ist nicht erforderlich — Gradle ruft den Frontend-Build
+selbst auf.
+
+```pwsh
+.\gradlew.bat bootRun
+```
+
+Spring Boot lauscht auf `http://localhost:8080`, liefert die fertige
+React-UI unter `/`, die REST-API unter `/api/**`, Swagger-UI unter
+`/swagger-ui.html`. Beim ersten Lauf installiert Gradle die
+Node-Dependencies und baut das Frontend.
+
+CLI-Demo ohne UI (Grand Elf vs. Arch Angel mit deutschem Combat-Log auf
+der Konsole):
+
+```pwsh
+.\gradlew.bat bootRun --args='--spring.profiles.active=cli'
+```
+
+## Entwickeln
+
+```pwsh
+.\gradlew.bat build              # Java-Build + Tests + Coverage-Gate + SpotBugs
+.\gradlew.bat test               # nur Java-Tests
+cd frontend; npm run dev         # Vite-Dev-Server auf :5173 mit /api-Proxy auf :8080
+cd frontend; npm test            # Vitest + Testing Library + MSW
+.\gradlew.bat dependencyUpdates  # Versions-Check
+```
+
+Backend-Hot-Reload im Dev-Modus: `ComSimApp` als Spring-Boot-Run-Config
+starten, separat im Frontend-Verzeichnis `npm run dev` — Vite reicht
+`/api/*` an den Spring-Server durch, keine CORS-Konfiguration nötig.
+
+Reports landen unter `build/reports/`: JaCoCo, SpotBugs, Tests.
 
 ## Stack
 
-- Java 25, Gradle 9.2 (Groovy DSL).
-- Aktuell reines Java; Spring Boot 4 kommt dazu, sobald die
-  HTTP-Schnittstelle gebraucht wird.
-- SLF4J + Logback, Guava, JSpecify.
-- Tests: JUnit 5 + AssertJ.
-- Statische Analyse: ErrorProne mit NullAway, SpotBugs, JaCoCo.
+- **Engine**: Java 25, Spring Boot 4, ErrorProne + NullAway, SpotBugs,
+  JaCoCo (Coverage-Gate Line ≥ 80 % / Branch ≥ 60 % erzwungen).
+- **API-Schicht**: Spring MVC, Validation per `jakarta.validation`,
+  springdoc-openapi für OpenAPI/Swagger.
+- **Frontend**: React 19, Vite 8, TypeScript 6, Tailwind 4,
+  TanStack Query, Zustand, React Router 7, react-i18next.
+- **Tests**: JUnit 5 + AssertJ + Spring-Boot-Test (Backend);
+  Vitest + Testing Library + MSW (Frontend).
+- **CI**: GitHub Actions auf `push`/`pull_request` gegen `master`,
+  JDK 25 Temurin, `gradlew build spotbugsMain spotbugsTest
+  jacocoTestReport`.
 
-## Build und Ausführung
+## Architektur
 
-```pwsh
-# Voraussetzung: JDK 25 auf dem PATH, sonst lädt die Gradle-Toolchain nach.
-.\gradlew.bat build              # Übersetzen, Tests, JaCoCo, SpotBugs
-.\gradlew.bat run                # Beispielkampf (Grand Elf vs Arch Angel)
-.\gradlew.bat test               # nur Tests
-.\gradlew.bat dependencyUpdates  # Versionen der Bibliotheken prüfen
-```
+Hexagonal-light:
 
-Berichte landen unter `build/reports/`:
-`jacoco/test/html/index.html`, `spotbugs/main.html`,
-`tests/test/index.html`.
+- **`domain`** — pure Combat-Domäne ohne Spring-Abhängigkeit. `Unit`,
+  `UnitCatalog`, `Stack`, `Hex`, `Battlefield`, Enums + Event-Records
+  unter `domain.events`.
+- **`application`** — `Battle.simulate(...)` als Orchestrator,
+  `BattleSetup`, `BattleResult`, `AutoSolver` (Default `GreedyAutoSolver`).
+- **`adapter.web`** — `BattleController`, DTOs, CORS-Config für den
+  Vite-Dev-Proxy.
+- **`frontend/`** — eigenständiges Vite-Projekt, vom Gradle-Build als
+  statisches Resource gebündelt.
 
-## Stand der Engine
+## Was als nächstes kommt
 
-- 59 Einheiten im `UnitCatalog`. Castle und Rampart sind vollständig,
-  Inferno, Dungeon, Tower und Stronghold teilweise.
-- Ein Stack gegen einen Stack auf einem 15×11-Hex-Feld.
-  Bewegungsweite ergibt sich aus der Geschwindigkeit der Einheit.
-- Fernkampf: Schützen feuern aus Distanz ohne Vergeltung. Auf
-  Distanz 1 wechselt der Schütze in den Nahkampf mit
-  `HAND_TO_HAND`-Malus.
-- Umgesetzte Spezialfähigkeiten: `NO_RETALIATION`, `TWO_BLOWS`,
-  `GOOD_MORALE`, `DEATH_STARE`, `THUNDERBOLTS`, `PETRYFYING` (sic,
-  Heroes-3-Schreibweise), `CURSING`, `DEATH_BLOW`, `ANGEL_HATE`,
-  `DEVIL_HATE`, `NO_HAND_TO_HAND_PENALTY`. Die übrigen Einträge im
-  Enum sind angelegt, werden von der Engine aber noch nicht
-  ausgewertet.
-- Deterministische Simulation: Der `RandomGenerator` wird in `Battle`
-  injiziert, gleicher Seed liefert identisches `BattleResult`.
-  Grundlage für Monte-Carlo-Auswertungen und Wiederholungen.
+- **Mixed Armies** — mehrere Stacks pro Seite mit gemeinsamer
+  Initiative, Voraussetzung für AoE-Effekte (Lich Death Cloud) und
+  echte Truppenkombinationen.
+- **Helden** mit Primärwerten, Sekundärfertigkeiten und Zauberbuch.
+- **Belagerung**: Mauern, Distanz-Penalty (>10 Hex = halber Schaden),
+  Obstacle-Penalty.
+- **Monte-Carlo-Runner** für aggregierte Statistik über viele Seeds
+  (Win-Rate, Survivors, Gold-Effizienz).
 
-## Offene Themen
+## Quellen
 
-- Mehrere Stacks pro Seite und Initiative über alle Stacks.
-- Helden mit Primärwerten, Sekundärfertigkeiten, Zauberbuch.
-- Zaubersystem (Mana, Wisdom-Schwelle, Kampfzauber).
-- Distanz- und Hindernismalus für Schützen, Belagerungen.
-- Spring-Boot-Schnittstelle samt OpenAPI-Generator im Paket
-  `adapter`.
-- React-Frontend (Armee-Editor, Wiederholungsanzeige,
-  Auswertungs-Dashboard).
-
-## Projektstruktur
-
-```
-src/main/java/de/zettsystems/h3comsim/
-├─ ComSimApp.java     — Beispielkampf als CLI-Einstieg
-├─ domain/            — Unit (Record), UnitCatalog, Stack, Hex,
-│                       Battlefield, Enums (AttackType, Movement,
-│                       UnitSpeciality, UnitSpecialityType)
-└─ application/       — Battle, BattleSetup, BattleResult,
-                        BattleLogger, Action (sealed), AutoSolver,
-                        GreedyAutoSolver
-```
-
-Das Paket `adapter` ist für die HTTP-Schicht vorgesehen und aktuell
-noch leer.
+- Stat-Werte aus dem RoE-Manual (`files/heroes3_manual.pdf`,
+  Text-Layer-Extrakt unter `files/h3_manual.txt`).
+- Spezialfähigkeiten: https://heroes.thelazy.net/index.php/Special_ability

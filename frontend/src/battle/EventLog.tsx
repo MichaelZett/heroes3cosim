@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
-import type { BattleEvent } from '../api/types';
-import { eventToNode } from './eventText';
-import type { SideNames } from './eventText';
+import {useEffect, useRef} from 'react';
+import {useTranslation} from 'react-i18next';
+import type {BattleEvent} from '../api/types';
+import type {SideNames} from './eventText';
+import {EventText} from './eventText';
 
 interface EventLogProps {
   events: readonly BattleEvent[];
@@ -10,6 +11,7 @@ interface EventLogProps {
 }
 
 export default function EventLog({ events, cursor, names }: EventLogProps) {
+  const {t} = useTranslation();
   const listRef = useRef<HTMLOListElement>(null);
 
   useEffect(() => {
@@ -20,7 +22,7 @@ export default function EventLog({ events, cursor, names }: EventLogProps) {
   }, [cursor]);
 
   if (cursor === 0) {
-    return <p className="text-sm text-slate-500">Replay läuft gleich los…</p>;
+    return <p className="text-sm text-slate-500">{t('battle.waitingForReplay')}</p>;
   }
 
   return (
@@ -36,7 +38,7 @@ export default function EventLog({ events, cursor, names }: EventLogProps) {
                 : 'px-2 py-1 text-slate-400'
             }
           >
-            <span className="text-slate-600">▸</span> {eventToNode(event, names)}
+            <span className="text-slate-600">▸</span> <EventText event={event} names={names}/>
           </li>
         );
       })}
