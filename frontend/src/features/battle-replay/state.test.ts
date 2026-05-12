@@ -47,7 +47,7 @@ describe('reduceEvents', () => {
     it('applies Move events to the actor position', () => {
         const events: BattleEvent[] = [
             start,
-            {type: 'Move', actor: 'ATTACKER', fromQ: 0, fromR: 5, toQ: 6, toR: 5},
+            {type: 'Move', actor: 'ATTACKER', fromQ: 0, fromR: 5, toQ: 6, toR: 5, path: []},
         ];
         const state = reduceEvents(events, 2);
         expect(state!.attacker.q).toBe(6);
@@ -58,8 +58,8 @@ describe('reduceEvents', () => {
     it('applies MoveBack events to the actor position', () => {
         const events: BattleEvent[] = [
             start,
-            {type: 'Move', actor: 'ATTACKER', fromQ: 0, fromR: 5, toQ: 6, toR: 5},
-            {type: 'MoveBack', actor: 'ATTACKER', toQ: 0, toR: 5},
+            {type: 'Move', actor: 'ATTACKER', fromQ: 0, fromR: 5, toQ: 6, toR: 5, path: []},
+            {type: 'MoveBack', actor: 'ATTACKER', toQ: 0, toR: 5, path: []},
         ];
         const state = reduceEvents(events, 3);
         expect(state!.attacker.q).toBe(0);
@@ -130,8 +130,8 @@ describe('reduceEvents', () => {
     it('respects the cursor — only events 0..cursor-1 are applied', () => {
         const events: BattleEvent[] = [
             start,
-            {type: 'Move', actor: 'ATTACKER', fromQ: 0, fromR: 5, toQ: 6, toR: 5},
-            {type: 'Move', actor: 'ATTACKER', fromQ: 6, fromR: 5, toQ: 12, toR: 5},
+            {type: 'Move', actor: 'ATTACKER', fromQ: 0, fromR: 5, toQ: 6, toR: 5, path: []},
+            {type: 'Move', actor: 'ATTACKER', fromQ: 6, fromR: 5, toQ: 12, toR: 5, path: []},
         ];
         expect(reduceEvents(events, 2)!.attacker.q).toBe(6);
         expect(reduceEvents(events, 3)!.attacker.q).toBe(12);

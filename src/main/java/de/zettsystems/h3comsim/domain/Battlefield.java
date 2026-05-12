@@ -1,5 +1,7 @@
 package de.zettsystems.h3comsim.domain;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -54,5 +56,34 @@ public record Battlefield(int width, int height, Set<Hex> obstacles) {
         int q = (int) Math.round(from.q() + t * (target.q() - from.q()));
         int r = (int) Math.round(from.r() + t * (target.r() - from.r()));
         return new Hex(q, r);
+    }
+
+    /**
+     * Liefert die Hex-für-Hex-Sequenz zwischen {@code from} (exklusive) und {@code destination}
+     * (inklusive). Bei leerem Obstacle-Set wird die gerade Cube-Linie interpoliert, sonst der
+     * A*-Pfad. Wenn {@code destination == from} oder kein Pfad existiert, wird eine leere Liste
+     * zurückgegeben. Für die Replay-Animation, damit Tokens nicht einen Sprung machen, sondern
+     * sichtbar Schritt für Schritt laufen.
+     */
+    public List<Hex> findPath(Hex from, Hex destination) {
+        if (from.equals(destination)) {
+            return List.of();
+        }
+        if (obstacles.isEmpty()) {
+            return straightLine(from, destination);
+        }
+        return PathFinder.findPath(this, from, destination);
+    }
+
+    private static List<Hex> straightLine(Hex from, Hex destination) {
+        int distance = from.distanceTo(destination);
+        List<Hex> path = new ArrayList<>(distance);
+        for (int i = 1; i <= distance; i++) {
+            double t = (double) i / distance;
+            int q = (int) Math.round(from.q() + t * (destination.q() - from.q()));
+            int r = (int) Math.round(from.r() + t * (destination.r() - from.r()));
+            path.add(new Hex(q, r));
+        }
+        return path;
     }
 }

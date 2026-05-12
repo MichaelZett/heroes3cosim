@@ -46,6 +46,7 @@ describe('eventToNode', () => {
             fromR: 5,
             toQ: 10,
             toR: 5,
+            path: [],
         });
         expect(container.textContent).toContain('(14,5)');
         expect(container.textContent).toContain('(10,5)');
