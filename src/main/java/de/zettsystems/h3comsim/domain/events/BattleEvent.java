@@ -3,6 +3,8 @@ package de.zettsystems.h3comsim.domain.events;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
+import java.util.List;
+
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes({
         @JsonSubTypes.Type(value = BattleEvent.BattleStart.class, name = "BattleStart"),
@@ -29,7 +31,11 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 public sealed interface BattleEvent {
 
     record BattleStart(int battlefieldWidth, int battlefieldHeight,
+                       List<HexCoord> obstacles,
                        StackSnapshot attacker, StackSnapshot defender) implements BattleEvent {
+        public BattleStart {
+            obstacles = List.copyOf(obstacles);
+        }
     }
 
     record Move(Side actor, int fromQ, int fromR, int toQ, int toR) implements BattleEvent {

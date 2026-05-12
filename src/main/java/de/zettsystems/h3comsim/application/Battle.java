@@ -3,16 +3,19 @@ package de.zettsystems.h3comsim.application;
 import de.zettsystems.h3comsim.domain.AttackType;
 import de.zettsystems.h3comsim.domain.Battlefield;
 import de.zettsystems.h3comsim.domain.Hex;
+import de.zettsystems.h3comsim.domain.PathFinder;
 import de.zettsystems.h3comsim.domain.Stack;
 import de.zettsystems.h3comsim.domain.UnitSpeciality;
 import de.zettsystems.h3comsim.domain.events.BattleEvent;
 import de.zettsystems.h3comsim.domain.events.EventCollector;
+import de.zettsystems.h3comsim.domain.events.HexCoord;
 import de.zettsystems.h3comsim.domain.events.NoopEventCollector;
 import de.zettsystems.h3comsim.domain.events.StackSnapshot;
 import de.zettsystems.h3comsim.domain.events.Winner;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.List;
 import java.util.Set;
 import java.util.random.RandomGenerator;
 
@@ -40,7 +43,10 @@ public final class Battle {
         BattleLogger.logStartOfCombat(setup.getAttackerName(), setup.getAttackerCount(),
                 setup.getDefenderName(), setup.getDefenderCount());
         Battlefield bf = setup.battlefield();
-        events.emit(new BattleEvent.BattleStart(bf.width(), bf.height(),
+        List<HexCoord> obstacleCoords = bf.obstacles().stream()
+                .map(h -> new HexCoord(h.q(), h.r()))
+                .toList();
+        events.emit(new BattleEvent.BattleStart(bf.width(), bf.height(), obstacleCoords,
                 snapshot(setup.getAttacker()), snapshot(setup.getDefender())));
 
         int attackerStart = setup.getAttackerCount();
@@ -112,7 +118,7 @@ public final class Battle {
                 }
             }
             case Action.Melee(Stack target) -> meleeAttack(active, target, 0);
-            case Action.Shoot(Stack target) -> rangedAttack(active, target);
+            case Action.Shoot(Stack target) -> rangedAttack(active, target, battlefield);
         }
     }
 
@@ -126,7 +132,7 @@ public final class Battle {
 
     private void meleeAttack(Stack active, Stack passive, int hexesMoved) {
         int countBeforeFirst = passive.getCount();
-        int dealt = dealDamage(active, passive, AttackType.HAND_TO_HAND, hexesMoved);
+        int dealt = dealDamage(active, passive, AttackType.HAND_TO_HAND, hexesMoved, 0, false);
         events.emit(new BattleEvent.Melee(active.side(), passive.side(), hexesMoved,
                 dealt, countBeforeFirst - passive.getCount(), snapshot(passive)));
         applyFireShield(active, passive, dealt);
@@ -136,7 +142,7 @@ public final class Battle {
             events.emit(new BattleEvent.TwoBlows(active.side()));
             int countBeforeSecond = passive.getCount();
             // Second blow does not gain Jousting-Bonus — kein erneutes Anfahren.
-            int dealtSecond = dealDamage(active, passive, AttackType.HAND_TO_HAND, 0);
+            int dealtSecond = dealDamage(active, passive, AttackType.HAND_TO_HAND, 0, 0, false);
             events.emit(new BattleEvent.Melee(active.side(), passive.side(), 0,
                     dealtSecond, countBeforeSecond - passive.getCount(), snapshot(passive)));
             applyFireShield(active, passive, dealtSecond);
@@ -172,16 +178,17 @@ public final class Battle {
         passive.recordRetaliation();
         int countBefore = active.getCount();
         // Retaliation kehrt aktiv/passiv bewusst um — passive schlaegt zurueck.
-        int dealt = dealDamage(/* active= */ passive, /* passive= */ active, AttackType.HAND_TO_HAND, 0);
+        int dealt = dealDamage(/* active= */ passive, /* passive= */ active, AttackType.HAND_TO_HAND, 0, 0, false);
         events.emit(new BattleEvent.Retaliation(passive.side(), active.side(),
                 dealt, countBefore - active.getCount(), snapshot(active)));
     }
 
-    private void rangedAttack(Stack active, Stack passive) {
+    private void rangedAttack(Stack active, Stack passive, Battlefield battlefield) {
         int distance = active.position().distanceTo(passive.position());
+        boolean obstacleInLine = PathFinder.hasObstacleInLine(battlefield, active.position(), passive.position());
         BattleLogger.logShoot(active.getName(), passive.getName(), distance);
         int countBefore = passive.getCount();
-        int dealt = dealDamage(active, passive, AttackType.LONG_RANGE, 0);
+        int dealt = dealDamage(active, passive, AttackType.LONG_RANGE, 0, distance, obstacleInLine);
         events.emit(new BattleEvent.Shoot(active.side(), passive.side(), distance,
                 dealt, countBefore - passive.getCount(), snapshot(passive)));
         active.useShot();
@@ -189,17 +196,30 @@ public final class Battle {
             BattleLogger.logTwoShots(active.getName());
             events.emit(new BattleEvent.TwoShots(active.side()));
             int distance2 = active.position().distanceTo(passive.position());
+            boolean obstacleInLine2 = PathFinder.hasObstacleInLine(battlefield, active.position(), passive.position());
             BattleLogger.logShoot(active.getName(), passive.getName(), distance2);
             int countBefore2 = passive.getCount();
-            int dealt2 = dealDamage(active, passive, AttackType.LONG_RANGE, 0);
+            int dealt2 = dealDamage(active, passive, AttackType.LONG_RANGE, 0, distance2, obstacleInLine2);
             events.emit(new BattleEvent.Shoot(active.side(), passive.side(), distance2,
                     dealt2, countBefore2 - passive.getCount(), snapshot(passive)));
             active.useShot();
         }
     }
 
-    private int dealDamage(Stack active, Stack passive, AttackType attackType, int hexesMoved) {
+    private int dealDamage(Stack active, Stack passive, AttackType attackType,
+                           int hexesMoved, int distance, boolean obstacleInLine) {
         int currentDamage = active.calculateCurrentDamage(attackType, hexesMoved, rng);
+        if (attackType == AttackType.LONG_RANGE) {
+            Set<UnitSpeciality> attackerSpecs = active.getAttackerSpecialities();
+            if (distance > 10 && !attackerSpecs.contains(UnitSpeciality.NO_DISTANCE_PENALTY)) {
+                currentDamage = currentDamage / 2;
+                BattleLogger.logDistancePenalty(active.getName(), distance);
+            }
+            if (obstacleInLine && !attackerSpecs.contains(UnitSpeciality.NO_OBSTACLE_PENALTY)) {
+                currentDamage = currentDamage / 2;
+                BattleLogger.logObstaclePenalty(active.getName());
+            }
+        }
         int effectiveDefense = passive.effectiveDefenseAgainst(active.getAttackerSpecialities());
         int boniMaliPercentage = active.calculateAttackBoniMaliPercentage(effectiveDefense);
         int realDamage = (currentDamage * (100 + boniMaliPercentage)) / 100;

@@ -1,4 +1,4 @@
-import type {BattleEvent, BattleSimulationDto, Faction, StackSnapshot, UnitDto,} from '../api/types';
+import type {BattleEvent, BattleSimulationDto, Faction, StackSnapshot, UnitDto,} from '../shared/api/types';
 
 export const TEST_FACTIONS: Faction[] = ['CASTLE', 'RAMPART', 'TOWER'];
 
@@ -41,6 +41,7 @@ export function simulationFixture(): BattleSimulationDto {
             type: 'BattleStart',
             battlefieldWidth: 15,
             battlefieldHeight: 11,
+            obstacles: [],
             attacker: snapshot('ATTACKER', 'Pikeman', 0, 5),
             defender: snapshot('DEFENDER', 'Centaur', 14, 5),
         },
