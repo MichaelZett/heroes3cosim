@@ -8,12 +8,18 @@ import java.util.Set;
  * Eingabe für den Matrix-Lauf: jede zugelassene Einheit kämpft gegen jede andere zugelassene
  * Einheit. Pro Pair laufen {@code seedsPerMatchup} Seeds, jeweils mit getauschten Rollen — so
  * mittelt sich der Attacker-Vorteil heraus.
+ *
+ * <p>{@code unitCount} ist die Stack-Größe pro Seite bei {@code equalGold=false}. Bei
+ * {@code equalGold=true} dient sie als Multiplikator: das Pair-Budget beträgt
+ * {@code max(costA, costB) * unitCount} Gold, jede Seite kauft mit ihrem Budget so viele
+ * Einheiten ihres Typs, wie sie kann (min. 1).
  */
 public record MatrixRequest(
         int unitCount,
         Set<String> excludeUnits,
         Set<Faction> excludeFactions,
         Set<Integer> excludeTiers,
+        boolean equalGold,
         int seedsPerMatchup
 ) {
     public MatrixRequest {

@@ -15,6 +15,34 @@ import static org.assertj.core.api.Assertions.assertThat;
 class BattleTest {
 
     @Test
+    void battle_terminates_via_no_progress_when_both_sides_wait_forever() {
+        // Mock-AutoSolver, der nur Wait spuckt — beide Stacks tun nichts, nie ein Toter.
+        // Erwartung: nach NO_PROGRESS_LIMIT Runden Abbruch, Sieger via Gesamt-HP (gleichstand → DRAW).
+        AutoSolver waiter = (active, opponent, bf) -> new Action.Wait();
+        BattleSetup setup = new BattleSetup(UnitCatalog.PIKEMAN, 10, UnitCatalog.PIKEMAN, 10);
+
+        BattleResult result = new Battle(new Random(1L), waiter).simulate(setup);
+
+        assertThat(result.winner()).isEqualTo(Winner.DRAW);
+        assertThat(result.attackerSurvivors()).isEqualTo(10);
+        assertThat(result.defenderSurvivors()).isEqualTo(10);
+        // Wir wollten kein Endlos-Loop — turn-Counter muss endlich sein und <= TURN_CAP (200).
+        assertThat(result.turnsTaken()).isLessThanOrEqualTo(200);
+    }
+
+    @Test
+    void battle_picks_total_hp_winner_when_stalemate_breaks_one_sided() {
+        // Mock-AutoSolver: beide Wait, aber Defender hat weniger HP-Total → DEFENDER verliert,
+        // weil bei No-Progress-Abbruch der Gesamt-HP-Vergleich entscheidet.
+        AutoSolver waiter = (active, opponent, bf) -> new Action.Wait();
+        BattleSetup setup = new BattleSetup(UnitCatalog.PIKEMAN, 10, UnitCatalog.PIKEMAN, 5);
+
+        BattleResult result = new Battle(new Random(1L), waiter).simulate(setup);
+
+        assertThat(result.winner()).isEqualTo(Winner.ATTACKER);
+    }
+
+    @Test
     void single_archAngel_overpowers_ten_grand_elves() {
         BattleResult result = simulate(UnitCatalog.GRAND_ELF, 10, UnitCatalog.ARCH_ANGEL, 1, 42L);
 

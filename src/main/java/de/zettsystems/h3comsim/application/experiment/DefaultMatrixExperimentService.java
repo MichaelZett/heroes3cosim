@@ -142,28 +142,62 @@ public class DefaultMatrixExperimentService implements MatrixExperimentService {
                                      MatrixRequest request, int pairBase,
                                      AtomicInteger completedCounter, int totalSims,
                                      ProgressListener listener) {
+        int countA = stackSizeFor(a, b, request);
+        int countB = stackSizeFor(b, a, request);
         for (int s = 0; s < request.seedsPerMatchup(); s++) {
             long seed = (long) pairBase * 1_000_000L + s;
             // Rolle 1: a = Attacker, b = Defender
-            runOne(a, b, accA, accB, seed, request.unitCount());
+            runOne(a, b, accA, accB, seed, countA, countB);
             listener.onProgress(completedCounter.incrementAndGet(), totalSims);
             // Rolle 2: b = Attacker, a = Defender — gleicher Seed, getauschte Rollen
-            runOne(b, a, accB, accA, seed, request.unitCount());
+            runOne(b, a, accB, accA, seed, countB, countA);
             listener.onProgress(completedCounter.incrementAndGet(), totalSims);
         }
     }
 
+    /**
+     * Liefert die Stack-Größe für {@code self} im Pair gegen {@code other}. Bei
+     * {@code equalGold=false} entspricht das {@code request.unitCount()}. Bei {@code equalGold=true}
+     * wird das Pair-Budget auf das nächste Vielfache von {@code lcm(costA, costB)} abgerundet —
+     * dadurch teilen sich beide Seiten **exakt** dasselbe Gold, ohne Floor-Rest. Ausgangspunkt
+     * für die Rundung ist {@code max(costA, costB) * unitCount}; ist das kleiner als das LCM,
+     * wird der Mindest-Stack {@code lcm / self.cost} eingesetzt (entspricht der kleinsten
+     * exakten Gold-Aufteilung).
+     */
+    static int stackSizeFor(Unit self, Unit other, MatrixRequest request) {
+        if (!request.equalGold()) {
+            return request.unitCount();
+        }
+        int costSelf = self.cost();
+        int costOther = other.cost();
+        int rawBudget = Math.max(costSelf, costOther) * request.unitCount();
+        long lcm = lcm(costSelf, costOther);
+        long snappedBudget = (rawBudget / lcm) * lcm;
+        if (snappedBudget == 0L) {
+            return (int) (lcm / costSelf);
+        }
+        return (int) (snappedBudget / costSelf);
+    }
+
+    private static long lcm(int a, int b) {
+        return (long) a / gcd(a, b) * b;
+    }
+
+    private static int gcd(int a, int b) {
+        return b == 0 ? a : gcd(b, a % b);
+    }
+
     private static void runOne(Unit attackerUnit, Unit defenderUnit,
                                Accumulator attackerAcc, Accumulator defenderAcc,
-                               long seed, int unitCount) {
+                               long seed, int attackerCount, int defenderCount) {
         Battlefield battlefield = Battlefield.STANDARD.withObstacles(
                 ObstacleGenerator.generate(Battlefield.STANDARD, new Random(seed)));
-        BattleSetup setup = new BattleSetup(attackerUnit, unitCount, defenderUnit, unitCount,
+        BattleSetup setup = new BattleSetup(attackerUnit, attackerCount, defenderUnit, defenderCount,
                 battlefield, ATTACKER_SPAWN, DEFENDER_SPAWN);
         BattleResult result = new Battle(new Random(seed), new GreedyAutoSolver()).simulate(setup);
 
-        double attackerSurvivorRatio = ratio(result.attackerSurvivors(), unitCount);
-        double defenderSurvivorRatio = ratio(result.defenderSurvivors(), unitCount);
+        double attackerSurvivorRatio = ratio(result.attackerSurvivors(), attackerCount);
+        double defenderSurvivorRatio = ratio(result.defenderSurvivors(), defenderCount);
         attackerAcc.record(result.winner(), Winner.ATTACKER, attackerSurvivorRatio, defenderUnit.tier());
         defenderAcc.record(result.winner(), Winner.DEFENDER, defenderSurvivorRatio, attackerUnit.tier());
     }

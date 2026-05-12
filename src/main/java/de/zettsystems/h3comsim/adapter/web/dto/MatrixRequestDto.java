@@ -17,6 +17,7 @@ public record MatrixRequestDto(
         @Nullable Set<String> excludeUnits,
         @Nullable Set<Faction> excludeFactions,
         @Nullable Set<Integer> excludeTiers,
+        @Nullable Boolean equalGold,
         @Nullable @Min(1) @Max(100) Integer seedsPerMatchup
 ) {
     public MatrixRequest toApplication() {
@@ -25,6 +26,7 @@ public record MatrixRequestDto(
                 excludeUnits != null ? excludeUnits : Set.of(),
                 excludeFactions != null ? excludeFactions : Set.of(),
                 excludeTiers != null ? excludeTiers : Set.of(),
+                equalGold != null && equalGold,
                 seedsPerMatchup != null ? seedsPerMatchup : 20);
     }
 }

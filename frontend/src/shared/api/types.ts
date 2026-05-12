@@ -152,6 +152,7 @@ export interface MatrixRequestDto {
     excludeUnits?: string[] | null;
     excludeFactions?: Faction[] | null;
     excludeTiers?: number[] | null;
+    equalGold?: boolean | null;
     seedsPerMatchup?: number | null;
 }
 

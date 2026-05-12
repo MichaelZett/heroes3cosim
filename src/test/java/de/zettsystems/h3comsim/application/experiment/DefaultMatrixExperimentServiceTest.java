@@ -20,7 +20,7 @@ class DefaultMatrixExperimentServiceTest {
         Set<Faction> exclude = Set.of(
                 Faction.TOWER, Faction.INFERNO, Faction.NECROPOLIS, Faction.DUNGEON,
                 Faction.STRONGHOLD, Faction.FORTRESS, Faction.CONFLUX, Faction.NEUTRAL);
-        return new MatrixRequest(20, Set.of(), exclude, Set.of(), seeds);
+        return new MatrixRequest(20, Set.of(), exclude, Set.of(), false, seeds);
     }
 
     @Test
@@ -66,6 +66,7 @@ class DefaultMatrixExperimentServiceTest {
                 Set.of(Faction.TOWER, Faction.INFERNO, Faction.NECROPOLIS, Faction.DUNGEON,
                         Faction.STRONGHOLD, Faction.FORTRESS, Faction.CONFLUX, Faction.NEUTRAL),
                 Set.of(),
+                false,
                 1);
         MatrixReport report = service.run(req);
 
@@ -123,6 +124,7 @@ class DefaultMatrixExperimentServiceTest {
                 Set.of(Faction.TOWER, Faction.INFERNO, Faction.NECROPOLIS, Faction.DUNGEON,
                         Faction.STRONGHOLD, Faction.FORTRESS, Faction.CONFLUX, Faction.NEUTRAL),
                 Set.of(1, 2, 3),
+                false,
                 1);
         MatrixReport report = service.run(req);
 
@@ -148,10 +150,80 @@ class DefaultMatrixExperimentServiceTest {
     }
 
     @Test
+    void equal_gold_snaps_to_lcm_so_both_sides_pay_the_same_gold() {
+        // Black Dragon (4000g) vs Pikeman (60g), unitCount=20.
+        // Raw-Budget = 80 000, LCM(4000, 60) = 12 000, snapped = floor(80 000 / 12 000) * 12 000 = 72 000.
+        // → 18 BD vs 1 200 Pikemen, beide Seiten exakt 72 000 g.
+        MatrixRequest req = new MatrixRequest(20, Set.of(), Set.of(), Set.of(), true, 1);
+        int bdCount = DefaultMatrixExperimentService.stackSizeFor(
+                de.zettsystems.h3comsim.domain.UnitCatalog.BLACK_DRAGON,
+                de.zettsystems.h3comsim.domain.UnitCatalog.PIKEMAN, req);
+        int pikemanCount = DefaultMatrixExperimentService.stackSizeFor(
+                de.zettsystems.h3comsim.domain.UnitCatalog.PIKEMAN,
+                de.zettsystems.h3comsim.domain.UnitCatalog.BLACK_DRAGON, req);
+
+        assertThat(bdCount).isEqualTo(18);
+        assertThat(pikemanCount).isEqualTo(1200);
+        assertThat(bdCount * de.zettsystems.h3comsim.domain.UnitCatalog.BLACK_DRAGON.cost())
+                .isEqualTo(pikemanCount * de.zettsystems.h3comsim.domain.UnitCatalog.PIKEMAN.cost());
+    }
+
+    @Test
+    void equal_gold_uses_minimum_lcm_stack_when_unit_count_too_small() {
+        // unitCount=1, BD (4000) vs Pikeman (60) → Raw-Budget 4 000 < LCM 12 000.
+        // Fallback: kleinster exakter Split bei genau LCM Gold pro Seite → 3 BD vs 200 Pikemen.
+        MatrixRequest req = new MatrixRequest(1, Set.of(), Set.of(), Set.of(), true, 1);
+        int bdCount = DefaultMatrixExperimentService.stackSizeFor(
+                de.zettsystems.h3comsim.domain.UnitCatalog.BLACK_DRAGON,
+                de.zettsystems.h3comsim.domain.UnitCatalog.PIKEMAN, req);
+        int pikemanCount = DefaultMatrixExperimentService.stackSizeFor(
+                de.zettsystems.h3comsim.domain.UnitCatalog.PIKEMAN,
+                de.zettsystems.h3comsim.domain.UnitCatalog.BLACK_DRAGON, req);
+
+        assertThat(bdCount).isEqualTo(3);
+        assertThat(pikemanCount).isEqualTo(200);
+    }
+
+    @Test
+    void equal_gold_returns_unit_count_for_same_cost_pair() {
+        // Halberdier (75) vs Halberdier (75) — selbe Kosten → beide bekommen unitCount Einheiten.
+        MatrixRequest req = new MatrixRequest(20, Set.of(), Set.of(), Set.of(), true, 1);
+        int count = DefaultMatrixExperimentService.stackSizeFor(
+                de.zettsystems.h3comsim.domain.UnitCatalog.HALBERDIER,
+                de.zettsystems.h3comsim.domain.UnitCatalog.HALBERDIER, req);
+
+        assertThat(count).isEqualTo(20);
+    }
+
+    @Test
+    void equal_gold_produces_valid_report() {
+        // Nur Castle behalten, equalGold=true: die Pair-Stacks haben unterschiedliche Größen je
+        // nach Cost. Wir prüfen hier nur, dass der Lauf durchgeht und die Stats konsistent sind.
+        MatrixRequest equalGold = new MatrixRequest(
+                20,
+                Set.of(),
+                Set.of(Faction.RAMPART, Faction.TOWER, Faction.INFERNO, Faction.NECROPOLIS,
+                        Faction.DUNGEON, Faction.STRONGHOLD, Faction.FORTRESS, Faction.CONFLUX,
+                        Faction.NEUTRAL),
+                Set.of(),
+                true,
+                1);
+
+        MatrixReport report = service.run(equalGold);
+
+        assertThat(report.stats()).isNotEmpty();
+        assertThat(report.stats()).allMatch(s -> s.faction() == Faction.CASTLE);
+        // Jede Castle-Einheit hat (n-1)*2 Sims wie sonst auch — equalGold ändert die Stack-Größe,
+        // nicht die Anzahl Match-ups.
+        int participants = report.stats().size();
+        assertThat(report.stats()).allMatch(s -> s.totalSims() == (participants - 1) * 2);
+    }
+
+    @Test
     void invalid_tier_in_exclude_tiers_is_rejected() {
-        assertThatThrownBy(() -> new MatrixRequest(20, Set.of(), Set.of(), Set.of(0), 1))
+        assertThatThrownBy(() -> new MatrixRequest(20, Set.of(), Set.of(), Set.of(0), false, 1))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new MatrixRequest(20, Set.of(), Set.of(), Set.of(8), 1))
+        assertThatThrownBy(() -> new MatrixRequest(20, Set.of(), Set.of(), Set.of(8), false, 1))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 

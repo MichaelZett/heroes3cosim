@@ -21,6 +21,7 @@ export default function MatrixConfigPage() {
     const [excludedFactions, setExcludedFactions] = useState<Set<Faction>>(new Set());
     const [excludedTiers, setExcludedTiers] = useState<Set<number>>(new Set());
     const [excludedUnits, setExcludedUnits] = useState<Set<string>>(new Set());
+    const [equalGold, setEqualGold] = useState(false);
     const TIERS = [1, 2, 3, 4, 5, 6, 7] as const;
 
     const runMatrix = useRunMatrix((report, request) => {
@@ -71,6 +72,7 @@ export default function MatrixConfigPage() {
             excludeFactions: Array.from(excludedFactions),
             excludeTiers: Array.from(excludedTiers),
             excludeUnits: Array.from(excludedUnits),
+            equalGold,
         });
     }
 
@@ -145,6 +147,18 @@ export default function MatrixConfigPage() {
                             sims: totalSims,
                         })}
                     </p>
+                    <label className="flex items-start gap-2 text-sm text-slate-200">
+                        <input
+                            type="checkbox"
+                            checked={equalGold}
+                            onChange={(e) => setEqualGold(e.target.checked)}
+                            className="mt-1 accent-amber-500"
+                        />
+                        <span>
+                            {t('matrix.equalGoldLabel')}
+                            <span className="block text-xs text-slate-500">{t('matrix.equalGoldHint')}</span>
+                        </span>
+                    </label>
                 </section>
 
                 <section className="rounded-lg border border-slate-800 bg-slate-900 p-6 space-y-3">

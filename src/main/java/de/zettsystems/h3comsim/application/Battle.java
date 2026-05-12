@@ -21,6 +21,17 @@ import java.util.random.RandomGenerator;
 
 public final class Battle {
 
+    /**
+     * Harte Obergrenze gegen pathologische Endlos-Schleifen.
+     */
+    private static final int TURN_CAP = 200;
+    /**
+     * Sicherheitsabbruch, wenn so viele aufeinanderfolgende Runden ohne Verluste auf beiden Seiten
+     * vergehen. Trifft typische Kite-Patterns, in denen ein Schütze ohne Schüsse aus dem Stand
+     * läuft, ohne dass jemand stirbt.
+     */
+    private static final int NO_PROGRESS_LIMIT = 20;
+
     private final RandomGenerator rng;
     private final AutoSolver autoSolver;
     private final EventCollector events;
@@ -53,24 +64,25 @@ public final class Battle {
         int defenderStart = setup.getDefenderCount();
         int turn = 0;
 
-        while (setup.bothAlive()) {
+        int lastAttackerCount = setup.getAttacker().getCount();
+        int lastDefenderCount = setup.getDefender().getCount();
+        int stalledRounds = 0;
+        while (setup.bothAlive() && turn < TURN_CAP && stalledRounds < NO_PROGRESS_LIMIT) {
             doTurn(setup);
             turn++;
+            int aCount = setup.getAttacker().getCount();
+            int dCount = setup.getDefender().getCount();
+            if (aCount == lastAttackerCount && dCount == lastDefenderCount) {
+                stalledRounds++;
+            } else {
+                stalledRounds = 0;
+                lastAttackerCount = aCount;
+                lastDefenderCount = dCount;
+            }
         }
         BattleLogger.logMiddleDelimiter();
 
-        Winner winner;
-        if (setup.isAttackerAlive() && !setup.isDefenderAlive()) {
-            BattleLogger.logDeath(setup.getDefenderName());
-            winner = Winner.ATTACKER;
-        } else if (!setup.isAttackerAlive() && setup.isDefenderAlive()) {
-            BattleLogger.logDeath(setup.getAttackerName());
-            winner = Winner.DEFENDER;
-        } else {
-            BattleLogger.logDeath(setup.getAttackerName());
-            BattleLogger.logDeath(setup.getDefenderName());
-            winner = Winner.DRAW;
-        }
+        Winner winner = determineWinner(setup);
 
         events.emit(new BattleEvent.BattleEnd(winner,
                 setup.getAttackerCount(), setup.getDefenderCount(), turn));
@@ -340,6 +352,39 @@ public final class Battle {
     private static StackSnapshot snapshot(Stack stack) {
         return new StackSnapshot(stack.side(), stack.getName(), stack.getCount(),
                 stack.getCurrentHealth(), stack.position().q(), stack.position().r());
+    }
+
+    private static Winner determineWinner(BattleSetup setup) {
+        boolean attackerAlive = setup.isAttackerAlive();
+        boolean defenderAlive = setup.isDefenderAlive();
+        if (attackerAlive && !defenderAlive) {
+            BattleLogger.logDeath(setup.getDefenderName());
+            return Winner.ATTACKER;
+        }
+        if (!attackerAlive && defenderAlive) {
+            BattleLogger.logDeath(setup.getAttackerName());
+            return Winner.DEFENDER;
+        }
+        if (!attackerAlive) {
+            BattleLogger.logDeath(setup.getAttackerName());
+            BattleLogger.logDeath(setup.getDefenderName());
+            return Winner.DRAW;
+        }
+        // Beide noch lebendig — Turn-Cap oder Stall. Sieger über Gesamt-HP.
+        int aHp = totalHp(setup.getAttacker());
+        int dHp = totalHp(setup.getDefender());
+        if (aHp > dHp) {
+            return Winner.ATTACKER;
+        }
+        if (dHp > aHp) {
+            return Winner.DEFENDER;
+        }
+        return Winner.DRAW;
+    }
+
+    private static int totalHp(Stack stack) {
+        int max = stack.unit().health();
+        return Math.max(0, (stack.getCount() - 1)) * max + stack.getCurrentHealth();
     }
 
     private static Deque<Stack> determineMoveOrder(Stack attacker, Stack defender) {
