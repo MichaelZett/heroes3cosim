@@ -81,6 +81,48 @@ class GreedyAutoSolverTest {
     }
 
     @Test
+    void faster_shooter_kites_when_engagement_is_imminent_next_turn() {
+        // Marksman speed 6 vs Pikeman speed 4. Pikeman bei (2,5) → Distanz 2, Pikeman würde
+        // nächste Runde adjacent sein. Marksman ist schneller → kite, statt zu schießen.
+        Stack shooter = new Stack(UnitCatalog.MARKSMAN, 10, new Hex(0, 5));
+        Stack opponent = new Stack(UnitCatalog.PIKEMAN, 10, new Hex(2, 5));
+
+        Action action = solver.decide(shooter, opponent, battlefield);
+
+        assertThat(action).isInstanceOf(Action.Move.class);
+        Action.Move move = (Action.Move) action;
+        // Nach der Kite-Bewegung muss die Distanz wieder > opponent.speed sein.
+        assertThat(move.destination().distanceTo(opponent.position()))
+                .isGreaterThan(opponent.getSpeed());
+    }
+
+    @Test
+    void shooter_shoots_when_incoming_damage_is_not_lethal() {
+        // Cyclops (HP 70, Speed 6) vs Imp (HP 4, melee 1-2, Speed 5) auf Distanz 2.
+        // Cyclops ist schneller, Engagement droht — aber 10 Imps machen avg 15 Damage,
+        // das one-shottet die 70-HP-Top-Cyclops nicht. → schießen statt kiten.
+        Stack shooter = new Stack(UnitCatalog.CYCLOPS, 10, new Hex(0, 5));
+        Stack opponent = new Stack(UnitCatalog.IMP, 10, new Hex(2, 5));
+
+        Action action = solver.decide(shooter, opponent, battlefield);
+
+        assertThat(action).isInstanceOf(Action.Shoot.class);
+    }
+
+    @Test
+    void slower_shooter_shoots_even_when_engagement_is_imminent() {
+        // Wood Elf (speed 6) wäre langsamer als ein speed-7-Melee. Wenn Kiten nicht reicht,
+        // soll der Schütze trotzdem schießen, statt nutzlos zu fliehen.
+        Stack shooter = new Stack(UnitCatalog.WOOD_ELF, 10, new Hex(0, 5));
+        // Cavalier hat Speed 7 — schneller als Wood Elf.
+        Stack opponent = new Stack(UnitCatalog.CAVALIER, 10, new Hex(2, 5));
+
+        Action action = solver.decide(shooter, opponent, battlefield);
+
+        assertThat(action).isInstanceOf(Action.Shoot.class);
+    }
+
+    @Test
     void waits_when_unit_cannot_advance_and_cannot_shoot() {
         Unit immobile = new Unit(
                 "Test Immobile",

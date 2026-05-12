@@ -45,6 +45,7 @@ class ExperimentControllerIT {
                 Set.of(Faction.TOWER, Faction.INFERNO, Faction.NECROPOLIS, Faction.DUNGEON,
                         Faction.STRONGHOLD, Faction.FORTRESS, Faction.CONFLUX, Faction.NEUTRAL),
                 Set.of(),
+                false,
                 1);
 
         MvcResult startResult = mockMvc().perform(post("/api/experiments/matrix")
@@ -79,7 +80,7 @@ class ExperimentControllerIT {
 
     @Test
     void matrix_endpoint_rejects_zero_seeds() throws Exception {
-        MatrixRequestDto request = new MatrixRequestDto(20, Set.of(), Set.of(), Set.of(), 0);
+        MatrixRequestDto request = new MatrixRequestDto(20, Set.of(), Set.of(), Set.of(), false, 0);
 
         mockMvc().perform(post("/api/experiments/matrix")
                         .contentType(MediaType.APPLICATION_JSON)

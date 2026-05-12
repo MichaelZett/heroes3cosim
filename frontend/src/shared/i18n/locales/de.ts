@@ -115,6 +115,9 @@ export const de = {
         seedsHint: 'Pro Seed laufen zwei Sims mit getauschten Rollen.',
         scopeSummary:
             '{{units}} Einheiten, {{matchups}} Match-ups, insgesamt {{sims}} Simulationen.',
+        equalGoldLabel: 'Gleicher Gold-Wert pro Seite',
+        equalGoldHint:
+            'Statt gleicher Stack-Größe wird das Budget = max(costA, costB) × Einheiten pro Stack berechnet, jede Seite kauft mit ihrem Budget so viele Einheiten ihres Typs wie möglich (min. 1).',
         excludeFactionsTitle: 'Faktionen',
         excludeTiersTitle: 'Tiers',
         excludeTiersHint: 'Hak ab, um ein Tier komplett aus der Auswertung zu nehmen.',

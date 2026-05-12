@@ -118,6 +118,9 @@ export const en: Dictionary = {
         seedsLabel: 'Seeds per matchup',
         seedsHint: 'Each seed runs twice with swapped attacker/defender roles.',
         scopeSummary: '{{units}} units, {{matchups}} matchups, {{sims}} sims total.',
+        equalGoldLabel: 'Equal gold value per side',
+        equalGoldHint:
+            'Instead of equal stack sizes, budget = max(costA, costB) × creatures per stack; each side buys as many of its own unit as fits (min 1).',
         excludeFactionsTitle: 'Factions',
         excludeTiersTitle: 'Tiers',
         excludeTiersHint: 'Uncheck a tier to drop all of its units from the experiment.',
