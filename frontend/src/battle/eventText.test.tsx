@@ -1,12 +1,12 @@
 import {describe, expect, it} from 'vitest';
 import {render} from '@testing-library/react';
-import {eventToNode} from './eventText';
+import {EventText} from './eventText';
 import type {BattleEvent} from '../api/types';
 
 const NAMES = {attacker: 'Pikeman', defender: 'Goblin'};
 
 function renderEvent(event: BattleEvent) {
-    return render(<>{eventToNode(event, NAMES)}</>);
+    return render(<EventText event={event} names={NAMES}/>);
 }
 
 describe('eventToNode', () => {

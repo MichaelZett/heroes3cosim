@@ -1,4 +1,4 @@
-import type {ReactNode} from 'react';
+import {Trans, useTranslation} from 'react-i18next';
 import type {BattleEvent, Side} from '../api/types';
 
 export interface SideNames {
@@ -11,134 +11,248 @@ const SIDE_CLASS: Record<Side, string> = {
   DEFENDER: 'font-semibold text-blue-300',
 };
 
-function actor(side: Side, names: SideNames): ReactNode {
-  return (
-    <span className={SIDE_CLASS[side]}>
-      {side === 'ATTACKER' ? names.attacker : names.defender}
-    </span>
-  );
+function sideName(side: Side, names: SideNames): string {
+    return side === 'ATTACKER' ? names.attacker : names.defender;
 }
 
-function winnerLabel(winner: 'ATTACKER' | 'DEFENDER' | 'DRAW', names: SideNames): ReactNode {
-  if (winner === 'DRAW') return <span className="font-semibold text-slate-300">Unentschieden</span>;
-  return actor(winner, names);
+function sideSpan(side: Side) {
+    return <span className={SIDE_CLASS[side]}/>;
 }
 
-export function eventToNode(event: BattleEvent, names: SideNames): ReactNode {
+interface EventTextProps {
+    event: BattleEvent;
+    names: SideNames;
+}
+
+export function EventText({event, names}: EventTextProps) {
+    const {t} = useTranslation();
   switch (event.type) {
     case 'BattleStart':
       return (
-        <>
-          Kampf beginnt: {actor('ATTACKER', names)} ({event.attacker.count}×) gegen{' '}
-          {actor('DEFENDER', names)} ({event.defender.count}×).
-        </>
+          <Trans
+              i18nKey="events.battleStart"
+              values={{
+                  attacker: names.attacker,
+                  attackerCount: event.attacker.count,
+                  defender: names.defender,
+                  defenderCount: event.defender.count,
+              }}
+              components={{actor: sideSpan('ATTACKER'), target: sideSpan('DEFENDER')}}
+          />
       );
     case 'Move':
       return (
-        <>
-          {actor(event.actor, names)} bewegt sich von ({event.fromQ},{event.fromR}) nach (
-          {event.toQ},{event.toR}).
-        </>
+          <Trans
+              i18nKey="events.move"
+              values={{
+                  actor: sideName(event.actor, names),
+                  fromQ: event.fromQ,
+                  fromR: event.fromR,
+                  toQ: event.toQ,
+                  toR: event.toR,
+              }}
+              components={{actor: sideSpan(event.actor)}}
+          />
       );
     case 'MoveBack':
       return (
-        <>
-          {actor(event.actor, names)} fliegt zurück nach ({event.toQ},{event.toR}).
-        </>
+          <Trans
+              i18nKey="events.moveBack"
+              values={{actor: sideName(event.actor, names), toQ: event.toQ, toR: event.toR}}
+              components={{actor: sideSpan(event.actor)}}
+          />
       );
     case 'Wait':
-      return <>{actor(event.actor, names)} wartet.</>;
+        return (
+            <Trans
+                i18nKey="events.wait"
+                values={{actor: sideName(event.actor, names)}}
+                components={{actor: sideSpan(event.actor)}}
+            />
+        );
     case 'Shoot':
       return (
-        <>
-          {actor(event.actor, names)} schießt auf {actor(event.target, names)} aus Distanz{' '}
-          {event.distance} — {event.damage} Schaden, {event.killed} getötet.
-        </>
+          <Trans
+              i18nKey="events.shoot"
+              values={{
+                  actor: sideName(event.actor, names),
+                  target: sideName(event.target, names),
+                  distance: event.distance,
+                  damage: event.damage,
+                  killed: event.killed,
+              }}
+              components={{actor: sideSpan(event.actor), target: sideSpan(event.target)}}
+          />
       );
     case 'Melee':
       return (
-        <>
-          {actor(event.actor, names)} greift {actor(event.target, names)} im Nahkampf an —{' '}
-          {event.damage} Schaden, {event.killed} getötet.
-        </>
+          <Trans
+              i18nKey="events.melee"
+              values={{
+                  actor: sideName(event.actor, names),
+                  target: sideName(event.target, names),
+                  damage: event.damage,
+                  killed: event.killed,
+              }}
+              components={{actor: sideSpan(event.actor), target: sideSpan(event.target)}}
+          />
       );
     case 'Retaliation':
       return (
-        <>
-            {actor(event.retaliator, names)} schlägt zurück — {event.damage} Schaden, {event.killed}{' '}
-            getötet.
-        </>
+          <Trans
+              i18nKey="events.retaliation"
+              values={{
+                  retaliator: sideName(event.retaliator, names),
+                  damage: event.damage,
+                  killed: event.killed,
+              }}
+              components={{retaliator: sideSpan(event.retaliator)}}
+          />
       );
     case 'TwoBlows':
-      return <>{actor(event.actor, names)} schlägt ein zweites Mal.</>;
+        return (
+            <Trans
+                i18nKey="events.twoBlows"
+                values={{actor: sideName(event.actor, names)}}
+                components={{actor: sideSpan(event.actor)}}
+            />
+        );
     case 'TwoShots':
-      return <>{actor(event.actor, names)} schießt ein zweites Mal.</>;
+        return (
+            <Trans
+                i18nKey="events.twoShots"
+                values={{actor: sideName(event.actor, names)}}
+                components={{actor: sideSpan(event.actor)}}
+            />
+        );
     case 'GoodMorale':
-      return <>{actor(event.actor, names)} hat gute Moral und greift erneut an.</>;
+        return (
+            <Trans
+                i18nKey="events.goodMorale"
+                values={{actor: sideName(event.actor, names)}}
+                components={{actor: sideSpan(event.actor)}}
+            />
+        );
     case 'DeathStare':
       return (
-        <>
-          {actor(event.actor, names)} tötet {event.kills} Einheit(en) von{' '}
-          {actor(event.target, names)} mit Death Stare.
-        </>
+          <Trans
+              i18nKey="events.deathStare"
+              values={{
+                  actor: sideName(event.actor, names),
+                  target: sideName(event.target, names),
+                  kills: event.kills,
+              }}
+              components={{actor: sideSpan(event.actor), target: sideSpan(event.target)}}
+          />
       );
     case 'Thunderbolts':
       return (
-        <>
-          {actor(event.actor, names)} verursacht {event.damage} Blitzschaden bei{' '}
-          {actor(event.target, names)}.
-        </>
+          <Trans
+              i18nKey="events.thunderbolts"
+              values={{
+                  actor: sideName(event.actor, names),
+                  target: sideName(event.target, names),
+                  damage: event.damage,
+              }}
+              components={{actor: sideSpan(event.actor), target: sideSpan(event.target)}}
+          />
       );
     case 'Petrifying':
       return (
-        <>
-          {actor(event.actor, names)} versteinert {actor(event.target, names)}.
-        </>
+          <Trans
+              i18nKey="events.petrifying"
+              values={{
+                  actor: sideName(event.actor, names),
+                  target: sideName(event.target, names),
+              }}
+              components={{actor: sideSpan(event.actor), target: sideSpan(event.target)}}
+          />
       );
     case 'Cursing':
       return (
-        <>
-          {actor(event.actor, names)} verflucht {actor(event.target, names)}.
-        </>
+          <Trans
+              i18nKey="events.cursing"
+              values={{
+                  actor: sideName(event.actor, names),
+                  target: sideName(event.target, names),
+              }}
+              components={{actor: sideSpan(event.actor), target: sideSpan(event.target)}}
+          />
       );
     case 'Poisoning':
       return (
-        <>
-          {actor(event.actor, names)} vergiftet {actor(event.target, names)}.
-        </>
+          <Trans
+              i18nKey="events.poisoning"
+              values={{
+                  actor: sideName(event.actor, names),
+                  target: sideName(event.target, names),
+              }}
+              components={{actor: sideSpan(event.actor), target: sideSpan(event.target)}}
+          />
       );
     case 'Diseasing':
       return (
-        <>
-          {actor(event.actor, names)} infiziert {actor(event.target, names)} mit Krankheit.
-        </>
+          <Trans
+              i18nKey="events.diseasing"
+              values={{
+                  actor: sideName(event.actor, names),
+                  target: sideName(event.target, names),
+              }}
+              components={{actor: sideSpan(event.actor), target: sideSpan(event.target)}}
+          />
       );
     case 'Aging':
       return (
-        <>
-          {actor(event.actor, names)} lässt {actor(event.target, names)} altern — halbe HP.
-        </>
+          <Trans
+              i18nKey="events.aging"
+              values={{
+                  actor: sideName(event.actor, names),
+                  target: sideName(event.target, names),
+              }}
+              components={{actor: sideSpan(event.actor), target: sideSpan(event.target)}}
+          />
       );
     case 'FireShield':
       return (
-        <>
-          {actor(event.shielded, names)} reflektiert {event.damage} Schaden durch Feuerschild auf{' '}
-          {actor(event.attacker, names)}.
-        </>
+          <Trans
+              i18nKey="events.fireShield"
+              values={{
+                  shielded: sideName(event.shielded, names),
+                  attacker: sideName(event.attacker, names),
+                  damage: event.damage,
+              }}
+              components={{
+                  shielded: sideSpan(event.shielded),
+                  attacker: sideSpan(event.attacker),
+              }}
+          />
       );
     case 'Rebirth':
       return (
-        <>
-          {actor(event.actor, names)} wird durch Wiedergeburt mit {event.restoredCount} Einheiten
-          zurückgebracht.
-        </>
+          <Trans
+              i18nKey="events.rebirth"
+              values={{actor: sideName(event.actor, names), count: event.restoredCount}}
+              components={{actor: sideSpan(event.actor)}}
+          />
       );
-    case 'BattleEnd':
+      case 'BattleEnd': {
+          const winnerName =
+              event.winner === 'DRAW' ? t('events.draw') : sideName(event.winner, names);
+          const winnerClass =
+              event.winner === 'DRAW' ? 'font-semibold text-slate-300' : SIDE_CLASS[event.winner];
       return (
-        <>
-          Kampf vorbei — Sieger: {winnerLabel(event.winner, names)} nach {event.turns} Runden.
-          Überlebende: {event.attackerSurvivors} vs. {event.defenderSurvivors}.
-        </>
+          <Trans
+              i18nKey="events.battleEnd"
+              values={{
+                  winner: winnerName,
+                  turns: event.turns,
+                  attackerSurvivors: event.attackerSurvivors,
+                  defenderSurvivors: event.defenderSurvivors,
+              }}
+              components={{winner: <span className={winnerClass}/>}}
+          />
       );
+      }
   }
 }
+

@@ -161,7 +161,7 @@ public class Stack {
     }
 
     private int maxRetaliationsPerTurn() {
-        if (unit.hasSpeciality(UnitSpeciality.COUNERSTRIKE_UNLIMITED)) {
+        if (unit.hasSpeciality(UnitSpeciality.COUNTERSTRIKE_UNLIMITED)) {
             return Integer.MAX_VALUE;
         }
         if (unit.hasSpeciality(UnitSpeciality.COUNTERSTRIKE_TWICE)) {

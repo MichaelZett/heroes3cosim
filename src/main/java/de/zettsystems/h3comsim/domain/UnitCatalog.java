@@ -25,8 +25,8 @@ import static de.zettsystems.h3comsim.domain.UnitSpeciality.ANGEL_HATE;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.ANGEL_RACE;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.ATTACKS_WALLS;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.CASTS_BLOODLUST;
-import static de.zettsystems.h3comsim.domain.UnitSpeciality.COUNERSTRIKE_UNLIMITED;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.COUNTERSTRIKE_TWICE;
+import static de.zettsystems.h3comsim.domain.UnitSpeciality.COUNTERSTRIKE_UNLIMITED;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.CURSING;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.DEATH_BLOW;
 import static de.zettsystems.h3comsim.domain.UnitSpeciality.DEATH_STARE;
@@ -157,7 +157,7 @@ public final class UnitCatalog {
     public static final Unit PSYCHIC_ELEMENTAL = basic("Psychic Elemental", new Stats(15, 13, 75, 7), melee(10, 20), GROUND, CONFLUX, 6, 750);
     public static final Unit RED_DRAGON = basic("Red Dragon", new Stats(19, 19, 180, 11), melee(40, 50), FLYING, DUNGEON, 7, 2500, IMMUNE_TO_SPELLS_BELOW_4);
     public static final Unit ROC = basic("Roc", new Stats(13, 11, 60, 7), melee(11, 15), FLYING, STRONGHOLD, 5, 600);
-    public static final Unit ROYAL_GRIFFIN = upgrade("Royal Griffin", new Stats(9, 9, 25, 9), melee(3, 6), FLYING, CASTLE, 3, 240, COUNERSTRIKE_UNLIMITED);
+    public static final Unit ROYAL_GRIFFIN = upgrade("Royal Griffin", new Stats(9, 9, 25, 9), melee(3, 6), FLYING, CASTLE, 3, 240, COUNTERSTRIKE_UNLIMITED);
     public static final Unit SCORPICORE = upgrade("Scorpicore", new Stats(16, 14, 80, 11), melee(14, 20), FLYING, DUNGEON, 6, 1050, PETRYFYING);
     public static final Unit SERPENT_FLY = basic("Serpent Fly", new Stats(6, 8, 20, 9), melee(2, 5), FLYING, FORTRESS, 3, 220);
     public static final Unit SILVER_PEGASUS = upgrade("Silver Pegasus", new Stats(9, 10, 30, 12), melee(5, 9), FLYING, RAMPART, 4, 275);

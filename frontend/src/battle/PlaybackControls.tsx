@@ -1,3 +1,5 @@
+import {useTranslation} from 'react-i18next';
+
 interface PlaybackControlsProps {
   speedMs: number;
   onSpeedChange: (ms: number) => void;
@@ -13,6 +15,7 @@ const MAX_MS = 2000;
 const REFERENCE_MS = 1000; // 1× Geschwindigkeit = 1000 ms zwischen Events
 
 export default function PlaybackControls(props: PlaybackControlsProps) {
+    const {t} = useTranslation();
   // Logarithmischer Slider, invertiert: links = langsam (lange Pause),
   // rechts = schnell (kurze Pause).
   const minLog = Math.log(MIN_MS);
@@ -31,7 +34,7 @@ export default function PlaybackControls(props: PlaybackControlsProps) {
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-lg border border-slate-800 bg-slate-900 p-4">
       <label className="flex flex-1 items-center gap-3 min-w-64">
-        <span className="text-sm text-slate-400">Geschwindigkeit</span>
+          <span className="text-sm text-slate-400">{t('playback.speedLabel')}</span>
         <input
           type="range"
           min={0}
@@ -52,7 +55,7 @@ export default function PlaybackControls(props: PlaybackControlsProps) {
           disabled={props.finished}
           className="rounded-md border border-slate-700 px-3 py-1.5 text-sm text-slate-200 hover:border-amber-500 hover:text-amber-400 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {props.paused ? '▶ Weiter' : '⏸ Pause'}
+            {props.paused ? t('playback.play') : t('playback.pause')}
         </button>
         <button
           type="button"
@@ -60,14 +63,14 @@ export default function PlaybackControls(props: PlaybackControlsProps) {
           disabled={props.finished}
           className="rounded-md border border-slate-700 px-3 py-1.5 text-sm text-slate-200 hover:border-amber-500 hover:text-amber-400 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          ⏭ Schritt
+            {t('playback.step')}
         </button>
         <button
           type="button"
           onClick={props.onRestart}
           className="rounded-md border border-slate-700 px-3 py-1.5 text-sm text-slate-200 hover:border-amber-500 hover:text-amber-400"
         >
-          ↻ Neustart
+            {t('playback.restart')}
         </button>
       </div>
     </div>

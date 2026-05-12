@@ -1,5 +1,6 @@
-import type { BattleState } from './state';
-import { hexToPixel, gridDimensions, HEX_SIZE } from './hex';
+import {useTranslation} from 'react-i18next';
+import type {BattleState} from './state';
+import {gridDimensions, HEX_SIZE, hexToPixel} from './hex';
 import StackToken from './StackToken';
 
 interface HexGridProps {
@@ -8,6 +9,7 @@ interface HexGridProps {
 }
 
 export default function HexGrid({ state, transitionMs }: HexGridProps) {
+    const {t} = useTranslation();
   const { w, h } = gridDimensions(state.width, state.height);
   const padding = HEX_SIZE;
   const viewBox = `${-padding} ${-padding} ${w + padding} ${h + padding}`;
@@ -24,7 +26,7 @@ export default function HexGrid({ state, transitionMs }: HexGridProps) {
       viewBox={viewBox}
       className="w-full max-w-full select-none"
       role="img"
-      aria-label="Hex-Schlachtfeld"
+      aria-label={t('battle.fieldAria')}
     >
       <defs>
         <polygon id="hex-cell" points={hexPolygonPoints()} />
