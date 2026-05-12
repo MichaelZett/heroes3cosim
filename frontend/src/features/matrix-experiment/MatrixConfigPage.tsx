@@ -3,7 +3,7 @@ import {useMemo, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {useTranslation} from 'react-i18next';
 import {useFactions, useRunMatrix, useUnits} from '../../shared/api/hooks';
-import type {Faction} from '../../shared/api/types';
+import type {Faction, StackSizingMode} from '../../shared/api/types';
 import LanguageSwitcher from '../../shared/ui/LanguageSwitcher';
 import ModeSwitcher from '../../shared/ui/ModeSwitcher';
 import {useMatrixStore} from './matrixStore';
@@ -21,8 +21,9 @@ export default function MatrixConfigPage() {
     const [excludedFactions, setExcludedFactions] = useState<Set<Faction>>(new Set());
     const [excludedTiers, setExcludedTiers] = useState<Set<number>>(new Set());
     const [excludedUnits, setExcludedUnits] = useState<Set<string>>(new Set());
-    const [equalGold, setEqualGold] = useState(false);
+    const [mode, setMode] = useState<StackSizingMode>('EQUAL_COUNT');
     const TIERS = [1, 2, 3, 4, 5, 6, 7] as const;
+    const MODES: StackSizingMode[] = ['EQUAL_COUNT', 'EQUAL_GOLD', 'WEEKLY_PRODUCTION', 'EQUAL_GOLD_WEEKLY'];
 
     const runMatrix = useRunMatrix((report, request) => {
         loadReport(report, request);
@@ -72,7 +73,7 @@ export default function MatrixConfigPage() {
             excludeFactions: Array.from(excludedFactions),
             excludeTiers: Array.from(excludedTiers),
             excludeUnits: Array.from(excludedUnits),
-            equalGold,
+            mode,
         });
     }
 
@@ -147,18 +148,35 @@ export default function MatrixConfigPage() {
                             sims: totalSims,
                         })}
                     </p>
-                    <label className="flex items-start gap-2 text-sm text-slate-200">
-                        <input
-                            type="checkbox"
-                            checked={equalGold}
-                            onChange={(e) => setEqualGold(e.target.checked)}
-                            className="mt-1 accent-amber-500"
-                        />
-                        <span>
-                            {t('matrix.equalGoldLabel')}
-                            <span className="block text-xs text-slate-500">{t('matrix.equalGoldHint')}</span>
-                        </span>
-                    </label>
+                    <fieldset className="space-y-2">
+                        <legend className="text-sm font-medium text-slate-300">{t('matrix.modeTitle')}</legend>
+                        <div className="grid gap-2 md:grid-cols-2">
+                            {MODES.map((m) => (
+                                <label
+                                    key={m}
+                                    className={`flex cursor-pointer items-start gap-2 rounded-md border px-3 py-2 text-sm ${
+                                        mode === m
+                                            ? 'border-amber-500 bg-amber-500/10 text-amber-100'
+                                            : 'border-slate-800 bg-slate-950 text-slate-200 hover:border-slate-700'
+                                    }`}
+                                >
+                                    <input
+                                        type="radio"
+                                        name="sizing-mode"
+                                        value={m}
+                                        checked={mode === m}
+                                        onChange={() => setMode(m)}
+                                        className="mt-1 accent-amber-500"
+                                    />
+                                    <span>
+                                        <span className="block font-medium">{t(`matrix.mode.${m}.label`)}</span>
+                                        <span
+                                            className="block text-xs text-slate-500">{t(`matrix.mode.${m}.hint`)}</span>
+                                    </span>
+                                </label>
+                            ))}
+                        </div>
+                    </fieldset>
                 </section>
 
                 <section className="rounded-lg border border-slate-800 bg-slate-900 p-6 space-y-3">

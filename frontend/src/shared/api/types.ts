@@ -147,12 +147,18 @@ export interface BattleSimulationDto {
 }
 
 // Matrix-Experiment DTOs — Spiegel von application.experiment.*
+export type StackSizingMode =
+    | 'EQUAL_COUNT'
+    | 'EQUAL_GOLD'
+    | 'WEEKLY_PRODUCTION'
+    | 'EQUAL_GOLD_WEEKLY';
+
 export interface MatrixRequestDto {
     unitCount?: number | null;
     excludeUnits?: string[] | null;
     excludeFactions?: Faction[] | null;
     excludeTiers?: number[] | null;
-    equalGold?: boolean | null;
+    mode?: StackSizingMode | null;
     seedsPerMatchup?: number | null;
 }
 

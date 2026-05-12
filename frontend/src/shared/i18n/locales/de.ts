@@ -115,9 +115,25 @@ export const de = {
         seedsHint: 'Pro Seed laufen zwei Sims mit getauschten Rollen.',
         scopeSummary:
             '{{units}} Einheiten, {{matchups}} Match-ups, insgesamt {{sims}} Simulationen.',
-        equalGoldLabel: 'Gleicher Gold-Wert pro Seite',
-        equalGoldHint:
-            'Statt gleicher Stack-Größe wird das Budget = max(costA, costB) × Einheiten pro Stack berechnet, jede Seite kauft mit ihrem Budget so viele Einheiten ihres Typs wie möglich (min. 1).',
+        modeTitle: 'Sizing-Modus',
+        mode: {
+            EQUAL_COUNT: {
+                label: 'Gleiche Stack-Größe',
+                hint: 'Beide Seiten bekommen genau die Anzahl aus dem Slider oben.',
+            },
+            EQUAL_GOLD: {
+                label: 'Gleicher Gold-Wert',
+                hint: 'Budget = max(costA, costB) × Slider, LCM-snap — beide zahlen exakt gleich viel Gold.',
+            },
+            WEEKLY_PRODUCTION: {
+                label: 'Wochenproduktion',
+                hint: 'Stack = H3-Wochenproduktion × Slider. Slider 1 = eine Woche pro Seite.',
+            },
+            EQUAL_GOLD_WEEKLY: {
+                label: 'Gold-norm. Wochenproduktion',
+                hint: 'Budget = max(wpA·costA, wpB·costB) × Slider, LCM-snap — gold-normalisierte Wochenproduktion.',
+            },
+        },
         excludeFactionsTitle: 'Faktionen',
         excludeTiersTitle: 'Tiers',
         excludeTiersHint: 'Hak ab, um ein Tier komplett aus der Auswertung zu nehmen.',

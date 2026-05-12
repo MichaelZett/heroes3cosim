@@ -156,21 +156,34 @@ public class DefaultMatrixExperimentService implements MatrixExperimentService {
     }
 
     /**
-     * Liefert die Stack-Größe für {@code self} im Pair gegen {@code other}. Bei
-     * {@code equalGold=false} entspricht das {@code request.unitCount()}. Bei {@code equalGold=true}
-     * wird das Pair-Budget auf das nächste Vielfache von {@code lcm(costA, costB)} abgerundet —
-     * dadurch teilen sich beide Seiten **exakt** dasselbe Gold, ohne Floor-Rest. Ausgangspunkt
-     * für die Rundung ist {@code max(costA, costB) * unitCount}; ist das kleiner als das LCM,
-     * wird der Mindest-Stack {@code lcm / self.cost} eingesetzt (entspricht der kleinsten
-     * exakten Gold-Aufteilung).
+     * Liefert die Stack-Größe für {@code self} im Pair gegen {@code other}. Dispatcht nach
+     * {@link MatrixRequest#mode()}:
+     * <ul>
+     *   <li>{@link StackSizingMode#EQUAL_COUNT} → {@code unitCount}.</li>
+     *   <li>{@link StackSizingMode#EQUAL_GOLD} → Pair-Budget {@code max(costA,costB)*unitCount}
+     *       auf nächstes LCM-Vielfaches abgerundet.</li>
+     *   <li>{@link StackSizingMode#WEEKLY_PRODUCTION} → {@code weeklyProduction*unitCount}.</li>
+     *   <li>{@link StackSizingMode#EQUAL_GOLD_WEEKLY} → Pair-Budget basiert auf
+     *       {@code max(wpA*costA, wpB*costB)*unitCount}, LCM-snap.</li>
+     * </ul>
      */
     static int stackSizeFor(Unit self, Unit other, MatrixRequest request) {
-        if (!request.equalGold()) {
-            return request.unitCount();
-        }
+        return switch (request.mode()) {
+            case EQUAL_COUNT -> request.unitCount();
+            case EQUAL_GOLD -> goldEqualizedCount(self, other, request, false);
+            case WEEKLY_PRODUCTION -> Math.max(1,
+                    UnitWeeklyProduction.forUnit(self) * request.unitCount());
+            case EQUAL_GOLD_WEEKLY -> goldEqualizedCount(self, other, request, true);
+        };
+    }
+
+    private static int goldEqualizedCount(Unit self, Unit other, MatrixRequest request,
+                                          boolean weighByWeeklyProduction) {
         int costSelf = self.cost();
         int costOther = other.cost();
-        int rawBudget = Math.max(costSelf, costOther) * request.unitCount();
+        int weightSelf = weighByWeeklyProduction ? UnitWeeklyProduction.forUnit(self) : 1;
+        int weightOther = weighByWeeklyProduction ? UnitWeeklyProduction.forUnit(other) : 1;
+        int rawBudget = Math.max(weightSelf * costSelf, weightOther * costOther) * request.unitCount();
         long lcm = lcm(costSelf, costOther);
         long snappedBudget = (rawBudget / lcm) * lcm;
         if (snappedBudget == 0L) {

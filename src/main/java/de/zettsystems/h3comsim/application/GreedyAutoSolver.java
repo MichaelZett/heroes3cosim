@@ -2,6 +2,7 @@ package de.zettsystems.h3comsim.application;
 
 import de.zettsystems.h3comsim.domain.Battlefield;
 import de.zettsystems.h3comsim.domain.Hex;
+import de.zettsystems.h3comsim.domain.Movement;
 import de.zettsystems.h3comsim.domain.PathFinder;
 import de.zettsystems.h3comsim.domain.Stack;
 import de.zettsystems.h3comsim.domain.UnitSpeciality;
@@ -39,7 +40,7 @@ public final class GreedyAutoSolver implements AutoSolver {
         if (active.canShoot()) {
             return decideShooter(active, opponent, battlefield, from, to, distance);
         }
-        Hex moveTarget = battlefield.moveToward(from, to, active.unit().speed());
+        Hex moveTarget = battlefield.moveToward(from, to, active.unit().speed(), active.unit().movement());
         if (moveTarget.equals(from)) {
             return new Action.Wait();
         }
@@ -72,7 +73,7 @@ public final class GreedyAutoSolver implements AutoSolver {
         if (!threatIsDeadly(opponent, active)) {
             return new Action.Shoot(opponent);
         }
-        Hex kite = findKitePosition(from, to, bf, mySpeed, opponentSpeed);
+        Hex kite = findKitePosition(from, to, bf, mySpeed, opponentSpeed, active.unit().movement());
         if (kite == null) {
             return new Action.Shoot(opponent);
         }
@@ -103,7 +104,7 @@ public final class GreedyAutoSolver implements AutoSolver {
         if (bf.obstacles().isEmpty()) {
             return new Action.Shoot(opponent);
         }
-        Hex cover = findCoverPosition(from, to, bf, mySpeed);
+        Hex cover = findCoverPosition(from, to, bf, mySpeed, active.unit().movement());
         if (cover == null) {
             return new Action.Shoot(opponent);
         }
@@ -117,7 +118,7 @@ public final class GreedyAutoSolver implements AutoSolver {
      * die obstacle-freie eigene Schusslinie.
      */
     private static @Nullable Hex findKitePosition(Hex from, Hex to, Battlefield bf,
-                                                  int mySpeed, int opponentSpeed) {
+                                                  int mySpeed, int opponentSpeed, Movement movement) {
         Hex best = null;
         int bestDist = -1;
         int bestPenaltyScore = -1;
@@ -133,7 +134,7 @@ public final class GreedyAutoSolver implements AutoSolver {
                 if (from.distanceTo(c) > mySpeed) {
                     continue;
                 }
-                if (bf.findPath(from, c).isEmpty()) {
+                if (bf.findPath(from, c, movement).isEmpty()) {
                     continue;
                 }
                 int d = c.distanceTo(to);
@@ -156,7 +157,8 @@ public final class GreedyAutoSolver implements AutoSolver {
      * (er bekommt Obstacle-Penalty), während meine Sichtlinie frei bleibt (oder ich ohnehin
      * obstacle-immun bin). Erreichbar in einem Zug.
      */
-    private static @Nullable Hex findCoverPosition(Hex from, Hex to, Battlefield bf, int mySpeed) {
+    private static @Nullable Hex findCoverPosition(Hex from, Hex to, Battlefield bf, int mySpeed,
+                                                   Movement movement) {
         for (int q = 0; q < bf.width(); q++) {
             for (int r = 0; r < bf.height(); r++) {
                 Hex c = new Hex(q, r);
@@ -169,7 +171,7 @@ public final class GreedyAutoSolver implements AutoSolver {
                 if (from.distanceTo(c) > mySpeed) {
                     continue;
                 }
-                if (bf.findPath(from, c).isEmpty()) {
+                if (bf.findPath(from, c, movement).isEmpty()) {
                     continue;
                 }
                 // Cover ist nur dann nützlich, wenn der Gegner durch ein Obstacle schießen müsste.

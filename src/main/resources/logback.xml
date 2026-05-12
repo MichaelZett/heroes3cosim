@@ -5,7 +5,49 @@
         </encoder>
     </appender>
 
+    <!--
+        Allgemeines App-Log (Spring-Boot-Startup, REST-Fehler, ErrorProne-Findings etc.).
+        Rolling pro Tag oder 20 MB; insgesamt max. 200 MB Historie, älter als 7 Tage wird gelöscht.
+        Pfad ist relativ zum Working-Dir (i.d.R. Projekt-Root bei `gradlew bootRun`).
+    -->
+    <appender name="APP_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>build/logs/heroes3cosim.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>build/logs/heroes3cosim-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>20MB</maxFileSize>
+            <maxHistory>7</maxHistory>
+            <totalSizeCap>200MB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!--
+        Reines Combat-Log. BattleLogger schreibt mit additivity=false NUR hier rein — das
+        hält STDOUT sauber und macht die Datei für Auswertung/Claude-Read greifbar.
+        Bei Matrix-Sims wächst die Datei schnell. Falls's stört:
+          -Dlogging.level.de.zettsystems.h3comsim.application.BattleLogger=WARN
+    -->
+    <appender name="BATTLE_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>build/logs/battle.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>build/logs/battle-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>20MB</maxFileSize>
+            <maxHistory>7</maxHistory>
+            <totalSizeCap>200MB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="de.zettsystems.h3comsim.application.BattleLogger" level="DEBUG" additivity="false">
+        <appender-ref ref="BATTLE_FILE"/>
+    </logger>
+
     <root level="info">
         <appender-ref ref="STDOUT"/>
+        <appender-ref ref="APP_FILE"/>
     </root>
 </configuration>
