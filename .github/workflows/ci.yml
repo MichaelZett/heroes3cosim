@@ -39,11 +39,19 @@ jobs:
           report_paths: 'build/test-results/test/TEST-*.xml'
           check_name: 'JUnit'
 
-      - name: Upload SpotBugs SARIF to code scanning
+      - name: Upload SpotBugs SARIF (main)
         if: always()
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: build/reports/spotbugs/
+          sarif_file: build/reports/spotbugs/main.sarif
+          category: spotbugs-main
+
+      - name: Upload SpotBugs SARIF (test)
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: build/reports/spotbugs/test.sarif
+          category: spotbugs-test
 
       - name: JaCoCo PR coverage comment
         if: github.event_name == 'pull_request'
