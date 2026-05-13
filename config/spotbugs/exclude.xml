@@ -20,10 +20,10 @@
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
     </Match>
 
-    <!-- DTO-Records am REST-Boundary: Listen/Sets durchgereicht ohne Defensiv-Kopie,
+    <!-- DTO-/Value-Records am REST-Boundary: Listen/Sets durchgereicht ohne Defensiv-Kopie,
          Jackson serialisiert sie ohnehin direkt zu JSON. -->
     <Match>
-        <Class name="~.*\.adapter\.web\.dto\..*"/>
+        <Class name="~.*\.values\..*"/>
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
     </Match>
 

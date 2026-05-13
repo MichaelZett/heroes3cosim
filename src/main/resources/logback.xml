@@ -27,7 +27,7 @@
         Reines Combat-Log. BattleLogger schreibt mit additivity=false NUR hier rein — das
         hält STDOUT sauber und macht die Datei für Auswertung/Claude-Read greifbar.
         Bei Matrix-Sims wächst die Datei schnell. Falls's stört:
-          -Dlogging.level.de.zettsystems.h3comsim.application.BattleLogger=WARN
+          -Dlogging.level.de.zettsystems.h3comsim.battle.domain.BattleLogger=WARN
     -->
     <appender name="BATTLE_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>build/logs/battle.log</file>
@@ -42,7 +42,7 @@
         </encoder>
     </appender>
 
-    <logger name="de.zettsystems.h3comsim.application.BattleLogger" level="DEBUG" additivity="false">
+    <logger name="de.zettsystems.h3comsim.battle.domain.BattleLogger" level="DEBUG" additivity="false">
         <appender-ref ref="BATTLE_FILE"/>
     </logger>
 
