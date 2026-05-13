@@ -10,7 +10,7 @@ interface EventLogProps {
     names: SideNames;
 }
 
-export default function EventLog({events, cursor, names}: EventLogProps) {
+export default function EventLog({events, cursor, names}: Readonly<EventLogProps>) {
     const {t} = useTranslation();
     const listRef = useRef<HTMLOListElement>(null);
 

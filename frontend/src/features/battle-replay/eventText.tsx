@@ -24,7 +24,7 @@ interface EventTextProps {
     names: SideNames;
 }
 
-export function EventText({event, names}: EventTextProps) {
+export function EventText({event, names}: Readonly<EventTextProps>) {
     const {t} = useTranslation();
     switch (event.type) {
         case 'BattleStart':

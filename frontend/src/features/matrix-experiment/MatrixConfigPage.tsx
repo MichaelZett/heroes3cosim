@@ -1,4 +1,4 @@
-import type {FormEvent} from 'react';
+import type {SyntheticEvent} from 'react';
 import {useMemo} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {useTranslation} from 'react-i18next';
@@ -62,7 +62,7 @@ export default function MatrixConfigPage() {
         });
     }
 
-    function handleSubmit(e: FormEvent) {
+    function handleSubmit(e: SyntheticEvent) {
         e.preventDefault();
         runMatrix.mutate({
             unitCount: form.unitCount,
@@ -165,11 +165,9 @@ export default function MatrixConfigPage() {
                                         onChange={() => setForm({mode: m})}
                                         className="mt-1 accent-amber-500"
                                     />
-                                    <span>
-                                        <span className="block font-medium">{t(`matrix.mode.${m}.label`)}</span>
-                                        <span
-                                            className="block text-xs text-slate-500">{t(`matrix.mode.${m}.hint`)}</span>
-                                    </span>
+                                    <span className="block font-medium">{t(`matrix.mode.${m}.label`)}</span>
+                                    <span
+                                        className="block text-xs text-slate-500">{t(`matrix.mode.${m}.hint`)}</span>
                                 </label>
                             ))}
                         </div>
@@ -279,7 +277,7 @@ export default function MatrixConfigPage() {
 
                 {runMatrix.isError && (
                     <p className="text-sm text-red-400">
-                        {t('matrix.failed', {message: (runMatrix.error as Error).message})}
+                        {t('matrix.failed', {message: runMatrix.error.message})}
                     </p>
                 )}
 

@@ -8,6 +8,10 @@ import de.zettsystems.h3comsim.domain.Stack;
 import de.zettsystems.h3comsim.domain.UnitSpeciality;
 import org.jspecify.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+
 /**
  * Heuristik mit Schützen-Intelligenz:
  * <ul>
@@ -69,26 +73,19 @@ public final class GreedyAutoSolver implements AutoSolver {
      */
     private static @Nullable Hex findMaxRunupCharge(Hex from, Hex to, Battlefield bf, int speed,
                                                     Movement movement) {
-        Hex best = null;
-        int bestRunup = 0;
-        for (Hex candidate : to.neighbors()) {
-            if (!bf.isPassable(candidate)) {
-                continue;
-            }
-            int runup = from.distanceTo(candidate);
-            if (runup <= 0 || runup > speed) {
-                continue;
-            }
-            if (bf.findPath(from, candidate, movement).size() > speed) {
-                continue;
-            }
-            int score = Math.min(runup, 10);
-            if (score > bestRunup) {
-                bestRunup = score;
-                best = candidate;
-            }
-        }
-        return best;
+        return to.neighbors().stream()
+                .filter(c -> isReachableInOneTurn(c, from, bf, speed, movement))
+                .filter(c -> from.distanceTo(c) > 0)
+                .max(Comparator.comparingInt(c -> Math.min(from.distanceTo(c), 10)))
+                .orElse(null);
+    }
+
+    private static boolean isReachableInOneTurn(Hex candidate, Hex from, Battlefield bf,
+                                                int speed, Movement movement) {
+        if (!bf.isPassable(candidate)) return false;
+        if (from.distanceTo(candidate) > speed) return false;
+        List<Hex> path = bf.findPath(from, candidate, movement);
+        return !path.isEmpty() && path.size() <= speed;
     }
 
     private static Action decideShooter(Stack active, Stack opponent, Battlefield bf,
@@ -186,37 +183,17 @@ public final class GreedyAutoSolver implements AutoSolver {
      */
     private static @Nullable Hex findKitePosition(Hex from, Hex to, Battlefield bf,
                                                   int mySpeed, int opponentSpeed, Movement movement) {
-        Hex best = null;
-        int bestDist = -1;
-        int bestPenaltyScore = -1;
-        for (int q = 0; q < bf.width(); q++) {
-            for (int r = 0; r < bf.height(); r++) {
-                Hex c = new Hex(q, r);
-                if (c.equals(from) || c.equals(to)) {
-                    continue;
-                }
-                if (!bf.isPassable(c)) {
-                    continue;
-                }
-                if (from.distanceTo(c) > mySpeed) {
-                    continue;
-                }
-                if (bf.findPath(from, c, movement).isEmpty()) {
-                    continue;
-                }
-                int d = c.distanceTo(to);
-                if (d - opponentSpeed <= 1) {
-                    continue;
-                }
-                int penaltyScore = PathFinder.hasObstacleInLine(bf, c, to) ? 0 : 1;
-                if (d > bestDist || (d == bestDist && penaltyScore > bestPenaltyScore)) {
-                    bestDist = d;
-                    bestPenaltyScore = penaltyScore;
-                    best = c;
-                }
-            }
-        }
-        return best;
+        return reachableCandidates(from, to, bf, mySpeed, movement).stream()
+                .filter(c -> c.distanceTo(to) - opponentSpeed > 1)
+                .max(kiteScore(to, bf))
+                .orElse(null);
+    }
+
+    private static Comparator<Hex> kiteScore(Hex to, Battlefield bf) {
+        Comparator<Hex> byDistance = Comparator.comparingInt(c -> c.distanceTo(to));
+        Comparator<Hex> byClearLine = Comparator.comparingInt(
+                c -> PathFinder.hasObstacleInLine(bf, c, to) ? 0 : 1);
+        return byDistance.thenComparing(byClearLine);
     }
 
     /**
@@ -226,28 +203,29 @@ public final class GreedyAutoSolver implements AutoSolver {
      */
     private static @Nullable Hex findCoverPosition(Hex from, Hex to, Battlefield bf, int mySpeed,
                                                    Movement movement) {
+        return reachableCandidates(from, to, bf, mySpeed, movement).stream()
+                .filter(c -> PathFinder.hasObstacleInLine(bf, to, c))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private static List<Hex> reachableCandidates(Hex from, Hex to, Battlefield bf, int mySpeed,
+                                                 Movement movement) {
+        List<Hex> candidates = new ArrayList<>();
         for (int q = 0; q < bf.width(); q++) {
             for (int r = 0; r < bf.height(); r++) {
                 Hex c = new Hex(q, r);
-                if (c.equals(from) || c.equals(to)) {
-                    continue;
+                if (isKiteCandidate(c, from, to, bf, mySpeed, movement)) {
+                    candidates.add(c);
                 }
-                if (!bf.isPassable(c)) {
-                    continue;
-                }
-                if (from.distanceTo(c) > mySpeed) {
-                    continue;
-                }
-                if (bf.findPath(from, c, movement).isEmpty()) {
-                    continue;
-                }
-                // Cover ist nur dann nützlich, wenn der Gegner durch ein Obstacle schießen müsste.
-                if (!PathFinder.hasObstacleInLine(bf, to, c)) {
-                    continue;
-                }
-                return c;
             }
         }
-        return null;
+        return candidates;
+    }
+
+    private static boolean isKiteCandidate(Hex c, Hex from, Hex to, Battlefield bf,
+                                           int mySpeed, Movement movement) {
+        if (c.equals(from) || c.equals(to)) return false;
+        return isReachableInOneTurn(c, from, bf, mySpeed, movement);
     }
 }

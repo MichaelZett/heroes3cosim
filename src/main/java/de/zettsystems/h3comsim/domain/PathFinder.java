@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
+import java.util.function.Predicate;
+import java.util.function.ToIntFunction;
 
 /**
  * Hex-A* für Bewegung um Obstacles. Findet den kürzesten obstaclefreien Pfad von {@code from} zu
@@ -46,37 +48,7 @@ public final class PathFinder {
         if (from.equals(destination) || !bf.isPassable(destination)) {
             return List.of();
         }
-        Map<Hex, Hex> cameFrom = new HashMap<>();
-        Map<Hex, Integer> gScore = new HashMap<>();
-        gScore.put(from, 0);
-        PriorityQueue<Hex> open = new PriorityQueue<>(
-                Comparator.comparingInt(h -> gScore.getOrDefault(h, Integer.MAX_VALUE) + h.distanceTo(destination)));
-        open.add(from);
-        Set<Hex> closed = new HashSet<>();
-
-        int iterations = 0;
-        while (!open.isEmpty() && iterations++ < ITERATION_CAP) {
-            Hex current = open.poll();
-            if (current.equals(destination)) {
-                return reconstruct(cameFrom, current);
-            }
-            if (!closed.add(current)) {
-                continue;
-            }
-            int currentG = gScore.getOrDefault(current, Integer.MAX_VALUE);
-            for (Hex neighbor : current.neighbors()) {
-                if (!bf.contains(neighbor) || bf.hasObstacle(neighbor)) {
-                    continue;
-                }
-                int tentativeG = currentG + 1;
-                if (tentativeG < gScore.getOrDefault(neighbor, Integer.MAX_VALUE)) {
-                    cameFrom.put(neighbor, current);
-                    gScore.put(neighbor, tentativeG);
-                    open.add(neighbor);
-                }
-            }
-        }
-        return List.of();
+        return aStarSearch(bf, from, destination::equals, h -> h.distanceTo(destination));
     }
 
     /**
@@ -105,37 +77,48 @@ public final class PathFinder {
         if (goals.isEmpty()) {
             return List.of();
         }
+        return aStarSearch(bf, from, goals::contains, h -> minDistance(h, goals));
+    }
+
+    private static List<Hex> aStarSearch(Battlefield bf, Hex from,
+                                         Predicate<Hex> goalReached,
+                                         ToIntFunction<Hex> heuristic) {
         Map<Hex, Hex> cameFrom = new HashMap<>();
         Map<Hex, Integer> gScore = new HashMap<>();
         gScore.put(from, 0);
         PriorityQueue<Hex> open = new PriorityQueue<>(
-                Comparator.comparingInt(h -> gScore.getOrDefault(h, Integer.MAX_VALUE) + minDistance(h, goals)));
+                Comparator.comparingInt(h -> gScore.getOrDefault(h, Integer.MAX_VALUE) + heuristic.applyAsInt(h)));
         open.add(from);
         Set<Hex> closed = new HashSet<>();
 
         int iterations = 0;
         while (!open.isEmpty() && iterations++ < ITERATION_CAP) {
             Hex current = open.poll();
-            if (goals.contains(current)) {
+            if (goalReached.test(current)) {
                 return reconstruct(cameFrom, current);
             }
-            if (!closed.add(current)) {
-                continue;
-            }
-            int currentG = gScore.getOrDefault(current, Integer.MAX_VALUE);
-            for (Hex neighbor : current.neighbors()) {
-                if (!bf.contains(neighbor) || bf.hasObstacle(neighbor)) {
-                    continue;
-                }
-                int tentativeG = currentG + 1;
-                if (tentativeG < gScore.getOrDefault(neighbor, Integer.MAX_VALUE)) {
-                    cameFrom.put(neighbor, current);
-                    gScore.put(neighbor, tentativeG);
-                    open.add(neighbor);
-                }
+            if (closed.add(current)) {
+                expandNeighbors(current, bf, cameFrom, gScore, open);
             }
         }
         return List.of();
+    }
+
+    private static void expandNeighbors(Hex current, Battlefield bf,
+                                        Map<Hex, Hex> cameFrom, Map<Hex, Integer> gScore,
+                                        PriorityQueue<Hex> open) {
+        int currentG = gScore.getOrDefault(current, Integer.MAX_VALUE);
+        for (Hex neighbor : current.neighbors()) {
+            if (!bf.contains(neighbor) || bf.hasObstacle(neighbor)) {
+                continue;
+            }
+            int tentativeG = currentG + 1;
+            if (tentativeG < gScore.getOrDefault(neighbor, Integer.MAX_VALUE)) {
+                cameFrom.put(neighbor, current);
+                gScore.put(neighbor, tentativeG);
+                open.add(neighbor);
+            }
+        }
     }
 
     private static Set<Hex> neighborGoals(Battlefield bf, Hex target) {

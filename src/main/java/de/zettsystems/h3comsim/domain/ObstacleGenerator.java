@@ -36,7 +36,7 @@ public final class ObstacleGenerator {
             candidates.set(i, candidates.get(j));
             candidates.set(j, tmp);
         }
-        int n = Math.min(Math.max(count, 0), candidates.size());
+        int n = Math.clamp(count, 0, candidates.size());
         return Set.copyOf(candidates.subList(0, n));
     }
 }

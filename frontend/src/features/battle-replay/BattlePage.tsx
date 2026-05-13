@@ -114,12 +114,12 @@ function SideCard({
                       count,
                       max,
                       color,
-                  }: {
+                  }: Readonly<{
     label: string;
     count: number;
     max: number;
     color: 'amber' | 'blue';
-}) {
+}>) {
     const {t} = useTranslation();
     const dot = color === 'amber' ? 'bg-amber-500' : 'bg-blue-500';
     const text = color === 'amber' ? 'text-amber-300' : 'text-blue-300';

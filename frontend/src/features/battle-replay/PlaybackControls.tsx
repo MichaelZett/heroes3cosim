@@ -16,7 +16,7 @@ const MIN_MS = 50;
 const MAX_MS = 2000;
 const REFERENCE_MS = 1000; // 1× Geschwindigkeit = 1000 ms zwischen Events
 
-export default function PlaybackControls(props: PlaybackControlsProps) {
+export default function PlaybackControls(props: Readonly<PlaybackControlsProps>) {
     const {t} = useTranslation();
     // Logarithmischer Slider, invertiert: links = langsam (lange Pause),
     // rechts = schnell (kurze Pause).

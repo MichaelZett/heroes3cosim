@@ -1,7 +1,5 @@
 package de.zettsystems.h3comsim.adapter.web;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 import de.zettsystems.h3comsim.adapter.web.dto.BattleConfigRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +9,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -64,8 +64,8 @@ class BattleControllerIT {
         JsonNode events = body.get("events");
         assertThat(events.size()).isPositive();
         JsonNode lastEvent = events.get(events.size() - 1);
-        assertThat(lastEvent.get("type").asText()).isEqualTo("BattleEnd");
-        assertThat(lastEvent.get("winner").asText()).isEqualTo("ATTACKER");
+        assertThat(lastEvent.get("type").asString()).isEqualTo("BattleEnd");
+        assertThat(lastEvent.get("winner").asString()).isEqualTo("ATTACKER");
     }
 
     @Test

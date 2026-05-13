@@ -70,7 +70,8 @@ class DefaultMatrixExperimentServiceTest {
                 1);
         MatrixReport report = service.run(req);
 
-        assertThat(report.stats()).extracting(UnitMatchupStats::unitName)
+        assertThat(report.stats()).isNotEmpty()
+                .extracting(UnitMatchupStats::unitName)
                 .doesNotContain("Pikeman", "Halberdier");
     }
 
@@ -281,9 +282,13 @@ class DefaultMatrixExperimentServiceTest {
 
     @Test
     void invalid_tier_in_exclude_tiers_is_rejected() {
-        assertThatThrownBy(() -> new MatrixRequest(20, Set.of(), Set.of(), Set.of(0), StackSizingMode.EQUAL_COUNT, 1))
+        Set<String> noUnits = Set.of();
+        Set<Faction> noFactions = Set.of();
+        Set<Integer> tierZero = Set.of(0);
+        Set<Integer> tierEight = Set.of(8);
+        assertThatThrownBy(() -> new MatrixRequest(20, noUnits, noFactions, tierZero, StackSizingMode.EQUAL_COUNT, 1))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new MatrixRequest(20, Set.of(), Set.of(), Set.of(8), StackSizingMode.EQUAL_COUNT, 1))
+        assertThatThrownBy(() -> new MatrixRequest(20, noUnits, noFactions, tierEight, StackSizingMode.EQUAL_COUNT, 1))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 

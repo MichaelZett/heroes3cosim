@@ -17,8 +17,8 @@ export function usePlayer() {
 
     useEffect(() => {
         if (!simulation || paused || finished) return;
-        const handle = window.setTimeout(step, speedMs);
-        return () => window.clearTimeout(handle);
+        const handle = globalThis.setTimeout(step, speedMs);
+        return () => globalThis.clearTimeout(handle);
     }, [simulation, cursor, paused, finished, speedMs, step]);
 
     return {finished, totalEvents};

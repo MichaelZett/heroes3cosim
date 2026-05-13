@@ -1,4 +1,4 @@
-import type {FormEvent} from 'react';
+import type {ReactNode, SyntheticEvent} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {useTranslation} from 'react-i18next';
 import ArmySelector from './ArmySelector';
@@ -23,16 +23,16 @@ export default function ConfigPage() {
         navigate('/battle');
     });
 
-    function handleSubmit(e: FormEvent) {
+    function handleSubmit(e: SyntheticEvent) {
         e.preventDefault();
         if (!form.attackerUnit || !form.defenderUnit) return;
-        const seed = form.seedText.trim() === '' ? null : Number(form.seedText);
+        const seedNum = form.seedText.trim() === '' ? null : Number(form.seedText);
         simulate.mutate({
             attackerUnit: form.attackerUnit,
             attackerCount: form.attackerCount,
             defenderUnit: form.defenderUnit,
             defenderCount: form.defenderCount,
-            seed: Number.isFinite(seed as number) ? (seed as number) : null,
+            seed: seedNum !== null && Number.isFinite(seedNum) ? seedNum : null,
         });
     }
 
@@ -123,7 +123,7 @@ export default function ConfigPage() {
 
                 {simulate.isError && (
                     <p className="text-sm text-red-400">
-                        {t('config.simulationFailed', {message: (simulate.error as Error).message})}
+                        {t('config.simulationFailed', {message: simulate.error.message})}
                     </p>
                 )}
 
@@ -144,10 +144,10 @@ export default function ConfigPage() {
 function CenteredMessage({
                              children,
                              tone = 'info',
-                         }: {
-    children: React.ReactNode;
+                         }: Readonly<{
+    children: ReactNode;
     tone?: 'info' | 'error';
-}) {
+}>) {
     return (
         <main className="flex min-h-screen items-center justify-center p-8">
             <p className={tone === 'error' ? 'text-red-400' : 'text-slate-400'}>{children}</p>
