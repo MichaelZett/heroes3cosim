@@ -8,6 +8,9 @@ on:
 
 permissions:
   contents: read
+  checks: write
+  pull-requests: write
+  security-events: write
 
 jobs:
   build:
@@ -28,6 +31,29 @@ jobs:
 
       - name: Build, test and static analysis
         run: ./gradlew build spotbugsMain spotbugsTest jacocoTestReport --no-daemon --stacktrace
+
+      - name: Publish JUnit test results
+        if: always()
+        uses: mikepenz/action-junit-report@v5
+        with:
+          report_paths: 'build/test-results/test/TEST-*.xml'
+          check_name: 'JUnit'
+
+      - name: Upload SpotBugs SARIF to code scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: build/reports/spotbugs/
+
+      - name: JaCoCo PR coverage comment
+        if: github.event_name == 'pull_request'
+        uses: madrapps/jacoco-report@v1
+        with:
+          paths: build/reports/jacoco/test/jacocoTestReport.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: 'JaCoCo Coverage'
+          min-coverage-overall: 80
+          min-coverage-changed-files: 80
 
       - name: Upload test reports
         if: always()

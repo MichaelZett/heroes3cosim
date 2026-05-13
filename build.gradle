@@ -9,6 +9,7 @@ plugins {
     id "net.ltgt.nullaway" version "${nullawayPluginVersion}"
     id "com.github.spotbugs" version "${spotbugsPluginVersion}"
     id "org.sonarqube" version "${sonarqubePluginVersion}"
+    id "com.gorylenko.gradle-git-properties" version "${gitPropertiesPluginVersion}"
 }
 
 group = 'de.zettsystems'
@@ -22,6 +23,10 @@ java {
 
 application {
     mainClass = 'de.zettsystems.h3comsim.ComSimApp'
+}
+
+springBoot {
+    buildInfo()
 }
 
 repositories {
