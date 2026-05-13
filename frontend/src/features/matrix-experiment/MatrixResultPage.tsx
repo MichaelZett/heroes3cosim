@@ -181,7 +181,7 @@ export default function MatrixResultPage() {
     );
 }
 
-function StatsRow({row}: { row: UnitMatchupStats }) {
+function StatsRow({row}: Readonly<{ row: UnitMatchupStats }>) {
     const {t} = useTranslation();
     return (
         <tr className="border-b border-slate-900 text-slate-200 hover:bg-slate-800/40">

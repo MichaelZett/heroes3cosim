@@ -10,15 +10,19 @@ import de.zettsystems.h3comsim.domain.ObstacleGenerator;
 import de.zettsystems.h3comsim.domain.Unit;
 import de.zettsystems.h3comsim.domain.UnitCatalog;
 import de.zettsystems.h3comsim.domain.events.Winner;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 
@@ -58,21 +62,23 @@ public class DefaultMatrixExperimentService implements MatrixExperimentService {
         AtomicInteger completedCounter = new AtomicInteger();
 
         int threads = Math.max(1, Runtime.getRuntime().availableProcessors() * parallelismPercent / 100);
-        ExecutorService pool = Executors.newWorkStealingPool(threads);
-        try {
+        try (ExecutorService pool = Executors.newWorkStealingPool(threads)) {
             List<Runnable> tasks = buildTasks(
                     participants, accumulators, request, completedCounter, totalSims, listener);
-            List<java.util.concurrent.Future<?>> futures = new ArrayList<>(tasks.size());
+            List<Future<?>> futures = new ArrayList<>(tasks.size());
             for (Runnable task : tasks) {
                 futures.add(pool.submit(task));
             }
-            for (var future : futures) {
-                future.get();
+            for (Future<?> future : futures) {
+                try {
+                    future.get();
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException("Matrix experiment interrupted", ie);
+                } catch (ExecutionException ee) {
+                    throw new IllegalStateException("Matrix experiment failed", ee);
+                }
             }
-        } catch (Exception ex) {
-            throw new IllegalStateException("Matrix experiment failed", ex);
-        } finally {
-            pool.shutdown();
         }
 
         List<UnitMatchupStats> stats = accumulators.stream()
@@ -122,6 +128,7 @@ public class DefaultMatrixExperimentService implements MatrixExperimentService {
                                              AtomicInteger completedCounter,
                                              int totalSims,
                                              ProgressListener listener) {
+        ProgressTracker progress = new ProgressTracker(completedCounter, totalSims, listener);
         List<Runnable> tasks = new ArrayList<>();
         for (int i = 0; i < participants.size(); i++) {
             for (int j = i + 1; j < participants.size(); j++) {
@@ -130,8 +137,7 @@ public class DefaultMatrixExperimentService implements MatrixExperimentService {
                 Accumulator accA = accumulators.get(i);
                 Accumulator accB = accumulators.get(j);
                 int pairBase = (i * 31 + j) * 0x9E37; // stabiler Seed-Offset je Pair
-                tasks.add(() -> simulatePair(
-                        a, b, accA, accB, request, pairBase, completedCounter, totalSims, listener));
+                tasks.add(() -> simulatePair(a, b, accA, accB, request, pairBase, progress));
             }
         }
         return tasks;
@@ -140,18 +146,23 @@ public class DefaultMatrixExperimentService implements MatrixExperimentService {
     private static void simulatePair(Unit a, Unit b,
                                      Accumulator accA, Accumulator accB,
                                      MatrixRequest request, int pairBase,
-                                     AtomicInteger completedCounter, int totalSims,
-                                     ProgressListener listener) {
+                                     ProgressTracker progress) {
         int countA = stackSizeFor(a, b, request);
         int countB = stackSizeFor(b, a, request);
         for (int s = 0; s < request.seedsPerMatchup(); s++) {
-            long seed = (long) pairBase * 1_000_000L + s;
+            long seed = pairBase * 1_000_000L + s;
             // Rolle 1: a = Attacker, b = Defender
             runOne(a, b, accA, accB, seed, countA, countB);
-            listener.onProgress(completedCounter.incrementAndGet(), totalSims);
+            progress.tick();
             // Rolle 2: b = Attacker, a = Defender — gleicher Seed, getauschte Rollen
             runOne(b, a, accB, accA, seed, countB, countA);
-            listener.onProgress(completedCounter.incrementAndGet(), totalSims);
+            progress.tick();
+        }
+    }
+
+    private record ProgressTracker(AtomicInteger counter, int total, ProgressListener listener) {
+        void tick() {
+            listener.onProgress(counter.incrementAndGet(), total);
         }
     }
 
@@ -184,10 +195,13 @@ public class DefaultMatrixExperimentService implements MatrixExperimentService {
         int weightSelf = weighByWeeklyProduction ? UnitWeeklyProduction.forUnit(self) : 1;
         int weightOther = weighByWeeklyProduction ? UnitWeeklyProduction.forUnit(other) : 1;
         int rawBudget = Math.max(weightSelf * costSelf, weightOther * costOther) * request.unitCount();
-        long lcm = lcm(costSelf, costOther);
-        long snappedBudget = (rawBudget / lcm) * lcm;
+        long pairLcm = lcm(costSelf, costOther);
+        if (pairLcm <= 0L) {
+            return request.unitCount();
+        }
+        long snappedBudget = (rawBudget / pairLcm) * pairLcm;
         if (snappedBudget == 0L) {
-            return (int) (lcm / costSelf);
+            return (int) (pairLcm / costSelf);
         }
         return (int) (snappedBudget / costSelf);
     }
@@ -211,8 +225,8 @@ public class DefaultMatrixExperimentService implements MatrixExperimentService {
 
         double attackerSurvivorRatio = ratio(result.attackerSurvivors(), attackerCount);
         double defenderSurvivorRatio = ratio(result.defenderSurvivors(), defenderCount);
-        attackerAcc.record(result.winner(), Winner.ATTACKER, attackerSurvivorRatio, defenderUnit.tier());
-        defenderAcc.record(result.winner(), Winner.DEFENDER, defenderSurvivorRatio, attackerUnit.tier());
+        attackerAcc.recordOutcome(result.winner(), Winner.ATTACKER, attackerSurvivorRatio, defenderUnit.tier());
+        defenderAcc.recordOutcome(result.winner(), Winner.DEFENDER, defenderSurvivorRatio, attackerUnit.tier());
     }
 
     private static double ratio(int survivors, int start) {
@@ -220,25 +234,25 @@ public class DefaultMatrixExperimentService implements MatrixExperimentService {
     }
 
     private static List<TierAnomaly> detectAnomalies(List<Accumulator> accumulators) {
-        List<TierAnomaly> anomalies = new ArrayList<>();
-        for (Accumulator acc : accumulators) {
-            if (acc.unit.tier() <= 1) {
-                continue;
-            }
-            int lowerTier = acc.unit.tier() - 1;
-            int wins = acc.winsAgainstTier(lowerTier);
-            int totalAgainst = acc.simsAgainstTier(lowerTier);
-            if (totalAgainst == 0) {
-                continue;
-            }
-            double winRate = (double) wins / totalAgainst;
-            if (winRate < 0.5) {
-                anomalies.add(new TierAnomaly(acc.unit.name(), acc.unit.tier(), lowerTier,
-                        winRate, totalAgainst));
-            }
+        return accumulators.stream()
+                .filter(acc -> acc.unit.tier() > 1)
+                .map(DefaultMatrixExperimentService::anomalyFor)
+                .filter(Objects::nonNull)
+                .sorted(Comparator.comparingDouble(TierAnomaly::winRate))
+                .toList();
+    }
+
+    private static @Nullable TierAnomaly anomalyFor(Accumulator acc) {
+        int lowerTier = acc.unit.tier() - 1;
+        int totalAgainst = acc.simsAgainstTier(lowerTier);
+        if (totalAgainst == 0) {
+            return null;
         }
-        anomalies.sort(Comparator.comparingDouble(TierAnomaly::winRate));
-        return anomalies;
+        double winRate = (double) acc.winsAgainstTier(lowerTier) / totalAgainst;
+        if (winRate >= 0.5) {
+            return null;
+        }
+        return new TierAnomaly(acc.unit.name(), acc.unit.tier(), lowerTier, winRate, totalAgainst);
     }
 
     private static final class Accumulator {
@@ -261,7 +275,7 @@ public class DefaultMatrixExperimentService implements MatrixExperimentService {
             }
         }
 
-        void record(Winner winner, Winner ownSide, double survivorRatio, int opponentTier) {
+        void recordOutcome(Winner winner, Winner ownSide, double survivorRatio, int opponentTier) {
             totalSims.increment();
             survivorRatioPpmSum.add(Math.round(survivorRatio * 1_000_000.0));
             simsByOpponentTier[opponentTier].increment();

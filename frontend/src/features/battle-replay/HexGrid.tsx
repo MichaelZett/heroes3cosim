@@ -8,7 +8,7 @@ interface HexGridProps {
     transitionMs: number;
 }
 
-export default function HexGrid({state, transitionMs}: HexGridProps) {
+export default function HexGrid({state, transitionMs}: Readonly<HexGridProps>) {
     const {t} = useTranslation();
     const {w, h} = gridDimensions(state.width, state.height);
     const padding = HEX_SIZE;

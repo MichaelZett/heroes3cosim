@@ -17,7 +17,7 @@ interface ArmySelectorProps {
 
 const TIERS: Array<number | 'ALL'> = ['ALL', 1, 2, 3, 4, 5, 6, 7];
 
-export default function ArmySelector(props: ArmySelectorProps) {
+export default function ArmySelector(props: Readonly<ArmySelectorProps>) {
     const {t} = useTranslation();
 
     const filteredUnits = props.units.filter((u) => {
@@ -120,7 +120,7 @@ function formatUnitOption(unit: UnitDto): string {
     return `${unit.name} — ${tier}${upgrade}`;
 }
 
-function UnitStats({unit}: { unit: UnitDto }) {
+function UnitStats({unit}: Readonly<{ unit: UnitDto }>) {
     const {t} = useTranslation();
     return (
         <div className="rounded-md border border-slate-800 bg-slate-950 p-3 text-sm text-slate-300">

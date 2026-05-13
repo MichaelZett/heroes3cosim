@@ -232,7 +232,7 @@ public final class UnitCatalog {
     public static List<Unit> byFaction(Faction faction) {
         return ALL.stream()
                 .filter(u -> u.faction() == faction)
-                .collect(Collectors.toUnmodifiableList());
+                .toList();
     }
 
     private static Unit basic(String name, Stats stats, Combat combat, Movement movement,

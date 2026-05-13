@@ -17,7 +17,7 @@ const COLOR_RING: Record<'amber' | 'blue', string> = {
     blue: 'rgb(147 197 253)',
 };
 
-export default function StackToken({side, color, transitionMs}: StackTokenProps) {
+export default function StackToken({side, color, transitionMs}: Readonly<StackTokenProps>) {
     if (side.count <= 0) return null;
     const {x, y} = hexToPixel(side.q, side.r);
     const radius = HEX_SIZE * 0.7;
