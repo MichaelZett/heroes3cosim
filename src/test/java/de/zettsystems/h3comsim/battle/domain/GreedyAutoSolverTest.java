@@ -55,7 +55,7 @@ class GreedyAutoSolverTest {
 
         assertThat(action).isInstanceOfSatisfying(Action.MoveAndMelee.class, mm -> {
             assertThat(mm.target()).isSameAs(opponent);
-            assertThat(mm.destination().distanceTo(opponent.position())).isEqualTo(1);
+            assertThat(mm.destination().distanceTo(opponent.position())).isOne();
         });
     }
 
@@ -71,7 +71,7 @@ class GreedyAutoSolverTest {
 
         assertThat(action).isInstanceOfSatisfying(Action.MoveAndMelee.class, mm -> {
             assertThat(mm.target()).isSameAs(target);
-            assertThat(mm.destination().distanceTo(target.position())).isEqualTo(1);
+            assertThat(mm.destination().distanceTo(target.position())).isOne();
             // Run-up = Distanz vom Start; mindestens 5 (besser als direkte 3).
             assertThat(champion.position().distanceTo(mm.destination())).isGreaterThanOrEqualTo(5);
         });

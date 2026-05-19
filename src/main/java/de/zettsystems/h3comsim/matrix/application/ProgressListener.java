@@ -7,7 +7,7 @@ package de.zettsystems.h3comsim.matrix.application;
 @FunctionalInterface
 public interface ProgressListener {
 
-    ProgressListener NOOP = (completed, total) -> {
+    ProgressListener NOOP = (_, _) -> {
     };
 
     void onProgress(int completed, int total);

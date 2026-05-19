@@ -35,7 +35,7 @@ describe('BattlePage', () => {
     it('renders the replay grid once a simulation is hydrated', () => {
         useBattleStore.setState({simulation: simulationFixture(), cursor: 1, paused: true});
         renderRoutes();
-        expect(screen.getByRole('img', {name: 'Hex-Schlachtfeld'})).toBeInTheDocument();
+        expect(screen.getByLabelText('Hex-Schlachtfeld')).toBeInTheDocument();
         expect(screen.getAllByText('Pikeman').length).toBeGreaterThan(0);
         expect(screen.getAllByText('Centaur').length).toBeGreaterThan(0);
     });

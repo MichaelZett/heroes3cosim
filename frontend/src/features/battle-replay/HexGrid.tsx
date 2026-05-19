@@ -25,9 +25,9 @@ export default function HexGrid({state, transitionMs}: Readonly<HexGridProps>) {
         <svg
             viewBox={viewBox}
             className="w-full max-w-full select-none"
-            role="img"
-            aria-label={t('battle.fieldAria')}
+            aria-labelledby="battlefield-title"
         >
+            <title id="battlefield-title">{t('battle.fieldAria')}</title>
             <defs>
                 <polygon id="hex-cell" points={hexPolygonPoints()}/>
             </defs>

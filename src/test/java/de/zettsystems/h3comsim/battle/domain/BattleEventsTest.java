@@ -20,7 +20,7 @@ class BattleEventsTest {
 
         new Battle(new Random(1L), new GreedyAutoSolver(), collector).simulate(setup);
 
-        BattleEvent.BattleStart start = (BattleEvent.BattleStart) collector.events().get(0);
+        BattleEvent.BattleStart start = (BattleEvent.BattleStart) collector.events().getFirst();
         assertThat(start.battlefieldWidth()).isEqualTo(15);
         assertThat(start.battlefieldHeight()).isEqualTo(11);
         assertThat(start.attacker().side()).isEqualTo(Side.ATTACKER);
@@ -111,8 +111,8 @@ class BattleEventsTest {
                 .filter(BattleEvent.MoveBack.class::isInstance)
                 .map(BattleEvent.MoveBack.class::cast)
                 .toList();
-        assertThat(moveBacks).hasSizeGreaterThanOrEqualTo(1);
-        BattleEvent.MoveBack firstMoveBack = moveBacks.get(0);
+        assertThat(moveBacks).isNotEmpty();
+        BattleEvent.MoveBack firstMoveBack = moveBacks.getFirst();
         assertThat(firstMoveBack.actor()).isEqualTo(Side.ATTACKER);
         assertThat(firstMoveBack.toQ()).isZero();
         assertThat(firstMoveBack.toR()).isEqualTo(5);

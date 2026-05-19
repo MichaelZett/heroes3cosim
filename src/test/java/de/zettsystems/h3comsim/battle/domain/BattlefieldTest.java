@@ -28,7 +28,7 @@ class BattlefieldTest {
         Hex from = new Hex(0, 5);
         Hex target = new Hex(14, 5);
         Hex result = field.moveToward(from, target, /* speed */ 18, Movement.GROUND);
-        assertThat(result.distanceTo(target)).isEqualTo(1);
+        assertThat(result.distanceTo(target)).isOne();
     }
 
     @Test

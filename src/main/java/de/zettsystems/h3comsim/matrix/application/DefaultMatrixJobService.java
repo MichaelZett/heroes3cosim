@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 @Slf4j
@@ -65,7 +66,7 @@ public class DefaultMatrixJobService implements MatrixJobService {
         LOG.info("Matrix run started:\n{}", configSummary(jobId, request, state.total));
         try {
             MatrixReport report = experiment.run(request,
-                    (completed, total) -> state.recordProgress(completed));
+                    (completed, _) -> state.recordProgress(completed));
             state.complete(report);
             LOG.info("Matrix run completed:\n{}", reportSummary(jobId, request, report));
         } catch (RuntimeException ex) {
@@ -150,8 +151,8 @@ public class DefaultMatrixJobService implements MatrixJobService {
         private final int total;
         private final AtomicInteger completed = new AtomicInteger();
         private volatile MatrixJobStatus status = MatrixJobStatus.RUNNING;
-        private volatile @Nullable MatrixReport report;
-        private volatile @Nullable String error;
+        private final AtomicReference<@Nullable MatrixReport> report = new AtomicReference<>();
+        private final AtomicReference<@Nullable String> error = new AtomicReference<>();
 
         JobState(int total) {
             this.total = total;
@@ -164,17 +165,17 @@ public class DefaultMatrixJobService implements MatrixJobService {
 
         void complete(MatrixReport report) {
             this.completed.set(total);
-            this.report = report;
+            this.report.set(report);
             this.status = MatrixJobStatus.COMPLETED;
         }
 
         void fail(String message) {
-            this.error = message;
+            this.error.set(message);
             this.status = MatrixJobStatus.FAILED;
         }
 
         MatrixJobSnapshot snapshot(String jobId) {
-            return new MatrixJobSnapshot(jobId, status, completed.get(), total, report, error);
+            return new MatrixJobSnapshot(jobId, status, completed.get(), total, report.get(), error.get());
         }
     }
 }

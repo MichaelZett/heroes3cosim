@@ -19,7 +19,7 @@ class BattleSimulationServiceTest {
                 UnitCatalog.ARCH_ANGEL, 1, 42L);
 
         assertThat(second.result()).isEqualTo(first.result());
-        assertThat(second.events()).isEqualTo(first.events());
+        assertThat(second.events()).containsExactlyElementsOf(first.events());
     }
 
     @Test
@@ -29,7 +29,7 @@ class BattleSimulationServiceTest {
         BattleSimulation simulation = service.simulate(UnitCatalog.PIKEMAN, 5,
                 UnitCatalog.PIKEMAN, 5, 1L);
 
-        assertThat(simulation.events().get(0)).isInstanceOf(BattleEvent.BattleStart.class);
+        assertThat(simulation.events()).first().isInstanceOf(BattleEvent.BattleStart.class);
         assertThat(simulation.events().get(simulation.events().size() - 1))
                 .isInstanceOf(BattleEvent.BattleEnd.class);
     }

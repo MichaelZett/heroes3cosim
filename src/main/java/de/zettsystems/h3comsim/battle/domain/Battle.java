@@ -379,7 +379,7 @@ public final class Battle {
 
     private static int totalHp(Stack stack) {
         int max = stack.unit().health();
-        return Math.max(0, (stack.getCount() - 1)) * max + stack.getCurrentHealth();
+        return Math.max(0, stack.getCount() - 1) * max + stack.getCurrentHealth();
     }
 
     private static Deque<Stack> determineMoveOrder(Stack attacker, Stack defender) {
