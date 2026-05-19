@@ -76,8 +76,12 @@ public final class GreedyAutoSolver implements AutoSolver {
 
     private static boolean isReachableInOneTurn(Hex candidate, Hex from, Battlefield bf,
                                                 int speed, Movement movement) {
-        if (!bf.isPassable(candidate)) return false;
-        if (from.distanceTo(candidate) > speed) return false;
+        if (!bf.isPassable(candidate)) {
+            return false;
+        }
+        if (from.distanceTo(candidate) > speed) {
+            return false;
+        }
         List<Hex> path = bf.findPath(from, candidate, movement);
         return !path.isEmpty() && path.size() <= speed;
     }
@@ -219,7 +223,9 @@ public final class GreedyAutoSolver implements AutoSolver {
 
     private static boolean isKiteCandidate(Hex c, Hex from, Hex to, Battlefield bf,
                                            int mySpeed, Movement movement) {
-        if (c.equals(from) || c.equals(to)) return false;
+        if (c.equals(from) || c.equals(to)) {
+            return false;
+        }
         return isReachableInOneTurn(c, from, bf, mySpeed, movement);
     }
 }

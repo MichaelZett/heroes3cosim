@@ -31,7 +31,7 @@ export default function EventLog({events, cursor, names}: Readonly<EventLogProps
                 const isCurrent = idx === cursor - 1;
                 return (
                     <li
-                        key={idx}
+                        key={`${idx}-${event.type}`}
                         className={
                             isCurrent
                                 ? 'rounded bg-amber-500/10 px-2 py-1 text-slate-200'

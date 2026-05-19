@@ -10,6 +10,7 @@ plugins {
     id "com.github.spotbugs" version "${spotbugsPluginVersion}"
     id "org.sonarqube" version "${sonarqubePluginVersion}"
     id "com.gorylenko.gradle-git-properties" version "${gitPropertiesPluginVersion}"
+    id "org.openrewrite.rewrite" version "${openrewritePluginVersion}"
 }
 
 group = 'de.zettsystems'
@@ -38,21 +39,26 @@ dependencies {
     implementation "org.springframework.boot:spring-boot-starter-validation"
     implementation "org.springframework.boot:spring-boot-starter-actuator"
     implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
-    implementation "com.google.guava:guava:${guavaVersion}"
-    implementation "org.slf4j:slf4j-api:${slf4jVersion}"
-    implementation "ch.qos.logback:logback-core:${logbackVersion}"
-    implementation "org.jspecify:jspecify:${jspecifyVersion}"
-    runtimeOnly "ch.qos.logback:logback-classic:${logbackVersion}"
+    implementation "org.slf4j:slf4j-api"
+    implementation "ch.qos.logback:logback-core"
+    implementation "org.jspecify:jspecify"
+    runtimeOnly "ch.qos.logback:logback-classic"
 
-    compileOnly "org.projectlombok:lombok:${lombokVersion}"
-    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+    compileOnly "org.projectlombok:lombok"
+    annotationProcessor "org.projectlombok:lombok"
     annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
 
     errorprone "com.google.errorprone:error_prone_core:${errorproneVersion}"
     errorprone "com.uber.nullaway:nullaway:${nullawayVersion}"
 
+    rewrite platform("org.openrewrite.recipe:rewrite-recipe-bom:${rewriteRecipeBomVersion}")
+    rewrite "org.openrewrite.recipe:rewrite-migrate-java"
+    rewrite "org.openrewrite.recipe:rewrite-spring"
+    rewrite "org.openrewrite.recipe:rewrite-static-analysis"
+    rewrite "org.openrewrite.recipe:rewrite-testing-frameworks"
+
     testImplementation "org.springframework.boot:spring-boot-starter-test"
-    testImplementation "org.assertj:assertj-core:${assertjVersion}"
+    testImplementation "org.assertj:assertj-core"
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
 
@@ -218,6 +224,20 @@ tasks.register('frontendCoverage', Exec) {
 
 tasks.named('sonar').configure {
     dependsOn 'test', 'jacocoTestReport', 'spotbugsMain', 'spotbugsTest', 'frontendCoverage'
+}
+
+rewrite {
+    activeRecipe(
+            "org.openrewrite.java.migrate.UpgradeToJava25",
+            "org.openrewrite.staticanalysis.CommonStaticAnalysis",
+            "org.openrewrite.java.testing.assertj.JUnitToAssertj",
+            "org.openrewrite.java.testing.assertj.Assertj",
+            "org.openrewrite.java.migrate.guava.NoGuava"
+    )
+    // Toolchain wird aus `javaVersion as int` gespeist — UpgradeJavaVersion versteht das
+    // nicht und würde nur `/*~~(Attempted to update ...)~~>*/`-Junk einfügen. Globale
+    // Konvention (~/.codex/AGENTS.md): build.gradle aus dem Lauf raushalten.
+    exclusion("build.gradle")
 }
 
 def depUpdateIsUnstable = { String version ->

@@ -31,7 +31,7 @@ class PathFinderTest {
         Battlefield bf = Battlefield.STANDARD.withObstacles(Set.of(new Hex(1, 5)));
         Hex next = PathFinder.stepToward(bf, new Hex(0, 5), new Hex(14, 5), /* speed */ 1);
         assertThat(next).isNotEqualTo(new Hex(1, 5));
-        assertThat(new Hex(0, 5).distanceTo(next)).isEqualTo(1);
+        assertThat(new Hex(0, 5).distanceTo(next)).isOne();
     }
 
     @Test

@@ -177,7 +177,7 @@ class StackTest {
 
         assertThat(normal).isEqualTo(5);
         assertThat(againstBehemoth).isEqualTo(3);  // 5 × 0.6 = 3
-        assertThat(againstAncient).isEqualTo(1);   // 5 × 0.2 = 1
+        assertThat(againstAncient).isOne();   // 5 × 0.2 = 1
     }
 
     @Test
@@ -294,7 +294,7 @@ class StackTest {
 
         phoenix.takeDamage(10_000, Set.of());
 
-        assertThat(phoenix.getCount()).isEqualTo(1);
+        assertThat(phoenix.getCount()).isOne();
     }
 
     @Test

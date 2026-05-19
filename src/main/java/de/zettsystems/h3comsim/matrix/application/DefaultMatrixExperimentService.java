@@ -285,13 +285,16 @@ public class DefaultMatrixExperimentService implements MatrixExperimentService {
             totalSims.increment();
             survivorRatioPpmSum.add(Math.round(survivorRatio * 1_000_000.0));
             simsByOpponentTier[opponentTier].increment();
-            if (winner == Winner.DRAW) {
-                draws.increment();
-            } else if (winner == ownSide) {
-                wins.increment();
-                winsByOpponentTier[opponentTier].increment();
-            } else {
-                losses.increment();
+            switch (winner) {
+                case DRAW -> draws.increment();
+                case ATTACKER, DEFENDER -> {
+                    if (winner == ownSide) {
+                        wins.increment();
+                        winsByOpponentTier[opponentTier].increment();
+                    } else {
+                        losses.increment();
+                    }
+                }
             }
         }
 

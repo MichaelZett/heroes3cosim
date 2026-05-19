@@ -53,7 +53,7 @@ class DefaultMatrixExperimentServiceTest {
         MatrixReport second = service.run(miniRequest(2));
 
         // Stats sind nach winRate sortiert — deterministisch bei gleichem RNG-Pfad.
-        assertThat(second.stats()).hasSize(first.stats().size());
+        assertThat(second.stats()).hasSameSizeAs(first.stats());
         for (int i = 0; i < first.stats().size(); i++) {
             UnitMatchupStats a = first.stats().get(i);
             UnitMatchupStats b = second.stats().get(i);
@@ -262,7 +262,7 @@ class DefaultMatrixExperimentServiceTest {
 
         assertThat(pikeman).isEqualTo(14);
         assertThat(swordsman).isEqualTo(4);
-        assertThat(angel).isEqualTo(1);
+        assertThat(angel).isOne();
     }
 
     @Test

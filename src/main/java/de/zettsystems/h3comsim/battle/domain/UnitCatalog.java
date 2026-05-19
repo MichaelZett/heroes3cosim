@@ -235,11 +235,16 @@ public final class UnitCatalog {
                 .toList();
     }
 
+    // DSL-Helper fuer den Catalog: eine Zeile pro Unit ist Designziel. Param-Count ist H3-inhaerent
+    // (name + stats + combat + movement + faction + tier + cost + specs), Builder/Record-Wrapper
+    // wuerden die Catalog-Tabelle aufblaehen ohne Nutzen.
+    @SuppressWarnings("java:S107")
     private static Unit basic(String name, Stats stats, Combat combat, Movement movement,
                               Faction faction, int tier, int cost, UnitSpeciality... specialities) {
         return new Unit(name, stats, combat, movement, cost, faction, tier, false, Set.of(specialities));
     }
 
+    @SuppressWarnings("java:S107")
     private static Unit upgrade(String name, Stats stats, Combat combat, Movement movement,
                                 Faction faction, int tier, int cost, UnitSpeciality... specialities) {
         return new Unit(name, stats, combat, movement, cost, faction, tier, true, Set.of(specialities));

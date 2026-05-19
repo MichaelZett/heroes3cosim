@@ -30,7 +30,7 @@ class ObstacleGeneratorTest {
     void same_seed_yields_identical_obstacle_set() {
         Set<Hex> first = ObstacleGenerator.generate(Battlefield.STANDARD, new Random(123L), 10);
         Set<Hex> second = ObstacleGenerator.generate(Battlefield.STANDARD, new Random(123L), 10);
-        assertThat(second).isEqualTo(first);
+        assertThat(second).hasSameElementsAs(first);
     }
 
     @Test
