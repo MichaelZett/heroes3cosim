@@ -1,5 +1,7 @@
 package de.zettsystems.h3comsim.matrix.values;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
  * Wie wird die Stack-Größe pro Seite im Matrix-Match bestimmt?
  *
@@ -16,6 +18,15 @@ package de.zettsystems.h3comsim.matrix.values;
  *       Wochen-Income, wer holt mehr aus diesem Gold-Stack raus".</li>
  * </ul>
  */
+@Schema(description = """
+        Wie wird die Stack-Größe pro Seite im Matrix-Match bestimmt?
+
+        * `EQUAL_COUNT` — beide Seiten bekommen `unitCount` Einheiten (Default).
+        * `EQUAL_GOLD` — Pair-Budget gleicher Gold-Wert (LCM-snap).
+        * `WEEKLY_PRODUCTION` — Stack-Größe = H3-Wochenproduktion × `unitCount`.
+        * `EQUAL_GOLD_WEEKLY` — Gold-normalisierte Wochenproduktion.
+        """,
+        enumAsRef = true)
 public enum StackSizingMode {
     EQUAL_COUNT,
     EQUAL_GOLD,
