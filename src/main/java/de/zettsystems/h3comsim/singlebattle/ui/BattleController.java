@@ -9,7 +9,6 @@ import de.zettsystems.h3comsim.singlebattle.values.BattleSimulationDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -43,12 +42,10 @@ public class BattleController {
                     Shoot, Melee, Retaliation, Skills, BattleEnd …) für die UI-Replay-View.
                     """,
             operationId = "simulateBattle")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Simulation abgeschlossen"),
-            @ApiResponse(responseCode = "400",
-                    description = "Unbekannter Unit-Name oder Validierungsfehler (Count < 1, Pflichtfeld leer)",
-                    content = @Content)
-    })
+    @ApiResponse(responseCode = "200", description = "Simulation abgeschlossen")
+    @ApiResponse(responseCode = "400",
+            description = "Unbekannter Unit-Name oder Validierungsfehler (Count < 1, Pflichtfeld leer)",
+            content = @Content)
     @PostMapping("/simulate")
     public BattleSimulationDto simulate(@Valid @RequestBody BattleConfigRequest request) {
         Unit attacker = lookupUnit(request.attackerUnit());

@@ -1,4 +1,4 @@
-package de.zettsystems.h3comsim.config.ui;
+package de.zettsystems.h3comsim.config;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;

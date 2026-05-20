@@ -7,7 +7,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -41,13 +40,11 @@ public class ExperimentController {
                     `mode=EQUAL_COUNT`, `seedsPerMatchup=20`, keine Excludes).
                     """,
             operationId = "startMatrix")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200",
-                    description = "Job angenommen — Snapshot mit jobId und initialem Status."),
-            @ApiResponse(responseCode = "400",
-                    description = "Validierungsfehler (z.B. unitCount außerhalb 1..200, seedsPerMatchup außerhalb 1..100)",
-                    content = @Content)
-    })
+    @ApiResponse(responseCode = "200",
+            description = "Job angenommen — Snapshot mit jobId und initialem Status.")
+    @ApiResponse(responseCode = "400",
+            description = "Validierungsfehler (z.B. unitCount außerhalb 1..200, seedsPerMatchup außerhalb 1..100)",
+            content = @Content)
     @PostMapping("/matrix")
     public MatrixJobSnapshot runMatrix(@Valid @RequestBody MatrixRequestDto request) {
         return jobs.start(request.toApplication());
@@ -62,12 +59,10 @@ public class ExperimentController {
                     gesetzt.
                     """,
             operationId = "getMatrixJob")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Snapshot des Jobs."),
-            @ApiResponse(responseCode = "404",
-                    description = "Keine Job-ID mit diesem Wert bekannt (Server-Restart oder Tippfehler).",
-                    content = @Content)
-    })
+    @ApiResponse(responseCode = "200", description = "Snapshot des Jobs.")
+    @ApiResponse(responseCode = "404",
+            description = "Keine Job-ID mit diesem Wert bekannt (Server-Restart oder Tippfehler).",
+            content = @Content)
     @GetMapping("/matrix/{jobId}")
     public MatrixJobSnapshot getMatrixJob(
             @Parameter(description = "Job-ID, wie zuvor von `POST /matrix` zurückgegeben.",
