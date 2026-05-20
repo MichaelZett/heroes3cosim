@@ -1,4 +1,4 @@
-package de.zettsystems.h3comsim.config.ui;
+package de.zettsystems.h3comsim.setup.ui;
 
 import de.zettsystems.h3comsim.battle.domain.Faction;
 import de.zettsystems.h3comsim.battle.domain.UnitCatalog;

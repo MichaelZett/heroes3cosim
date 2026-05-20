@@ -1,4 +1,4 @@
-package de.zettsystems.h3comsim.config.application;
+package de.zettsystems.h3comsim.setup.application;
 
 import de.zettsystems.h3comsim.battle.domain.Battle;
 import de.zettsystems.h3comsim.battle.domain.BattleResult;

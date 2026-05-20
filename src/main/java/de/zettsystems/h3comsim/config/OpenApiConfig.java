@@ -3,8 +3,8 @@ package de.zettsystems.h3comsim.config;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
+import org.jspecify.annotations.Nullable;
 import org.springdoc.core.models.GroupedOpenApi;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.context.annotation.Bean;
@@ -20,10 +20,8 @@ import org.springframework.context.annotation.Configuration;
 public class OpenApiConfig {
 
     @Bean
-    public OpenAPI heroes3OpenApi(ObjectProvider<BuildProperties> buildProperties) {
-        String version = buildProperties.getIfAvailable() != null
-                ? buildProperties.getObject().getVersion()
-                : "dev";
+    public OpenAPI heroes3OpenApi(@Nullable BuildProperties buildProperties) {
+        String version = buildProperties != null ? buildProperties.getVersion() : "dev";
         return new OpenAPI().info(new Info()
                 .title("Heroes 3 Combat Simulator API")
                 .description("""

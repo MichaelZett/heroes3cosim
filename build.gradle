@@ -14,7 +14,7 @@ plugins {
 }
 
 group = 'de.zettsystems'
-version = '1.0-SNAPSHOT'
+version = "${appVersion}"
 
 java {
     toolchain {
@@ -44,6 +44,7 @@ dependencies {
     developmentOnly "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
     compileOnly "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
     testCompileOnly "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
+    testRuntimeOnly "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
     implementation "org.slf4j:slf4j-api"
     implementation "ch.qos.logback:logback-core"
     implementation "org.jspecify:jspecify"
@@ -202,6 +203,9 @@ sonar {
                 'src/test/java/**,frontend/src/**/*.test.ts,frontend/src/**/*.test.tsx,frontend/src/test/**'
         property 'sonar.exclusions',
                 'frontend/dist/**,frontend/node_modules/**,frontend/coverage/**,frontend/*.tsbuildinfo,build/**'
+        // Technische Spring-/Web-Konfiguration (Swagger, CORS, SPA-Forwarding) ist reines
+        // Framework-Plumbing — keine Geschäftslogik, daher aus dem Coverage-Score raus.
+        property 'sonar.coverage.exclusions', 'src/main/java/de/zettsystems/h3comsim/config/**'
         // i18n-Locale-Dateien spiegeln per Definition dieselbe Key-Struktur — Sonar liest das
         // als 90+ % Duplikate. Aus dem CPD-Scan ausschliessen.
         property 'sonar.cpd.exclusions', 'frontend/src/shared/i18n/locales/**'
