@@ -59,8 +59,14 @@ export default function HexGrid({state, transitionMs}: Readonly<HexGridProps>) {
                 );
             })}
 
-            <StackToken side={state.attacker} color="amber" transitionMs={transitionMs}/>
-            <StackToken side={state.defender} color="blue" transitionMs={transitionMs}/>
+            {[...state.stacks.values()].map((s) => (
+                <StackToken
+                    key={`${s.side}-${s.slot}`}
+                    side={s}
+                    color={s.side === 'ATTACKER' ? 'amber' : 'blue'}
+                    transitionMs={transitionMs}
+                />
+            ))}
         </svg>
     );
 }

@@ -7,6 +7,9 @@ public record StackSnapshot(
         @Schema(description = "Seite, zu der dieser Stack gehört")
         Side side,
 
+        @Schema(description = "Slot-Index 0..6 innerhalb der Seite. 0 für Single-Battle und immer für den Stack auf der obersten Spawn-Reihe.", example = "0")
+        int slot,
+
         @Schema(description = "Unit-Name (vgl. /api/units)", example = "Marksman")
         String unitName,
 

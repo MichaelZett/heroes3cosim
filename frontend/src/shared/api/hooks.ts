@@ -1,7 +1,15 @@
 import {useState} from 'react';
 import {useMutation, useQuery} from '@tanstack/react-query';
 import {api} from './client';
-import type {BattleConfigRequest, BattleSimulationDto, MatrixProgress, MatrixReport, MatrixRequestDto,} from './types';
+import type {
+    ArmyBattleRequest,
+    ArmyBattleSimulation,
+    BattleConfigRequest,
+    BattleSimulationDto,
+    MatrixProgress,
+    MatrixReport,
+    MatrixRequestDto,
+} from './types';
 
 const POLL_INTERVAL_MS = 500;
 
@@ -38,6 +46,19 @@ async function pollMatrixJob(
             throw new Error(snap.error ?? 'Matrix experiment failed');
         }
     }
+}
+
+export function useArmyPresets() {
+    return useQuery({queryKey: ['armyPresets'], queryFn: api.listArmyPresets});
+}
+
+export function useSimulateArmyBattle(
+    onSuccess: (sim: ArmyBattleSimulation, request: ArmyBattleRequest) => void,
+) {
+    return useMutation({
+        mutationFn: (request: ArmyBattleRequest) => api.simulateArmyBattle(request),
+        onSuccess: (sim, request) => onSuccess(sim, request),
+    });
 }
 
 export function useRunMatrix(

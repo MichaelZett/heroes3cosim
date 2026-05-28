@@ -12,6 +12,7 @@ public class Stack {
 
     private final Unit unit;
     private final Side side;
+    private final int slot;
     private final int startCount;
     private int aliveCount;
     private int topUnitCurrentHealth;
@@ -31,16 +32,24 @@ public class Stack {
 
     /** Convenience constructor — defaults the side to {@link Side#ATTACKER}. */
     public Stack(Unit unit, int count, Hex position) {
-        this(unit, count, position, Side.ATTACKER);
+        this(unit, count, position, Side.ATTACKER, 0);
     }
 
     public Stack(Unit unit, int count, Hex position, Side side) {
+        this(unit, count, position, side, 0);
+    }
+
+    public Stack(Unit unit, int count, Hex position, Side side, int slot) {
         if (count < 0) {
             throw new IllegalArgumentException("count must be >= 0, was " + count);
+        }
+        if (slot < 0) {
+            throw new IllegalArgumentException("slot must be >= 0, was " + slot);
         }
         this.unit = Objects.requireNonNull(unit, "unit");
         this.position = Objects.requireNonNull(position, "position");
         this.side = Objects.requireNonNull(side, "side");
+        this.slot = slot;
         this.startCount = count;
         this.aliveCount = count;
         this.topUnitCurrentHealth = unit.health();
@@ -53,6 +62,10 @@ public class Stack {
 
     public Side side() {
         return side;
+    }
+
+    public int slot() {
+        return slot;
     }
 
     public Hex position() {

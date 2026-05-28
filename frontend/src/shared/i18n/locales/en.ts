@@ -107,7 +107,20 @@ export const en: Dictionary = {
     mode: {
         single: 'Single Battle',
         matrix: 'Matrix Experiment',
-        mixedArmy: 'Mixed Armies (soon)',
+        mixedArmy: 'Mixed Armies',
+    },
+    army: {
+        title: 'Armies vs Armies',
+        subtitle: 'Up to 7 stacks per side — pick a faction preset or compose the slots manually.',
+        attacker: 'Attacker army',
+        defender: 'Defender army',
+        preset: 'Weekly-production preset',
+        presetChoose: '— Choose faction —',
+        applyPreset: 'Apply preset',
+        slotN: 'S{{slot}}',
+        slotEmpty: '— empty —',
+        startBattle: 'Start battle',
+        battleTitle: 'Army battle replay',
     },
     matrix: {
         title: 'Matrix experiment',

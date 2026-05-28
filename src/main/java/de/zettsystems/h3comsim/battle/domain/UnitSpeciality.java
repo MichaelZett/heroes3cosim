@@ -49,7 +49,17 @@ public enum UnitSpeciality {
     DEFENSE_REDUCTION_40(ATTACK),
     DEFENSE_REDUCTION_80(ATTACK),
     CASTS_BLOODLUST(SPECIAL),
-    ATTACKS_WALLS(SPECIAL);
+    ATTACKS_WALLS(SPECIAL),
+
+    // Multi-Stack-Fähigkeiten (greifen erst, wenn mehr als ein Gegner-Stack auf dem Feld steht).
+    /** Cerberus: Nahkampf trifft drei adjazente Gegner-Hexen gleichzeitig. */
+    THREE_HEADED_ATTACK(ATTACK),
+    /** Green/Gold/Red/Black/Azure Dragon: Nahkampf trifft zwei inline-Hexe (Ziel + dahinterliegender). */
+    FIRE_BREATH(ATTACK),
+    /** Magog: ranged-Hit als 3-Hex-Splash (Ziel-Hex + zwei seitliche Gegner-Nachbarn). */
+    SPLASH_SHOT(ATTACK),
+    /** Lich: ranged-Hit erzeugt 7-Hex-AoE rund ums Ziel (Death Cloud). */
+    DEATH_CLOUD(ATTACK);
 
     private final UnitSpecialityType unitSpecialityType;
 

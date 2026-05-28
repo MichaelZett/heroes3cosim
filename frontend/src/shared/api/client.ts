@@ -1,4 +1,7 @@
 import type {
+    ArmyBattleRequest,
+    ArmyBattleSimulation,
+    ArmyPresetsResponse,
     BattleConfigRequest,
     BattleSimulationDto,
     Faction,
@@ -44,5 +47,14 @@ export const api = {
     },
     getMatrixJob(jobId: string): Promise<MatrixJobSnapshot> {
         return jsonFetch<MatrixJobSnapshot>(`/experiments/matrix/${jobId}`);
+    },
+    simulateArmyBattle(request: ArmyBattleRequest): Promise<ArmyBattleSimulation> {
+        return jsonFetch<ArmyBattleSimulation>('/army-battles/simulate', {
+            method: 'POST',
+            body: JSON.stringify(request),
+        });
+    },
+    listArmyPresets(): Promise<ArmyPresetsResponse> {
+        return jsonFetch<ArmyPresetsResponse>('/army-battles/presets');
     },
 };

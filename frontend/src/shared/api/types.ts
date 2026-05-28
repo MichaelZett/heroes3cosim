@@ -56,6 +56,7 @@ export interface BattleResult {
 
 export interface StackSnapshot {
     side: Side;
+    slot: number;
     unitName: string;
     count: number;
     topHp: number;
@@ -69,6 +70,7 @@ export interface HexCoord {
 }
 
 // Discriminated Union — mirror BattleEvent sealed interface mit `type`-Discriminator.
+// `actorSlot`/`targetSlot` ist im Single-Battle-Pfad immer 0; im Army-Battle 0..6.
 export type BattleEvent =
     | {
     type: 'BattleStart';
@@ -77,21 +79,25 @@ export type BattleEvent =
     obstacles: HexCoord[];
     attacker: StackSnapshot;
     defender: StackSnapshot;
+    stacks: StackSnapshot[];
 }
     | {
     type: 'Move';
     actor: Side;
+    actorSlot: number;
     fromQ: number;
     fromR: number;
     toQ: number;
     toR: number;
     path: HexCoord[];
 }
-    | { type: 'Wait'; actor: Side }
+    | { type: 'Wait'; actor: Side; actorSlot: number }
     | {
     type: 'Shoot';
     actor: Side;
+    actorSlot: number;
     target: Side;
+    targetSlot: number;
     distance: number;
     damage: number;
     killed: number;
@@ -100,7 +106,9 @@ export type BattleEvent =
     | {
     type: 'Melee';
     actor: Side;
+    actorSlot: number;
     target: Side;
+    targetSlot: number;
     hexesMoved: number;
     damage: number;
     killed: number;
@@ -109,41 +117,105 @@ export type BattleEvent =
     | {
     type: 'Retaliation';
     retaliator: Side;
+    retaliatorSlot: number;
     target: Side;
+    targetSlot: number;
     damage: number;
     killed: number;
     targetAfter: StackSnapshot;
 }
-    | { type: 'TwoBlows'; actor: Side }
-    | { type: 'TwoShots'; actor: Side }
-    | { type: 'GoodMorale'; actor: Side }
-    | { type: 'MoveBack'; actor: Side; toQ: number; toR: number; path: HexCoord[] }
-    | { type: 'DeathStare'; actor: Side; target: Side; kills: number; targetAfter: StackSnapshot }
-    | { type: 'Thunderbolts'; actor: Side; target: Side; damage: number; targetAfter: StackSnapshot }
-    | { type: 'Petrifying'; actor: Side; target: Side }
-    | { type: 'Cursing'; actor: Side; target: Side }
-    | { type: 'Poisoning'; actor: Side; target: Side }
-    | { type: 'Diseasing'; actor: Side; target: Side }
-    | { type: 'Aging'; actor: Side; target: Side }
+    | { type: 'TwoBlows'; actor: Side; actorSlot: number }
+    | { type: 'TwoShots'; actor: Side; actorSlot: number }
+    | { type: 'GoodMorale'; actor: Side; actorSlot: number }
+    | {
+    type: 'MoveBack';
+    actor: Side;
+    actorSlot: number;
+    toQ: number;
+    toR: number;
+    path: HexCoord[];
+}
+    | {
+    type: 'DeathStare';
+    actor: Side;
+    actorSlot: number;
+    target: Side;
+    targetSlot: number;
+    kills: number;
+    targetAfter: StackSnapshot;
+}
+    | {
+    type: 'Thunderbolts';
+    actor: Side;
+    actorSlot: number;
+    target: Side;
+    targetSlot: number;
+    damage: number;
+    targetAfter: StackSnapshot;
+}
+    | { type: 'Petrifying'; actor: Side; actorSlot: number; target: Side; targetSlot: number }
+    | { type: 'Cursing'; actor: Side; actorSlot: number; target: Side; targetSlot: number }
+    | { type: 'Poisoning'; actor: Side; actorSlot: number; target: Side; targetSlot: number }
+    | { type: 'Diseasing'; actor: Side; actorSlot: number; target: Side; targetSlot: number }
+    | { type: 'Aging'; actor: Side; actorSlot: number; target: Side; targetSlot: number }
     | {
     type: 'FireShield';
     shielded: Side;
+    shieldedSlot: number;
     attacker: Side;
+    attackerSlot: number;
     damage: number;
     attackerAfter: StackSnapshot;
 }
-    | { type: 'Rebirth'; actor: Side; restoredCount: number; actorAfter: StackSnapshot }
+    | {
+    type: 'Rebirth';
+    actor: Side;
+    actorSlot: number;
+    restoredCount: number;
+    actorAfter: StackSnapshot;
+}
     | {
     type: 'BattleEnd';
     winner: Winner;
     attackerSurvivors: number;
     defenderSurvivors: number;
     turns: number;
+    finalStacks: StackSnapshot[];
 };
 
 export interface BattleSimulationDto {
     result: BattleResult;
     events: BattleEvent[];
+}
+
+// Army-Battle DTOs — mirror von armybattle.values.*
+export interface StackSpec {
+    unitName: string;
+    count: number;
+}
+
+export interface ArmySpec {
+    stacks: StackSpec[];
+}
+
+export interface ArmyBattleRequest {
+    attacker: ArmySpec;
+    defender: ArmySpec;
+    seed?: number | null;
+}
+
+export interface ArmyBattleSimulation {
+    result: BattleResult;
+    events: BattleEvent[];
+}
+
+export interface FactionPresetDto {
+    faction: Faction;
+    stacks: StackSpec[];
+}
+
+export interface ArmyPresetsResponse {
+    presets: FactionPresetDto[];
 }
 
 // Matrix-Experiment DTOs — Spiegel von application.experiment.*

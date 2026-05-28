@@ -38,23 +38,27 @@ export const TEST_UNITS: UnitDto[] = [
     unit({name: 'Gremlin', faction: 'TOWER', tier: 1}),
 ];
 
-function snapshot(side: StackSnapshot['side'], unitName: string, q: number, r: number): StackSnapshot {
-    return {side, unitName, count: 10, topHp: 10, q, r};
+function snapshot(side: StackSnapshot['side'], unitName: string, q: number, r: number, slot = 0): StackSnapshot {
+    return {side, slot, unitName, count: 10, topHp: 10, q, r};
 }
 
 export function simulationFixture(): BattleSimulationDto {
+    const attackerSnap = snapshot('ATTACKER', 'Pikeman', 0, 5);
+    const defenderSnap = snapshot('DEFENDER', 'Centaur', 14, 5);
     const events: BattleEvent[] = [
         {
             type: 'BattleStart',
             battlefieldWidth: 15,
             battlefieldHeight: 11,
             obstacles: [],
-            attacker: snapshot('ATTACKER', 'Pikeman', 0, 5),
-            defender: snapshot('DEFENDER', 'Centaur', 14, 5),
+            attacker: attackerSnap,
+            defender: defenderSnap,
+            stacks: [attackerSnap, defenderSnap],
         },
         {
             type: 'Move',
             actor: 'ATTACKER',
+            actorSlot: 0,
             fromQ: 0,
             fromR: 5,
             toQ: 4,
@@ -67,6 +71,7 @@ export function simulationFixture(): BattleSimulationDto {
             attackerSurvivors: 10,
             defenderSurvivors: 0,
             turns: 1,
+            finalStacks: [attackerSnap, defenderSnap],
         },
     ];
     return {
