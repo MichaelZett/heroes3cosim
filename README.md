@@ -23,6 +23,11 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Defense Reduction (Behemoth), Move Back (Harpy), Counterstrike
   Twice/Unlimited (Griffin), Regeneration (Wight), Fire Shield (Efreet
   Sultan), Rebirth (Phoenix), No Hand-to-Hand Penalty.
+- **Multi-Stack-Fähigkeiten** für die Army-Battles: Cerberus
+  Three-Headed Attack (3 adjazente Gegner gleichzeitig), Fire Breath
+  (Green/Gold/Red/Black Dragon — Ziel + Stack dahinter), Magog
+  Splash-Shot (Ziel + 2 adjazente Gegner), Lich Death Cloud (Ziel +
+  alle 1-Hex-Nachbarn).
 - **Hex-Schlachtfeld 15 × 11** mit zufälligen Hindernissen pro Sim,
   Hex-A*-Pathfinding um Obstacles herum, zugbasierte Move-Sequenz pro
   Hex (Token wandert sichtbar Schritt für Schritt).
@@ -32,9 +37,12 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
 - **HTTP-API** über Spring Boot 4 mit
   [Swagger-UI](http://localhost:8080/swagger-ui.html): `GET /api/units`,
   `GET /api/factions`, `POST /api/battles/simulate` für einzelne Kämpfe,
-  `POST /api/experiments/matrix` für Matrix-Auswertungen. Antworten
-  enthalten Ergebnis plus strukturierten `BattleEvent`-Stream (sealed
-  Interface, Jackson-polymorph serialisiert).
+  `POST /api/army-battles/simulate` + `GET /api/army-battles/presets`
+  für Army-vs-Army, `POST /api/experiments/matrix` für Matrix-
+  Auswertungen. Antworten enthalten Ergebnis plus strukturierten
+  `BattleEvent`-Stream (sealed Interface, Jackson-polymorph serialisiert,
+  Action-Events tragen `actorSlot`/`targetSlot` für Multi-Stack-
+  Disambiguierung).
 - **Matrix-Auswertung** — jede Einheit gegen jede andere, pro Match-up
   mehrere Seeds und automatisch getauschte Attacker-/Defender-Rollen.
   Parallel über Work-Stealing-Pool (50 %-Auslastung der CPU-Kerne, per
@@ -45,11 +53,26 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Config; Report mit Per-Unit- und Per-Faction-Tabelle plus
   „Anomalien" (Truppen, die mehrheitlich gegen die nächstniedrigere
   Tier-Klasse verlieren).
-- **Replay-UI** — React 19 + Vite + Tailwind. Truppenkonfiguration mit
-  Seed-Wahl, Hex-Replay mit Step/Pause/Geschwindigkeitsslider, Rückspiel-
-  Button (gleicher Seed, getauschte Seiten), scrollender Combat-Log.
-  Dazu eine eigene Matrix-Seite mit Faction-/Unit-Excludes und
-  sortierbarer Ergebnis-Tabelle. Deutsch und Englisch umschaltbar.
+- **Army-vs-Army-Modus** — bis zu 7 Stacks pro Seite auf einer
+  Spawn-Spalte (Reihen `{0, 2, 4, 5, 6, 8, 10}`), Move-Order über alle
+  14 Stacks per Speed → Side → Slot sortiert. Hartkodierte
+  Wochenproduktions-Presets pro Faction (CASTLE, RAMPART, …, CONFLUX)
+  als Default-Composition, frei überstellbar via 7-Slot-Editor.
+- **Strategischer Solver** (`StrategicAutoSolver`) für Army-Battles:
+  Pro Runde wird ein `RoundPlan` mit `TeamStance` (RANGED_DOMINANT /
+  MELEE_DOMINANT / BALANCED), Focus-Fire-Target (gewichtet nach
+  Schaden × Count plus Special-Boni) und Schützen-Schutz berechnet.
+  Drei Heuristiken übereinander: Tank-Pattern für eigene Schützen,
+  AoE-aware Target-Pick (Magog/Lich/Dragons), Focus-Fire über alle
+  eigenen Stacks. Single-Battle und Matrix nutzen weiterhin den
+  egoistischen `GreedyAutoSolver`.
+- **Replay-UI** — React 19 + Vite + Tailwind. Drei Modi über den
+  ModeSwitcher: Single-Battle (Truppenkonfig + Hex-Replay mit
+  Step/Pause/Speed-Slider + Rückspiel mit getauschten Seiten),
+  Matrix-Auswertung (Faction-/Unit-Excludes, sortierbare Ergebnis-
+  Tabelle), Army-vs-Army (Faction-Preset-Picker + 7-Slot-Editor pro
+  Seite, Replay rendert bis zu 14 Tokens, Combat-Log mit Stack-
+  Namen-Auflösung). Deutsch und Englisch umschaltbar.
 - **Deterministisch über Seed**: gleicher Seed → identische
   `BattleResult` + identischer Event-Stream + identische Obstacle-
   Verteilung. Voraussetzung für reproduzierbare Auswertungen.
@@ -108,20 +131,31 @@ Reports landen unter `build/reports/`: JaCoCo, SpotBugs, Tests.
 
 ## Architektur
 
-Hexagonal-light:
+Feature-first nach Konvention `<fachlich>.<technisch>` mit
+`technisch ∈ { ui | application | domain | values }` unter
+`de.zettsystems.h3comsim`:
 
-- **`domain`** — pure Combat-Domäne ohne Spring-Abhängigkeit. `Unit`,
-  `UnitCatalog`, `Stack`, `Hex`, `Battlefield`, `PathFinder`,
-  `ObstacleGenerator`, Enums + Event-Records unter `domain.events`.
-- **`application`** — `Battle.simulate(...)` als Orchestrator,
-  `BattleSetup`, `BattleResult`, `AutoSolver` (Default
-  `GreedyAutoSolver`). Unter `application.experiment` der parallele
-  `MatrixExperimentService`.
-- **`adapter.web`** — `BattleController`, `ExperimentController`,
-  DTOs, CORS-Config für den Vite-Dev-Proxy.
+- **`battle.domain`** — pure Combat-Domäne ohne Spring-Abhängigkeit.
+  `Unit`, `UnitCatalog`, `Stack` (mit `slot`-Feld), `Hex`,
+  `Battlefield`, `PathFinder`, `ObstacleGenerator`, `BattleSetup`
+  mit `List<Stack>` pro Seite, `Battle.simulate(...)` als
+  Orchestrator, `AutoSolver`-Interface plus zwei Implementierungen
+  (`GreedyAutoSolver`, `StrategicAutoSolver` mit `RoundPlan` und
+  `TeamStance`). Event-Records unter `battle.domain.events`.
+- **`singlebattle`** — Ausprägung „ein Stack gegen einen Stack".
+  `BattleSimulationService` + `BattleController`
+  (`POST /api/battles/simulate`).
+- **`armybattle`** — Ausprägung „bis zu 7 Stacks pro Seite".
+  `ArmyBattleService`, `FactionPresetCatalog`, `SpawnLayout`,
+  `ArmyBattleController` (`POST /api/army-battles/simulate`,
+  `GET /api/army-battles/presets`).
+- **`matrix`** — Ausprägung „viele 1-vs-1" (paarweise alle gegen alle).
+  Parallel via Work-Stealing-Pool, asynchrone Jobs mit Polling-Endpoint.
+- **`setup` + `config`** — Cross-cutting: `CatalogController`,
+  `SpaForwardingController`, CORS-Config, CLI-Runner.
 - **`frontend/`** — eigenständiges Vite-Projekt, vom Gradle-Build als
   statisches Resource gebündelt. Feature-Buckets: `battle-config`,
-  `battle-replay`, `matrix-experiment`.
+  `battle-replay`, `matrix-experiment`, `army-config`.
 
 ## Erste Erkenntnisse aus der Matrix-Auswertung
 
@@ -180,20 +214,27 @@ Match-ups:
   Conflux (Spell-Imm./Fire-Imm.), Black Dragon (Spell-Imm.) verlieren
   ihren H3-Hauptvorteil.
 - Keine Hero-Skills → Necromancy, Tactics, Logistics, Sorcery wirken nicht.
-- Single-Stack-Armeen → Pit Lord Raise Demons, Lich Death Cloud,
-  Cerberus 3-Hex-Attack, Magog Splash-Shot fehlen alle.
+- Im Single-Battle-Modus fehlen die Multi-Stack-AoE-Effekte (Cerberus,
+  Fire-Breath, Magog Splash, Lich Death Cloud) — die werden erst im
+  Army-vs-Army-Modus aktiv.
+- Pit Lord Raise Demons fehlt noch (braucht Corpse-Pool und neue
+  Action-Variante).
 
 Die Werte sind also als „unter spell-/hero-freien 1-vs-1-Bedingungen"
 zu lesen, nicht als universelle H3-Tier-Liste.
 
 ## Was als nächstes kommt
 
-- **Mixed Armies** — mehrere Stacks pro Seite mit gemeinsamer
-  Initiative, Voraussetzung für AoE-Effekte (Lich Death Cloud) und
-  echte Truppenkombinationen. Erst damit lassen sich Stadt-vs-Stadt-
-  Battles sinnvoll auswerten.
+- **Strategischer Solver — Feintuning**: Tower bleibt unter Strategic
+  bei 0.94 Ø-Win-Rate dominant; Stronghold/Fortress brechen ein, weil
+  Focus-Fire ihre Tier-7-Stacks zuerst opfert. Sticky-Target-Heuristik
+  und Anti-IMPACT_DAMAGE-Defense (siehe Backlog) sollten beides
+  glätten.
 - **Helden** mit Primärwerten, Sekundärfertigkeiten und Zauberbuch.
-- **Belagerung**: Mauern, Catapult, Wall-Penalty für Schützen.
+- **Belagerung**: Mauern, Catapult, Wall-Penalty für Schützen — eigene
+  Battlefield-Variante mit Wall-Hexes.
+- **Pit Lord Raise Demons** — Corpse-Pool plus neue
+  `Action.RaiseDemons`-Variante.
 
 ## Quellen
 
