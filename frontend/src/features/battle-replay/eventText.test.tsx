@@ -16,8 +16,9 @@ describe('eventToNode', () => {
             battlefieldWidth: 15,
             battlefieldHeight: 11,
             obstacles: [],
-            attacker: {side: 'ATTACKER', unitName: 'Pikeman', count: 10, topHp: 10, q: 0, r: 5},
-            defender: {side: 'DEFENDER', unitName: 'Goblin', count: 8, topHp: 5, q: 14, r: 5},
+            attacker: {side: 'ATTACKER', slot: 0, unitName: 'Pikeman', count: 10, topHp: 10, q: 0, r: 5},
+            defender: {side: 'DEFENDER', slot: 0, unitName: 'Goblin', count: 8, topHp: 5, q: 14, r: 5},
+            stacks: [],
         });
         expect(getByText('Pikeman')).toBeInTheDocument();
         expect(getByText('Goblin')).toBeInTheDocument();
@@ -28,11 +29,13 @@ describe('eventToNode', () => {
         const {getByText} = renderEvent({
             type: 'Melee',
             actor: 'ATTACKER',
+            actorSlot: 0,
             target: 'DEFENDER',
+            targetSlot: 0,
             hexesMoved: 0,
             damage: 5,
             killed: 1,
-            targetAfter: {side: 'DEFENDER', unitName: 'Goblin', count: 7, topHp: 5, q: 1, r: 5},
+            targetAfter: {side: 'DEFENDER', slot: 0, unitName: 'Goblin', count: 7, topHp: 5, q: 1, r: 5},
         });
         expect(getByText('Pikeman')).toHaveClass('text-amber-300');
         expect(getByText('Goblin')).toHaveClass('text-blue-300');
@@ -42,6 +45,7 @@ describe('eventToNode', () => {
         const {container} = renderEvent({
             type: 'Move',
             actor: 'DEFENDER',
+            actorSlot: 0,
             fromQ: 14,
             fromR: 5,
             toQ: 10,
@@ -59,8 +63,37 @@ describe('eventToNode', () => {
             attackerSurvivors: 0,
             defenderSurvivors: 0,
             turns: 7,
+            finalStacks: [],
         });
         expect(getByText('Unentschieden')).toBeInTheDocument();
         expect(container.textContent).toContain('7 Runden');
+    });
+
+    it('uses per-slot names when bySlot map is provided (multi-stack)', () => {
+        const names = {
+            attacker: 'Attacker',
+            defender: 'Defender',
+            bySlot: new Map([
+                ['ATTACKER-0', 'Halberdier'],
+                ['DEFENDER-3', 'Medusa Queen'],
+            ]),
+        };
+        const {getByText} = render(
+            <EventText
+                names={names}
+                event={{
+                    type: 'Shoot',
+                    actor: 'ATTACKER',
+                    actorSlot: 0,
+                    target: 'DEFENDER',
+                    targetSlot: 3,
+                    distance: 5,
+                    damage: 12,
+                    killed: 1,
+                    targetAfter: {side: 'DEFENDER', slot: 3, unitName: 'Medusa Queen', count: 3, topHp: 10, q: 14, r: 6},
+                }}/>,
+        );
+        expect(getByText('Halberdier')).toBeInTheDocument();
+        expect(getByText('Medusa Queen')).toBeInTheDocument();
     });
 });

@@ -2,6 +2,7 @@ import type {BattleEvent, HexCoord, Side, StackSnapshot} from '../../shared/api/
 
 export interface SideState {
     side: Side;
+    slot: number;
     unitName: string;
     count: number;
     topHp: number;
@@ -15,13 +16,22 @@ export interface BattleState {
     width: number;
     height: number;
     obstacles: readonly HexCoord[];
+    /** Schlüssel: `${side}-${slot}`. Quelle der Wahrheit für alle Stacks. */
+    stacks: ReadonlyMap<string, SideState>;
+    /** Convenience: Slot-0 Attacker (für Single-Battle-Konsumenten). */
     attacker: SideState;
+    /** Convenience: Slot-0 Defender. */
     defender: SideState;
+}
+
+export function stackKey(side: Side, slot: number): string {
+    return `${side}-${slot}`;
 }
 
 function snapshotToSideState(snap: StackSnapshot, maxHp: number, startCount: number): SideState {
     return {
         side: snap.side,
+        slot: snap.slot ?? 0,
         unitName: snap.unitName,
         count: snap.count,
         topHp: snap.topHp,
@@ -42,45 +52,65 @@ function applySnapshot(side: SideState, snap: StackSnapshot): SideState {
     };
 }
 
-interface SidesState {
-    attacker: SideState;
-    defender: SideState;
+function snapshotInto(stacks: Map<string, SideState>, snap: StackSnapshot): void {
+    const key = stackKey(snap.side, snap.slot ?? 0);
+    const existing = stacks.get(key);
+    if (!existing) return;
+    stacks.set(key, applySnapshot(existing, snap));
 }
 
-function updateSide(sides: SidesState, side: Side, next: SideState): SidesState {
-    return side === 'ATTACKER' ? {...sides, attacker: next} : {...sides, defender: next};
+function movePosition(
+    stacks: Map<string, SideState>,
+    side: Side,
+    slot: number,
+    q: number,
+    r: number,
+): void {
+    const key = stackKey(side, slot);
+    const existing = stacks.get(key);
+    if (!existing) return;
+    stacks.set(key, {...existing, q, r});
 }
 
-function movePosition(sides: SidesState, side: Side, q: number, r: number): SidesState {
-    const current = side === 'ATTACKER' ? sides.attacker : sides.defender;
-    return updateSide(sides, side, {...current, q, r});
-}
-
-function snapshotInto(sides: SidesState, side: Side, snap: StackSnapshot): SidesState {
-    const current = side === 'ATTACKER' ? sides.attacker : sides.defender;
-    return updateSide(sides, side, applySnapshot(current, snap));
-}
-
-function applyEvent(sides: SidesState, event: BattleEvent): SidesState {
+function applyEvent(stacks: Map<string, SideState>, event: BattleEvent): void {
     switch (event.type) {
         case 'Move':
         case 'MoveBack':
-            return movePosition(sides, event.actor, event.toQ, event.toR);
+            movePosition(stacks, event.actor, event.actorSlot ?? 0, event.toQ, event.toR);
+            return;
         case 'Shoot':
         case 'Melee':
         case 'DeathStare':
         case 'Thunderbolts':
+            snapshotInto(stacks, event.targetAfter);
+            return;
         case 'Retaliation':
-            return snapshotInto(sides, event.target, event.targetAfter);
+            snapshotInto(stacks, event.targetAfter);
+            return;
         case 'FireShield':
-            return snapshotInto(sides, event.attacker, event.attackerAfter);
+            snapshotInto(stacks, event.attackerAfter);
+            return;
         case 'Rebirth':
-            return snapshotInto(sides, event.actor, event.actorAfter);
+            snapshotInto(stacks, event.actorAfter);
+            return;
         default:
-            // Marker-only events (Wait, TwoBlows, TwoShots, GoodMorale, Petrifying, Cursing,
+            // Marker-Events (Wait, TwoBlows, TwoShots, GoodMorale, Petrifying, Cursing,
             // Poisoning, Diseasing, Aging, BattleStart, BattleEnd) — kein Grid-State.
-            return sides;
+            return;
     }
+}
+
+function initialStacks(start: BattleEvent & { type: 'BattleStart' }): Map<string, SideState> {
+    const stacks = new Map<string, SideState>();
+    const initials: StackSnapshot[] = start.stacks?.length
+        ? start.stacks
+        : [start.attacker, start.defender];
+    for (const snap of initials) {
+        const slot = snap.slot ?? 0;
+        stacks.set(stackKey(snap.side, slot),
+            snapshotToSideState(snap, snap.topHp, snap.count));
+    }
+    return stacks;
 }
 
 /**
@@ -91,19 +121,21 @@ function applyEvent(sides: SidesState, event: BattleEvent): SidesState {
 export function reduceEvents(events: readonly BattleEvent[], cursor: number): BattleState | null {
     const start = events[0];
     if (start?.type !== 'BattleStart') return null;
-    // The initial snapshot's topHp == max HP of the top creature, snapshot.count == start count.
-    let sides: SidesState = {
-        attacker: snapshotToSideState(start.attacker, start.attacker.topHp, start.attacker.count),
-        defender: snapshotToSideState(start.defender, start.defender.topHp, start.defender.count),
-    };
+    const stacks = initialStacks(start);
     const end = Math.min(cursor, events.length);
     for (let i = 1; i < end; i++) {
-        sides = applyEvent(sides, events[i]);
+        applyEvent(stacks, events[i]);
     }
+    const attacker = stacks.get(stackKey('ATTACKER', start.attacker.slot ?? 0))
+        ?? snapshotToSideState(start.attacker, start.attacker.topHp, start.attacker.count);
+    const defender = stacks.get(stackKey('DEFENDER', start.defender.slot ?? 0))
+        ?? snapshotToSideState(start.defender, start.defender.topHp, start.defender.count);
     return {
         width: start.battlefieldWidth,
         height: start.battlefieldHeight,
         obstacles: start.obstacles ?? [],
-        ...sides,
+        stacks,
+        attacker,
+        defender,
     };
 }

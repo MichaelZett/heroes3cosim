@@ -4,10 +4,14 @@ import de.zettsystems.h3comsim.battle.domain.events.BattleEvent;
 import de.zettsystems.h3comsim.battle.domain.events.EventCollector;
 import de.zettsystems.h3comsim.battle.domain.events.HexCoord;
 import de.zettsystems.h3comsim.battle.domain.events.NoopEventCollector;
+import de.zettsystems.h3comsim.battle.domain.events.Side;
 import de.zettsystems.h3comsim.battle.domain.events.StackSnapshot;
 import de.zettsystems.h3comsim.battle.domain.events.Winner;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.ArrayDeque;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
 import java.util.Set;
@@ -51,21 +55,24 @@ public final class Battle {
         List<HexCoord> obstacleCoords = bf.obstacles().stream()
                 .map(h -> new HexCoord(h.q(), h.r()))
                 .toList();
+        StackSnapshot attackerSnap = snapshot(setup.getAttacker());
+        StackSnapshot defenderSnap = snapshot(setup.getDefender());
+        List<StackSnapshot> initialStacks = setup.aliveStacks().stream().map(Battle::snapshot).toList();
         events.emit(new BattleEvent.BattleStart(bf.width(), bf.height(), obstacleCoords,
-                snapshot(setup.getAttacker()), snapshot(setup.getDefender())));
+                attackerSnap, defenderSnap, initialStacks));
 
         int attackerStart = setup.getAttackerCount();
         int defenderStart = setup.getDefenderCount();
         int turn = 0;
 
-        int lastAttackerCount = setup.getAttacker().getCount();
-        int lastDefenderCount = setup.getDefender().getCount();
+        int lastAttackerCount = attackerStart;
+        int lastDefenderCount = defenderStart;
         int stalledRounds = 0;
         while (setup.bothAlive() && turn < TURN_CAP && stalledRounds < NO_PROGRESS_LIMIT) {
             doTurn(setup);
             turn++;
-            int aCount = setup.getAttacker().getCount();
-            int dCount = setup.getDefender().getCount();
+            int aCount = setup.getAttackerCount();
+            int dCount = setup.getDefenderCount();
             if (aCount == lastAttackerCount && dCount == lastDefenderCount) {
                 stalledRounds++;
             } else {
@@ -78,8 +85,11 @@ public final class Battle {
 
         Winner winner = determineWinner(setup);
 
+        List<StackSnapshot> finalStacks = new java.util.ArrayList<>();
+        setup.attackerStacks().forEach(s -> finalStacks.add(snapshot(s)));
+        setup.defenderStacks().forEach(s -> finalStacks.add(snapshot(s)));
         events.emit(new BattleEvent.BattleEnd(winner,
-                setup.getAttackerCount(), setup.getDefenderCount(), turn));
+                setup.getAttackerCount(), setup.getDefenderCount(), turn, finalStacks));
         return new BattleResult(winner,
                 attackerStart, setup.getAttackerCount(),
                 defenderStart, setup.getDefenderCount(),
@@ -88,15 +98,24 @@ public final class Battle {
 
     private void doTurn(BattleSetup setup) {
         Battlefield battlefield = setup.battlefield();
-        Deque<Stack> queue = determineMoveOrder(setup.getAttacker(), setup.getDefender());
+        autoSolver.planRound(setup);
+        Deque<Stack> queue = determineMoveOrder(setup);
         for (Stack activeStack : queue) {
             if (activeStack.isAbleToAct() && setup.bothAlive()) {
-                Stack opponent = setup.getTarget(activeStack);
-                takeAction(activeStack, opponent, battlefield);
+                Stack opponent = autoSolver.pickTarget(activeStack, setup.opponentsOf(activeStack), battlefield);
+                if (opponent == null) {
+                    BattleLogger.logShortDelimiter();
+                    continue;
+                }
+                takeAction(activeStack, opponent, setup);
                 if (activeStack.isAbleToAct() && opponent.isAlive() && activeStack.hasGoodMorale(rng)) {
                     BattleLogger.logGoodMorale(activeStack.getName());
-                    events.emit(new BattleEvent.GoodMorale(activeStack.side()));
-                    takeAction(activeStack, opponent, battlefield);
+                    events.emit(new BattleEvent.GoodMorale(activeStack.side(), activeStack.slot()));
+                    Stack moralOpponent = opponent.isAlive() ? opponent
+                            : autoSolver.pickTarget(activeStack, setup.opponentsOf(activeStack), battlefield);
+                    if (moralOpponent != null) {
+                        takeAction(activeStack, moralOpponent, setup);
+                    }
                 }
             }
             BattleLogger.logShortDelimiter();
@@ -104,19 +123,20 @@ public final class Battle {
         queue.forEach(Stack::endTurn);
     }
 
-    private void takeAction(Stack active, Stack opponent, Battlefield battlefield) {
+    private void takeAction(Stack active, Stack opponent, BattleSetup setup) {
+        Battlefield battlefield = setup.battlefield();
         Action action = autoSolver.decide(active, opponent, battlefield);
         switch (action) {
             case Action.Wait() -> {
                 BattleLogger.logWait(active.getName());
-                events.emit(new BattleEvent.Wait(active.side()));
+                events.emit(new BattleEvent.Wait(active.side(), active.slot()));
             }
             case Action.Move(Hex destination) -> moveTo(active, destination, battlefield);
             case Action.MoveAndMelee(Hex destination, Stack target) -> {
                 Hex startPos = active.position();
                 int hexesMoved = startPos.distanceTo(destination);
                 moveTo(active, destination, battlefield);
-                meleeAttack(active, target, hexesMoved);
+                meleeAttack(active, target, hexesMoved, setup);
                 if (active.hasSpeciality(UnitSpeciality.MOVE_BACK) && active.isAlive()) {
                     BattleLogger.logMoveBack(active.getName(), startPos.q(), startPos.r());
                     Hex returnFrom = active.position();
@@ -124,12 +144,12 @@ public final class Battle {
                                     active.unit().movement()).stream()
                             .map(h -> new HexCoord(h.q(), h.r())).toList();
                     active.moveTo(startPos);
-                    events.emit(new BattleEvent.MoveBack(active.side(),
+                    events.emit(new BattleEvent.MoveBack(active.side(), active.slot(),
                             startPos.q(), startPos.r(), backPath));
                 }
             }
-            case Action.Melee(Stack target) -> meleeAttack(active, target, 0);
-            case Action.Shoot(Stack target) -> rangedAttack(active, target, battlefield);
+            case Action.Melee(Stack target) -> meleeAttack(active, target, 0, setup);
+            case Action.Shoot(Stack target) -> rangedAttack(active, target, setup);
         }
     }
 
@@ -139,27 +159,90 @@ public final class Battle {
                 .map(h -> new HexCoord(h.q(), h.r())).toList();
         BattleLogger.logMove(active.getName(), from.q(), from.r(), destination.q(), destination.r());
         active.moveTo(destination);
-        events.emit(new BattleEvent.Move(active.side(),
+        events.emit(new BattleEvent.Move(active.side(), active.slot(),
                 from.q(), from.r(), destination.q(), destination.r(), path));
     }
 
-    private void meleeAttack(Stack active, Stack passive, int hexesMoved) {
+    private void meleeAttack(Stack active, Stack passive, int hexesMoved, BattleSetup setup) {
         int countBeforeFirst = passive.getCount();
         int dealt = dealDamage(active, passive, AttackType.HAND_TO_HAND, hexesMoved, 0, false);
-        events.emit(new BattleEvent.Melee(active.side(), passive.side(), hexesMoved,
+        events.emit(new BattleEvent.Melee(active.side(), active.slot(),
+                passive.side(), passive.slot(), hexesMoved,
                 dealt, countBeforeFirst - passive.getCount(), snapshot(passive)));
         applyFireShield(active, passive, dealt);
+        applyMeleeSplash(active, passive, setup);
         triggerRetaliation(active, passive);
         if (active.hasSpeciality(UnitSpeciality.TWO_BLOWS) && passive.isAlive() && active.isAlive()) {
             BattleLogger.logTwoBlows(active.getName());
-            events.emit(new BattleEvent.TwoBlows(active.side()));
+            events.emit(new BattleEvent.TwoBlows(active.side(), active.slot()));
             int countBeforeSecond = passive.getCount();
             // Second blow does not gain Jousting-Bonus — kein erneutes Anfahren.
             int dealtSecond = dealDamage(active, passive, AttackType.HAND_TO_HAND, 0, 0, false);
-            events.emit(new BattleEvent.Melee(active.side(), passive.side(), 0,
+            events.emit(new BattleEvent.Melee(active.side(), active.slot(),
+                    passive.side(), passive.slot(), 0,
                     dealtSecond, countBeforeSecond - passive.getCount(), snapshot(passive)));
             applyFireShield(active, passive, dealtSecond);
             triggerRetaliation(active, passive);
+        }
+    }
+
+    /**
+     * Multi-Stack-Splash für Nahkampf: Three-Headed-Attack (Cerberus) trifft bis zu zwei
+     * weitere adjazente Gegner-Stacks; Fire-Breath (Green/Gold/Red/Black-Dragon) trifft den
+     * Stack auf dem inline-Hex direkt hinter dem Hauptziel. Splash-Hits triggern keine
+     * Retaliation und keine After-Attack-Procs — sie sind reine Collateral-Hits.
+     */
+    private void applyMeleeSplash(Stack active, Stack primary, BattleSetup setup) {
+        if (active.hasSpeciality(UnitSpeciality.THREE_HEADED_ATTACK)) {
+            int splashes = 0;
+            for (Hex neighbor : active.position().neighbors()) {
+                if (splashes >= 2) break;
+                Stack candidate = findOpponentAt(active, neighbor, setup);
+                if (candidate != null && candidate != primary && candidate.isAlive()) {
+                    applySplashHit(active, candidate, AttackType.HAND_TO_HAND);
+                    splashes++;
+                }
+            }
+        }
+        if (active.hasSpeciality(UnitSpeciality.FIRE_BREATH)) {
+            Hex behind = behindHex(active.position(), primary.position());
+            Stack collateral = findOpponentAt(active, behind, setup);
+            if (collateral != null && collateral != primary && collateral.isAlive()) {
+                applySplashHit(active, collateral, AttackType.HAND_TO_HAND);
+            }
+        }
+    }
+
+    private static Hex behindHex(Hex from, Hex through) {
+        return new Hex(through.q() + (through.q() - from.q()),
+                through.r() + (through.r() - from.r()));
+    }
+
+    private @Nullable Stack findOpponentAt(Stack active, Hex hex, BattleSetup setup) {
+        for (Stack candidate : setup.opponentsOf(active)) {
+            if (candidate.position().equals(hex)) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    private void applySplashHit(Stack active, Stack secondary, AttackType attackType) {
+        int currentDamage = active.calculateCurrentDamage(attackType, 0, rng);
+        int effectiveDefense = secondary.effectiveDefenseAgainst(active.getAttackerSpecialities());
+        int boniMaliPercentage = active.calculateAttackBoniMaliPercentage(effectiveDefense);
+        int realDamage = (currentDamage * (100 + boniMaliPercentage)) / 100;
+        int countBefore = secondary.getCount();
+        BattleLogger.logAttack(active.getName(), secondary.getName());
+        secondary.takeDamage(realDamage, active.getAttackerSpecialities());
+        int killed = countBefore - secondary.getCount();
+        if (attackType == AttackType.HAND_TO_HAND) {
+            events.emit(new BattleEvent.Melee(active.side(), active.slot(),
+                    secondary.side(), secondary.slot(), 0, realDamage, killed, snapshot(secondary)));
+        } else {
+            int distance = active.position().distanceTo(secondary.position());
+            events.emit(new BattleEvent.Shoot(active.side(), active.slot(),
+                    secondary.side(), secondary.slot(), distance, realDamage, killed, snapshot(secondary)));
         }
     }
 
@@ -173,7 +256,8 @@ public final class Battle {
         }
         BattleLogger.logFireShield(passive.getName(), active.getName(), reverse);
         active.takeDamage(reverse, Set.of());
-        events.emit(new BattleEvent.FireShield(passive.side(), active.side(), reverse, snapshot(active)));
+        events.emit(new BattleEvent.FireShield(passive.side(), passive.slot(),
+                active.side(), active.slot(), reverse, snapshot(active)));
     }
 
     private void triggerRetaliation(Stack active, Stack passive) {
@@ -192,30 +276,63 @@ public final class Battle {
         int countBefore = active.getCount();
         // Retaliation kehrt aktiv/passiv bewusst um — passive schlaegt zurueck.
         int dealt = dealDamage(/* active= */ passive, /* passive= */ active, AttackType.HAND_TO_HAND, 0, 0, false);
-        events.emit(new BattleEvent.Retaliation(passive.side(), active.side(),
+        events.emit(new BattleEvent.Retaliation(passive.side(), passive.slot(),
+                active.side(), active.slot(),
                 dealt, countBefore - active.getCount(), snapshot(active)));
     }
 
-    private void rangedAttack(Stack active, Stack passive, Battlefield battlefield) {
+    private void rangedAttack(Stack active, Stack passive, BattleSetup setup) {
+        Battlefield battlefield = setup.battlefield();
         int distance = active.position().distanceTo(passive.position());
         boolean obstacleInLine = PathFinder.hasObstacleInLine(battlefield, active.position(), passive.position());
         BattleLogger.logShoot(active.getName(), passive.getName(), distance);
         int countBefore = passive.getCount();
         int dealt = dealDamage(active, passive, AttackType.LONG_RANGE, 0, distance, obstacleInLine);
-        events.emit(new BattleEvent.Shoot(active.side(), passive.side(), distance,
+        events.emit(new BattleEvent.Shoot(active.side(), active.slot(),
+                passive.side(), passive.slot(), distance,
                 dealt, countBefore - passive.getCount(), snapshot(passive)));
+        applyRangedSplash(active, passive, setup);
         active.useShot();
         if (active.hasSpeciality(UnitSpeciality.TWO_SHOTS) && active.canShoot() && passive.isAlive()) {
             BattleLogger.logTwoShots(active.getName());
-            events.emit(new BattleEvent.TwoShots(active.side()));
+            events.emit(new BattleEvent.TwoShots(active.side(), active.slot()));
             int distance2 = active.position().distanceTo(passive.position());
             boolean obstacleInLine2 = PathFinder.hasObstacleInLine(battlefield, active.position(), passive.position());
             BattleLogger.logShoot(active.getName(), passive.getName(), distance2);
             int countBefore2 = passive.getCount();
             int dealt2 = dealDamage(active, passive, AttackType.LONG_RANGE, 0, distance2, obstacleInLine2);
-            events.emit(new BattleEvent.Shoot(active.side(), passive.side(), distance2,
+            events.emit(new BattleEvent.Shoot(active.side(), active.slot(),
+                    passive.side(), passive.slot(), distance2,
                     dealt2, countBefore2 - passive.getCount(), snapshot(passive)));
+            applyRangedSplash(active, passive, setup);
             active.useShot();
+        }
+    }
+
+    /**
+     * Multi-Stack-Splash für Fernkampf: SPLASH_SHOT (Magog) trifft bis zu zwei zusätzliche
+     * Gegner-Stacks adjazent zum Hauptziel; DEATH_CLOUD (Lich) trifft alle Gegner-Stacks im
+     * 1-Hex-Radius rund ums Hauptziel. Splash-Hits triggern keine Procs.
+     */
+    private void applyRangedSplash(Stack active, Stack primary, BattleSetup setup) {
+        if (active.hasSpeciality(UnitSpeciality.SPLASH_SHOT)) {
+            int splashes = 0;
+            for (Hex neighbor : primary.position().neighbors()) {
+                if (splashes >= 2) break;
+                Stack collateral = findOpponentAt(active, neighbor, setup);
+                if (collateral != null && collateral != primary && collateral.isAlive()) {
+                    applySplashHit(active, collateral, AttackType.LONG_RANGE);
+                    splashes++;
+                }
+            }
+        }
+        if (active.hasSpeciality(UnitSpeciality.DEATH_CLOUD)) {
+            for (Hex neighbor : primary.position().neighbors()) {
+                Stack collateral = findOpponentAt(active, neighbor, setup);
+                if (collateral != null && collateral != primary && collateral.isAlive()) {
+                    applySplashHit(active, collateral, AttackType.LONG_RANGE);
+                }
+            }
         }
     }
 
@@ -264,7 +381,8 @@ public final class Battle {
     private void emitRebirthIfFired(Stack passive, boolean rebirthUsedBefore) {
         if (!rebirthUsedBefore && passive.isRebirthUsed()) {
             BattleLogger.logRebirth(passive.getName(), passive.getCount());
-            events.emit(new BattleEvent.Rebirth(passive.side(), passive.getCount(), snapshot(passive)));
+            events.emit(new BattleEvent.Rebirth(passive.side(), passive.slot(),
+                    passive.getCount(), snapshot(passive)));
         }
     }
 
@@ -277,7 +395,8 @@ public final class Battle {
             int kills = Math.max(1, active.getCount() / 10);
             target.loseTopCreatures(kills);
             BattleLogger.logDeathStare(active.getName(), target.getName(), kills);
-            events.emit(new BattleEvent.DeathStare(active.side(), target.side(), kills, snapshot(target)));
+            events.emit(new BattleEvent.DeathStare(active.side(), active.slot(),
+                    target.side(), target.slot(), kills, snapshot(target)));
         }
     }
 
@@ -300,7 +419,8 @@ public final class Battle {
             int damage = hits * 10;
             target.takeDamage(damage, active.getAttackerSpecialities());
             BattleLogger.logThunderbolting(active.getName(), target.getName(), damage, target.getCurrentHealth());
-            events.emit(new BattleEvent.Thunderbolts(active.side(), target.side(), damage, snapshot(target)));
+            events.emit(new BattleEvent.Thunderbolts(active.side(), active.slot(),
+                    target.side(), target.slot(), damage, snapshot(target)));
         }
     }
 
@@ -308,7 +428,8 @@ public final class Battle {
         if (active.hasSpeciality(UnitSpeciality.PETRYFYING) && rng.nextInt(100) < 20) {
             target.petrify();
             BattleLogger.logPetrifying(active.getName(), target.getName());
-            events.emit(new BattleEvent.Petrifying(active.side(), target.side()));
+            events.emit(new BattleEvent.Petrifying(active.side(), active.slot(),
+                    target.side(), target.slot()));
         }
     }
 
@@ -316,7 +437,8 @@ public final class Battle {
         if (active.hasSpeciality(UnitSpeciality.CURSING) && rng.nextInt(100) < 20) {
             target.curse();
             BattleLogger.logCurse(active.getName(), target.getName());
-            events.emit(new BattleEvent.Cursing(active.side(), target.side()));
+            events.emit(new BattleEvent.Cursing(active.side(), active.slot(),
+                    target.side(), target.slot()));
         }
     }
 
@@ -324,7 +446,8 @@ public final class Battle {
         if (active.hasSpeciality(UnitSpeciality.POISONOUS) && rng.nextInt(100) < 25) {
             target.poison();
             BattleLogger.logPoisoning(active.getName(), target.getName());
-            events.emit(new BattleEvent.Poisoning(active.side(), target.side()));
+            events.emit(new BattleEvent.Poisoning(active.side(), active.slot(),
+                    target.side(), target.slot()));
         }
     }
 
@@ -332,7 +455,8 @@ public final class Battle {
         if (active.hasSpeciality(UnitSpeciality.DISEASES) && rng.nextInt(100) < 20) {
             target.disease();
             BattleLogger.logDiseasing(active.getName(), target.getName());
-            events.emit(new BattleEvent.Diseasing(active.side(), target.side()));
+            events.emit(new BattleEvent.Diseasing(active.side(), active.slot(),
+                    target.side(), target.slot()));
         }
     }
 
@@ -340,12 +464,13 @@ public final class Battle {
         if (active.hasSpeciality(UnitSpeciality.AGING) && rng.nextInt(100) < 20) {
             target.age();
             BattleLogger.logAging(active.getName(), target.getName());
-            events.emit(new BattleEvent.Aging(active.side(), target.side()));
+            events.emit(new BattleEvent.Aging(active.side(), active.slot(),
+                    target.side(), target.slot()));
         }
     }
 
     private static StackSnapshot snapshot(Stack stack) {
-        return new StackSnapshot(stack.side(), stack.getName(), stack.getCount(),
+        return new StackSnapshot(stack.side(), stack.slot(), stack.getName(), stack.getCount(),
                 stack.getCurrentHealth(), stack.position().q(), stack.position().r());
     }
 
@@ -382,15 +507,24 @@ public final class Battle {
         return Math.max(0, stack.getCount() - 1) * max + stack.getCurrentHealth();
     }
 
-    private static Deque<Stack> determineMoveOrder(Stack attacker, Stack defender) {
-        Deque<Stack> units = new ArrayDeque<>(2);
-        if (attacker.getSpeed() >= defender.getSpeed()) {
-            units.addLast(attacker);
-            units.addLast(defender);
-        } else {
-            units.addLast(defender);
-            units.addLast(attacker);
-        }
-        return units;
+    /**
+     * Move-Order über alle lebenden Stacks beider Seiten. Sortier-Kette:
+     * <ol>
+     *   <li>Speed absteigend.</li>
+     *   <li>Bei Speed-Gleichstand: Attacker vor Defender (H3-Tactical-Phase-Regel).</li>
+     *   <li>Bei Speed + Seite gleich: niedrigerer Slot zuerst.</li>
+     * </ol>
+     * Tote Stacks tauchen nicht in der Queue auf; ein Stack, der während der Runde stirbt,
+     * wird über {@link Stack#isAbleToAct()} im Loop übersprungen.
+     */
+    private static Deque<Stack> determineMoveOrder(BattleSetup setup) {
+        Comparator<Stack> order = Comparator
+                .comparingInt(Stack::getSpeed).reversed()
+                .thenComparingInt((Stack s) -> s.side() == Side.ATTACKER ? 0 : 1)
+                .thenComparingInt(Stack::slot);
+        List<Stack> alive = setup.aliveStacks();
+        alive.sort(order);
+        return new ArrayDeque<>(alive);
     }
+
 }

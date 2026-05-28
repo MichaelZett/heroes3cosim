@@ -26,6 +26,52 @@ import java.util.List;
  */
 public final class GreedyAutoSolver implements AutoSolver {
 
+    /**
+     * Multi-Target-Auswahl für Multi-Stack-Battles. Heuristik:
+     * <ul>
+     *   <li>Lebender Gegner auf Distanz 1 → diesen (Engagement zwingt zum Nahkampf).</li>
+     *   <li>Schütze (kann noch schießen) → gefährlichster Gegner = {@code avgDmg × count};
+     *       Tiebreak: kürzere Distanz, dann niedrigerer Slot.</li>
+     *   <li>Sonst (Melee-Mover) → kürzeste Distanz, Tiebreak niedrigerer Slot.</li>
+     * </ul>
+     * Sichert dieselbe API wie die 1-vs-1-Variante: {@link #decide(Stack, Stack, Battlefield)}
+     * läuft anschließend gegen das hier gewählte Single-Target weiter — bestehende
+     * Kite/Cover/Charge-Heuristiken bleiben unverändert.
+     */
+    @Override
+    public @Nullable Stack pickTarget(Stack active, List<Stack> opponents, Battlefield battlefield) {
+        List<Stack> alive = opponents.stream().filter(Stack::isAlive).toList();
+        if (alive.isEmpty()) {
+            return null;
+        }
+        Hex from = active.position();
+        Stack adjacent = alive.stream()
+                .filter(o -> from.distanceTo(o.position()) == 1)
+                .min(Comparator.comparingInt(Stack::slot))
+                .orElse(null);
+        if (adjacent != null) {
+            return adjacent;
+        }
+        if (active.canShoot()) {
+            return alive.stream()
+                    .max(Comparator
+                            .comparingInt((Stack o) -> dangerScore(o))
+                            .thenComparingInt(o -> -from.distanceTo(o.position()))
+                            .thenComparingInt(o -> -o.slot()))
+                    .orElseThrow();
+        }
+        return alive.stream()
+                .min(Comparator
+                        .comparingInt((Stack o) -> from.distanceTo(o.position()))
+                        .thenComparingInt(Stack::slot))
+                .orElseThrow();
+    }
+
+    private static int dangerScore(Stack opponent) {
+        int avgDmg = (opponent.unit().minDamage() + opponent.unit().maxDamage()) / 2;
+        return avgDmg * opponent.getCount();
+    }
+
     @Override
     public Action decide(Stack active, Stack opponent, Battlefield battlefield) {
         Hex from = active.position();

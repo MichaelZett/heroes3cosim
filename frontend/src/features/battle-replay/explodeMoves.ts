@@ -15,6 +15,7 @@ export function explodeMoves(events: readonly BattleEvent[]): BattleEvent[] {
                 out.push({
                     type: 'Move',
                     actor: event.actor,
+                    actorSlot: event.actorSlot,
                     fromQ: prevQ,
                     fromR: prevR,
                     toQ: step.q,
@@ -29,6 +30,7 @@ export function explodeMoves(events: readonly BattleEvent[]): BattleEvent[] {
                 out.push({
                     type: 'MoveBack',
                     actor: event.actor,
+                    actorSlot: event.actorSlot,
                     toQ: step.q,
                     toR: step.r,
                     path: [step],

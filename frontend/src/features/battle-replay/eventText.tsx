@@ -2,8 +2,16 @@ import {Trans, useTranslation} from 'react-i18next';
 import type {BattleEvent, Side} from '../../shared/api/types';
 
 export interface SideNames {
+    /** Default-Name der Attacker-Seite (Single-Battle: Stack-Name). */
     attacker: string;
+    /** Default-Name der Defender-Seite. */
     defender: string;
+    /**
+     * Optionaler Multi-Stack-Lookup: Key `${side}-${slot}`. Wird bevorzugt vor
+     * {@link attacker}/{@link defender}; fehlt der Eintrag, fällt der Lookup auf
+     * die Seiten-Defaults zurück.
+     */
+    bySlot?: ReadonlyMap<string, string>;
 }
 
 const SIDE_CLASS: Record<Side, string> = {
@@ -11,7 +19,9 @@ const SIDE_CLASS: Record<Side, string> = {
     DEFENDER: 'font-semibold text-blue-300',
 };
 
-function sideName(side: Side, names: SideNames): string {
+function sideName(side: Side, slot: number, names: SideNames): string {
+    const perSlot = names.bySlot?.get(`${side}-${slot}`);
+    if (perSlot) return perSlot;
     return side === 'ATTACKER' ? names.attacker : names.defender;
 }
 
@@ -45,7 +55,7 @@ export function EventText({event, names}: Readonly<EventTextProps>) {
                 <Trans
                     i18nKey="events.move"
                     values={{
-                        actor: sideName(event.actor, names),
+                        actor: sideName(event.actor, event.actorSlot ?? 0, names),
                         fromQ: event.fromQ,
                         fromR: event.fromR,
                         toQ: event.toQ,
@@ -58,7 +68,11 @@ export function EventText({event, names}: Readonly<EventTextProps>) {
             return (
                 <Trans
                     i18nKey="events.moveBack"
-                    values={{actor: sideName(event.actor, names), toQ: event.toQ, toR: event.toR}}
+                    values={{
+                        actor: sideName(event.actor, event.actorSlot ?? 0, names),
+                        toQ: event.toQ,
+                        toR: event.toR,
+                    }}
                     components={{actor: sideSpan(event.actor)}}
                 />
             );
@@ -66,7 +80,7 @@ export function EventText({event, names}: Readonly<EventTextProps>) {
             return (
                 <Trans
                     i18nKey="events.wait"
-                    values={{actor: sideName(event.actor, names)}}
+                    values={{actor: sideName(event.actor, event.actorSlot ?? 0, names)}}
                     components={{actor: sideSpan(event.actor)}}
                 />
             );
@@ -75,8 +89,8 @@ export function EventText({event, names}: Readonly<EventTextProps>) {
                 <Trans
                     i18nKey="events.shoot"
                     values={{
-                        actor: sideName(event.actor, names),
-                        target: sideName(event.target, names),
+                        actor: sideName(event.actor, event.actorSlot ?? 0, names),
+                        target: sideName(event.target, event.targetSlot ?? 0, names),
                         distance: event.distance,
                         damage: event.damage,
                         killed: event.killed,
@@ -89,8 +103,8 @@ export function EventText({event, names}: Readonly<EventTextProps>) {
                 <Trans
                     i18nKey="events.melee"
                     values={{
-                        actor: sideName(event.actor, names),
-                        target: sideName(event.target, names),
+                        actor: sideName(event.actor, event.actorSlot ?? 0, names),
+                        target: sideName(event.target, event.targetSlot ?? 0, names),
                         damage: event.damage,
                         killed: event.killed,
                     }}
@@ -102,7 +116,7 @@ export function EventText({event, names}: Readonly<EventTextProps>) {
                 <Trans
                     i18nKey="events.retaliation"
                     values={{
-                        retaliator: sideName(event.retaliator, names),
+                        retaliator: sideName(event.retaliator, event.retaliatorSlot ?? 0, names),
                         damage: event.damage,
                         killed: event.killed,
                     }}
@@ -113,7 +127,7 @@ export function EventText({event, names}: Readonly<EventTextProps>) {
             return (
                 <Trans
                     i18nKey="events.twoBlows"
-                    values={{actor: sideName(event.actor, names)}}
+                    values={{actor: sideName(event.actor, event.actorSlot ?? 0, names)}}
                     components={{actor: sideSpan(event.actor)}}
                 />
             );
@@ -121,7 +135,7 @@ export function EventText({event, names}: Readonly<EventTextProps>) {
             return (
                 <Trans
                     i18nKey="events.twoShots"
-                    values={{actor: sideName(event.actor, names)}}
+                    values={{actor: sideName(event.actor, event.actorSlot ?? 0, names)}}
                     components={{actor: sideSpan(event.actor)}}
                 />
             );
@@ -129,7 +143,7 @@ export function EventText({event, names}: Readonly<EventTextProps>) {
             return (
                 <Trans
                     i18nKey="events.goodMorale"
-                    values={{actor: sideName(event.actor, names)}}
+                    values={{actor: sideName(event.actor, event.actorSlot ?? 0, names)}}
                     components={{actor: sideSpan(event.actor)}}
                 />
             );
@@ -138,8 +152,8 @@ export function EventText({event, names}: Readonly<EventTextProps>) {
                 <Trans
                     i18nKey="events.deathStare"
                     values={{
-                        actor: sideName(event.actor, names),
-                        target: sideName(event.target, names),
+                        actor: sideName(event.actor, event.actorSlot ?? 0, names),
+                        target: sideName(event.target, event.targetSlot ?? 0, names),
                         kills: event.kills,
                     }}
                     components={{actor: sideSpan(event.actor), target: sideSpan(event.target)}}
@@ -150,8 +164,8 @@ export function EventText({event, names}: Readonly<EventTextProps>) {
                 <Trans
                     i18nKey="events.thunderbolts"
                     values={{
-                        actor: sideName(event.actor, names),
-                        target: sideName(event.target, names),
+                        actor: sideName(event.actor, event.actorSlot ?? 0, names),
+                        target: sideName(event.target, event.targetSlot ?? 0, names),
                         damage: event.damage,
                     }}
                     components={{actor: sideSpan(event.actor), target: sideSpan(event.target)}}
@@ -162,8 +176,8 @@ export function EventText({event, names}: Readonly<EventTextProps>) {
                 <Trans
                     i18nKey="events.petrifying"
                     values={{
-                        actor: sideName(event.actor, names),
-                        target: sideName(event.target, names),
+                        actor: sideName(event.actor, event.actorSlot ?? 0, names),
+                        target: sideName(event.target, event.targetSlot ?? 0, names),
                     }}
                     components={{actor: sideSpan(event.actor), target: sideSpan(event.target)}}
                 />
@@ -173,8 +187,8 @@ export function EventText({event, names}: Readonly<EventTextProps>) {
                 <Trans
                     i18nKey="events.cursing"
                     values={{
-                        actor: sideName(event.actor, names),
-                        target: sideName(event.target, names),
+                        actor: sideName(event.actor, event.actorSlot ?? 0, names),
+                        target: sideName(event.target, event.targetSlot ?? 0, names),
                     }}
                     components={{actor: sideSpan(event.actor), target: sideSpan(event.target)}}
                 />
@@ -184,8 +198,8 @@ export function EventText({event, names}: Readonly<EventTextProps>) {
                 <Trans
                     i18nKey="events.poisoning"
                     values={{
-                        actor: sideName(event.actor, names),
-                        target: sideName(event.target, names),
+                        actor: sideName(event.actor, event.actorSlot ?? 0, names),
+                        target: sideName(event.target, event.targetSlot ?? 0, names),
                     }}
                     components={{actor: sideSpan(event.actor), target: sideSpan(event.target)}}
                 />
@@ -195,8 +209,8 @@ export function EventText({event, names}: Readonly<EventTextProps>) {
                 <Trans
                     i18nKey="events.diseasing"
                     values={{
-                        actor: sideName(event.actor, names),
-                        target: sideName(event.target, names),
+                        actor: sideName(event.actor, event.actorSlot ?? 0, names),
+                        target: sideName(event.target, event.targetSlot ?? 0, names),
                     }}
                     components={{actor: sideSpan(event.actor), target: sideSpan(event.target)}}
                 />
@@ -206,8 +220,8 @@ export function EventText({event, names}: Readonly<EventTextProps>) {
                 <Trans
                     i18nKey="events.aging"
                     values={{
-                        actor: sideName(event.actor, names),
-                        target: sideName(event.target, names),
+                        actor: sideName(event.actor, event.actorSlot ?? 0, names),
+                        target: sideName(event.target, event.targetSlot ?? 0, names),
                     }}
                     components={{actor: sideSpan(event.actor), target: sideSpan(event.target)}}
                 />
@@ -217,8 +231,8 @@ export function EventText({event, names}: Readonly<EventTextProps>) {
                 <Trans
                     i18nKey="events.fireShield"
                     values={{
-                        shielded: sideName(event.shielded, names),
-                        attacker: sideName(event.attacker, names),
+                        shielded: sideName(event.shielded, event.shieldedSlot ?? 0, names),
+                        attacker: sideName(event.attacker, event.attackerSlot ?? 0, names),
                         damage: event.damage,
                     }}
                     components={{
@@ -231,13 +245,16 @@ export function EventText({event, names}: Readonly<EventTextProps>) {
             return (
                 <Trans
                     i18nKey="events.rebirth"
-                    values={{actor: sideName(event.actor, names), count: event.restoredCount}}
+                    values={{
+                        actor: sideName(event.actor, event.actorSlot ?? 0, names),
+                        count: event.restoredCount,
+                    }}
                     components={{actor: sideSpan(event.actor)}}
                 />
             );
         case 'BattleEnd': {
             const winnerName =
-                event.winner === 'DRAW' ? t('events.draw') : sideName(event.winner, names);
+                event.winner === 'DRAW' ? t('events.draw') : sideName(event.winner, 0, names);
             const winnerClass =
                 event.winner === 'DRAW' ? 'font-semibold text-slate-300' : SIDE_CLASS[event.winner];
             return (
@@ -255,4 +272,3 @@ export function EventText({event, names}: Readonly<EventTextProps>) {
         }
     }
 }
-

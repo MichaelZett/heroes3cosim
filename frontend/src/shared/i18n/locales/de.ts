@@ -103,7 +103,20 @@ export const de = {
     mode: {
         single: 'Einzelkampf',
         matrix: 'Matrix-Auswertung',
-        mixedArmy: 'Gemischte Armeen (bald)',
+        mixedArmy: 'Gemischte Armeen',
+    },
+    army: {
+        title: 'Armies vs Armies',
+        subtitle: 'Bis zu 7 Stacks pro Seite — wähle einen Faction-Preset oder stelle die Slots manuell zusammen.',
+        attacker: 'Angreifer-Armee',
+        defender: 'Verteidiger-Armee',
+        preset: 'Wochenproduktions-Preset',
+        presetChoose: '— Faction wählen —',
+        applyPreset: 'Preset übernehmen',
+        slotN: 'S{{slot}}',
+        slotEmpty: '— leer —',
+        startBattle: 'Schlacht starten',
+        battleTitle: 'Army-Battle Replay',
     },
     matrix: {
         title: 'Matrix-Auswertung',
