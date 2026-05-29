@@ -29,6 +29,7 @@ public class Stack {
     private int diseasedCounter;
     private boolean aged;
     private boolean rebirthUsed;
+    private boolean defending;
 
     /** Convenience constructor — defaults the side to {@link Side#ATTACKER}. */
     public Stack(Unit unit, int count, Hex position) {
@@ -103,7 +104,21 @@ public class Stack {
     }
 
     public int getDefense() {
-        return unit.defense() - (diseased ? 2 : 0);
+        int base = unit.defense() - (diseased ? 2 : 0);
+        if (defending) {
+            // H3-Defend: +30 % Defense (gerundet) bis Rundenende. Stackt nicht mit anderen
+            // Defense-Boni — gehört hierhin, damit alle Damage-Berechnungen profitieren.
+            base = (int) Math.round(base * 1.3);
+        }
+        return base;
+    }
+
+    public void defend() {
+        defending = true;
+    }
+
+    public boolean isDefending() {
+        return defending;
     }
 
     public int getCount() {
@@ -282,6 +297,8 @@ public class Stack {
     }
 
     public void endTurn() {
+        // Defend gilt nur für die laufende Runde — nächste Runde gibt's wieder Base-Defense.
+        defending = false;
         if (petrifiedCounter > 0 && --petrifiedCounter == 0) {
             unpetrify();
         }

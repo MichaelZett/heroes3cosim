@@ -45,6 +45,10 @@ public final class BattleLogger {
         LOG.debug("Stack von {} wartet.", name);
     }
 
+    static void logDefend(String name) {
+        LOG.debug("Stack von {} verteidigt sich (+30 % Defense bis Rundenende).", name);
+    }
+
     static void logRetaliation(String name) {
         LOG.debug("Stack von {} schlaegt zurueck.", name);
     }

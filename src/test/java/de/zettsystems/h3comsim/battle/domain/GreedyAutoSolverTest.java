@@ -170,7 +170,11 @@ class GreedyAutoSolverTest {
     }
 
     @Test
-    void waits_when_unit_cannot_advance_and_cannot_shoot() {
+    void defends_when_unit_cannot_advance_and_cannot_shoot() {
+        // Speed-0-Unit kann sich nicht bewegen, hat keine Schüsse — semantisch korrekter
+        // Zug: Defend (+30 % Defense), nicht Wait (würde am Rundenende erneut aufgerufen
+        // und müsste dort wieder dasselbe machen). H3-konformer Default für "ich kann
+        // nichts tun".
         Unit immobile = new Unit(
                 "Test Immobile",
                 new Stats(1, 1, 1, 0),
@@ -186,6 +190,6 @@ class GreedyAutoSolverTest {
 
         Action action = solver.decide(active, opponent, battlefield);
 
-        assertThat(action).isInstanceOf(Action.Wait.class);
+        assertThat(action).isInstanceOf(Action.Defend.class);
     }
 }

@@ -58,14 +58,24 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   14 Stacks per Speed → Side → Slot sortiert. Hartkodierte
   Wochenproduktions-Presets pro Faction (CASTLE, RAMPART, …, CONFLUX)
   als Default-Composition, frei überstellbar via 7-Slot-Editor.
+  **Taktische Aufstellung statt Slot-Direct**: `SpawnLayout`
+  positioniert Schützen nach `unit.health()` aufsteigend auf die
+  äußersten Reihen (zerbrechlichster Schütze in die Ecke — weniger
+  Adjazenz-Hexen + durch Tank-Wall vollständig abdeckbar), Melees
+  nach Speed absteigend von der Mitte nach außen (schnellster
+  zentriert für maximale Charge-Reichweite). Der UI-Slot bestimmt
+  nur die Anzeige-Reihenfolge im Editor.
 - **Strategischer Solver** (`StrategicAutoSolver`) für Army-Battles:
   Pro Runde wird ein `RoundPlan` mit `TeamStance` (RANGED_DOMINANT /
   MELEE_DOMINANT / BALANCED), Focus-Fire-Target (gewichtet nach
   Schaden × Count plus Special-Boni) und Schützen-Schutz berechnet.
-  Drei Heuristiken übereinander: Tank-Pattern für eigene Schützen,
-  AoE-aware Target-Pick (Magog/Lich/Dragons), Focus-Fire über alle
-  eigenen Stacks. Single-Battle und Matrix nutzen weiterhin den
-  egoistischen `GreedyAutoSolver`.
+  Drei Heuristiken übereinander: Tank-Pattern für eigene Schützen
+  (greift auch bei BALANCED-Spiegel-Setups, wenn ein eigener Schütze
+  in einer Rand-Reihe sitzt — 1–2 Tanks decken die 2–3 Adjazenz-Hexen
+  vor dem Eck-Schützen ab), AoE-aware Target-Pick
+  (Magog/Lich/Dragons), Focus-Fire über alle eigenen Stacks.
+  Single-Battle und Matrix nutzen weiterhin den egoistischen
+  `GreedyAutoSolver`.
 - **Replay-UI** — React 19 + Vite + Tailwind. Drei Modi über den
   ModeSwitcher: Single-Battle (Truppenkonfig + Hex-Replay mit
   Step/Pause/Speed-Slider + Rückspiel mit getauschten Seiten),
@@ -225,11 +235,14 @@ zu lesen, nicht als universelle H3-Tier-Liste.
 
 ## Was als nächstes kommt
 
-- **Strategischer Solver — Feintuning**: Tower bleibt unter Strategic
-  bei 0.94 Ø-Win-Rate dominant; Stronghold/Fortress brechen ein, weil
-  Focus-Fire ihre Tier-7-Stacks zuerst opfert. Sticky-Target-Heuristik
-  und Anti-IMPACT_DAMAGE-Defense (siehe Backlog) sollten beides
-  glätten.
+- **Strategischer Solver — Feintuning**: nach Einführung der
+  taktischen Aufstellung und Stance-unabhängigen Tank-Wall (Snapshot
+  unter `build/reports/spawn-layout-comparison.md`) ist Tower zwar
+  von 0.95 auf 0.89 Ø-Win-Rate zurück, dominiert aber weiter; Fortress
+  und Inferno bleiben am unteren Ende. Offene Feinheiten siehe
+  Backlog: Sticky-Target für Multi-Stack-Schützen, Anti-IMPACT_DAMAGE-
+  Defense, und Replay-Inspection einzelner Flip-Cells (z.B. CON vs
+  NEC) zur Trennung Heuristik-Effekt vs. Faction-Balance.
 - **Helden** mit Primärwerten, Sekundärfertigkeiten und Zauberbuch.
 - **Belagerung**: Mauern, Catapult, Wall-Penalty für Schützen — eigene
   Battlefield-Variante mit Wall-Hexes.

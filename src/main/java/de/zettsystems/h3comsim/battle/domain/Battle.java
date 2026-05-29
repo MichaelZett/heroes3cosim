@@ -127,30 +127,67 @@ public final class Battle {
         Battlefield battlefield = setup.battlefield();
         Action action = autoSolver.decide(active, opponent, battlefield);
         switch (action) {
-            case Action.Wait() -> {
-                BattleLogger.logWait(active.getName());
-                events.emit(new BattleEvent.Wait(active.side(), active.slot()));
+            case Action.Wait() -> emitWait(active);
+            case Action.Defend() -> emitDefend(active);
+            case Action.Move(Hex destination) -> {
+                if (isHexBlocked(destination, active, setup)) {
+                    // Solver hat einen besetzten Hex gewählt (z.B. Flieger straight-line gegen
+                    // Tank-Wall). Defensiv: keine Doppelbelegung, fallback zu Defend — H3-
+                    // konformer als Wait, weil der Stack damit wenigstens +30 % Defense bekommt
+                    // statt seine Aktion ersatzlos zu verlieren.
+                    emitDefend(active);
+                } else {
+                    moveTo(active, destination, battlefield);
+                }
             }
-            case Action.Move(Hex destination) -> moveTo(active, destination, battlefield);
             case Action.MoveAndMelee(Hex destination, Stack target) -> {
-                Hex startPos = active.position();
-                int hexesMoved = startPos.distanceTo(destination);
-                moveTo(active, destination, battlefield);
-                meleeAttack(active, target, hexesMoved, setup);
-                if (active.hasSpeciality(UnitSpeciality.MOVE_BACK) && active.isAlive()) {
-                    BattleLogger.logMoveBack(active.getName(), startPos.q(), startPos.r());
-                    Hex returnFrom = active.position();
-                    List<HexCoord> backPath = battlefield.findPath(returnFrom, startPos,
-                                    active.unit().movement()).stream()
-                            .map(h -> new HexCoord(h.q(), h.r())).toList();
-                    active.moveTo(startPos);
-                    events.emit(new BattleEvent.MoveBack(active.side(), active.slot(),
-                            startPos.q(), startPos.r(), backPath));
+                if (isHexBlocked(destination, active, setup)) {
+                    emitDefend(active);
+                } else {
+                    Hex startPos = active.position();
+                    int hexesMoved = startPos.distanceTo(destination);
+                    moveTo(active, destination, battlefield);
+                    meleeAttack(active, target, hexesMoved, setup);
+                    if (active.hasSpeciality(UnitSpeciality.MOVE_BACK) && active.isAlive()) {
+                        BattleLogger.logMoveBack(active.getName(), startPos.q(), startPos.r());
+                        Hex returnFrom = active.position();
+                        List<HexCoord> backPath = battlefield.findPath(returnFrom, startPos,
+                                        active.unit().movement()).stream()
+                                .map(h -> new HexCoord(h.q(), h.r())).toList();
+                        active.moveTo(startPos);
+                        events.emit(new BattleEvent.MoveBack(active.side(), active.slot(),
+                                startPos.q(), startPos.r(), backPath));
+                    }
                 }
             }
             case Action.Melee(Stack target) -> meleeAttack(active, target, 0, setup);
             case Action.Shoot(Stack target) -> rangedAttack(active, target, setup);
         }
+    }
+
+    private void emitWait(Stack active) {
+        BattleLogger.logWait(active.getName());
+        events.emit(new BattleEvent.Wait(active.side(), active.slot()));
+    }
+
+    private void emitDefend(Stack active) {
+        active.defend();
+        BattleLogger.logDefend(active.getName());
+        events.emit(new BattleEvent.Defend(active.side(), active.slot()));
+    }
+
+    private static boolean isHexBlocked(Hex hex, Stack mover, BattleSetup setup) {
+        for (Stack s : setup.attackerStacks()) {
+            if (s != mover && s.isAlive() && s.position().equals(hex)) {
+                return true;
+            }
+        }
+        for (Stack s : setup.defenderStacks()) {
+            if (s != mover && s.isAlive() && s.position().equals(hex)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void moveTo(Stack active, Hex destination, Battlefield battlefield) {
