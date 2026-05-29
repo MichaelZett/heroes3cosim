@@ -44,14 +44,17 @@ public class DefaultArmyBattleService implements ArmyBattleService {
 
     private static List<Stack> buildStacks(ArmySpec army, Side side) {
         int total = army.stacks().size();
+        List<Unit> units = new ArrayList<>(total);
+        for (StackSpec spec : army.stacks()) {
+            units.add(UnitCatalog.byName(spec.unitName())
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.BAD_REQUEST, "Unknown unit: " + spec.unitName())));
+        }
+        List<Hex> positions = SpawnLayout.assignPositions(side, units);
         List<Stack> stacks = new ArrayList<>(total);
         for (int slot = 0; slot < total; slot++) {
-            StackSpec spec = army.stacks().get(slot);
-            Unit unit = UnitCatalog.byName(spec.unitName())
-                    .orElseThrow(() -> new ResponseStatusException(
-                            HttpStatus.BAD_REQUEST, "Unknown unit: " + spec.unitName()));
-            Hex position = SpawnLayout.positionFor(side, slot, total);
-            stacks.add(new Stack(unit, spec.count(), position, side, slot));
+            stacks.add(new Stack(units.get(slot), army.stacks().get(slot).count(),
+                    positions.get(slot), side, slot));
         }
         return stacks;
     }

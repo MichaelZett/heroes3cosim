@@ -1,17 +1,17 @@
 package de.zettsystems.h3comsim.armybattle.application;
 
 import de.zettsystems.h3comsim.armybattle.values.FactionPresetDto;
-import de.zettsystems.h3comsim.battle.domain.AutoSolver;
+import de.zettsystems.h3comsim.armybattle.values.StackSpec;
 import de.zettsystems.h3comsim.battle.domain.Battle;
 import de.zettsystems.h3comsim.battle.domain.BattleResult;
 import de.zettsystems.h3comsim.battle.domain.BattleSetup;
 import de.zettsystems.h3comsim.battle.domain.Battlefield;
 import de.zettsystems.h3comsim.battle.domain.Faction;
-import de.zettsystems.h3comsim.battle.domain.GreedyAutoSolver;
 import de.zettsystems.h3comsim.battle.domain.Hex;
 import de.zettsystems.h3comsim.battle.domain.ObstacleGenerator;
 import de.zettsystems.h3comsim.battle.domain.Stack;
 import de.zettsystems.h3comsim.battle.domain.StrategicAutoSolver;
+import de.zettsystems.h3comsim.battle.domain.Unit;
 import de.zettsystems.h3comsim.battle.domain.UnitCatalog;
 import de.zettsystems.h3comsim.battle.domain.events.Side;
 import de.zettsystems.h3comsim.battle.domain.events.Winner;
@@ -32,18 +32,17 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.function.Supplier;
 
 /**
- * Empirische Faction-vs-Faction-Matrix: rennt jede Wochenproduktions-Composition gegen jede,
- * über mehrere Seeds und mit getauschten Seiten. Läuft mit beiden Solvern (Greedy, Strategic),
- * schreibt einen Vergleichs-Report nach {@code build/reports/faction-matrix.md} und prüft nur,
- * dass kein Lauf crasht — die eigentliche Auswertung passiert beim Sichten des Reports.
+ * Misst den isolierten Effekt der taktischen {@link SpawnLayout#assignPositions} gegenüber
+ * der alten Slot-Index-Direktabbildung {@link SpawnLayout#positionFor}. Solver bleibt
+ * konstant auf {@link StrategicAutoSolver} — was im Produktiv-Service läuft —, damit
+ * Unterschiede ausschließlich aus der Aufstellung kommen.
  *
- * <p>Cost pro Default-Run: 9 × 9 × {@value #SEEDS_PER_PAIR} × 2 × 2 Solver = 1620 Sims bei
- * SEEDS_PER_PAIR=5.
+ * <p>9 × 9 × {@value #SEEDS_PER_PAIR} × 2 Layouts = 810 Sims bei SEEDS_PER_PAIR=5.
+ * Report unter {@code build/reports/spawn-layout-comparison.md}.
  */
-class FactionMatrixHarness {
+class SpawnLayoutComparisonHarness {
 
     private static final int SEEDS_PER_PAIR = 5;
 
@@ -52,8 +51,10 @@ class FactionMatrixHarness {
             Faction.NECROPOLIS, Faction.DUNGEON, Faction.STRONGHOLD, Faction.FORTRESS,
             Faction.CONFLUX);
 
+    private enum LayoutMode { SLOT_DIRECT, TACTICAL }
+
     @Test
-    void run_full_faction_matrix_and_write_report() throws IOException {
+    void compare_layouts_and_write_report() throws IOException {
         FactionPresetCatalog presets = new FactionPresetCatalog();
         Map<Faction, FactionPresetDto> presetByFaction = new EnumMap<>(Faction.class);
         for (FactionPresetDto p : presets.all()) {
@@ -61,25 +62,25 @@ class FactionMatrixHarness {
         }
 
         long t0 = System.currentTimeMillis();
-        Map<String, AggregatedPair> greedy = runMatrix(presetByFaction, GreedyAutoSolver::new);
-        long tGreedy = System.currentTimeMillis() - t0;
+        Map<String, AggregatedPair> slotDirect = runMatrix(presetByFaction, LayoutMode.SLOT_DIRECT);
+        long tSlot = System.currentTimeMillis() - t0;
 
         long t1 = System.currentTimeMillis();
-        Map<String, AggregatedPair> strategic = runMatrix(presetByFaction, StrategicAutoSolver::new);
-        long tStrategic = System.currentTimeMillis() - t1;
+        Map<String, AggregatedPair> tactical = runMatrix(presetByFaction, LayoutMode.TACTICAL);
+        long tTactical = System.currentTimeMillis() - t1;
 
-        String report = renderComparison(greedy, strategic, tGreedy, tStrategic);
+        String report = renderComparison(slotDirect, tactical, tSlot, tTactical);
         Path reportsDir = Path.of("build", "reports");
         Files.createDirectories(reportsDir);
-        Path out = reportsDir.resolve("faction-matrix.md");
+        Path out = reportsDir.resolve("spawn-layout-comparison.md");
         Files.writeString(out, report);
 
-        System.out.println("Faction-Matrix-Report: " + out.toAbsolutePath());
+        System.out.println("Spawn-Layout-Comparison-Report: " + out.toAbsolutePath());
         System.out.println(report);
     }
 
     private static Map<String, AggregatedPair> runMatrix(Map<Faction, FactionPresetDto> presets,
-                                                         Supplier<AutoSolver> solverFactory) {
+                                                         LayoutMode mode) {
         Map<String, PairStats> stats = new ConcurrentHashMap<>();
         for (Faction a : FACTIONS_IN_ORDER) {
             for (Faction d : FACTIONS_IN_ORDER) {
@@ -89,15 +90,12 @@ class FactionMatrixHarness {
         try (ExecutorService pool = Executors.newWorkStealingPool()) {
             for (Faction attacker : FACTIONS_IN_ORDER) {
                 for (Faction defender : FACTIONS_IN_ORDER) {
-                    List<de.zettsystems.h3comsim.armybattle.values.StackSpec> attackerSpec =
-                            presets.get(attacker).stacks();
-                    List<de.zettsystems.h3comsim.armybattle.values.StackSpec> defenderSpec =
-                            presets.get(defender).stacks();
+                    List<StackSpec> attackerSpec = presets.get(attacker).stacks();
+                    List<StackSpec> defenderSpec = presets.get(defender).stacks();
                     PairStats acc = stats.get(key(attacker, defender));
                     for (int s = 0; s < SEEDS_PER_PAIR; s++) {
                         long seed = (long) (attacker.ordinal() * 9929L + defender.ordinal() * 113L + s);
-                        pool.execute(() -> runOne(attackerSpec, defenderSpec, seed,
-                                solverFactory.get(), acc));
+                        pool.execute(() -> runOne(attackerSpec, defenderSpec, seed, mode, acc));
                     }
                 }
             }
@@ -105,14 +103,13 @@ class FactionMatrixHarness {
         return aggregate(stats);
     }
 
-    private static void runOne(List<de.zettsystems.h3comsim.armybattle.values.StackSpec> attacker,
-                               List<de.zettsystems.h3comsim.armybattle.values.StackSpec> defender,
-                               long seed, AutoSolver solver, PairStats acc) {
-        List<Stack> attackerStacks = buildStacks(attacker, Side.ATTACKER);
-        List<Stack> defenderStacks = buildStacks(defender, Side.DEFENDER);
+    private static void runOne(List<StackSpec> attacker, List<StackSpec> defender,
+                               long seed, LayoutMode mode, PairStats acc) {
+        List<Stack> attackerStacks = buildStacks(attacker, Side.ATTACKER, mode);
+        List<Stack> defenderStacks = buildStacks(defender, Side.DEFENDER, mode);
         Battlefield bf = buildBattlefield(attackerStacks, defenderStacks, seed);
         BattleSetup setup = new BattleSetup(attackerStacks, defenderStacks, bf);
-        BattleResult result = new Battle(new Random(seed), solver).simulate(setup);
+        BattleResult result = new Battle(new Random(seed), new StrategicAutoSolver()).simulate(setup);
 
         acc.total.increment();
         switch (result.winner()) {
@@ -132,14 +129,22 @@ class FactionMatrixHarness {
         }
     }
 
-    private static List<Stack> buildStacks(List<de.zettsystems.h3comsim.armybattle.values.StackSpec> specs,
-                                           Side side) {
+    private static List<Stack> buildStacks(List<StackSpec> specs, Side side, LayoutMode mode) {
         int total = specs.size();
-        List<de.zettsystems.h3comsim.battle.domain.Unit> units = new ArrayList<>(total);
-        for (var spec : specs) {
+        List<Unit> units = new ArrayList<>(total);
+        for (StackSpec spec : specs) {
             units.add(UnitCatalog.byName(spec.unitName()).orElseThrow());
         }
-        List<Hex> positions = SpawnLayout.assignPositions(side, units);
+        List<Hex> positions = switch (mode) {
+            case SLOT_DIRECT -> {
+                List<Hex> p = new ArrayList<>(total);
+                for (int slot = 0; slot < total; slot++) {
+                    p.add(SpawnLayout.positionFor(side, slot, total));
+                }
+                yield p;
+            }
+            case TACTICAL -> SpawnLayout.assignPositions(side, units);
+        };
         List<Stack> stacks = new ArrayList<>(total);
         for (int slot = 0; slot < total; slot++) {
             stacks.add(new Stack(units.get(slot), specs.get(slot).count(),
@@ -183,48 +188,51 @@ class FactionMatrixHarness {
         return result;
     }
 
-    private static String renderComparison(Map<String, AggregatedPair> greedy,
-                                           Map<String, AggregatedPair> strategic,
-                                           long greedyMs, long strategicMs) {
+    private static String renderComparison(Map<String, AggregatedPair> slot,
+                                           Map<String, AggregatedPair> tactical,
+                                           long slotMs, long tacticalMs) {
         StringBuilder sb = new StringBuilder(4096);
-        sb.append("# Faction-vs-Faction Matrix: Greedy vs Strategic\n\n");
+        sb.append("# Spawn-Layout-Vergleich: Slot-Direct vs Tactical\n\n");
         sb.append("**Sims**: ").append(SEEDS_PER_PAIR * 2)
-                .append(" pro Pairing (Roll-Swap). Greedy: ").append(greedyMs).append(" ms, ")
-                .append("Strategic: ").append(strategicMs).append(" ms.\n\n");
+                .append(" pro Pairing (Roll-Swap). Solver konstant: StrategicAutoSolver.\n");
+        sb.append("**Layouts**: SLOT_DIRECT = positionFor (Slot 0 → r=0), ")
+                .append("TACTICAL = assignPositions (Schützen außen, schnellster Melee zentriert).\n");
+        sb.append("**Zeit**: Slot-Direct ").append(slotMs).append(" ms, Tactical ")
+                .append(tacticalMs).append(" ms.\n\n");
 
-        renderRanking(sb, "## Ranking Greedy", greedy);
-        renderRanking(sb, "## Ranking Strategic", strategic);
+        renderRanking(sb, "## Ranking Slot-Direct (Baseline)", slot);
+        renderRanking(sb, "## Ranking Tactical", tactical);
 
-        sb.append("## Ranking-Delta (Strategic Ø − Greedy Ø)\n\n");
-        sb.append("| Faktion | Greedy Ø | Strategic Ø | Δ |\n");
+        sb.append("## Ranking-Delta (Tactical Ø − Slot-Direct Ø)\n\n");
+        sb.append("| Faktion | Slot-Direct Ø | Tactical Ø | Δ |\n");
         sb.append("|--|--|--|--|\n");
         List<Faction> deltaSorted = FACTIONS_IN_ORDER.stream()
                 .sorted((a, b) -> Double.compare(
-                        avgWin(strategic, b) - avgWin(greedy, b),
-                        avgWin(strategic, a) - avgWin(greedy, a)))
+                        avgWin(tactical, b) - avgWin(slot, b),
+                        avgWin(tactical, a) - avgWin(slot, a)))
                 .toList();
         for (Faction f : deltaSorted) {
-            double g = avgWin(greedy, f);
-            double s = avgWin(strategic, f);
+            double g = avgWin(slot, f);
+            double t = avgWin(tactical, f);
             sb.append("| ").append(abbr(f)).append(" | ")
                     .append(String.format(Locale.ROOT, "%.2f", g)).append(" | ")
-                    .append(String.format(Locale.ROOT, "%.2f", s)).append(" | ")
-                    .append(String.format(Locale.ROOT, "%+.2f", s - g)).append(" |\n");
+                    .append(String.format(Locale.ROOT, "%.2f", t)).append(" | ")
+                    .append(String.format(Locale.ROOT, "%+.2f", t - g)).append(" |\n");
         }
         sb.append("\n");
 
-        renderMatrix(sb, "## Win-Rate-Matrix Strategic\n\n", strategic);
-        renderMatrix(sb, "## Win-Rate-Matrix Greedy (Baseline)\n\n", greedy);
+        renderMatrix(sb, "## Win-Rate-Matrix Tactical\n\n", tactical);
+        renderMatrix(sb, "## Win-Rate-Matrix Slot-Direct (Baseline)\n\n", slot);
 
-        sb.append("## Cells mit größtem Strategic-Sprung (|Δ| > 0.30)\n\n");
-        sb.append("| Attacker | Defender | Greedy | Strategic | Δ |\n");
+        sb.append("## Cells mit größtem Layout-Effekt (|Δ| > 0.20)\n\n");
+        sb.append("| Attacker | Defender | Slot-Direct | Tactical | Δ |\n");
         sb.append("|--|--|--|--|--|\n");
         List<Map.Entry<String, Double>> jumps = new ArrayList<>();
-        for (Map.Entry<String, AggregatedPair> e : strategic.entrySet()) {
+        for (Map.Entry<String, AggregatedPair> e : tactical.entrySet()) {
             String[] parts = e.getKey().split("\\|");
             if (parts[0].equals(parts[1])) continue;
-            double delta = e.getValue().aWinRate() - greedy.get(e.getKey()).aWinRate();
-            if (Math.abs(delta) > 0.30) {
+            double delta = e.getValue().aWinRate() - slot.get(e.getKey()).aWinRate();
+            if (Math.abs(delta) > 0.20) {
                 jumps.add(Map.entry(e.getKey(), delta));
             }
         }
@@ -233,10 +241,26 @@ class FactionMatrixHarness {
             String[] parts = e.getKey().split("\\|");
             sb.append("| ").append(abbr(Faction.valueOf(parts[0]))).append(" | ")
                     .append(abbr(Faction.valueOf(parts[1]))).append(" | ")
-                    .append(String.format(Locale.ROOT, "%.2f", greedy.get(e.getKey()).aWinRate())).append(" | ")
-                    .append(String.format(Locale.ROOT, "%.2f", strategic.get(e.getKey()).aWinRate())).append(" | ")
+                    .append(String.format(Locale.ROOT, "%.2f", slot.get(e.getKey()).aWinRate())).append(" | ")
+                    .append(String.format(Locale.ROOT, "%.2f", tactical.get(e.getKey()).aWinRate())).append(" | ")
                     .append(String.format(Locale.ROOT, "%+.2f", e.getValue())).append(" |\n");
         }
+
+        sb.append("\n## Aggregat\n\n");
+        double avgTurnsSlot = avgTurns(slot);
+        double avgTurnsTac = avgTurns(tactical);
+        double avgSurvSlot = avgWinnerSurv(slot);
+        double avgSurvTac = avgWinnerSurv(tactical);
+        sb.append("- Ø Runden bis Entscheidung: Slot-Direct ")
+                .append(String.format(Locale.ROOT, "%.2f", avgTurnsSlot))
+                .append(", Tactical ").append(String.format(Locale.ROOT, "%.2f", avgTurnsTac))
+                .append(" (Δ ").append(String.format(Locale.ROOT, "%+.2f", avgTurnsTac - avgTurnsSlot))
+                .append(")\n");
+        sb.append("- Ø Survivor-Quote Sieger: Slot-Direct ")
+                .append(String.format(Locale.ROOT, "%.2f", avgSurvSlot))
+                .append(", Tactical ").append(String.format(Locale.ROOT, "%.2f", avgSurvTac))
+                .append(" (Δ ").append(String.format(Locale.ROOT, "%+.2f", avgSurvTac - avgSurvSlot))
+                .append(")\n");
         return sb.toString();
     }
 
@@ -280,6 +304,26 @@ class FactionMatrixHarness {
             n++;
         }
         return sum / n;
+    }
+
+    private static double avgTurns(Map<String, AggregatedPair> m) {
+        double sum = 0;
+        int n = 0;
+        for (AggregatedPair p : m.values()) {
+            sum += p.avgTurns();
+            n++;
+        }
+        return n == 0 ? 0 : sum / n;
+    }
+
+    private static double avgWinnerSurv(Map<String, AggregatedPair> m) {
+        double sum = 0;
+        int n = 0;
+        for (AggregatedPair p : m.values()) {
+            sum += p.avgWinnerSurvivor();
+            n++;
+        }
+        return n == 0 ? 0 : sum / n;
     }
 
     private static String abbr(Faction f) {
