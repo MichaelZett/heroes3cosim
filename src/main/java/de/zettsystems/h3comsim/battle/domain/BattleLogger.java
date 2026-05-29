@@ -46,7 +46,11 @@ public final class BattleLogger {
     }
 
     static void logDefend(String name) {
-        LOG.debug("Stack von {} verteidigt sich (+30 % Defense bis Rundenende).", name);
+        LOG.debug("Stack von {} verteidigt sich (+20 % Defense bis Rundenende).", name);
+    }
+
+    static void logLifeDrain(String name, int healed) {
+        LOG.debug("Stack von {} saugt {} HP Lebensenergie aus dem Treffer.", name, healed);
     }
 
     static void logRetaliation(String name) {

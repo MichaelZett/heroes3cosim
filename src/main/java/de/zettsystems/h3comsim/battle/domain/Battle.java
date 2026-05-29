@@ -133,7 +133,7 @@ public final class Battle {
                 if (isHexBlocked(destination, active, setup)) {
                     // Solver hat einen besetzten Hex gewählt (z.B. Flieger straight-line gegen
                     // Tank-Wall). Defensiv: keine Doppelbelegung, fallback zu Defend — H3-
-                    // konformer als Wait, weil der Stack damit wenigstens +30 % Defense bekommt
+                    // konformer als Wait, weil der Stack damit wenigstens +20 % Defense bekommt
                     // statt seine Aktion ersatzlos zu verlieren.
                     emitDefend(active);
                 } else {
@@ -161,8 +161,32 @@ public final class Battle {
                 }
             }
             case Action.Melee(Stack target) -> meleeAttack(active, target, 0, setup);
-            case Action.Shoot(Stack target) -> rangedAttack(active, target, setup);
+            case Action.Shoot(Stack target) -> {
+                if (!active.canShoot()) {
+                    // Keine Shots übrig (oder gar keine ranged Attacke) — Solver-Bug-
+                    // Sicherheitsnetz: kein Phantom-Schuss, Engine fällt zu Defend.
+                    emitDefend(active);
+                } else if (hasAdjacentEnemy(active, setup)) {
+                    // Manual S. 42: „Creatures with ranged attacks ... can fire only when
+                    // there are no adjacent enemies." Engaged Schütze kann nicht schießen
+                    // → defensiv Defend (Engine-Sicherheitsnetz; Solver wählt den Pfad
+                    // eigentlich nicht, weil pickTarget Adjacent-Engagement priorisiert).
+                    emitDefend(active);
+                } else {
+                    rangedAttack(active, target, setup);
+                }
+            }
         }
+    }
+
+    private static boolean hasAdjacentEnemy(Stack active, BattleSetup setup) {
+        Hex from = active.position();
+        for (Stack o : setup.opponentsOf(active)) {
+            if (o.isAlive() && from.distanceTo(o.position()) == 1) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void emitWait(Stack active) {
@@ -208,6 +232,7 @@ public final class Battle {
                 dealt, countBeforeFirst - passive.getCount(), snapshot(passive)));
         applyFireShield(active, passive, dealt);
         applyMeleeSplash(active, passive, setup);
+        applyLifeDrain(active, dealt);
         triggerRetaliation(active, passive);
         if (active.hasSpeciality(UnitSpeciality.TWO_BLOWS) && passive.isAlive() && active.isAlive()) {
             BattleLogger.logTwoBlows(active.getName());
@@ -219,22 +244,36 @@ public final class Battle {
                     passive.side(), passive.slot(), 0,
                     dealtSecond, countBeforeSecond - passive.getCount(), snapshot(passive)));
             applyFireShield(active, passive, dealtSecond);
+            applyLifeDrain(active, dealtSecond);
             triggerRetaliation(active, passive);
+        }
+    }
+
+    private void applyLifeDrain(Stack active, int dealt) {
+        if (dealt <= 0 || !active.isAlive() || !active.hasSpeciality(UnitSpeciality.LIFE_DRAIN)) {
+            return;
+        }
+        int healed = active.heal(dealt);
+        if (healed > 0) {
+            BattleLogger.logLifeDrain(active.getName(), healed);
         }
     }
 
     /**
      * Multi-Stack-Splash für Nahkampf: Three-Headed-Attack (Cerberus) trifft bis zu zwei
-     * weitere adjazente Gegner-Stacks; Fire-Breath (Green/Gold/Red/Black-Dragon) trifft den
+     * weitere adjazente Stacks; Fire-Breath (Green/Gold/Red/Black-Dragon) trifft den
      * Stack auf dem inline-Hex direkt hinter dem Hauptziel. Splash-Hits triggern keine
      * Retaliation und keine After-Attack-Procs — sie sind reine Collateral-Hits.
+     *
+     * <p><strong>Friendly Fire</strong>: H3-Splash trifft auch eigene Stacks im Radius —
+     * Engine iteriert über {@link #findStackAt}, nicht nur über Gegner.
      */
     private void applyMeleeSplash(Stack active, Stack primary, BattleSetup setup) {
         if (active.hasSpeciality(UnitSpeciality.THREE_HEADED_ATTACK)) {
             int splashes = 0;
             for (Hex neighbor : active.position().neighbors()) {
                 if (splashes >= 2) break;
-                Stack candidate = findOpponentAt(active, neighbor, setup);
+                Stack candidate = findStackAt(active, neighbor, setup);
                 if (candidate != null && candidate != primary && candidate.isAlive()) {
                     applySplashHit(active, candidate, AttackType.HAND_TO_HAND);
                     splashes++;
@@ -243,7 +282,7 @@ public final class Battle {
         }
         if (active.hasSpeciality(UnitSpeciality.FIRE_BREATH)) {
             Hex behind = behindHex(active.position(), primary.position());
-            Stack collateral = findOpponentAt(active, behind, setup);
+            Stack collateral = findStackAt(active, behind, setup);
             if (collateral != null && collateral != primary && collateral.isAlive()) {
                 applySplashHit(active, collateral, AttackType.HAND_TO_HAND);
             }
@@ -255,10 +294,19 @@ public final class Battle {
                 through.r() + (through.r() - from.r()));
     }
 
-    private @Nullable Stack findOpponentAt(Stack active, Hex hex, BattleSetup setup) {
-        for (Stack candidate : setup.opponentsOf(active)) {
-            if (candidate.position().equals(hex)) {
-                return candidate;
+    /**
+     * Liefert irgendeinen lebenden Stack auf {@code hex} (egal welche Seite, außer
+     * {@code active} selbst). Für H3-Friendly-Fire-Splash-Mechaniken.
+     */
+    private @Nullable Stack findStackAt(Stack active, Hex hex, BattleSetup setup) {
+        for (Stack s : setup.attackerStacks()) {
+            if (s != active && s.isAlive() && s.position().equals(hex)) {
+                return s;
+            }
+        }
+        for (Stack s : setup.defenderStacks()) {
+            if (s != active && s.isAlive() && s.position().equals(hex)) {
+                return s;
             }
         }
         return null;
@@ -348,15 +396,19 @@ public final class Battle {
 
     /**
      * Multi-Stack-Splash für Fernkampf: SPLASH_SHOT (Magog) trifft bis zu zwei zusätzliche
-     * Gegner-Stacks adjazent zum Hauptziel; DEATH_CLOUD (Lich) trifft alle Gegner-Stacks im
-     * 1-Hex-Radius rund ums Hauptziel. Splash-Hits triggern keine Procs.
+     * Stacks adjazent zum Hauptziel; DEATH_CLOUD (Lich/Power Lich) trifft alle
+     * <strong>non-undead</strong> Stacks im 1-Hex-Radius (Manual S. 101).
+     *
+     * <p><strong>Friendly Fire</strong>: H3-Splash trifft auch eigene Stacks im Radius
+     * (außer Undead bei DEATH_CLOUD). Engine iteriert über {@link #findStackAt}, nicht
+     * nur über Gegner.
      */
     private void applyRangedSplash(Stack active, Stack primary, BattleSetup setup) {
         if (active.hasSpeciality(UnitSpeciality.SPLASH_SHOT)) {
             int splashes = 0;
             for (Hex neighbor : primary.position().neighbors()) {
                 if (splashes >= 2) break;
-                Stack collateral = findOpponentAt(active, neighbor, setup);
+                Stack collateral = findStackAt(active, neighbor, setup);
                 if (collateral != null && collateral != primary && collateral.isAlive()) {
                     applySplashHit(active, collateral, AttackType.LONG_RANGE);
                     splashes++;
@@ -365,8 +417,9 @@ public final class Battle {
         }
         if (active.hasSpeciality(UnitSpeciality.DEATH_CLOUD)) {
             for (Hex neighbor : primary.position().neighbors()) {
-                Stack collateral = findOpponentAt(active, neighbor, setup);
-                if (collateral != null && collateral != primary && collateral.isAlive()) {
+                Stack collateral = findStackAt(active, neighbor, setup);
+                if (collateral != null && collateral != primary && collateral.isAlive()
+                        && !collateral.unit().isUndead()) {
                     applySplashHit(active, collateral, AttackType.LONG_RANGE);
                 }
             }
@@ -424,17 +477,24 @@ public final class Battle {
     }
 
     private void doDeathStare(Stack active, Stack target, AttackType attackType) {
-        // H3: Death Stare triggert nur bei Nahkampf.
+        // H3 Manual S. 95: „10% chance per attack of killing the top creature of a troop
+        // outright per 10 Mighty Gorgons." → Trigger-Chance skaliert linear mit Stack-Größe
+        // (1 % pro Gorgon, gedeckelt bei 100 %); Kill ist immer genau 1 Top-Creature.
+        // Death Stare triggert nur bei Nahkampf.
         if (attackType != AttackType.HAND_TO_HAND) {
             return;
         }
-        if (active.hasSpeciality(UnitSpeciality.DEATH_STARE) && rng.nextInt(100) < 10) {
-            int kills = Math.max(1, active.getCount() / 10);
-            target.loseTopCreatures(kills);
-            BattleLogger.logDeathStare(active.getName(), target.getName(), kills);
-            events.emit(new BattleEvent.DeathStare(active.side(), active.slot(),
-                    target.side(), target.slot(), kills, snapshot(target)));
+        if (!active.hasSpeciality(UnitSpeciality.DEATH_STARE)) {
+            return;
         }
+        int chancePercent = Math.min(100, active.getCount());
+        if (rng.nextInt(100) >= chancePercent) {
+            return;
+        }
+        target.loseTopCreatures(1);
+        BattleLogger.logDeathStare(active.getName(), target.getName(), 1);
+        events.emit(new BattleEvent.DeathStare(active.side(), active.slot(),
+                target.side(), target.slot(), 1, snapshot(target)));
     }
 
     private void doThunderbolts(Stack active, Stack target, AttackType attackType) {

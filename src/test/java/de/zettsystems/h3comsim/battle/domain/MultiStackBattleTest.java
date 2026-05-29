@@ -38,7 +38,7 @@ class MultiStackBattleTest {
     void move_action_to_occupied_hex_falls_back_to_defend() {
         // Diagnose- + Fix-Test: ein Solver der explizit auf einen besetzten Hex zielt darf
         // nicht zwei lebende Stacks auf dem gleichen Hex landen lassen. Erwartung: Engine
-        // weist den Move ab und stellt den Stack defensiv (Defend → +30 % Defense),
+        // weist den Move ab und stellt den Stack defensiv (Defend → +20 % Defense),
         // statt seine Aktion ersatzlos zu verlieren.
         Stack dragon = new Stack(UnitCatalog.BLACK_DRAGON, 1, new Hex(0, 5), Side.ATTACKER, 0);
         Stack tank = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(5, 5), Side.DEFENDER, 0);
@@ -65,14 +65,15 @@ class MultiStackBattleTest {
     }
 
     @Test
-    void defend_action_grants_thirty_percent_defense_until_end_of_turn() {
-        // Stack defendet → +30 % Defense aktiv für diese Runde. Nach endTurn zurück auf Base.
+    void defend_action_grants_twenty_percent_defense_until_end_of_turn() {
+        // RoE-Manual S. 47: Defend gibt +20 % Defense bis Rundenende. Nach endTurn zurück
+        // auf Base.
         Stack hal = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(0, 5), Side.ATTACKER, 0);
         int baseDefense = hal.getDefense();
 
         hal.defend();
         assertThat(hal.isDefending()).isTrue();
-        assertThat(hal.getDefense()).isEqualTo((int) Math.round(baseDefense * 1.3));
+        assertThat(hal.getDefense()).isEqualTo((int) Math.round(baseDefense * 1.2));
 
         hal.endTurn();
         assertThat(hal.isDefending()).isFalse();
