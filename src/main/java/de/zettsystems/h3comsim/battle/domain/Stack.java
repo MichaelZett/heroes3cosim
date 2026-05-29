@@ -106,9 +106,10 @@ public class Stack {
     public int getDefense() {
         int base = unit.defense() - (diseased ? 2 : 0);
         if (defending) {
-            // H3-Defend: +30 % Defense (gerundet) bis Rundenende. Stackt nicht mit anderen
-            // Defense-Boni — gehört hierhin, damit alle Damage-Berechnungen profitieren.
-            base = (int) Math.round(base * 1.3);
+            // H3-Defend laut RoE-Manual S. 47: +20 % auf die Defense-Rating bis Rundenende.
+            // Stackt nicht mit anderen Defense-Boni — gehört hierhin, damit alle Damage-
+            // Berechnungen profitieren.
+            base = (int) Math.round(base * 1.2);
         }
         return base;
     }
@@ -166,8 +167,11 @@ public class Stack {
     }
 
     public int calculateAttackBoniMaliPercentage(int defense) {
+        // RoE-Manual S. 43: +5 % pro Attack-Punkt Differenz, gedeckelt bei +400 %
+        // (80 Punkte); −2 % pro Defense-Punkt Differenz, min. 30 % Damage (= −70 %, also
+        // 35 Punkte). Ohne Cap explodiert Damage bei extremen Tier-Lücken.
         int diff = getAttack() - defense;
-        return diff >= 0 ? diff * 5 : diff * 2;
+        return diff >= 0 ? Math.min(diff * 5, 400) : Math.max(diff * 2, -70);
     }
 
     public int effectiveDefenseAgainst(Set<UnitSpeciality> attackerSpecialities) {
@@ -235,6 +239,46 @@ public class Stack {
         aliveCount -= actualKills;
         topUnitCurrentHealth = aliveCount > 0 ? unit.health() : 0;
         tryRebirth();
+    }
+
+    /**
+     * Heilt den Stack um {@code hp} Lebenspunkte: füllt zuerst die aktuelle Top-Creature
+     * auf, dann resurrected ganze tote Creatures (max bis zur Start-Stack-Größe).
+     * Partielle Resurrects gibt es nicht — ein Rest unterhalb {@code unit.health()}
+     * verfällt. Liefert die tatsächlich verwendete Heilmenge (für Diagnose-Tests).
+     */
+    public int heal(int hp) {
+        if (hp <= 0) {
+            return 0;
+        }
+        int max = unit.health();
+        int remaining = hp;
+        int used = 0;
+        // Spezialfall: Stack komplett tot → braucht ganze HP-Wert für erste Resurrect.
+        if (aliveCount == 0) {
+            if (remaining < max || startCount == 0) {
+                return 0;
+            }
+            aliveCount = 1;
+            topUnitCurrentHealth = max;
+            remaining -= max;
+            used += max;
+        }
+        // Top-Creature auffüllen
+        int gap = max - topUnitCurrentHealth;
+        if (gap > 0 && remaining > 0) {
+            int fill = Math.min(gap, remaining);
+            topUnitCurrentHealth += fill;
+            remaining -= fill;
+            used += fill;
+        }
+        // Weitere ganze Creatures resurrecten — kein Über-startCount.
+        while (remaining >= max && aliveCount < startCount) {
+            aliveCount++;
+            remaining -= max;
+            used += max;
+        }
+        return used;
     }
 
     public int fireShieldDamageFor(int incomingDamage) {

@@ -27,6 +27,12 @@ public enum UnitSpeciality {
     GOOD_MORALE(AFTER_ATTACK),
     REGENERATION(SPECIAL),
     REBIRTH(SPECIAL),
+    /** Vampire Lord (Manual S. 101): heilt sich am verursachten Nahkampf-Schaden, kann
+     *  bis zur Start-Stack-Größe tote eigene Vampire Lords resurrecten. */
+    LIFE_DRAIN(SPECIAL),
+    /** Devil/Arch Devil (Manual S. 99): „can teleport to any hex on the battlefield".
+     *  Bewegung ignoriert die Speed-Schranke; Lande-Hex muss nur passable und frei sein. */
+    TELEPORT_NO_COST(SPECIAL),
     FIRE_SHIELD(DEFENSE),
 
     // Race markers — set on the defender to enable hate-based damage modifiers from the attacker.

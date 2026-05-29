@@ -74,6 +74,14 @@ public record Unit(
                 .collect(Collectors.toUnmodifiableSet());
     }
 
+    /**
+     * Undead-Klassifikation für engine-seitige Immunitäten (z.B. DEATH_CLOUD-Splash
+     * überspringt Undead — Manual S. 101). H3 RoE: alle Necropolis-Creatures sind Undead.
+     */
+    public boolean isUndead() {
+        return faction == Faction.NECROPOLIS;
+    }
+
     public boolean hasPenality(AttackType usedAttackType) {
         if (usedAttackType == AttackType.HAND_TO_HAND) {
             return attackType() == AttackType.LONG_RANGE

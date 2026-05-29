@@ -119,10 +119,11 @@ public final class StrategicAutoSolver implements AutoSolver {
         // Aktiviert sich bei RANGED_DOMINANT (alle Schützen schutzwürdig) und bei BALANCED
         // mit Rand-Schützen — siehe RoundPlan.hasTankDuty / StrategicAutoSolver#buildPlan.
         if (plan.hasTankDuty(active.side())
+                && isTankCandidate(active)
                 && !active.canShoot()
                 && active.position().distanceTo(opponent.position()) > 1) {
             // Tank steht schon adjacent zu einem eigenen Schützen → Position halten und
-            // Defend (+30 % Defense) statt überflüssig auf einen anderen Adjacent zu wandern.
+            // Defend (+20 % Defense) statt überflüssig auf einen anderen Adjacent zu wandern.
             // Ein zweiter Tank, der noch im Anflug ist, findet via findTankPosition trotzdem
             // den verbleibenden freien Adjacent.
             if (isAdjacentToOwnProtectedShooter(active)) {
@@ -323,6 +324,25 @@ public final class StrategicAutoSolver implements AutoSolver {
     // Tank-Pattern
     // ------------------------------------------------------------------ //
 
+    /**
+     * Nur „langsame, schwache" Stacks dürfen Tank-Babysitter sein — High-Damage- oder
+     * High-Mobility-Attacker (Black Dragon, Champion, Vampire Lord, Cerberus etc.)
+     * sollen chargen, nicht vor Schützen kleben. Heuristik: Tier ≤ 5 UND keine
+     * aggressiven Specials. Schützen werden ohnehin nicht durch diese Methode geprüft —
+     * sie bekommen via {@link #decide} keinen Tank-Pattern-Pfad.
+     */
+    private static boolean isTankCandidate(Stack stack) {
+        Unit u = stack.unit();
+        if (u.hasSpeciality(UnitSpeciality.MOVE_BACK)) return false;
+        if (u.hasSpeciality(UnitSpeciality.IMPACT_DAMAGE)) return false;
+        if (u.hasSpeciality(UnitSpeciality.FIRE_BREATH)) return false;
+        if (u.hasSpeciality(UnitSpeciality.THREE_HEADED_ATTACK)) return false;
+        if (u.hasSpeciality(UnitSpeciality.TELEPORT_NO_COST)) return false;
+        if (u.hasSpeciality(UnitSpeciality.LIFE_DRAIN)) return false;
+        if (u.hasSpeciality(UnitSpeciality.NO_RETALIATION)) return false;
+        return u.tier() <= 5;
+    }
+
     private boolean isAdjacentToOwnProtectedShooter(Stack active) {
         Side mySide = active.side();
         Hex from = active.position();
@@ -463,7 +483,9 @@ public final class StrategicAutoSolver implements AutoSolver {
         if (!bf.isPassable(hex)) {
             return false;
         }
-        if (active.position().distanceTo(hex) > active.unit().speed()) {
+        // TELEPORT_NO_COST (Devil/Arch Devil): Speed-Schranke entfällt.
+        if (!active.hasSpeciality(UnitSpeciality.TELEPORT_NO_COST)
+                && active.position().distanceTo(hex) > active.unit().speed()) {
             return false;
         }
         for (Stack other : setup.attackerStacks()) {

@@ -305,4 +305,29 @@ class StackTest {
 
         assertThat(firebird.isAlive()).isFalse();
     }
+
+    @Test
+    void attack_bonus_is_capped_at_plus_400_percent() {
+        // RoE-Manual S. 43: +5 % pro Attack-Punkt Differenz, gedeckelt bei +400 %.
+        // 80 Punkte Differenz erreicht den Cap, 200 Punkte würden uncapped 1000 % geben.
+        Stack archAngel = new Stack(UnitCatalog.ARCH_ANGEL, 1, ORIGIN);
+
+        // Attack 30 vs Defense 0 → diff 30 → 150 % (unterhalb Cap)
+        assertThat(archAngel.calculateAttackBoniMaliPercentage(0)).isEqualTo(150);
+        // Diff 80 → 400 % exakt
+        assertThat(archAngel.calculateAttackBoniMaliPercentage(-50)).isEqualTo(400);
+        // Diff 200 → uncapped 1000 %, gecappt auf 400 %
+        assertThat(archAngel.calculateAttackBoniMaliPercentage(-170)).isEqualTo(400);
+    }
+
+    @Test
+    void defense_mali_is_capped_at_minus_70_percent() {
+        // Manual: −2 % pro Punkt Differenz, min. 30 % Damage (= −70 % Mali, 35 Punkte).
+        Stack peasant = new Stack(UnitCatalog.PEASANT, 1, ORIGIN);
+
+        // Attack 1 vs Defense 36 → diff −35 → −70 % exakt
+        assertThat(peasant.calculateAttackBoniMaliPercentage(36)).isEqualTo(-70);
+        // Diff −100 → uncapped −200 %, gecappt bei −70 %
+        assertThat(peasant.calculateAttackBoniMaliPercentage(101)).isEqualTo(-70);
+    }
 }

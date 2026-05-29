@@ -44,6 +44,7 @@ import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.IMMUNE_TO_BLI
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.IMMUNE_TO_SPELLS;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.IMMUNE_TO_SPELLS_BELOW_4;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.IMPACT_DAMAGE;
+import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.LIFE_DRAIN;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.MOVE_BACK;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.NO_HAND_TO_HAND_PENALTY;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.NO_OBSTACLE_PENALTY;
@@ -55,6 +56,7 @@ import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.REGENERATION;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.RESURRECTION;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.SPELL_COST_REDUCTION;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.SPLASH_SHOT;
+import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.TELEPORT_NO_COST;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.THREE_HEADED_ATTACK;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.THUNDERBOLTS;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.TITAN_HATE;
@@ -69,7 +71,7 @@ public final class UnitCatalog {
     public static final Unit ANGEL = basic("Angel", new Stats(20, 20, 200, 12), melee(50, 50), FLYING, CASTLE, 7, 3000, GOOD_ARMY_MORALE, DEVIL_HATE, ANGEL_RACE);
     public static final Unit ARCHER = basic("Archer", new Stats(6, 3, 10, 4), ranged(2, 3, 12), GROUND, CASTLE, 2, 100);
     public static final Unit ARCH_ANGEL = upgrade("Arch Angel", new Stats(30, 30, 250, 18), melee(50, 50), FLYING, CASTLE, 7, 5000, RESURRECTION, GOOD_ARMY_MORALE, DEVIL_HATE, ANGEL_RACE);
-    public static final Unit ARCH_DEVIL = upgrade("Arch Devil", new Stats(26, 28, 200, 17), melee(30, 40), FLYING, INFERNO, 7, 4500, NO_RETALIATION, ANGEL_HATE, DEVIL_RACE);
+    public static final Unit ARCH_DEVIL = upgrade("Arch Devil", new Stats(26, 28, 200, 17), melee(30, 40), FLYING, INFERNO, 7, 4500, NO_RETALIATION, ANGEL_HATE, DEVIL_RACE, TELEPORT_NO_COST);
     public static final Unit ARCH_MAGI = upgrade("Arch Magi", new Stats(12, 9, 30, 7), ranged(7, 9, 24), GROUND, TOWER, 4, 350, NO_OBSTACLE_PENALTY, SPELL_COST_REDUCTION, NO_HAND_TO_HAND_PENALTY);
     public static final Unit BASILISK = basic("Basilisk", new Stats(11, 11, 35, 5), melee(6, 10), GROUND, FORTRESS, 4, 325, PETRYFYING);
     public static final Unit BATTLE_DWARF = upgrade("Battle Dwarf", new Stats(7, 7, 20, 5), melee(2, 4), GROUND, RAMPART, 2, 150);
@@ -90,7 +92,7 @@ public final class UnitCatalog {
     public static final Unit DEMON = basic("Demon", new Stats(10, 10, 35, 5), melee(7, 9), GROUND, INFERNO, 4, 250);
     public static final Unit DENDROID_GUARD = basic("Dendroid Guard", new Stats(9, 12, 55, 3), melee(10, 14), GROUND, RAMPART, 5, 350);
     public static final Unit DENDROID_SOLDIER = upgrade("Dendroid Soldier", new Stats(9, 12, 65, 4), melee(10, 14), GROUND, RAMPART, 5, 425);
-    public static final Unit DEVIL = basic("Devil", new Stats(19, 21, 160, 11), melee(30, 40), FLYING, INFERNO, 7, 2700, NO_RETALIATION, ANGEL_HATE, DEVIL_RACE);
+    public static final Unit DEVIL = basic("Devil", new Stats(19, 21, 160, 11), melee(30, 40), FLYING, INFERNO, 7, 2700, NO_RETALIATION, ANGEL_HATE, DEVIL_RACE, TELEPORT_NO_COST);
     public static final Unit DRAGON_FLY = upgrade("Dragon Fly", new Stats(6, 8, 20, 13), melee(2, 5), FLYING, FORTRESS, 3, 240);
     public static final Unit DREAD_KNIGHT = upgrade("Dread Knight", new Stats(18, 18, 120, 9), melee(15, 30), GROUND, NECROPOLIS, 6, 1500, DEATH_BLOW, CURSING);
     public static final Unit DWARF = basic("Dwarf", new Stats(6, 7, 20, 3), melee(2, 4), GROUND, RAMPART, 2, 120);
@@ -177,7 +179,7 @@ public final class UnitCatalog {
     public static final Unit TROGLODYTE = basic("Troglodyte", new Stats(4, 3, 5, 4), melee(1, 3), GROUND, DUNGEON, 1, 50, IMMUNE_TO_BLIND);
     public static final Unit UNICORN = basic("Unicorn", new Stats(15, 14, 90, 7), melee(18, 22), GROUND, RAMPART, 6, 850);
     public static final Unit VAMPIRE = basic("Vampire", new Stats(10, 9, 30, 6), melee(5, 8), FLYING, NECROPOLIS, 4, 360, NO_RETALIATION);
-    public static final Unit VAMPIRE_LORD = upgrade("Vampire Lord", new Stats(10, 10, 40, 9), melee(5, 8), FLYING, NECROPOLIS, 4, 500, NO_RETALIATION);
+    public static final Unit VAMPIRE_LORD = upgrade("Vampire Lord", new Stats(10, 10, 40, 9), melee(5, 8), FLYING, NECROPOLIS, 4, 500, NO_RETALIATION, LIFE_DRAIN);
     public static final Unit WALKING_DEAD = basic("Walking Dead", new Stats(5, 5, 15, 3), melee(2, 3), GROUND, NECROPOLIS, 2, 100);
     public static final Unit WAR_UNICORN = upgrade("War Unicorn", new Stats(15, 14, 110, 9), melee(18, 22), GROUND, RAMPART, 6, 950);
     public static final Unit WATER_ELEMENTAL = basic("Water Elemental", new Stats(8, 10, 30, 5), melee(3, 7), GROUND, CONFLUX, 3, 300);

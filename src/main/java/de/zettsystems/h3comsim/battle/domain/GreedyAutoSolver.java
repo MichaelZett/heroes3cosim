@@ -143,7 +143,13 @@ public final class GreedyAutoSolver implements AutoSolver {
     private @Nullable Hex findFlyerLanding(Stack active, Stack opponent, Battlefield bf) {
         Hex from = active.position();
         int speed = active.unit().speed();
+        // Devil/Arch Devil (TELEPORT_NO_COST): Speed-Schranke entfällt, jeder freie
+        // passierbare Adjacent-Hex am Ziel ist erreichbar (Manual S. 99).
+        boolean teleports = active.hasSpeciality(UnitSpeciality.TELEPORT_NO_COST);
+        boolean fireBreath = active.hasSpeciality(UnitSpeciality.FIRE_BREATH);
+        boolean threeHeaded = active.hasSpeciality(UnitSpeciality.THREE_HEADED_ATTACK);
         Hex best = null;
+        int bestScore = Integer.MIN_VALUE;
         int bestDist = Integer.MAX_VALUE;
         for (Hex candidate : opponent.position().neighbors()) {
             if (candidate.equals(from)) {
@@ -153,18 +159,71 @@ public final class GreedyAutoSolver implements AutoSolver {
                 continue;
             }
             int d = from.distanceTo(candidate);
-            if (d > speed) {
+            if (!teleports && d > speed) {
                 continue;
             }
             if (isOccupiedByOther(candidate, active)) {
                 continue;
             }
-            if (d < bestDist) {
+            int splashScore = computeSplashScore(active, candidate, opponent, fireBreath, threeHeaded);
+            // Primärkriterium: möglichst viele Splash-Bonus-Hits (FIRE_BREATH/THREE_HEADED).
+            // Sekundär: kürzester Anflug.
+            if (splashScore > bestScore || (splashScore == bestScore && d < bestDist)) {
+                bestScore = splashScore;
                 bestDist = d;
                 best = candidate;
             }
         }
         return best;
+    }
+
+    /**
+     * Bewertet einen potenziellen Lande-Hex anhand sekundärer Treffer:
+     * <ul>
+     *   <li>FIRE_BREATH (Dragons): +1 wenn der Inline-Hex hinter dem Primärziel einen
+     *       Gegner-Stack trägt.</li>
+     *   <li>THREE_HEADED_ATTACK (Cerberus): +1 pro Gegner-Stack der zum Lande-Hex
+     *       adjacent ist (ohne das Primärziel zu doppeln).</li>
+     * </ul>
+     */
+    private int computeSplashScore(Stack active, Hex landingHex, Stack primary,
+                                   boolean fireBreath, boolean threeHeaded) {
+        int score = 0;
+        if (fireBreath) {
+            Hex behind = behindHex(landingHex, primary.position());
+            if (findEnemyAt(behind, active) != null) {
+                score++;
+            }
+        }
+        if (threeHeaded) {
+            for (Hex adj : landingHex.neighbors()) {
+                if (adj.equals(primary.position())) {
+                    continue;
+                }
+                if (findEnemyAt(adj, active) != null) {
+                    score++;
+                }
+            }
+        }
+        return score;
+    }
+
+    private static Hex behindHex(Hex from, Hex through) {
+        return new Hex(through.q() + (through.q() - from.q()),
+                through.r() + (through.r() - from.r()));
+    }
+
+    private @Nullable Stack findEnemyAt(Hex hex, Stack mover) {
+        BattleSetup setup = currentSetup;
+        if (setup == null) {
+            return null;
+        }
+        for (Stack o : setup.opponentsOf(mover)) {
+            if (o.isAlive() && o.position().equals(hex)) {
+                return o;
+            }
+        }
+        return null;
     }
 
     /**
@@ -226,6 +285,15 @@ public final class GreedyAutoSolver implements AutoSolver {
             return decideShooterVsShooter(active, opponent, bf, from, to, mySpeed);
         }
 
+        // Multi-Stack: Kite-Heuristik ist nicht sinnvoll, weil sie nur gegen den
+        // pickTarget-Threat bewertet und andere lebende Gegner ignoriert (Kite-Position
+        // könnte direkt in deren Reichweite landen). Im Multi-Stack-Kontext setzen wir
+        // statt Kiten auf Tank-Wall + Defend (siehe Strategic-Solver). Hier: direkt
+        // schießen — der gegnerische Stack-Cluster macht 1-Target-Kite ohnehin sinnlos.
+        if (hasMultipleLivingEnemies(active)) {
+            return new Action.Shoot(opponent);
+        }
+
         // Keine unmittelbare Engagement-Drohung → schießen.
         if (distance - opponentSpeed > 1) {
             return new Action.Shoot(opponent);
@@ -251,6 +319,23 @@ public final class GreedyAutoSolver implements AutoSolver {
             return new Action.Shoot(opponent);
         }
         return new Action.Move(kite);
+    }
+
+    private boolean hasMultipleLivingEnemies(Stack active) {
+        BattleSetup setup = currentSetup;
+        if (setup == null) {
+            return false;
+        }
+        int count = 0;
+        for (Stack o : setup.opponentsOf(active)) {
+            if (o.isAlive()) {
+                count++;
+                if (count > 1) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**

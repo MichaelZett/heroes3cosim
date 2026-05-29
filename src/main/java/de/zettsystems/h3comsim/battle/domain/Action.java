@@ -18,8 +18,9 @@ public sealed interface Action {
     }
 
     /**
-     * H3-Defend: Stack bewegt sich nicht, bekommt +30 % Defense bis Rundenende. Klassische
-     * Schützen-Tank-Strategie, wenn der Tank vor dem Schützen schon richtig steht.
+     * H3-Defend: Stack bewegt sich nicht, bekommt +20 % Defense bis Rundenende (RoE-Manual
+     * S. 47). Klassische Schützen-Tank-Strategie, wenn der Tank vor dem Schützen schon
+     * richtig steht.
      */
     record Defend() implements Action {
     }
