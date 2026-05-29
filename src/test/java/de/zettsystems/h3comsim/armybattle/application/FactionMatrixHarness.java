@@ -135,12 +135,15 @@ class FactionMatrixHarness {
     private static List<Stack> buildStacks(List<de.zettsystems.h3comsim.armybattle.values.StackSpec> specs,
                                            Side side) {
         int total = specs.size();
+        List<de.zettsystems.h3comsim.battle.domain.Unit> units = new ArrayList<>(total);
+        for (var spec : specs) {
+            units.add(UnitCatalog.byName(spec.unitName()).orElseThrow());
+        }
+        List<Hex> positions = SpawnLayout.assignPositions(side, units);
         List<Stack> stacks = new ArrayList<>(total);
         for (int slot = 0; slot < total; slot++) {
-            var spec = specs.get(slot);
-            var unit = UnitCatalog.byName(spec.unitName()).orElseThrow();
-            Hex pos = SpawnLayout.positionFor(side, slot, total);
-            stacks.add(new Stack(unit, spec.count(), pos, side, slot));
+            stacks.add(new Stack(units.get(slot), specs.get(slot).count(),
+                    positions.get(slot), side, slot));
         }
         return stacks;
     }

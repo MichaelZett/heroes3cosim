@@ -99,8 +99,10 @@ public final class StrategicAutoSolver implements AutoSolver {
 
     @Override
     public Action decide(Stack active, Stack opponent, Battlefield battlefield) {
-        // (A) Tank-Pattern: bei RANGED_DOMINANT positionieren statt chargen.
-        if (plan.stanceOf(active.side()) == TeamStance.RANGED_DOMINANT
+        // (A) Tank-Pattern: positionieren statt chargen, wenn eigene Schützen Schutz brauchen.
+        // Aktiviert sich bei RANGED_DOMINANT (alle Schützen schutzwürdig) und bei BALANCED
+        // mit Rand-Schützen — siehe RoundPlan.hasTankDuty / StrategicAutoSolver#buildPlan.
+        if (plan.hasTankDuty(active.side())
                 && !active.canShoot()
                 && active.position().distanceTo(opponent.position()) > 1) {
             Hex tankSpot = findTankPosition(active, battlefield);
@@ -178,12 +180,25 @@ public final class StrategicAutoSolver implements AutoSolver {
         // Slot-Reihenfolge ist die einzige Quelle stabiler Reihenfolge (Stack.hashCode() ist
         // Identity-basiert und damit run-spezifisch).
         Set<Stack> protect = new LinkedHashSet<>();
+        int lastRow = setup.battlefield().height() - 1;
         for (Side side : Side.values()) {
-            if (stance.get(side) != TeamStance.RANGED_DOMINANT) {
+            TeamStance st = stance.get(side);
+            if (st == TeamStance.MELEE_DOMINANT) {
+                // Charge-Modus überwiegt — keine Tank-Aufträge, sonst zieht ein Melee Truppen
+                // ab, die im Sturm gebraucht werden.
                 continue;
             }
             for (Stack s : setup.stacksOf(side)) {
-                if (s.isAlive() && s.canShoot()) {
+                if (!s.isAlive() || !s.canShoot()) {
+                    continue;
+                }
+                boolean isRangedDominant = st == TeamStance.RANGED_DOMINANT;
+                int r = s.position().r();
+                boolean atEdge = r == 0 || r == lastRow;
+                // RANGED_DOMINANT: alle Schützen werden geschützt (klassisches Tank-Pattern).
+                // Sonst (BALANCED): nur strukturell verwundbare Schützen am Rand — sie haben
+                // weniger Adjazenz-Hexen, sodass 1–2 Tanks die Front komplett dichtmachen.
+                if (isRangedDominant || atEdge) {
                     protect.add(s);
                 }
             }

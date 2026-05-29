@@ -37,4 +37,19 @@ public record RoundPlan(
     public boolean isProtected(Stack stack) {
         return protectedShooters.contains(stack);
     }
+
+    /**
+     * Hat die Seite mindestens einen lebenden, schutzwürdigen Schützen? Wenn ja, sollen
+     * eigene Nahkämpfer Tank-Positionen statt Charge wählen — unabhängig von der
+     * {@link TeamStance}. Wird vom {@link StrategicAutoSolver#decide} als Trigger
+     * für das Tank-Pattern genutzt.
+     */
+    public boolean hasTankDuty(Side side) {
+        for (Stack s : protectedShooters) {
+            if (s.side() == side && s.isAlive()) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
