@@ -12,6 +12,7 @@ import java.util.List;
         @JsonSubTypes.Type(value = BattleEvent.BattleStart.class, name = "BattleStart"),
         @JsonSubTypes.Type(value = BattleEvent.Move.class, name = "Move"),
         @JsonSubTypes.Type(value = BattleEvent.Wait.class, name = "Wait"),
+        @JsonSubTypes.Type(value = BattleEvent.Defend.class, name = "Defend"),
         @JsonSubTypes.Type(value = BattleEvent.Shoot.class, name = "Shoot"),
         @JsonSubTypes.Type(value = BattleEvent.Melee.class, name = "Melee"),
         @JsonSubTypes.Type(value = BattleEvent.Retaliation.class, name = "Retaliation"),
@@ -41,6 +42,7 @@ import java.util.List;
                 """,
         oneOf = {
                 BattleEvent.BattleStart.class, BattleEvent.Move.class, BattleEvent.Wait.class,
+                BattleEvent.Defend.class,
                 BattleEvent.Shoot.class, BattleEvent.Melee.class, BattleEvent.Retaliation.class,
                 BattleEvent.TwoBlows.class, BattleEvent.TwoShots.class, BattleEvent.GoodMorale.class,
                 BattleEvent.MoveBack.class, BattleEvent.DeathStare.class, BattleEvent.Thunderbolts.class,
@@ -53,6 +55,7 @@ import java.util.List;
                 @DiscriminatorMapping(value = "BattleStart", schema = BattleEvent.BattleStart.class),
                 @DiscriminatorMapping(value = "Move", schema = BattleEvent.Move.class),
                 @DiscriminatorMapping(value = "Wait", schema = BattleEvent.Wait.class),
+                @DiscriminatorMapping(value = "Defend", schema = BattleEvent.Defend.class),
                 @DiscriminatorMapping(value = "Shoot", schema = BattleEvent.Shoot.class),
                 @DiscriminatorMapping(value = "Melee", schema = BattleEvent.Melee.class),
                 @DiscriminatorMapping(value = "Retaliation", schema = BattleEvent.Retaliation.class),
@@ -109,6 +112,13 @@ public sealed interface BattleEvent {
     record Wait(
             @Schema(description = "Wartende Seite") Side actor,
             @Schema(description = "Slot des wartenden Stacks") int actorSlot) implements BattleEvent {
+    }
+
+    @Schema(name = "Defend",
+            description = "Stack hat Defend gewählt: bewegt sich nicht, erhält bis Rundenende +30 % Defense. Wird auch als Engine-Fallback emittiert, wenn ein Solver versucht auf einen besetzten Hex zu ziehen.")
+    record Defend(
+            @Schema(description = "Verteidigende Seite") Side actor,
+            @Schema(description = "Slot des verteidigenden Stacks") int actorSlot) implements BattleEvent {
     }
 
     @Schema(name = "Shoot",

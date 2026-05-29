@@ -16,4 +16,11 @@ public sealed interface Action {
 
     record Wait() implements Action {
     }
+
+    /**
+     * H3-Defend: Stack bewegt sich nicht, bekommt +30 % Defense bis Rundenende. Klassische
+     * Schützen-Tank-Strategie, wenn der Tank vor dem Schützen schon richtig steht.
+     */
+    record Defend() implements Action {
+    }
 }

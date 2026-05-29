@@ -15,6 +15,7 @@ import de.zettsystems.h3comsim.battle.domain.Unit;
 import de.zettsystems.h3comsim.battle.domain.UnitCatalog;
 import de.zettsystems.h3comsim.battle.domain.events.Side;
 import de.zettsystems.h3comsim.battle.domain.events.Winner;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -54,6 +55,9 @@ class SpawnLayoutComparisonHarness {
     private enum LayoutMode { SLOT_DIRECT, TACTICAL }
 
     @Test
+    @Disabled("Ad-hoc-Vergleich: Snapshot liegt in build/reports/spawn-layout-comparison.md. "
+            + "Manuell aktivieren, wenn assignPositions/Tank-Pattern verändert wurden und ein "
+            + "neuer Baseline-Vergleich erstellt werden soll.")
     void compare_layouts_and_write_report() throws IOException {
         FactionPresetCatalog presets = new FactionPresetCatalog();
         Map<Faction, FactionPresetDto> presetByFaction = new EnumMap<>(Faction.class);

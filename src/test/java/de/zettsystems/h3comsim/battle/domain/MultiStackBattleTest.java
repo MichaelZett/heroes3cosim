@@ -1,5 +1,7 @@
 package de.zettsystems.h3comsim.battle.domain;
 
+import de.zettsystems.h3comsim.battle.domain.events.BattleEvent;
+import de.zettsystems.h3comsim.battle.domain.events.ListEventCollector;
 import de.zettsystems.h3comsim.battle.domain.events.Side;
 import de.zettsystems.h3comsim.battle.domain.events.Winner;
 import org.junit.jupiter.api.Test;
@@ -30,6 +32,51 @@ class MultiStackBattleTest {
         assertThat(attackerEmpty || defenderEmpty)
                 .as("Eine Seite muss komplett gefallen sein").isTrue();
         assertThat(result.winner()).isIn(Winner.ATTACKER, Winner.DEFENDER, Winner.DRAW);
+    }
+
+    @Test
+    void move_action_to_occupied_hex_falls_back_to_defend() {
+        // Diagnose- + Fix-Test: ein Solver der explizit auf einen besetzten Hex zielt darf
+        // nicht zwei lebende Stacks auf dem gleichen Hex landen lassen. Erwartung: Engine
+        // weist den Move ab und stellt den Stack defensiv (Defend → +30 % Defense),
+        // statt seine Aktion ersatzlos zu verlieren.
+        Stack dragon = new Stack(UnitCatalog.BLACK_DRAGON, 1, new Hex(0, 5), Side.ATTACKER, 0);
+        Stack tank = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(5, 5), Side.DEFENDER, 0);
+        Stack marksman = new Stack(UnitCatalog.MARKSMAN, 9, new Hex(14, 5), Side.DEFENDER, 1);
+        BattleSetup setup = new BattleSetup(List.of(dragon), List.of(tank, marksman),
+                Battlefield.STANDARD);
+
+        Hex occupied = tank.position();
+        ListEventCollector collector = new ListEventCollector();
+        AutoSolver pinSolver = (active, opp, bf) -> {
+            if (active == dragon) {
+                return new Action.Move(occupied);
+            }
+            return new Action.Wait();
+        };
+        Hex dragonStart = dragon.position();
+
+        new Battle(new Random(1L), pinSolver, collector).simulate(setup);
+
+        assertThat(dragon.position()).isNotEqualTo(tank.position());
+        assertThat(dragon.position()).isEqualTo(dragonStart);
+        // Defend-Event wurde emittiert (Engine-Fallback) — kein stilles Wait.
+        assertThat(collector.events()).anyMatch(e -> e instanceof BattleEvent.Defend);
+    }
+
+    @Test
+    void defend_action_grants_thirty_percent_defense_until_end_of_turn() {
+        // Stack defendet → +30 % Defense aktiv für diese Runde. Nach endTurn zurück auf Base.
+        Stack hal = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(0, 5), Side.ATTACKER, 0);
+        int baseDefense = hal.getDefense();
+
+        hal.defend();
+        assertThat(hal.isDefending()).isTrue();
+        assertThat(hal.getDefense()).isEqualTo((int) Math.round(baseDefense * 1.3));
+
+        hal.endTurn();
+        assertThat(hal.isDefending()).isFalse();
+        assertThat(hal.getDefense()).isEqualTo(baseDefense);
     }
 
     @Test

@@ -100,6 +100,23 @@ class StrategicAutoSolverTest {
     }
 
     @Test
+    void tank_defends_when_already_adjacent_to_protected_shooter() {
+        // Marksman auf (0, 0), Halberdier (Tank) steht bereits adjacent auf (1, 0).
+        // Stance RANGED_DOMINANT → hasTankDuty=true. Erwartung: Defend (+30 % Defense)
+        // statt redundantem Move zu einer anderen Adjacent-Position des Schützen.
+        Stack mark = new Stack(UnitCatalog.MARKSMAN, 9, new Hex(0, 0), Side.ATTACKER, 0);
+        Stack hal = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(1, 0), Side.ATTACKER, 1);
+        Stack threat = new Stack(UnitCatalog.PIKEMAN, 14, new Hex(10, 5), Side.DEFENDER, 0);
+        BattleSetup setup = new BattleSetup(List.of(mark, hal), List.of(threat), battlefield);
+        solver.planRound(setup);
+        assertThat(solver.currentPlan().stanceOf(Side.ATTACKER)).isEqualTo(TeamStance.RANGED_DOMINANT);
+
+        Action action = solver.decide(hal, threat, battlefield);
+
+        assertThat(action).isInstanceOf(Action.Defend.class);
+    }
+
+    @Test
     void ranged_dominant_melee_tank_moves_towards_shooter_lane() {
         // Attacker: Marksman (Schütze) hinten + Halberdier (Tank, kann sich bewegen).
         // Defender: schneller Pikeman, der den Marksman bedroht.
@@ -349,6 +366,71 @@ class StrategicAutoSolverTest {
         // Charge: Tank bewegt sich Richtung Gegner, nicht zum schwachen Eck-Archer.
         assertThat(dest.distanceTo(threat.position()))
                 .isLessThan(hal.position().distanceTo(threat.position()));
+    }
+
+    @Test
+    void flyer_pickTarget_prioritizes_unguarded_enemy_shooter() {
+        // Black Dragon (Flieger, speed 15) gegen Defender mit Marksman (T2 ranged) + Swordsman
+        // (T4 melee). Standard-Focus-Score gibt Swordsman höhere Priorität (mehr Rohschaden).
+        // Mit Flieger-Heuristik: Dragon priorisiert Marksman, weil dieser ungeschützt ist
+        // (Adjacents frei + in Reichweite). Sonst chargt der Dragon den Tank und der Schütze
+        // schießt ungestört weiter.
+        Stack dragon = new Stack(UnitCatalog.BLACK_DRAGON, 1, new Hex(0, 5), Side.ATTACKER, 0);
+        Stack marksman = new Stack(UnitCatalog.MARKSMAN, 5, new Hex(14, 0), Side.DEFENDER, 0);
+        Stack swordsman = new Stack(UnitCatalog.SWORDSMAN, 10, new Hex(14, 5), Side.DEFENDER, 1);
+        BattleSetup setup = new BattleSetup(List.of(dragon), List.of(marksman, swordsman),
+                battlefield);
+        solver.planRound(setup);
+
+        Stack target = solver.pickTarget(dragon, setup.opponentsOf(dragon), battlefield);
+
+        assertThat(target).isSameAs(marksman);
+    }
+
+    @Test
+    void flyer_pickTarget_falls_back_when_shooter_is_fully_guarded() {
+        // Marksman im Eck, Tank-Wall vor ihm (alle in-board Adjacents besetzt von Defendern).
+        // Flieger-Heuristik findet keinen freien Lande-Hex → fallback zum default Focus
+        // (hier: Swordsman wegen höherem Rohschaden).
+        Stack dragon = new Stack(UnitCatalog.BLACK_DRAGON, 1, new Hex(0, 5), Side.ATTACKER, 0);
+        Stack marksman = new Stack(UnitCatalog.MARKSMAN, 5, new Hex(14, 0), Side.DEFENDER, 0);
+        Stack tank1 = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(13, 0), Side.DEFENDER, 1);
+        Stack tank2 = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(13, 1), Side.DEFENDER, 2);
+        Stack tank3 = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(14, 1), Side.DEFENDER, 3);
+        Stack swordsman = new Stack(UnitCatalog.SWORDSMAN, 10, new Hex(8, 5), Side.DEFENDER, 4);
+        BattleSetup setup = new BattleSetup(List.of(dragon),
+                List.of(marksman, tank1, tank2, tank3, swordsman), battlefield);
+        solver.planRound(setup);
+
+        Stack target = solver.pickTarget(dragon, setup.opponentsOf(dragon), battlefield);
+
+        // Marksman komplett umstellt → Heuristik überspringt ihn → Default-Focus
+        // (Swordsman, weil höchster threat-Score auf der Defender-Seite ohne Marksman).
+        assertThat(target).isNotSameAs(marksman);
+    }
+
+    @Test
+    void flyer_picks_free_adjacent_when_straight_line_to_shooter_is_blocked() {
+        // Black Dragon (ATTACKER, FLYING, speed 15) gegen einen Eck-Schützen (Marksman auf
+        // (14,0)). Defender baut Tank-Wall vor dem Schützen — Halberdier auf (13,0),
+        // Swordsman auf (13,1). Nur (14,1) bleibt als freier Adjacent.
+        //
+        // Heute ohne Flieger-Heuristik: Greedy.moveToward straight-line landet auf (13,0),
+        // Engine erkennt Belegung → Wait. Mit Heuristik: findFlyerLanding wählt (14,1).
+        Stack dragon = new Stack(UnitCatalog.BLACK_DRAGON, 1, new Hex(0, 5), Side.ATTACKER, 0);
+        Stack tank1 = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(13, 0), Side.DEFENDER, 0);
+        Stack tank2 = new Stack(UnitCatalog.SWORDSMAN, 10, new Hex(13, 1), Side.DEFENDER, 1);
+        Stack marksman = new Stack(UnitCatalog.MARKSMAN, 9, new Hex(14, 0), Side.DEFENDER, 2);
+        BattleSetup setup = new BattleSetup(List.of(dragon),
+                List.of(tank1, tank2, marksman), battlefield);
+        solver.planRound(setup);
+
+        Action act = solver.decide(dragon, marksman, battlefield);
+
+        assertThat(act).isInstanceOf(Action.MoveAndMelee.class);
+        Action.MoveAndMelee mm = (Action.MoveAndMelee) act;
+        assertThat(mm.destination()).isEqualTo(new Hex(14, 1));
+        assertThat(mm.target()).isSameAs(marksman);
     }
 
     @Test
