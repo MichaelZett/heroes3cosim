@@ -258,6 +258,8 @@ public final class GreedyAutoSolver implements AutoSolver {
         return !path.isEmpty() && path.size() <= speed;
     }
 
+    // s != mover: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
+    @SuppressWarnings("ReferenceEquality")
     private boolean isOccupiedByOther(Hex hex, Stack mover) {
         BattleSetup setup = currentSetup;
         if (setup == null) {

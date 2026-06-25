@@ -47,7 +47,8 @@ public class ArmyBattleController {
             content = @Content)
     @PostMapping("/simulate")
     public ArmyBattleSimulation simulate(@Valid @RequestBody ArmyBattleRequest request) {
-        long seed = request.seed() != null ? request.seed() : ThreadLocalRandom.current().nextLong();
+        Long requestedSeed = request.seed();
+        long seed = requestedSeed != null ? requestedSeed : ThreadLocalRandom.current().nextLong();
         return service.simulate(request, seed);
     }
 

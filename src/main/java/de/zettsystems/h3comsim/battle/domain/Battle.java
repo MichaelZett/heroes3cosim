@@ -200,6 +200,9 @@ public final class Battle {
         events.emit(new BattleEvent.Defend(active.side(), active.slot()));
     }
 
+    // Stack ist eine mutable Entity ohne equals/hashCode — der !=-Vergleich meint bewusst
+    // Objektidentität (ist es derselbe Stack wie der Mover?), kein Wert-Vergleich.
+    @SuppressWarnings("ReferenceEquality")
     private static boolean isHexBlocked(Hex hex, Stack mover, BattleSetup setup) {
         for (Stack s : setup.attackerStacks()) {
             if (s != mover && s.isAlive() && s.position().equals(hex)) {
@@ -268,6 +271,8 @@ public final class Battle {
      * <p><strong>Friendly Fire</strong>: H3-Splash trifft auch eigene Stacks im Radius —
      * Engine iteriert über {@link #findStackAt}, nicht nur über Gegner.
      */
+    // collateral/candidate != primary: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
+    @SuppressWarnings("ReferenceEquality")
     private void applyMeleeSplash(Stack active, Stack primary, BattleSetup setup) {
         if (active.hasSpeciality(UnitSpeciality.THREE_HEADED_ATTACK)) {
             int splashes = 0;
@@ -298,6 +303,8 @@ public final class Battle {
      * Liefert irgendeinen lebenden Stack auf {@code hex} (egal welche Seite, außer
      * {@code active} selbst). Für H3-Friendly-Fire-Splash-Mechaniken.
      */
+    // s != active: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
+    @SuppressWarnings("ReferenceEquality")
     private @Nullable Stack findStackAt(Stack active, Hex hex, BattleSetup setup) {
         for (Stack s : setup.attackerStacks()) {
             if (s != active && s.isAlive() && s.position().equals(hex)) {
@@ -403,6 +410,8 @@ public final class Battle {
      * (außer Undead bei DEATH_CLOUD). Engine iteriert über {@link #findStackAt}, nicht
      * nur über Gegner.
      */
+    // collateral != primary: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
+    @SuppressWarnings("ReferenceEquality")
     private void applyRangedSplash(Stack active, Stack primary, BattleSetup setup) {
         if (active.hasSpeciality(UnitSpeciality.SPLASH_SHOT)) {
             int splashes = 0;
