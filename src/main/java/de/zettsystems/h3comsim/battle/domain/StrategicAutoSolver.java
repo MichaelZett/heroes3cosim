@@ -263,6 +263,8 @@ public final class StrategicAutoSolver implements AutoSolver {
     // Target-Pick-Helpers
     // ------------------------------------------------------------------ //
 
+    // other == target: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
+    @SuppressWarnings("ReferenceEquality")
     private static @Nullable Stack pickByAoeHitCount(List<Stack> aliveEnemies) {
         Stack best = null;
         int bestScore = 0;
@@ -287,6 +289,8 @@ public final class StrategicAutoSolver implements AutoSolver {
         return bestScore > 0 ? best : null;
     }
 
+    // other == target: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
+    @SuppressWarnings("ReferenceEquality")
     private static @Nullable Stack pickInlineBreathTarget(Stack active, List<Stack> aliveEnemies) {
         Hex from = active.position();
         Stack best = null;
@@ -461,6 +465,8 @@ public final class StrategicAutoSolver implements AutoSolver {
         return false;
     }
 
+    // s != mover: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
+    @SuppressWarnings("ReferenceEquality")
     private static boolean isHexOccupiedByOther(Hex hex, Stack mover, BattleSetup setup) {
         for (Stack s : setup.attackerStacks()) {
             if (s != mover && s.isAlive() && s.position().equals(hex)) {
@@ -475,6 +481,8 @@ public final class StrategicAutoSolver implements AutoSolver {
         return false;
     }
 
+    // other != active: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
+    @SuppressWarnings("ReferenceEquality")
     private static boolean isReachableLandingSpot(Stack active, Hex hex, Battlefield bf,
                                                   BattleSetup setup) {
         if (hex.equals(active.position())) {

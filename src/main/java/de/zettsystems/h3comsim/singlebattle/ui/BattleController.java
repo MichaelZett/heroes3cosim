@@ -50,7 +50,8 @@ public class BattleController {
     public BattleSimulationDto simulate(@Valid @RequestBody BattleConfigRequest request) {
         Unit attacker = lookupUnit(request.attackerUnit());
         Unit defender = lookupUnit(request.defenderUnit());
-        long seed = request.seed() != null ? request.seed() : ThreadLocalRandom.current().nextLong();
+        Long requestedSeed = request.seed();
+        long seed = requestedSeed != null ? requestedSeed : ThreadLocalRandom.current().nextLong();
 
         BattleSimulation simulation = simulations.simulate(
                 attacker, request.attackerCount(),
