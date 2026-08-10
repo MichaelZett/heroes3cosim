@@ -29,9 +29,10 @@ class BattleSetupMultiStackTest {
 
         BattleSetup setup = new BattleSetup(List.of(a0, a1), List.of(d0), Battlefield.STANDARD);
 
-        assertThat(setup.attackerStacks()).containsExactly(a0, a1);
+        List<Stack> attackerStacks = setup.attackerStacks();
+        assertThat(attackerStacks).containsExactly(a0, a1);
         assertThat(setup.defenderStacks()).containsExactly(d0);
-        assertThatThrownBy(() -> setup.attackerStacks().add(d0))
+        assertThatThrownBy(() -> attackerStacks.add(d0))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 
@@ -86,7 +87,9 @@ class BattleSetupMultiStackTest {
     @Test
     void rejects_empty_stack_list() {
         Stack d0 = new Stack(UnitCatalog.PIKEMAN, 10, new Hex(14, 5), Side.DEFENDER, 0);
-        assertThatThrownBy(() -> new BattleSetup(List.of(), List.of(d0), Battlefield.STANDARD))
+        List<Stack> noAttackers = List.of();
+        List<Stack> defenders = List.of(d0);
+        assertThatThrownBy(() -> new BattleSetup(noAttackers, defenders, Battlefield.STANDARD))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 }

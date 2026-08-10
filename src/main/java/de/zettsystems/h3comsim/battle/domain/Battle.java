@@ -97,30 +97,39 @@ public final class Battle {
     }
 
     private void doTurn(BattleSetup setup) {
-        Battlefield battlefield = setup.battlefield();
         autoSolver.planRound(setup);
         Deque<Stack> queue = determineMoveOrder(setup);
         for (Stack activeStack : queue) {
             if (activeStack.isAbleToAct() && setup.bothAlive()) {
-                Stack opponent = autoSolver.pickTarget(activeStack, setup.opponentsOf(activeStack), battlefield);
-                if (opponent == null) {
-                    BattleLogger.logShortDelimiter();
-                    continue;
-                }
-                takeAction(activeStack, opponent, setup);
-                if (activeStack.isAbleToAct() && opponent.isAlive() && activeStack.hasGoodMorale(rng)) {
-                    BattleLogger.logGoodMorale(activeStack.getName());
-                    events.emit(new BattleEvent.GoodMorale(activeStack.side(), activeStack.slot()));
-                    Stack moralOpponent = opponent.isAlive() ? opponent
-                            : autoSolver.pickTarget(activeStack, setup.opponentsOf(activeStack), battlefield);
-                    if (moralOpponent != null) {
-                        takeAction(activeStack, moralOpponent, setup);
-                    }
-                }
+                actWithMorale(activeStack, setup);
             }
             BattleLogger.logShortDelimiter();
         }
         queue.forEach(Stack::endTurn);
+    }
+
+    /**
+     * Reguläre Aktion eines Stacks plus die optionale zweite Aktion durch
+     * {@link UnitSpeciality#GOOD_MORALE}. Der Moral-Wurf passiert bewusst erst nach den
+     * beiden Vorbedingungen — das hält den RNG-Strom bei gleichem Seed identisch.
+     */
+    private void actWithMorale(Stack activeStack, BattleSetup setup) {
+        Battlefield battlefield = setup.battlefield();
+        Stack opponent = autoSolver.pickTarget(activeStack, setup.opponentsOf(activeStack), battlefield);
+        if (opponent == null) {
+            return;
+        }
+        takeAction(activeStack, opponent, setup);
+        if (!activeStack.isAbleToAct() || !opponent.isAlive() || !activeStack.hasGoodMorale(rng)) {
+            return;
+        }
+        BattleLogger.logGoodMorale(activeStack.getName());
+        events.emit(new BattleEvent.GoodMorale(activeStack.side(), activeStack.slot()));
+        Stack moralOpponent = opponent.isAlive() ? opponent
+                : autoSolver.pickTarget(activeStack, setup.opponentsOf(activeStack), battlefield);
+        if (moralOpponent != null) {
+            takeAction(activeStack, moralOpponent, setup);
+        }
     }
 
     private void takeAction(Stack active, Stack opponent, BattleSetup setup) {
@@ -410,29 +419,52 @@ public final class Battle {
      * (außer Undead bei DEATH_CLOUD). Engine iteriert über {@link #findStackAt}, nicht
      * nur über Gegner.
      */
-    // collateral != primary: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
-    @SuppressWarnings("ReferenceEquality")
     private void applyRangedSplash(Stack active, Stack primary, BattleSetup setup) {
         if (active.hasSpeciality(UnitSpeciality.SPLASH_SHOT)) {
-            int splashes = 0;
-            for (Hex neighbor : primary.position().neighbors()) {
-                if (splashes >= 2) break;
-                Stack collateral = findStackAt(active, neighbor, setup);
-                if (collateral != null && collateral != primary && collateral.isAlive()) {
-                    applySplashHit(active, collateral, AttackType.LONG_RANGE);
-                    splashes++;
-                }
-            }
+            applySplashShot(active, primary, setup);
         }
         if (active.hasSpeciality(UnitSpeciality.DEATH_CLOUD)) {
-            for (Hex neighbor : primary.position().neighbors()) {
-                Stack collateral = findStackAt(active, neighbor, setup);
-                if (collateral != null && collateral != primary && collateral.isAlive()
-                        && !collateral.unit().isUndead()) {
-                    applySplashHit(active, collateral, AttackType.LONG_RANGE);
-                }
+            applyDeathCloud(active, primary, setup);
+        }
+    }
+
+    /**
+     * SPLASH_SHOT: maximal zwei Kollateral-Stacks rund um das Hauptziel, Undead inklusive.
+     */
+    private void applySplashShot(Stack active, Stack primary, BattleSetup setup) {
+        int splashes = 0;
+        for (Hex neighbor : primary.position().neighbors()) {
+            if (splashes >= 2) {
+                break;
+            }
+            Stack collateral = collateralAt(active, neighbor, primary, setup);
+            if (collateral != null) {
+                applySplashHit(active, collateral, AttackType.LONG_RANGE);
+                splashes++;
             }
         }
+    }
+
+    /**
+     * DEATH_CLOUD: alle non-undead Stacks im 1-Hex-Radius, ohne Stück-Limit.
+     */
+    private void applyDeathCloud(Stack active, Stack primary, BattleSetup setup) {
+        for (Hex neighbor : primary.position().neighbors()) {
+            Stack collateral = collateralAt(active, neighbor, primary, setup);
+            if (collateral != null && !collateral.unit().isUndead()) {
+                applySplashHit(active, collateral, AttackType.LONG_RANGE);
+            }
+        }
+    }
+
+    /**
+     * Lebender Stack auf {@code hex}, sofern es nicht das Hauptziel selbst ist.
+     */
+    // collateral != primary: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
+    @SuppressWarnings("ReferenceEquality")
+    private @Nullable Stack collateralAt(Stack active, Hex hex, Stack primary, BattleSetup setup) {
+        Stack collateral = findStackAt(active, hex, setup);
+        return collateral != null && collateral != primary && collateral.isAlive() ? collateral : null;
     }
 
     private int dealDamage(Stack active, Stack passive, AttackType attackType,

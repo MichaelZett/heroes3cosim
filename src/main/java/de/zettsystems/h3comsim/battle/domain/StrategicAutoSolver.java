@@ -73,6 +73,27 @@ public final class StrategicAutoSolver implements AutoSolver {
             return adjacent;
         }
 
+        Stack bySpeciality = pickBySpeciality(active, alive, battlefield);
+        if (bySpeciality != null) {
+            return bySpeciality;
+        }
+
+        // (C) Focus-Fire: Team-Plan vorgeben lassen.
+        Stack focus = plan.focusOf(active.side());
+        if (focus != null && focus.isAlive() && alive.contains(focus)) {
+            return focus;
+        }
+
+        // Fallback: Greedy.
+        return greedy.pickTarget(active, opponents, battlefield);
+    }
+
+    /**
+     * Speciality-getriebene Ziel-Wahl, die dem Focus-Fire vorgeht. Liefert {@code null},
+     * wenn keine Speciality greift oder die jeweilige Heuristik kein Ziel findet — dann
+     * entscheidet der Team-Plan.
+     */
+    private @Nullable Stack pickBySpeciality(Stack active, List<Stack> alive, Battlefield battlefield) {
         // (E) Flieger priorisieren einen ungeschützten gegnerischen Schützen, sofern dieser
         // in Speed-Reichweite ist. Ein Schütze gilt als "ungeschützt", wenn mindestens ein
         // freier passierbarer Adjacent-Hex existiert, der vom aktiven Stack erreicht werden
@@ -89,28 +110,14 @@ public final class StrategicAutoSolver implements AutoSolver {
         if (active.canShoot()
                 && (active.hasSpeciality(UnitSpeciality.SPLASH_SHOT)
                 || active.hasSpeciality(UnitSpeciality.DEATH_CLOUD))) {
-            Stack aoeBest = pickByAoeHitCount(alive);
-            if (aoeBest != null) {
-                return aoeBest;
-            }
+            return pickByAoeHitCount(alive);
         }
 
         // (B) Fire-Breath-Nahkämpfer: Inline-Paare bevorzugen.
         if (!active.canShoot() && active.hasSpeciality(UnitSpeciality.FIRE_BREATH)) {
-            Stack inlineBest = pickInlineBreathTarget(active, alive);
-            if (inlineBest != null) {
-                return inlineBest;
-            }
+            return pickInlineBreathTarget(active, alive);
         }
-
-        // (C) Focus-Fire: Team-Plan vorgeben lassen.
-        Stack focus = plan.focusOf(active.side());
-        if (focus != null && focus.isAlive() && alive.contains(focus)) {
-            return focus;
-        }
-
-        // Fallback: Greedy.
-        return greedy.pickTarget(active, opponents, battlefield);
+        return null;
     }
 
     @Override
@@ -145,64 +152,69 @@ public final class StrategicAutoSolver implements AutoSolver {
     // ------------------------------------------------------------------ //
 
     private static RoundPlan buildPlan(BattleSetup setup) {
-        Map<Side, Double> rangedPower = new EnumMap<>(Side.class);
-        Map<Side, Double> meleePower = new EnumMap<>(Side.class);
+        Map<Side, TeamStance> stance = stances(setup);
+        return new RoundPlan(stance, focusTargets(setup), protectedShooters(setup, stance));
+    }
 
-        for (Side side : Side.values()) {
-            double rp = 0;
-            double mp = 0;
-            for (Stack s : setup.stacksOf(side)) {
-                if (!s.isAlive()) {
-                    continue;
-                }
-                double avgDmg = (s.unit().minDamage() + s.unit().maxDamage()) / 2.0;
-                double basePower = avgDmg * s.getCount();
-                if (s.canShoot()) {
-                    int shots = Math.min(s.shotsRemaining(), SHOT_HORIZON);
-                    rp += basePower * shots;
-                } else {
-                    mp += basePower;
-                }
+    /**
+     * Aggregierte Feuerkraft einer Seite, getrennt nach Fernkampf und Nahkampf.
+     */
+    private record SidePower(double ranged, double melee) {
+    }
+
+    private static SidePower powerOf(BattleSetup setup, Side side) {
+        double ranged = 0;
+        double melee = 0;
+        for (Stack s : setup.stacksOf(side)) {
+            if (!s.isAlive()) {
+                continue;
             }
-            rangedPower.put(side, rp);
-            meleePower.put(side, mp);
-        }
-
-        Map<Side, TeamStance> stance = new EnumMap<>(Side.class);
-        for (Side side : Side.values()) {
-            Side opp = opposite(side);
-            double myR = rangedPower.getOrDefault(side, 0.0);
-            double oppR = rangedPower.getOrDefault(opp, 0.0);
-            double myM = meleePower.getOrDefault(side, 0.0);
-            double oppM = meleePower.getOrDefault(opp, 0.0);
-            if (myR > 0 && myR > oppR * DOMINANCE_THRESHOLD) {
-                stance.put(side, TeamStance.RANGED_DOMINANT);
-            } else if (myM > oppM * DOMINANCE_THRESHOLD) {
-                stance.put(side, TeamStance.MELEE_DOMINANT);
+            double avgDmg = (s.unit().minDamage() + s.unit().maxDamage()) / 2.0;
+            double basePower = avgDmg * s.getCount();
+            if (s.canShoot()) {
+                ranged += basePower * Math.min(s.shotsRemaining(), SHOT_HORIZON);
             } else {
-                stance.put(side, TeamStance.BALANCED);
+                melee += basePower;
             }
         }
+        return new SidePower(ranged, melee);
+    }
 
+    private static Map<Side, TeamStance> stances(BattleSetup setup) {
+        // Side hat genau zwei Werte — direkt paaren statt über eine Zwischen-Map, deren
+        // get() für NullAway nullable wäre.
+        SidePower attacker = powerOf(setup, Side.ATTACKER);
+        SidePower defender = powerOf(setup, Side.DEFENDER);
+        Map<Side, TeamStance> stance = new EnumMap<>(Side.class);
+        stance.put(Side.ATTACKER, stanceFor(attacker, defender));
+        stance.put(Side.DEFENDER, stanceFor(defender, attacker));
+        return stance;
+    }
+
+    private static TeamStance stanceFor(SidePower mine, SidePower theirs) {
+        if (mine.ranged() > 0 && mine.ranged() > theirs.ranged() * DOMINANCE_THRESHOLD) {
+            return TeamStance.RANGED_DOMINANT;
+        }
+        if (mine.melee() > theirs.melee() * DOMINANCE_THRESHOLD) {
+            return TeamStance.MELEE_DOMINANT;
+        }
+        return TeamStance.BALANCED;
+    }
+
+    private static Map<Side, Stack> focusTargets(BattleSetup setup) {
         Map<Side, Stack> focus = new EnumMap<>(Side.class);
         for (Side side : Side.values()) {
-            Stack best = null;
-            double bestScore = -1;
-            for (Stack enemy : setup.stacksOf(opposite(side))) {
-                if (!enemy.isAlive()) {
-                    continue;
-                }
-                double score = focusScore(enemy);
-                if (score > bestScore) {
-                    bestScore = score;
-                    best = enemy;
-                }
-            }
-            if (best != null) {
-                focus.put(side, best);
-            }
+            // max() behält bei Gleichstand das erste Element → Slot-Reihenfolge entscheidet,
+            // wie in der vorherigen "score > bestScore"-Schleife.
+            setup.stacksOf(opposite(side)).stream()
+                    .filter(Stack::isAlive)
+                    .max(Comparator.comparingDouble(StrategicAutoSolver::focusScore))
+                    .ifPresent(best -> focus.put(side, best));
         }
+        return focus;
+    }
 
+    private static Set<Stack> protectedShooters(BattleSetup setup, Map<Side, TeamStance> stance) {
         // LinkedHashSet → deterministische Iteration im Tank-Pattern: Setup-Reihenfolge =
         // Slot-Reihenfolge ist die einzige Quelle stabiler Reihenfolge (Stack.hashCode() ist
         // Identity-basiert und damit run-spezifisch).
@@ -216,22 +228,25 @@ public final class StrategicAutoSolver implements AutoSolver {
                 continue;
             }
             for (Stack s : setup.stacksOf(side)) {
-                if (!s.isAlive() || !s.canShoot()) {
-                    continue;
-                }
-                boolean isRangedDominant = st == TeamStance.RANGED_DOMINANT;
-                int r = s.position().r();
-                boolean atEdge = r == 0 || r == lastRow;
-                // RANGED_DOMINANT: alle Schützen werden geschützt (klassisches Tank-Pattern).
-                // Sonst (BALANCED): nur strukturell verwundbare Schützen am Rand — sie haben
-                // weniger Adjazenz-Hexen, sodass 1–2 Tanks die Front komplett dichtmachen.
-                if (isRangedDominant || atEdge) {
+                if (s.isAlive() && s.canShoot() && needsTankCover(s, st, lastRow)) {
                     protect.add(s);
                 }
             }
         }
+        return protect;
+    }
 
-        return new RoundPlan(stance, focus, protect);
+    /**
+     * RANGED_DOMINANT: alle Schützen werden geschützt (klassisches Tank-Pattern). Sonst
+     * (BALANCED): nur strukturell verwundbare Schützen am Rand — sie haben weniger
+     * Adjazenz-Hexen, sodass 1–2 Tanks die Front komplett dichtmachen.
+     */
+    private static boolean needsTankCover(Stack shooter, @Nullable TeamStance stance, int lastRow) {
+        if (stance == TeamStance.RANGED_DOMINANT) {
+            return true;
+        }
+        int r = shooter.position().r();
+        return r == 0 || r == lastRow;
     }
 
     private static double focusScore(Stack enemy) {
@@ -289,29 +304,33 @@ public final class StrategicAutoSolver implements AutoSolver {
         return bestScore > 0 ? best : null;
     }
 
-    // other == target: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
-    @SuppressWarnings("ReferenceEquality")
     private static @Nullable Stack pickInlineBreathTarget(Stack active, List<Stack> aliveEnemies) {
         Hex from = active.position();
         Stack best = null;
         int bestSecondaryDanger = -1;
         for (Stack target : aliveEnemies) {
-            Hex behind = behindHex(from, target.position());
-            for (Stack other : aliveEnemies) {
-                if (other == target) {
-                    continue;
-                }
-                if (other.position().equals(behind)) {
-                    int sec = dangerScore(other);
-                    if (sec > bestSecondaryDanger) {
-                        bestSecondaryDanger = sec;
-                        best = target;
-                    }
-                    break;
-                }
+            Stack secondary = stackAt(behindHex(from, target.position()), aliveEnemies, target);
+            if (secondary == null) {
+                continue;
+            }
+            int sec = dangerScore(secondary);
+            if (sec > bestSecondaryDanger) {
+                bestSecondaryDanger = sec;
+                best = target;
             }
         }
         return best;
+    }
+
+    // s == excluded: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
+    @SuppressWarnings("ReferenceEquality")
+    private static @Nullable Stack stackAt(Hex hex, List<Stack> candidates, Stack excluded) {
+        for (Stack s : candidates) {
+            if (s != excluded && s.position().equals(hex)) {
+                return s;
+            }
+        }
+        return null;
     }
 
     private static int dangerScore(Stack s) {
@@ -373,33 +392,42 @@ public final class StrategicAutoSolver implements AutoSolver {
                 .filter(s -> s.side() == mySide && s.isAlive())
                 .sorted(Comparator.comparingInt(Stack::slot))
                 .toList();
-        if (myShooters.isEmpty()) {
+        // null, sobald eine der beiden Listen leer ist — dann gibt es nichts zu decken.
+        ThreatenedShooter threatened = mostThreatened(myShooters, setup.opponentsOf(active));
+        if (threatened == null) {
             return null;
         }
-        List<Stack> enemies = setup.opponentsOf(active);
-        if (enemies.isEmpty()) {
-            return null;
-        }
-        Stack mostThreatened = null;
-        Stack closestThreat = null;
+        return tankSpotFor(active, threatened, battlefield, setup);
+    }
+
+    /**
+     * Der am dichtesten bedrängte eigene Schütze samt des Gegners, der ihn bedrängt.
+     */
+    private record ThreatenedShooter(Stack shooter, Stack threat) {
+    }
+
+    private static @Nullable ThreatenedShooter mostThreatened(List<Stack> shooters, List<Stack> enemies) {
+        ThreatenedShooter best = null;
         int minDist = Integer.MAX_VALUE;
-        for (Stack shooter : myShooters) {
+        for (Stack shooter : shooters) {
             for (Stack enemy : enemies) {
                 int d = shooter.position().distanceTo(enemy.position());
                 if (d < minDist) {
                     minDist = d;
-                    mostThreatened = shooter;
-                    closestThreat = enemy;
+                    best = new ThreatenedShooter(shooter, enemy);
                 }
             }
         }
-        if (mostThreatened == null || closestThreat == null) {
-            return null;
-        }
+        return best;
+    }
 
-        Hex shooterPos = mostThreatened.position();
-        Hex threatPos = closestThreat.position();
-        Hex preferred = adjacentTowards(shooterPos, threatPos);
+    /**
+     * Bevorzugt der Hex zwischen Schütze und Bedrohung, sonst irgendein freier Adjacent.
+     */
+    private static @Nullable Hex tankSpotFor(Stack active, ThreatenedShooter threatened,
+                                             Battlefield battlefield, BattleSetup setup) {
+        Hex shooterPos = threatened.shooter().position();
+        Hex preferred = adjacentTowards(shooterPos, threatened.threat().position());
         if (isReachableLandingSpot(active, preferred, battlefield, setup)) {
             return preferred;
         }
@@ -429,10 +457,8 @@ public final class StrategicAutoSolver implements AutoSolver {
         Stack best = null;
         int bestThreat = -1;
         for (Stack candidate : aliveEnemies) {
-            if (!candidate.canShoot()) {
-                continue;
-            }
-            if (!hasReachableFreeAdjacent(candidate, from, speed, bf, active, setup)) {
+            if (!candidate.canShoot()
+                    || !hasReachableFreeAdjacent(candidate, from, speed, bf, active, setup)) {
                 continue;
             }
             int threat = (candidate.unit().minDamage() + candidate.unit().maxDamage())
@@ -448,19 +474,12 @@ public final class StrategicAutoSolver implements AutoSolver {
     private static boolean hasReachableFreeAdjacent(Stack target, Hex from, int speed,
                                                     Battlefield bf, Stack mover, BattleSetup setup) {
         for (Hex adj : target.position().neighbors()) {
-            if (!bf.isPassable(adj)) {
-                continue;
+            if (bf.isPassable(adj)
+                    && from.distanceTo(adj) <= speed
+                    && !Objects.equals(adj, mover.position())
+                    && !isHexOccupiedByOther(adj, mover, setup)) {
+                return true;
             }
-            if (from.distanceTo(adj) > speed) {
-                continue;
-            }
-            if (Objects.equals(adj, mover.position())) {
-                continue;
-            }
-            if (isHexOccupiedByOther(adj, mover, setup)) {
-                continue;
-            }
-            return true;
         }
         return false;
     }

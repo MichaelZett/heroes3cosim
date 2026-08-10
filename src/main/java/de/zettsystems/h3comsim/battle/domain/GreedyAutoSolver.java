@@ -152,17 +152,11 @@ public final class GreedyAutoSolver implements AutoSolver {
         int bestScore = Integer.MIN_VALUE;
         int bestDist = Integer.MAX_VALUE;
         for (Hex candidate : opponent.position().neighbors()) {
-            if (candidate.equals(from)) {
-                continue;
-            }
-            if (!bf.isPassable(candidate)) {
-                continue;
-            }
             int d = from.distanceTo(candidate);
-            if (!teleports && d > speed) {
-                continue;
-            }
-            if (isOccupiedByOther(candidate, active)) {
+            if (candidate.equals(from)
+                    || !bf.isPassable(candidate)
+                    || (!teleports && d > speed)
+                    || isOccupiedByOther(candidate, active)) {
                 continue;
             }
             int splashScore = computeSplashScore(active, candidate, opponent, fireBreath, threeHeaded);
