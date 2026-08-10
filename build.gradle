@@ -4,7 +4,7 @@ plugins {
     id 'jacoco'
     id "org.springframework.boot" version "${springBootVersion}"
     id "io.spring.dependency-management" version "${springDependencyManagementVersion}"
-    id "com.github.ben-manes.versions" version "${benmanesVersion}"
+    id "io.github.ben-manes.versions" version "${benmanesVersion}"
     id "net.ltgt.errorprone" version "${errorpronePluginVersion}"
     id "net.ltgt.nullaway" version "${nullawayPluginVersion}"
     id "com.github.spotbugs" version "${spotbugsPluginVersion}"
@@ -153,7 +153,7 @@ clean {
 }
 
 jacoco {
-    toolVersion = '0.8.13'
+    toolVersion = "${jacocoVersion}"
 }
 
 jacocoTestReport {
@@ -201,6 +201,11 @@ sonar {
         property 'sonar.tests', 'src/test/java,frontend/src'
         property 'sonar.test.inclusions',
                 'src/test/java/**,frontend/src/**/*.test.ts,frontend/src/**/*.test.tsx,frontend/src/test/**'
+        // Die *Harness-Klassen sind Report-Generatoren (Faction-Matrix, Layout-Vergleich,
+        // Diagnose-Läufe), die per @Disabled ruhen und nur pruefen, dass kein Lauf crasht.
+        // Sie assertieren bewusst nichts und tragen kein *Test-Suffix — als Tests analysiert
+        // erzeugen sie nur Dauer-Findings (S2699, S3577) gegen ein Dev-Werkzeug.
+        property 'sonar.test.exclusions', 'src/test/java/**/*Harness.java'
         property 'sonar.exclusions',
                 'frontend/dist/**,frontend/node_modules/**,frontend/coverage/**,frontend/*.tsbuildinfo,build/**'
         // Technische Spring-/Web-Konfiguration (Swagger, CORS, SPA-Forwarding) ist reines
@@ -233,6 +238,23 @@ tasks.register('frontendCoverage', Exec) {
 
 tasks.named('sonar').configure {
     dependsOn 'test', 'jacocoTestReport', 'spotbugsMain', 'spotbugsTest', 'frontendCoverage'
+    mustRunAfter 'build'
+}
+
+// ----- One-shot pipeline: clean → full build → Sonar.
+
+// `clean` loescht build/ und frontend/dist — jeder andere Task im Graph muss danach
+// laufen, sonst analysiert Sonar geloeschte Reports. mustRunAfter ist reine Reihenfolge,
+// ohne clean im Graph bleibt es wirkungslos.
+tasks.matching { it.name != 'clean' }.configureEach {
+    mustRunAfter tasks.named('clean')
+}
+
+tasks.register('complete') {
+    group = 'build'
+    description = 'Kompletter Lauf: clean, Compile (Java + Frontend), Unit-Tests (JUnit + Vitest), ' +
+            'SpotBugs, JaCoCo-Coverage-Gate und Sonar-Analyse.'
+    dependsOn 'clean', 'build', 'sonar'
 }
 
 rewrite {

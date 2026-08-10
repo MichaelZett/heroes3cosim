@@ -37,8 +37,7 @@ class ManualMechanicsTest {
                 .filter(e -> e instanceof BattleEvent.DeathStare)
                 .map(e -> (BattleEvent.DeathStare) e)
                 .toList();
-        assertThat(stares).isNotEmpty();
-        assertThat(stares).allMatch(s -> s.kills() == 1);
+        assertThat(stares).isNotEmpty().allMatch(s -> s.kills() == 1);
     }
 
     @Test

@@ -203,8 +203,9 @@ class StrategicAutoSolverTest {
 
         assertThat(action).isInstanceOf(Action.Move.class);
         Hex destination = ((Action.Move) action).destination();
-        assertThat(destination).isNotEqualTo(new Hex(4, 5));
-        assertThat(destination).isNotEqualTo(blocker.position());
+        assertThat(destination)
+                .isNotEqualTo(new Hex(4, 5))
+                .isNotEqualTo(blocker.position());
         // Ziel muss adjazent zum geschützten Marksman sein (Tank-Position).
         assertThat(destination.distanceTo(mark.position())).isEqualTo(1);
     }
@@ -274,9 +275,9 @@ class StrategicAutoSolverTest {
     void two_tanks_form_complete_wall_in_front_of_corner_shooter() {
         // Marksman im Eck (0,0) — strukturell nur 2 in-board Nachbarn: (1,0) und (0,1).
         // 2 Tanks sollten beide adjacenten Hexen besetzen → komplette Wall.
-        // (Stance ist RANGED_DOMINANT, weil der einzige Schütze auf Attacker-Seite steht;
-        // hier verifizieren wir nur, dass die bestehende Tank-Heuristik tatsächlich beide
-        // Tanks koordiniert und nicht beide auf denselben preferred Spot schickt.)
+        // Stance ist RANGED_DOMINANT, weil der einzige Schütze auf Attacker-Seite steht.
+        // Hier verifizieren wir nur, dass die bestehende Tank-Heuristik tatsächlich beide
+        // Tanks koordiniert und nicht beide auf denselben preferred Spot schickt.
         Stack mark = new Stack(UnitCatalog.MARKSMAN, 9, new Hex(0, 0), Side.ATTACKER, 0);
         Stack hal = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(0, 2), Side.ATTACKER, 1);
         Stack sword = new Stack(UnitCatalog.SWORDSMAN, 10, new Hex(0, 4), Side.ATTACKER, 2);
