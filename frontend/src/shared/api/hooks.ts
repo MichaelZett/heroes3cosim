@@ -21,6 +21,10 @@ export function useFactions() {
     return useQuery({queryKey: ['factions'], queryFn: api.listFactions});
 }
 
+export function useHeroes() {
+    return useQuery({queryKey: ['heroes'], queryFn: api.listHeroes});
+}
+
 export function useSimulateBattle(
     onSuccess: (sim: BattleSimulationDto, request: BattleConfigRequest) => void,
 ) {

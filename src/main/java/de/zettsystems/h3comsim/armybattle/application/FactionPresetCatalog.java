@@ -3,6 +3,8 @@ package de.zettsystems.h3comsim.armybattle.application;
 import de.zettsystems.h3comsim.armybattle.values.FactionPresetDto;
 import de.zettsystems.h3comsim.armybattle.values.StackSpec;
 import de.zettsystems.h3comsim.battle.domain.Faction;
+import de.zettsystems.h3comsim.battle.domain.Hero;
+import de.zettsystems.h3comsim.battle.domain.HeroCatalog;
 import org.springframework.stereotype.Component;
 
 import java.util.EnumMap;
@@ -117,7 +119,12 @@ public class FactionPresetCatalog {
         return preset;
     }
 
+    /**
+     * Der vorgeschlagene Held kommt aus dem {@link HeroCatalog} statt hier hartkodiert zu
+     * stehen — so bleibt die Zuordnung Faktion → Held an genau einer Stelle.
+     */
     private static FactionPresetDto preset(Faction faction, List<StackSpec> stacks) {
-        return new FactionPresetDto(faction, stacks);
+        return new FactionPresetDto(faction, stacks,
+                HeroCatalog.byFaction(faction).map(Hero::name).orElse(null));
     }
 }

@@ -9,8 +9,11 @@ import type {Faction, StackSpec} from '../../shared/api/types';
 export interface ArmyConfigForm {
     attackerFaction: Faction | null;
     attackerStacks: StackSpec[];
+    /** Held der Angreifer-Armee; null = fuehrerlos. */
+    attackerHeroName: string | null;
     defenderFaction: Faction | null;
     defenderStacks: StackSpec[];
+    defenderHeroName: string | null;
     seedText: string;
 }
 
@@ -26,8 +29,10 @@ const EMPTY_SLOTS: StackSpec[] = Array.from({length: 7}, () => ({unitName: '', c
 const DEFAULT_FORM: ArmyConfigForm = {
     attackerFaction: null,
     attackerStacks: EMPTY_SLOTS,
+    attackerHeroName: null,
     defenderFaction: null,
     defenderStacks: EMPTY_SLOTS,
+    defenderHeroName: null,
     seedText: '',
 };
 

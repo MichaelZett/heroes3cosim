@@ -2,12 +2,36 @@ import type {
     BattleEvent,
     BattleSimulationDto,
     Faction,
+    HeroDto,
     MatrixReport,
     StackSnapshot,
     UnitDto,
 } from '../shared/api/types';
 
 export const TEST_FACTIONS: Faction[] = ['CASTLE', 'RAMPART', 'TOWER'];
+
+export const TEST_HEROES: HeroDto[] = [
+    {
+        name: 'Crag Hack',
+        heroClass: 'BARBARIAN',
+        faction: 'STRONGHOLD',
+        attack: 4,
+        defense: 0,
+        power: 1,
+        knowledge: 1,
+        skills: {OFFENSE: 'ADVANCED'},
+    },
+    {
+        name: 'Tazar',
+        heroClass: 'BEASTMASTER',
+        faction: 'FORTRESS',
+        attack: 0,
+        defense: 4,
+        power: 1,
+        knowledge: 1,
+        skills: {ARMORER: 'ADVANCED'},
+    },
+];
 
 export function unit(overrides: Partial<UnitDto> & { name: string }): UnitDto {
     return {

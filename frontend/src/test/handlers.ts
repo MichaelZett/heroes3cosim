@@ -1,6 +1,6 @@
 import {http, HttpResponse} from 'msw';
 import type {ArmyPresetsResponse, MatrixJobSnapshot} from '../shared/api/types';
-import {matrixReportFixture, simulationFixture, TEST_FACTIONS, TEST_UNITS} from './fixtures';
+import {matrixReportFixture, simulationFixture, TEST_FACTIONS, TEST_HEROES, TEST_UNITS} from './fixtures';
 
 const COMPLETED_JOB: MatrixJobSnapshot = {
     jobId: 'test-job',
@@ -19,6 +19,7 @@ const ARMY_PRESETS: ArmyPresetsResponse = {
                 {unitName: 'Halberdier', count: 14},
                 {unitName: 'Marksman', count: 9},
             ],
+            heroName: 'Crag Hack',
         },
     ],
 };
@@ -26,6 +27,7 @@ const ARMY_PRESETS: ArmyPresetsResponse = {
 export const defaultHandlers = [
     http.get('*/api/units', () => HttpResponse.json(TEST_UNITS)),
     http.get('*/api/factions', () => HttpResponse.json(TEST_FACTIONS)),
+    http.get('*/api/heroes', () => HttpResponse.json(TEST_HEROES)),
     http.post('*/api/battles/simulate', () => HttpResponse.json(simulationFixture())),
     http.post('*/api/experiments/matrix', () => HttpResponse.json(COMPLETED_JOB)),
     http.get('*/api/experiments/matrix/:jobId', () => HttpResponse.json(COMPLETED_JOB)),
