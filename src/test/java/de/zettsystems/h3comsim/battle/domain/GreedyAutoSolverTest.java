@@ -40,6 +40,7 @@ class GreedyAutoSolverTest {
         while (shooter.shotsRemaining() > 0) {
             shooter.useShot();
         }
+        inLatePhase(shooter);
 
         Action action = solver.decide(shooter, opponent, battlefield);
 
@@ -84,6 +85,7 @@ class GreedyAutoSolverTest {
         // den normalen Move-Pfad (Move ohne Melee).
         Stack champion = new Stack(UnitCatalog.CHAMPION, 5, new Hex(0, 5));
         Stack target = new Stack(UnitCatalog.PIKEMAN, 5, new Hex(14, 5));
+        inLatePhase(champion);
 
         Action action = solver.decide(champion, target, battlefield);
 
@@ -94,6 +96,7 @@ class GreedyAutoSolverTest {
     void plain_move_when_arrival_is_still_out_of_reach() {
         Stack active = new Stack(UnitCatalog.PIKEMAN, 10, new Hex(0, 5));
         Stack opponent = new Stack(UnitCatalog.PIKEMAN, 10, new Hex(14, 5));
+        inLatePhase(active);
 
         Action action = solver.decide(active, opponent, battlefield);
 
@@ -172,9 +175,9 @@ class GreedyAutoSolverTest {
     @Test
     void defends_when_unit_cannot_advance_and_cannot_shoot() {
         // Speed-0-Unit kann sich nicht bewegen, hat keine Schüsse — semantisch korrekter
-        // Zug: Defend (+30 % Defense), nicht Wait (würde am Rundenende erneut aufgerufen
-        // und müsste dort wieder dasselbe machen). H3-konformer Default für "ich kann
-        // nichts tun".
+        // Zug: Defend (+20 % Defense), nicht Wait. Warten lohnt nur, wenn sich die Lage bis
+        // zur Late-Phase ändern kann; bei Speed 0 kann sie das nie. Deshalb der
+        // Unbeweglichkeits-Guard in GreedyAutoSolver#waitOr.
         Unit immobile = new Unit(
                 "Test Immobile",
                 new Stats(1, 1, 1, 0),
@@ -191,5 +194,47 @@ class GreedyAutoSolverTest {
         Action action = solver.decide(active, opponent, battlefield);
 
         assertThat(action).isInstanceOf(Action.Defend.class);
+    }
+
+    @Test
+    void melee_unit_out_of_reach_waits_instead_of_stepping_into_no_mans_land() {
+        // Manual S. 43: Wait verschiebt die Aktion ans Rundenende. Ein Nahkämpfer, der sein
+        // Ziel diese Runde ohnehin nicht erreicht, gewinnt dadurch Information — er zieht
+        // erst, wenn der Gegner gezogen ist, statt sich blind zu exponieren.
+        Stack active = new Stack(UnitCatalog.PIKEMAN, 10, new Hex(0, 5));
+        Stack opponent = new Stack(UnitCatalog.PIKEMAN, 10, new Hex(14, 5));
+
+        assertThat(solver.decide(active, opponent, battlefield))
+                .isInstanceOf(Action.Wait.class);
+    }
+
+    @Test
+    void a_unit_that_can_reach_its_target_attacks_instead_of_waiting() {
+        // Gegenprobe: Warten ist die Ausweich-, nicht die Standardoption.
+        Stack active = new Stack(UnitCatalog.PIKEMAN, 10, new Hex(0, 5));
+        Stack opponent = new Stack(UnitCatalog.PIKEMAN, 10, new Hex(4, 5));
+
+        assertThat(solver.decide(active, opponent, battlefield))
+                .isInstanceOf(Action.MoveAndMelee.class);
+    }
+
+    @Test
+    void tactical_wait_can_be_switched_off_for_ab_measurements() {
+        // Der SolverDuelHarness stellt beide Varianten direkt gegeneinander — ohne diesen
+        // Schalter wäre der Effekt einer Solver-Heuristik nicht isolierbar.
+        Stack active = new Stack(UnitCatalog.PIKEMAN, 10, new Hex(0, 5));
+        Stack opponent = new Stack(UnitCatalog.PIKEMAN, 10, new Hex(14, 5));
+
+        assertThat(new GreedyAutoSolver(false).decide(active, opponent, battlefield))
+                .isInstanceOf(Action.Move.class);
+    }
+
+    /**
+     * Simuliert die späte Rundenphase: der Stack hat seine Verzögerung bereits verbraucht und
+     * muss jetzt handeln. {@code decide} fällt damit auf den Bewegungs-Pfad zurück.
+     */
+    private static Stack inLatePhase(Stack stack) {
+        stack.markWaited();
+        return stack;
     }
 }

@@ -40,7 +40,16 @@ public final class StrategicAutoSolver implements AutoSolver {
     /** Spiegelt den Zwei-Kollateral-Deckel aus {@code Battle.applySplashShot}. */
     private static final int SPLASH_SHOT_COLLATERAL_CAP = 2;
 
-    private final GreedyAutoSolver greedy = new GreedyAutoSolver();
+    private final GreedyAutoSolver greedy;
+
+    public StrategicAutoSolver() {
+        this(true);
+    }
+
+    /** @see GreedyAutoSolver#GreedyAutoSolver(boolean) */
+    public StrategicAutoSolver(boolean tacticalWait) {
+        this.greedy = new GreedyAutoSolver(tacticalWait);
+    }
 
     private RoundPlan plan = RoundPlan.EMPTY;
     private @Nullable BattleSetup currentSetup;
