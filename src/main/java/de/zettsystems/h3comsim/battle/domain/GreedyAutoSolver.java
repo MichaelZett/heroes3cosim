@@ -43,6 +43,23 @@ public final class GreedyAutoSolver implements AutoSolver {
 
     private @Nullable BattleSetup currentSetup;
 
+    private final boolean tacticalWait;
+
+    public GreedyAutoSolver() {
+        this(true);
+    }
+
+    /**
+     * @param tacticalWait ob ein Nahkämpfer, der sein Ziel diese Runde nicht erreicht, per
+     *                     {@link Action.Wait} ans Rundenende ausweicht. Abschaltbar, damit
+     *                     Harnesses die Heuristik gegen sich selbst antreten lassen können —
+     *                     in der Faction-Matrix spielen beide Seiten denselben Solver, dort
+     *                     ist ein Solver-Vorteil per Konstruktion unsichtbar.
+     */
+    public GreedyAutoSolver(boolean tacticalWait) {
+        this.tacticalWait = tacticalWait;
+    }
+
     @Override
     public void planRound(BattleSetup setup) {
         this.currentSetup = setup;
@@ -117,7 +134,7 @@ public final class GreedyAutoSolver implements AutoSolver {
             if (landing != null) {
                 return new Action.MoveAndMelee(landing, opponent);
             }
-            return new Action.Defend();
+            return waitOr(active, new Action.Defend());
         }
         // IMPACT_DAMAGE-Units (Cavalier/Champion): maximalen Run-up wählen statt direkter Linie.
         // Engine zählt {@code hexesMoved = startPos.distanceTo(destination)} → straight-line.
@@ -129,16 +146,27 @@ public final class GreedyAutoSolver implements AutoSolver {
         }
         Hex moveTarget = battlefield.moveToward(from, to, speed, movement);
         if (moveTarget.equals(from)) {
-            return new Action.Defend();
+            return waitOr(active, new Action.Defend());
         }
         if (isOccupiedByOther(moveTarget, active)) {
             // moveToward berücksichtigt keine Stacks → könnte auf den Tank vor dem Ziel zielen.
             // Statt blind hinzulaufen und vom Engine-Sicherheitsnetz zu Defend degradiert zu
             // werden, defendieren wir direkt.
-            return new Action.Defend();
+            return waitOr(active, new Action.Defend());
         }
         if (moveTarget.distanceTo(to) == 1) {
             return new Action.MoveAndMelee(moveTarget, opponent);
+        }
+        // Reiner Annäherungsschritt: der Stack erreicht sein Ziel diese Runde nicht und würde
+        // sich nur exponiert ins Niemandsland stellen. H3-Standardzug ist hier Wait (Manual
+        // S. 43) — die Aktion geht nicht verloren, sie wandert ans Rundenende. Dort ist der
+        // Gegner schon gezogen: entweder er ist herangerückt und wir greifen an, statt ihm den
+        // ersten Schlag zu schenken, oder wir laufen wenigstens auf seine aktuelle Position zu
+        // statt auf die von vorhin. Der Guard ist zwingend: in der Late-Phase muss gehandelt
+        // werden, sonst degradiert die Engine das zweite Wait zu Defend und der Stack bewegt
+        // sich nie.
+        if (tacticalWait && !active.hasWaitedThisTurn()) {
+            return new Action.Wait();
         }
         return new Action.Move(moveTarget);
     }
@@ -350,6 +378,23 @@ public final class GreedyAutoSolver implements AutoSolver {
             return new Action.Shoot(opponent);
         }
         return new Action.Move(kite);
+    }
+
+    /**
+     * Verschiebt eine Verlegenheits-Aktion ans Rundenende, statt sie sofort zu verbrauchen.
+     * Alle drei Aufrufer sind Sackgassen (kein freier Lande-Hex, Stack kommt nicht vom Fleck,
+     * Zielhex belegt) — in der Late-Phase haben sich die blockierenden Stacks vielleicht
+     * wegbewegt.
+     *
+     * <p>Zwei Ausnahmen, in denen der Fallback sofort greift: der Stack hat diese Runde schon
+     * gewartet, oder er ist unbeweglich. Bei Speed 0 kann sich bis zur Late-Phase nichts
+     * ändern, was ihm hilft — dann ist Defend (+20 % Defense) sofort der bessere Zug.
+     */
+    private Action waitOr(Stack active, Action fallback) {
+        if (!tacticalWait || active.hasWaitedThisTurn() || active.getSpeed() == 0) {
+            return fallback;
+        }
+        return new Action.Wait();
     }
 
     private boolean hasMultipleLivingEnemies(Stack active) {

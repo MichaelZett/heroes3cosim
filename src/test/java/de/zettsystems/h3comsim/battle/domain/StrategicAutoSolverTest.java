@@ -222,6 +222,9 @@ class StrategicAutoSolverTest {
         assertThat(solver.currentPlan().stanceOf(Side.ATTACKER)).isEqualTo(TeamStance.RANGED_DOMINANT);
 
         mark.loseTopCreatures(mark.getCount());
+        // Späte Rundenphase: die Verzögerung ist verbraucht, der Tank muss ziehen. In Phase 1
+        // würde Greedy hier warten, weil der Pikeman diese Runde nicht erreichbar ist.
+        hal.markWaited();
 
         Action action = solver.decide(hal, threat, battlefield);
 
@@ -356,6 +359,8 @@ class StrategicAutoSolverTest {
         solver.planRound(setup);
         assertThat(solver.currentPlan().stanceOf(Side.ATTACKER)).isEqualTo(TeamStance.MELEE_DOMINANT);
         assertThat(solver.currentPlan().hasTankDuty(Side.ATTACKER)).isFalse();
+        // Späte Rundenphase — sonst verschiebt Greedy den nicht erreichbaren Charge per Wait.
+        hal.markWaited();
 
         Action act = solver.decide(hal, threat, battlefield);
 

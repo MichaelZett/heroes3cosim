@@ -32,7 +32,9 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Speed absteigend; wer *Wait* wählt, verschiebt seine Aktion ans Ende
   der Runde und handelt dort in umgekehrter Reihenfolge — langsamste
   Wartende zuerst. Jeder Stack darf pro Runde nur einmal warten.
-  *Defend* gibt dafür +20 % Defense bis Rundenende.
+  *Defend* gibt dafür +20 % Defense bis Rundenende. Die Auto-Solver
+  nutzen das taktisch: wer sein Ziel diese Runde nicht erreicht, wartet,
+  statt sich exponiert ins Niemandsland zu stellen.
 - **Hex-Schlachtfeld 15 × 11** mit zufälligen Hindernissen pro Sim,
   Hex-A*-Pathfinding um Obstacles herum, zugbasierte Move-Sequenz pro
   Hex (Token wandert sichtbar Schritt für Schritt).
@@ -253,7 +255,8 @@ zu lesen, nicht als universelle H3-Tier-Liste.
   das inzwischen mit (Netto-Splash plus Veto gegen Eigentor-Ziele), ebenso
   die Lande-Hex-Wahl der Flieger. Gemessener Eigenschaden über 810
   Battles: 10234 → 6077, Infernos Ø-Win-Rate 0.29 → 0.38 (gemessen mit
-  80 Sims je Match-up)
+  80 Sims je Match-up; inzwischen 0.42, weil das taktische Warten
+  zusätzlich wirkt)
   (`build/reports/friendly-fire.md`, erzeugt vom
   `FriendlyFireDiagnosisHarness`). Offen bleibt der Nahkampf am Boden:
   Cerberus (`THREE_HEADED_ATTACK`) streut weiter in die eigenen Reihen,
@@ -262,10 +265,11 @@ zu lesen, nicht als universelle H3-Tier-Liste.
   sie senkte die Eigenverluste deutlich, kostete aber 14 Prozentpunkte
   gegen Dungeon, weil die geretteten Einheiten Tier-1/2 sind und der
   aufgegebene Positionsvorteil schwerer wiegt.
-- **Wait im Solver**: die Engine beherrscht die Zwei-Phasen-Runde, aber
-  beide Auto-Solver wählen bislang nie *Wait* — taktisches Abwarten
-  (langsamer Nahkämpfer, der sich nicht vorzeitig exponiert; Schütze,
-  der auf ein freies Schussfeld wartet) ist damit noch ungenutzt.
+- **Taktisches Warten ausbauen**: Nahkämpfer nutzen *Wait* bereits, wenn
+  sie ihr Ziel diese Runde nicht erreichen — messbar stärker, aber der
+  Gewinn kommt fast nur von Tower. Offen sind Schützen (warten, bis der
+  eigene Tank die Splash-Zone geleert hat) und Flieger (warten, bis
+  feststeht, wo der Gegner landet).
 - **Helden** mit Primärwerten, Sekundärfertigkeiten und Zauberbuch.
 - **Belagerung**: Mauern, Catapult, Wall-Penalty für Schützen — eigene
   Battlefield-Variante mit Wall-Hexes.
