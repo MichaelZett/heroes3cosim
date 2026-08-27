@@ -196,6 +196,47 @@ export interface StackSpec {
 
 export interface ArmySpec {
     stacks: StackSpec[];
+    /** Name aus /api/heroes. Null bedeutet: Armee kaempft fuehrerlos. */
+    heroName?: string | null;
+}
+
+export type HeroClass =
+    | 'KNIGHT'
+    | 'RANGER'
+    | 'ALCHEMIST'
+    | 'DEMONIAC'
+    | 'DEATH_KNIGHT'
+    | 'OVERLORD'
+    | 'BARBARIAN'
+    | 'BEASTMASTER'
+    | 'PLANESWALKER';
+
+export type SecondarySkill =
+    | 'OFFENSE'
+    | 'ARCHERY'
+    | 'ARMORER'
+    | 'TACTICS'
+    | 'LEADERSHIP'
+    | 'NECROMANCY'
+    | 'SCHOLAR'
+    | 'MYSTICISM';
+
+export type SkillLevel = 'NONE' | 'BASIC' | 'ADVANCED' | 'EXPERT';
+
+/**
+ * Held aus /api/heroes. Von den Primaerwerten wirken derzeit nur attack und defense:
+ * sie werden auf jede Kreatur der gefuehrten Armee addiert. power, knowledge und skills
+ * werden gefuehrt, aber noch nicht ausgewertet.
+ */
+export interface HeroDto {
+    name: string;
+    heroClass: HeroClass;
+    faction: Faction;
+    attack: number;
+    defense: number;
+    power: number;
+    knowledge: number;
+    skills: Partial<Record<SecondarySkill, SkillLevel>>;
 }
 
 export interface ArmyBattleRequest {
@@ -212,6 +253,8 @@ export interface ArmyBattleSimulation {
 export interface FactionPresetDto {
     faction: Faction;
     stacks: StackSpec[];
+    /** Vorgeschlagener Held der Faktion; wird beim Preset-Laden als Default uebernommen. */
+    heroName?: string | null;
 }
 
 export interface ArmyPresetsResponse {

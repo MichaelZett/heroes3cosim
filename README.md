@@ -28,6 +28,13 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   (Green/Gold/Red/Black Dragon — Ziel + Stack dahinter), Magog
   Splash-Shot (Ziel + 2 adjazente Gegner), Lich Death Cloud (Ziel +
   alle 1-Hex-Nachbarn).
+- **Helden** — ein H3-Held je Fraktion (Crag Hack, Tazar, Sorsha, …),
+  Werte aus dem RoE-Manual. Sein Angriffs- und Verteidigungswert wird auf
+  jede Kreatur der geführten Armee addiert (Manual S. 33) und wirkt damit
+  durch die gesamte Schadensformel. Auswahl im Army-Konfigurator, das
+  Fraktions-Preset schlägt den passenden Helden vor. Power, Knowledge und
+  Sekundärfertigkeiten sind noch ohne Wirkung — sie brauchen das
+  Zaubersystem bzw. die nächste Ausbaustufe.
 - **Rundenablauf in zwei Phasen** (Manual S. 43): Stacks ziehen nach
   Speed absteigend; wer *Wait* wählt, verschiebt seine Aktion ans Ende
   der Runde und handelt dort in umgekehrter Reihenfolge — langsamste
@@ -265,6 +272,10 @@ zu lesen, nicht als universelle H3-Tier-Liste.
   sie senkte die Eigenverluste deutlich, kostete aber 14 Prozentpunkte
   gegen Dungeon, weil die geretteten Einheiten Tier-1/2 sind und der
   aufgegebene Positionsvorteil schwerer wiegt.
+- **Helden, Stufe 2**: Offense, Archery und Armorer greifen alle in
+  denselben Schadenspfad; Tactics an die vorhandene Aufstellungs-Logik.
+  Erst damit werden die neun Helden voneinander unterscheidbar — heute
+  hängen ihre Werte allein an der Heldenklasse.
 - **Taktisches Warten ausbauen**: Nahkämpfer nutzen *Wait* bereits, wenn
   sie ihr Ziel diese Runde nicht erreichen — messbar stärker, aber der
   Gewinn kommt fast nur von Tower. Offen sind Schützen (warten, bis der

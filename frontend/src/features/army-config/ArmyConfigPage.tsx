@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../../shared/ui/LanguageSwitcher';
 import ModeSwitcher from '../../shared/ui/ModeSwitcher';
-import { useArmyPresets, useSimulateArmyBattle, useUnits } from '../../shared/api/hooks';
+import { useArmyPresets, useHeroes, useSimulateArmyBattle, useUnits } from '../../shared/api/hooks';
 import { useArmyConfigStore } from './armyConfigStore';
 import { useArmyBattleStore } from './armyBattleStore';
 import FactionPresetPicker from './FactionPresetPicker';
+import HeroPicker from './HeroPicker';
 import SlotEditor from './SlotEditor';
-import type { Faction, StackSpec } from '../../shared/api/types';
+import type { Faction, FactionPresetDto, HeroDto, StackSpec } from '../../shared/api/types';
 
 export default function ArmyConfigPage() {
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ export default function ArmyConfigPage() {
 
   const unitsQuery = useUnits();
   const presetsQuery = useArmyPresets();
+  const heroesQuery = useHeroes();
 
   const simulate = useSimulateArmyBattle((sim, request) => {
     loadSimulation(sim, request);
@@ -33,8 +35,8 @@ export default function ArmyConfigPage() {
     if (attackerStacks.length === 0 || defenderStacks.length === 0) return;
     const seedNum = form.seedText.trim() === '' ? null : Number(form.seedText);
     simulate.mutate({
-      attacker: { stacks: attackerStacks },
-      defender: { stacks: defenderStacks },
+      attacker: { stacks: attackerStacks, heroName: form.attackerHeroName },
+      defender: { stacks: defenderStacks, heroName: form.defenderHeroName },
       seed: seedNum !== null && Number.isFinite(seedNum) ? seedNum : null,
     });
   }
@@ -43,16 +45,22 @@ export default function ArmyConfigPage() {
     setForm({ seedText: String(Math.floor(Math.random() * 1_000_000)) });
   }
 
-  function applyPreset(side: 'attacker' | 'defender', stacks: StackSpec[]) {
-    const padded: StackSpec[] = [...stacks];
+  /** Das Preset bringt den Helden seiner Faktion mit — er laesst sich danach frei aendern. */
+  function applyPreset(side: 'attacker' | 'defender', preset: FactionPresetDto) {
+    const padded: StackSpec[] = [...preset.stacks];
     while (padded.length < 7) padded.push({ unitName: '', count: 1 });
-    setForm(side === 'attacker' ? { attackerStacks: padded } : { defenderStacks: padded });
+    const heroName = preset.heroName ?? null;
+    setForm(
+      side === 'attacker'
+        ? { attackerStacks: padded, attackerHeroName: heroName }
+        : { defenderStacks: padded, defenderHeroName: heroName },
+    );
   }
 
-  if (unitsQuery.isPending || presetsQuery.isPending) {
+  if (unitsQuery.isPending || presetsQuery.isPending || heroesQuery.isPending) {
     return <CenteredMessage>{t('config.loading')}</CenteredMessage>;
   }
-  if (unitsQuery.isError || presetsQuery.isError) {
+  if (unitsQuery.isError || presetsQuery.isError || heroesQuery.isError) {
     return (
       <CenteredMessage tone="error">
         {t('config.apiDown', { url: 'localhost:8080' })}
@@ -62,6 +70,7 @@ export default function ArmyConfigPage() {
 
   const presets = presetsQuery.data.presets;
   const units = unitsQuery.data;
+  const heroes = heroesQuery.data;
 
   const attackerReady = trimEmpty(form.attackerStacks).length > 0;
   const defenderReady = trimEmpty(form.defenderStacks).length > 0;
@@ -90,9 +99,12 @@ export default function ArmyConfigPage() {
             presets={presets}
             selectedFaction={form.attackerFaction}
             onFactionChange={(f: Faction | null) => setForm({ attackerFaction: f })}
-            onPresetApply={(stacks: StackSpec[]) => applyPreset('attacker', stacks)}
+            onPresetApply={(preset: FactionPresetDto) => applyPreset('attacker', preset)}
             stacks={form.attackerStacks}
             onSlotChange={(slot, patch) => updateStack('attacker', slot, patch)}
+            heroes={heroes}
+            heroName={form.attackerHeroName}
+            onHeroChange={(name) => setForm({ attackerHeroName: name })}
           />
           <SideColumn
             side="defender"
@@ -101,9 +113,12 @@ export default function ArmyConfigPage() {
             presets={presets}
             selectedFaction={form.defenderFaction}
             onFactionChange={(f: Faction | null) => setForm({ defenderFaction: f })}
-            onPresetApply={(stacks: StackSpec[]) => applyPreset('defender', stacks)}
+            onPresetApply={(preset: FactionPresetDto) => applyPreset('defender', preset)}
             stacks={form.defenderStacks}
             onSlotChange={(slot, patch) => updateStack('defender', slot, patch)}
+            heroes={heroes}
+            heroName={form.defenderHeroName}
+            onHeroChange={(name) => setForm({ defenderHeroName: name })}
           />
         </div>
 
@@ -162,12 +177,15 @@ interface SideColumnProps {
   side: 'attacker' | 'defender';
   title: string;
   units: import('../../shared/api/types').UnitDto[];
-  presets: import('../../shared/api/types').FactionPresetDto[];
+  presets: FactionPresetDto[];
   selectedFaction: Faction | null;
   onFactionChange: (faction: Faction | null) => void;
-  onPresetApply: (stacks: StackSpec[]) => void;
+  onPresetApply: (preset: FactionPresetDto) => void;
   stacks: StackSpec[];
   onSlotChange: (slot: number, patch: Partial<StackSpec>) => void;
+  heroes: HeroDto[];
+  heroName: string | null;
+  onHeroChange: (name: string | null) => void;
 }
 
 function SideColumn(props: Readonly<SideColumnProps>) {
@@ -181,6 +199,11 @@ function SideColumn(props: Readonly<SideColumnProps>) {
         selectedFaction={props.selectedFaction}
         onFactionChange={props.onFactionChange}
         onApply={props.onPresetApply}
+      />
+      <HeroPicker
+        heroes={props.heroes}
+        selectedName={props.heroName}
+        onChange={props.onHeroChange}
       />
       <div className="space-y-1.5">
         {SLOTS.map((slot) => (

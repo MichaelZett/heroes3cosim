@@ -5,6 +5,7 @@ import type {
     BattleConfigRequest,
     BattleSimulationDto,
     Faction,
+    HeroDto,
     MatrixJobSnapshot,
     MatrixRequestDto,
     UnitDto,
@@ -32,6 +33,9 @@ export const api = {
     },
     listFactions(): Promise<Faction[]> {
         return jsonFetch<Faction[]>('/factions');
+    },
+    listHeroes(): Promise<HeroDto[]> {
+        return jsonFetch<HeroDto[]>('/heroes');
     },
     simulateBattle(request: BattleConfigRequest): Promise<BattleSimulationDto> {
         return jsonFetch<BattleSimulationDto>('/battles/simulate', {

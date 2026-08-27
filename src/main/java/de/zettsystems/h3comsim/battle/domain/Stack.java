@@ -2,6 +2,7 @@ package de.zettsystems.h3comsim.battle.domain;
 
 import de.zettsystems.h3comsim.battle.domain.events.Side;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Objects;
 import java.util.Set;
@@ -31,6 +32,7 @@ public class Stack {
     private boolean rebirthUsed;
     private boolean defending;
     private boolean waitedThisTurn;
+    private @Nullable Hero commander;
 
     /** Convenience constructor — defaults the side to {@link Side#ATTACKER}. */
     public Stack(Unit unit, int count, Hex position) {
@@ -101,15 +103,18 @@ public class Stack {
     }
 
     public int getAttack() {
-        return unit.attack() - (diseased ? 2 : 0);
+        return unit.attack() - (diseased ? 2 : 0) + (commander == null ? 0 : commander.attack());
     }
 
     public int getDefense() {
-        int base = unit.defense() - (diseased ? 2 : 0);
+        int base = unit.defense() - (diseased ? 2 : 0)
+                + (commander == null ? 0 : commander.defense());
         if (defending) {
             // H3-Defend laut RoE-Manual S. 47: +20 % auf die Defense-Rating bis Rundenende.
             // Stackt nicht mit anderen Defense-Boni — gehört hierhin, damit alle Damage-
-            // Berechnungen profitieren.
+            // Berechnungen profitieren. Der Heldenbonus ist zu diesem Zeitpunkt bereits
+            // eingerechnet: Manual S. 33 addiert ihn auf das Defense-Rating der Kreatur,
+            // die +20 % gelten also auf die Summe.
             base = (int) Math.round(base * 1.2);
         }
         return base;
@@ -121,6 +126,18 @@ public class Stack {
 
     public boolean isDefending() {
         return defending;
+    }
+
+    /**
+     * Der Held, der diese Armee führt, oder {@code null}. Wird von {@link BattleSetup} auf alle
+     * Stacks der jeweiligen Seite gesetzt — ein Stack wählt seinen Anführer nicht selbst.
+     */
+    public @Nullable Hero commander() {
+        return commander;
+    }
+
+    void assignCommander(@Nullable Hero hero) {
+        this.commander = hero;
     }
 
     /**

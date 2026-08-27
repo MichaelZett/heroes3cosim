@@ -1,7 +1,10 @@
 package de.zettsystems.h3comsim.setup.ui;
 
 import de.zettsystems.h3comsim.battle.domain.Faction;
+import de.zettsystems.h3comsim.battle.domain.HeroCatalog;
 import de.zettsystems.h3comsim.battle.domain.UnitCatalog;
+import de.zettsystems.h3comsim.battle.values.HeroDto;
+import de.zettsystems.h3comsim.battle.values.HeroMapper;
 import de.zettsystems.h3comsim.battle.values.UnitDto;
 import de.zettsystems.h3comsim.battle.values.UnitMapper;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,7 +20,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api")
 @Tag(name = "Catalog",
-        description = "Read-only Listen für den Frontend-Konfigurator: alle bekannten Einheiten und alle Faktionen.")
+        description = "Read-only Listen für den Frontend-Konfigurator: alle bekannten Einheiten, Helden und Faktionen.")
 public class CatalogController {
 
     @Operation(summary = "Alle Einheiten auflisten",
@@ -42,5 +45,22 @@ public class CatalogController {
     @GetMapping("/factions")
     public List<Faction> listFactions() {
         return Arrays.asList(Faction.values());
+    }
+
+    @Operation(summary = "Alle Helden auflisten",
+            description = """
+                    Gibt den Hero-Catalog zurück — derzeit genau einen Helden je Fraktion
+                    (`NEUTRAL` hat keinen). Von den Primärwerten wirken nur `attack` und
+                    `defense`: sie werden auf jede Kreatur der geführten Armee addiert
+                    (Manual S. 33). `power`, `knowledge` und `skills` werden geführt, aber
+                    noch nicht ausgewertet.
+                    """,
+            operationId = "listHeroes")
+    @ApiResponse(responseCode = "200", description = "Vollständige Hero-Liste.")
+    @GetMapping("/heroes")
+    public List<HeroDto> listHeroes() {
+        return HeroCatalog.all().stream()
+                .map(HeroMapper::toDto)
+                .toList();
     }
 }

@@ -1,12 +1,12 @@
 import {useTranslation} from 'react-i18next';
-import type {Faction, FactionPresetDto, StackSpec} from '../../shared/api/types';
+import type {Faction, FactionPresetDto} from '../../shared/api/types';
 
 interface FactionPresetPickerProps {
     label: string;
     presets: FactionPresetDto[];
     selectedFaction: Faction | null;
     onFactionChange: (faction: Faction | null) => void;
-    onApply: (stacks: StackSpec[]) => void;
+    onApply: (preset: FactionPresetDto) => void;
 }
 
 export default function FactionPresetPicker({
@@ -42,7 +42,7 @@ export default function FactionPresetPicker({
             <button
                 type="button"
                 disabled={!current}
-                onClick={() => current && onApply(current.stacks)}
+                onClick={() => current && onApply(current)}
                 className="rounded-md border border-amber-500 px-3 py-2 text-sm text-amber-300 transition hover:bg-amber-500/10 disabled:cursor-not-allowed disabled:border-slate-700 disabled:text-slate-500"
             >
                 {t('army.applyPreset')}
