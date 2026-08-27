@@ -55,4 +55,43 @@ public record Hero(
     public SkillLevel levelOf(SecondarySkill skill) {
         return skills.getOrDefault(skill, SkillLevel.NONE);
     }
+
+    /**
+     * Offense, Manual S. 38: „Increases the amount of hand-to-hand damage the hero's troops
+     * inflict in combat" — 10/20/30 %. Gilt ausdrücklich nur für Nahkampf.
+     */
+    public int offenseBonusPercent() {
+        return switch (levelOf(SecondarySkill.OFFENSE)) {
+            case NONE -> 0;
+            case BASIC -> 10;
+            case ADVANCED -> 20;
+            case EXPERT -> 30;
+        };
+    }
+
+    /**
+     * Archery, Manual S. 35: „Increases the damage done by ranged attackers in the hero's army"
+     * — 10/25/50 %. Die Stufen springen weiter als bei Offense; das ist so im Manual.
+     */
+    public int archeryBonusPercent() {
+        return switch (levelOf(SecondarySkill.ARCHERY)) {
+            case NONE -> 0;
+            case BASIC -> 10;
+            case ADVANCED -> 25;
+            case EXPERT -> 50;
+        };
+    }
+
+    /**
+     * Armorer, Manual S. 35: „Reduces the amount of damage received by the hero's troops in
+     * combat" — 5/10/15 %. Gilt für jeden eingehenden Schaden, egal ob Nah- oder Fernkampf.
+     */
+    public int armorerReductionPercent() {
+        return switch (levelOf(SecondarySkill.ARMORER)) {
+            case NONE -> 0;
+            case BASIC -> 5;
+            case ADVANCED -> 10;
+            case EXPERT -> 15;
+        };
+    }
 }
