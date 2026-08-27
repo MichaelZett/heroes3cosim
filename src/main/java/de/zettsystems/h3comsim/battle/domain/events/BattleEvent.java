@@ -115,7 +115,7 @@ public sealed interface BattleEvent {
     }
 
     @Schema(name = "Defend",
-            description = "Stack hat Defend gewählt: bewegt sich nicht, erhält bis Rundenende +30 % Defense. Wird auch als Engine-Fallback emittiert, wenn ein Solver versucht auf einen besetzten Hex zu ziehen.")
+            description = "Stack hat Defend gewählt: bewegt sich nicht, erhält bis Rundenende +20 % Defense (Manual S. 47). Wird auch als Engine-Fallback emittiert, wenn ein Solver versucht auf einen besetzten Hex zu ziehen oder ein zweites Mal in derselben Runde zu warten.")
     record Defend(
             @Schema(description = "Verteidigende Seite") Side actor,
             @Schema(description = "Slot des verteidigenden Stacks") int actorSlot) implements BattleEvent {
