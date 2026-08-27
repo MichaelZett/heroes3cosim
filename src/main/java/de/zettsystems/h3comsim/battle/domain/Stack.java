@@ -30,6 +30,7 @@ public class Stack {
     private boolean aged;
     private boolean rebirthUsed;
     private boolean defending;
+    private boolean waitedThisTurn;
 
     /** Convenience constructor — defaults the side to {@link Side#ATTACKER}. */
     public Stack(Unit unit, int count, Hex position) {
@@ -120,6 +121,19 @@ public class Stack {
 
     public boolean isDefending() {
         return defending;
+    }
+
+    /**
+     * Manual S. 43: Wait verschiebt die Aktion ans Ende der ersten Phase. Die Verzögerung ist
+     * damit pro Runde verbraucht — ein zweites Wait gibt es nicht, sonst könnte sich ein Stack
+     * beliebig oft nach hinten schieben.
+     */
+    public boolean hasWaitedThisTurn() {
+        return waitedThisTurn;
+    }
+
+    public void markWaited() {
+        waitedThisTurn = true;
     }
 
     public int getCount() {
@@ -343,6 +357,7 @@ public class Stack {
     public void endTurn() {
         // Defend gilt nur für die laufende Runde — nächste Runde gibt's wieder Base-Defense.
         defending = false;
+        waitedThisTurn = false;
         if (petrifiedCounter > 0 && --petrifiedCounter == 0) {
             unpetrify();
         }

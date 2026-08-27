@@ -28,6 +28,11 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   (Green/Gold/Red/Black Dragon — Ziel + Stack dahinter), Magog
   Splash-Shot (Ziel + 2 adjazente Gegner), Lich Death Cloud (Ziel +
   alle 1-Hex-Nachbarn).
+- **Rundenablauf in zwei Phasen** (Manual S. 43): Stacks ziehen nach
+  Speed absteigend; wer *Wait* wählt, verschiebt seine Aktion ans Ende
+  der Runde und handelt dort in umgekehrter Reihenfolge — langsamste
+  Wartende zuerst. Jeder Stack darf pro Runde nur einmal warten.
+  *Defend* gibt dafür +20 % Defense bis Rundenende.
 - **Hex-Schlachtfeld 15 × 11** mit zufälligen Hindernissen pro Sim,
   Hex-A*-Pathfinding um Obstacles herum, zugbasierte Move-Sequenz pro
   Hex (Token wandert sichtbar Schritt für Schritt).
@@ -257,6 +262,10 @@ zu lesen, nicht als universelle H3-Tier-Liste.
   sie senkte die Eigenverluste deutlich, kostete aber 14 Prozentpunkte
   gegen Dungeon, weil die geretteten Einheiten Tier-1/2 sind und der
   aufgegebene Positionsvorteil schwerer wiegt.
+- **Wait im Solver**: die Engine beherrscht die Zwei-Phasen-Runde, aber
+  beide Auto-Solver wählen bislang nie *Wait* — taktisches Abwarten
+  (langsamer Nahkämpfer, der sich nicht vorzeitig exponiert; Schütze,
+  der auf ein freies Schussfeld wartet) ist damit noch ungenutzt.
 - **Helden** mit Primärwerten, Sekundärfertigkeiten und Zauberbuch.
 - **Belagerung**: Mauern, Catapult, Wall-Penalty für Schützen — eigene
   Battlefield-Variante mit Wall-Hexes.

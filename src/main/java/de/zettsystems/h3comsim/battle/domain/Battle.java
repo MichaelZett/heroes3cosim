@@ -11,6 +11,7 @@ import de.zettsystems.h3comsim.battle.domain.events.Winner;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
@@ -29,6 +30,17 @@ public final class Battle {
      * läuft, ohne dass jemand stirbt.
      */
     private static final int NO_PROGRESS_LIMIT = 20;
+
+    /**
+     * Reihenfolge der Late-Queue: langsamste Wartende zuerst, also genau umgekehrt zur
+     * Hauptphase. Das Verhalten ist H3-Spielverhalten, im RoE-Manual steht dazu nichts — belegt
+     * ist dort nur die Phasen-Trennung selbst (S. 43). Die Tiebreaker bleiben bewusst wie in
+     * {@code determineMoveOrder} (Attacker vor Defender, dann Slot): nur der Speed dreht sich um.
+     */
+    private static final Comparator<Stack> LATE_PHASE_ORDER = Comparator
+            .comparingInt(Stack::getSpeed)
+            .thenComparingInt((Stack s) -> s.side() == Side.ATTACKER ? 0 : 1)
+            .thenComparingInt(Stack::slot);
 
     private final RandomGenerator rng;
     private final AutoSolver autoSolver;
@@ -85,7 +97,7 @@ public final class Battle {
 
         Winner winner = determineWinner(setup);
 
-        List<StackSnapshot> finalStacks = new java.util.ArrayList<>();
+        List<StackSnapshot> finalStacks = new ArrayList<>();
         setup.attackerStacks().forEach(s -> finalStacks.add(snapshot(s)));
         setup.defenderStacks().forEach(s -> finalStacks.add(snapshot(s)));
         events.emit(new BattleEvent.BattleEnd(winner,
@@ -96,16 +108,40 @@ public final class Battle {
                 turn);
     }
 
+    /**
+     * Eine Runde in zwei Phasen, Manual S. 43: „Play will pass on to the next creature and return
+     * to the waiting creature at the end of the first phase, after all other creatures have had a
+     * chance to move." Wer in Phase 1 wartet, landet in der Late-Queue und handelt erst, wenn alle
+     * anderen gezogen sind — mit dem Brett, wie es dann aussieht.
+     */
     private void doTurn(BattleSetup setup) {
         autoSolver.planRound(setup);
         Deque<Stack> queue = determineMoveOrder(setup);
+        List<Stack> waiting = new ArrayList<>();
         for (Stack activeStack : queue) {
+            if (activeStack.isAbleToAct() && setup.bothAlive()) {
+                actWithMorale(activeStack, setup);
+                if (activeStack.hasWaitedThisTurn()) {
+                    waiting.add(activeStack);
+                }
+            }
+            BattleLogger.logShortDelimiter();
+        }
+        runLatePhase(waiting, setup);
+        queue.forEach(Stack::endTurn);
+    }
+
+    private void runLatePhase(List<Stack> waiting, BattleSetup setup) {
+        if (waiting.isEmpty()) {
+            return;
+        }
+        waiting.sort(LATE_PHASE_ORDER);
+        for (Stack activeStack : waiting) {
             if (activeStack.isAbleToAct() && setup.bothAlive()) {
                 actWithMorale(activeStack, setup);
             }
             BattleLogger.logShortDelimiter();
         }
-        queue.forEach(Stack::endTurn);
     }
 
     /**
@@ -119,7 +155,12 @@ public final class Battle {
         if (opponent == null) {
             return;
         }
-        takeAction(activeStack, opponent, setup);
+        if (!takeAction(activeStack, opponent, setup)) {
+            // Wait ist keine Aktion, sondern deren Verschiebung. Der Moral-Wurf gehört in die
+            // Late-Phase, in der der Stack tatsächlich handelt — und er darf hier auch keinen
+            // RNG ziehen, sonst verschiebt schon das bloße Warten den Zufallsstrom.
+            return;
+        }
         if (!activeStack.isAbleToAct() || !opponent.isAlive() || !activeStack.hasGoodMorale(rng)) {
             return;
         }
@@ -132,11 +173,25 @@ public final class Battle {
         }
     }
 
-    private void takeAction(Stack active, Stack opponent, BattleSetup setup) {
+    /**
+     * @return {@code false}, wenn der Stack seine Aktion nur verschoben hat (Wait) und deshalb in
+     *         der Late-Phase erneut drankommt; {@code true}, wenn er sie verbraucht hat.
+     */
+    private boolean takeAction(Stack active, Stack opponent, BattleSetup setup) {
         Battlefield battlefield = setup.battlefield();
         Action action = autoSolver.decide(active, opponent, battlefield);
         switch (action) {
-            case Action.Wait() -> emitWait(active);
+            case Action.Wait() -> {
+                if (active.hasWaitedThisTurn()) {
+                    // Zweites Wait in derselben Runde: die Verzögerung ist verbraucht, sonst
+                    // könnte sich ein Stack endlos nach hinten schieben. Defend statt die
+                    // Aktion ersatzlos zu verlieren — er bekommt wenigstens +20 % Defense.
+                    emitDefend(active);
+                } else {
+                    emitWait(active);
+                    return false;
+                }
+            }
             case Action.Defend() -> emitDefend(active);
             case Action.Move(Hex destination) -> {
                 if (isHexBlocked(destination, active, setup)) {
@@ -149,42 +204,49 @@ public final class Battle {
                     moveTo(active, destination, battlefield);
                 }
             }
-            case Action.MoveAndMelee(Hex destination, Stack target) -> {
-                if (isHexBlocked(destination, active, setup)) {
-                    emitDefend(active);
-                } else {
-                    Hex startPos = active.position();
-                    int hexesMoved = startPos.distanceTo(destination);
-                    moveTo(active, destination, battlefield);
-                    meleeAttack(active, target, hexesMoved, setup);
-                    if (active.hasSpeciality(UnitSpeciality.MOVE_BACK) && active.isAlive()) {
-                        BattleLogger.logMoveBack(active.getName(), startPos.q(), startPos.r());
-                        Hex returnFrom = active.position();
-                        List<HexCoord> backPath = battlefield.findPath(returnFrom, startPos,
-                                        active.unit().movement()).stream()
-                                .map(h -> new HexCoord(h.q(), h.r())).toList();
-                        active.moveTo(startPos);
-                        events.emit(new BattleEvent.MoveBack(active.side(), active.slot(),
-                                startPos.q(), startPos.r(), backPath));
-                    }
-                }
-            }
+            case Action.MoveAndMelee(Hex destination, Stack target) ->
+                    moveAndMelee(active, destination, target, setup);
             case Action.Melee(Stack target) -> meleeAttack(active, target, 0, setup);
-            case Action.Shoot(Stack target) -> {
-                if (!active.canShoot()) {
-                    // Keine Shots übrig (oder gar keine ranged Attacke) — Solver-Bug-
-                    // Sicherheitsnetz: kein Phantom-Schuss, Engine fällt zu Defend.
-                    emitDefend(active);
-                } else if (hasAdjacentEnemy(active, setup)) {
-                    // Manual S. 42: „Creatures with ranged attacks ... can fire only when
-                    // there are no adjacent enemies." Engaged Schütze kann nicht schießen
-                    // → defensiv Defend (Engine-Sicherheitsnetz; Solver wählt den Pfad
-                    // eigentlich nicht, weil pickTarget Adjacent-Engagement priorisiert).
-                    emitDefend(active);
-                } else {
-                    rangedAttack(active, target, setup);
-                }
-            }
+            case Action.Shoot(Stack target) -> shoot(active, target, setup);
+        }
+        return true;
+    }
+
+    private void moveAndMelee(Stack active, Hex destination, Stack target, BattleSetup setup) {
+        if (isHexBlocked(destination, active, setup)) {
+            emitDefend(active);
+            return;
+        }
+        Battlefield battlefield = setup.battlefield();
+        Hex startPos = active.position();
+        int hexesMoved = startPos.distanceTo(destination);
+        moveTo(active, destination, battlefield);
+        meleeAttack(active, target, hexesMoved, setup);
+        if (active.hasSpeciality(UnitSpeciality.MOVE_BACK) && active.isAlive()) {
+            BattleLogger.logMoveBack(active.getName(), startPos.q(), startPos.r());
+            Hex returnFrom = active.position();
+            List<HexCoord> backPath = battlefield.findPath(returnFrom, startPos,
+                            active.unit().movement()).stream()
+                    .map(h -> new HexCoord(h.q(), h.r())).toList();
+            active.moveTo(startPos);
+            events.emit(new BattleEvent.MoveBack(active.side(), active.slot(),
+                    startPos.q(), startPos.r(), backPath));
+        }
+    }
+
+    private void shoot(Stack active, Stack target, BattleSetup setup) {
+        if (!active.canShoot()) {
+            // Keine Shots übrig (oder gar keine ranged Attacke) — Solver-Bug-
+            // Sicherheitsnetz: kein Phantom-Schuss, Engine fällt zu Defend.
+            emitDefend(active);
+        } else if (hasAdjacentEnemy(active, setup)) {
+            // Manual S. 42: „Creatures with ranged attacks ... can fire only when
+            // there are no adjacent enemies." Engaged Schütze kann nicht schießen
+            // → defensiv Defend (Engine-Sicherheitsnetz; Solver wählt den Pfad
+            // eigentlich nicht, weil pickTarget Adjacent-Engagement priorisiert).
+            emitDefend(active);
+        } else {
+            rangedAttack(active, target, setup);
         }
     }
 
@@ -199,6 +261,7 @@ public final class Battle {
     }
 
     private void emitWait(Stack active) {
+        active.markWaited();
         BattleLogger.logWait(active.getName());
         events.emit(new BattleEvent.Wait(active.side(), active.slot()));
     }
