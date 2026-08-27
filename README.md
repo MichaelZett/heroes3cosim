@@ -243,17 +243,20 @@ zu lesen, nicht als universelle H3-Tier-Liste.
   Backlog: Sticky-Target für Multi-Stack-Schützen, Anti-IMPACT_DAMAGE-
   Defense, und Replay-Inspection einzelner Flip-Cells (z.B. CON vs
   NEC) zur Trennung Heuristik-Effekt vs. Faction-Balance.
-- **Friendly-Fire-Awareness — Nahkampf fehlt noch**. Der Splash der
-  Engine trifft beide Seiten. Seit die Ziel-Wahl der AoE-Schützen das
-  mitrechnet (Netto-Splash + Veto gegen Eigentor-Ziele), ist der
-  gemessene Eigenbeschuss von Inferno um 61 % gefallen und dessen
-  Ø-Win-Rate in der Faction-Matrix von 0.38 auf 0.46 gestiegen
+- **Friendly-Fire-Awareness — Boden-Nahkampf bleibt offen**. Der Splash
+  der Engine trifft beide Seiten. Die Ziel-Wahl der AoE-Schützen rechnet
+  das inzwischen mit (Netto-Splash plus Veto gegen Eigentor-Ziele), ebenso
+  die Lande-Hex-Wahl der Flieger. Gemessener Eigenschaden über 810
+  Battles: 10234 → 6077, Infernos Ø-Win-Rate 0.29 → 0.38 (gemessen mit
+  80 Sims je Match-up)
   (`build/reports/friendly-fire.md`, erzeugt vom
-  `FriendlyFireDiagnosisHarness`). Unangetastet ist der Nahkampf-Splash:
-  Cerberus (`THREE_HEADED_ATTACK`) und die Drachen (`FIRE_BREATH`)
-  streuen weiter in die eigenen Reihen, weil die Trefferfläche erst
-  nach dem Anmarsch feststeht und damit in der Bewegungs-, nicht in der
-  Ziel-Entscheidung korrigiert werden muss.
+  `FriendlyFireDiagnosisHarness`). Offen bleibt der Nahkampf am Boden:
+  Cerberus (`THREE_HEADED_ATTACK`) streut weiter in die eigenen Reihen,
+  weil die Trefferfläche erst nach dem Anmarsch feststeht. Eine
+  splash-optimale Lande-Hex-Wahl wurde gebaut und nach Messung verworfen —
+  sie senkte die Eigenverluste deutlich, kostete aber 14 Prozentpunkte
+  gegen Dungeon, weil die geretteten Einheiten Tier-1/2 sind und der
+  aufgegebene Positionsvorteil schwerer wiegt.
 - **Helden** mit Primärwerten, Sekundärfertigkeiten und Zauberbuch.
 - **Belagerung**: Mauern, Catapult, Wall-Penalty für Schützen — eigene
   Battlefield-Variante mit Wall-Hexes.

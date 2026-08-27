@@ -32,6 +32,15 @@ import java.util.List;
  */
 public final class GreedyAutoSolver implements AutoSolver {
 
+    /** Spiegelt den Zwei-Kollateral-Deckel aus {@code Battle.applyMeleeSplash}. */
+    private static final int MELEE_SPLASH_CAP = 2;
+    /**
+     * Gewicht eines Gegner-Treffers gegenüber einem Eigentreffer bei der Lande-Hex-Wahl.
+     * Größer als {@link #MELEE_SPLASH_CAP}, damit ein Gegner-Treffer jede erreichbare Zahl
+     * vermiedener Eigentreffer überwiegt — die Wertung wird dadurch lexikografisch.
+     */
+    private static final int ENEMY_HIT_WEIGHT = 10;
+
     private @Nullable BattleSetup currentSetup;
 
     @Override
@@ -172,52 +181,70 @@ public final class GreedyAutoSolver implements AutoSolver {
     }
 
     /**
-     * Bewertet einen potenziellen Lande-Hex anhand sekundärer Treffer:
+     * Bewertet einen potenziellen Lande-Hex anhand des <strong>Netto</strong>-Splash:
+     * getroffene Gegner (+1) minus getroffene eigene Stacks (−1).
      * <ul>
-     *   <li>FIRE_BREATH (Dragons): +1 wenn der Inline-Hex hinter dem Primärziel einen
-     *       Gegner-Stack trägt.</li>
-     *   <li>THREE_HEADED_ATTACK (Cerberus): +1 pro Gegner-Stack der zum Lande-Hex
-     *       adjacent ist (ohne das Primärziel zu doppeln).</li>
+     *   <li>FIRE_BREATH (Dragons): der Inline-Hex hinter dem Primärziel.</li>
+     *   <li>THREE_HEADED_ATTACK (Cerberus): die Nachbarn des Lande-Hex ohne das
+     *       Primärziel, in Nachbar-Reihenfolge und gedeckelt bei zwei Kollateralen —
+     *       so wie {@code Battle.applyMeleeSplash} es abarbeitet.</li>
      * </ul>
+     *
+     * <p>Der Abzug ist der Punkt: der Engine-Splash trifft beide Seiten. Wer nur Gegner
+     * zählt, sucht sich den Lande-Hex mit dem größten Eigenschaden aus, sobald die eigene
+     * Linie dicht steht. Und die Wahl ist klebrig — einmal adjacent, schlägt der Stack aus
+     * derselben Position weiter zu, ohne sich neu zu positionieren.
+     *
+     * <p><strong>Gewichtung ist lexikografisch</strong>, nicht symmetrisch: Gegner-Treffer
+     * zählen {@value #ENEMY_HIT_WEIGHT}, eigene 1. Ein Gegner-Treffer schlägt damit jede
+     * Zahl vermiedener Eigentreffer — Eigenbeschuss zu vermeiden lohnt nur, solange es
+     * keinen Gegner-Treffer kostet.
+     *
+     * <p>Greift nur für Flieger über {@link #findFlyerLanding}, die ohnehin einen Lande-Hex
+     * wählen. Bodeneinheiten bekommen bewusst <em>keine</em> eigene Lande-Hex-Suche: gemessen
+     * kostete das Inferno 14 Prozentpunkte gegen Dungeon, während der eingesparte
+     * Eigenbeschuss fast ausschließlich Tier-1/2-Einheiten betraf und den Ausgang nicht
+     * bewegte.
      */
     private int computeSplashScore(Stack active, Hex landingHex, Stack primary,
                                    boolean fireBreath, boolean threeHeaded) {
         int score = 0;
         if (fireBreath) {
-            Hex behind = behindHex(landingHex, primary.position());
-            if (findEnemyAt(behind, active) != null) {
-                score++;
-            }
+            score += collateralValue(active, behindHex(landingHex, primary.position()));
         }
         if (threeHeaded) {
+            int splashes = 0;
             for (Hex adj : landingHex.neighbors()) {
-                if (adj.equals(primary.position())) {
-                    continue;
+                if (splashes >= MELEE_SPLASH_CAP) {
+                    break;
                 }
-                if (findEnemyAt(adj, active) != null) {
-                    score++;
+                if (!adj.equals(primary.position())) {
+                    int value = collateralValue(active, adj);
+                    if (value != 0) {
+                        score += value;
+                        splashes++;
+                    }
                 }
             }
         }
         return score;
     }
 
+    /**
+     * {@code +}{@value #ENEMY_HIT_WEIGHT} für einen gegnerischen, {@code -1} für einen eigenen
+     * Stack auf {@code hex}, {@code 0} wenn der Hex leer ist.
+     */
+    private int collateralValue(Stack active, Hex hex) {
+        Stack occupant = findStackAt(hex, active);
+        if (occupant == null) {
+            return 0;
+        }
+        return occupant.side() == active.side() ? -1 : ENEMY_HIT_WEIGHT;
+    }
+
     private static Hex behindHex(Hex from, Hex through) {
         return new Hex(through.q() + (through.q() - from.q()),
                 through.r() + (through.r() - from.r()));
-    }
-
-    private @Nullable Stack findEnemyAt(Hex hex, Stack mover) {
-        BattleSetup setup = currentSetup;
-        if (setup == null) {
-            return null;
-        }
-        for (Stack o : setup.opponentsOf(mover)) {
-            if (o.isAlive() && o.position().equals(hex)) {
-                return o;
-            }
-        }
-        return null;
     }
 
     /**
@@ -252,24 +279,32 @@ public final class GreedyAutoSolver implements AutoSolver {
         return !path.isEmpty() && path.size() <= speed;
     }
 
+    private boolean isOccupiedByOther(Hex hex, Stack mover) {
+        return findStackAt(hex, mover) != null;
+    }
+
+    /**
+     * Lebender Stack auf {@code hex} — beide Seiten, nur {@code mover} selbst zählt nicht.
+     * Spiegelt {@code Battle.findStackAt}, damit Solver und Engine dieselbe Belegung sehen.
+     */
     // s != mover: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
     @SuppressWarnings("ReferenceEquality")
-    private boolean isOccupiedByOther(Hex hex, Stack mover) {
+    private @Nullable Stack findStackAt(Hex hex, Stack mover) {
         BattleSetup setup = currentSetup;
         if (setup == null) {
-            return false;
+            return null;
         }
         for (Stack s : setup.attackerStacks()) {
             if (s != mover && s.isAlive() && s.position().equals(hex)) {
-                return true;
+                return s;
             }
         }
         for (Stack s : setup.defenderStacks()) {
             if (s != mover && s.isAlive() && s.position().equals(hex)) {
-                return true;
+                return s;
             }
         }
-        return false;
+        return null;
     }
 
     private Action decideShooter(Stack active, Stack opponent, Battlefield bf,

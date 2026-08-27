@@ -108,16 +108,26 @@ class FriendlyFireDiagnosisHarness {
         for (BattleEvent event : collector.events()) {
             // Record-Patterns würden hier ungenutzte Bindings erzeugen (SpotBugs DLS_DEAD_LOCAL_STORE),
             // deshalb über die Accessoren.
-            if (event instanceof BattleEvent.Shoot shoot && shoot.actor() == shoot.target()) {
+            if (event instanceof BattleEvent.Shoot shoot) {
                 Tally t = tallies.get(shoot.actor() == Side.ATTACKER ? attackerFaction : defenderFaction);
-                t.rangedHits++;
-                t.rangedDamage += shoot.damage();
-                t.rangedKills += shoot.killed();
-            } else if (event instanceof BattleEvent.Melee melee && melee.actor() == melee.target()) {
+                if (shoot.actor() == shoot.target()) {
+                    t.rangedHits++;
+                    t.rangedDamage += shoot.damage();
+                    t.rangedKills += shoot.killed();
+                } else {
+                    t.enemyDamage += shoot.damage();
+                    t.enemyKills += shoot.killed();
+                }
+            } else if (event instanceof BattleEvent.Melee melee) {
                 Tally t = tallies.get(melee.actor() == Side.ATTACKER ? attackerFaction : defenderFaction);
-                t.meleeHits++;
-                t.meleeDamage += melee.damage();
-                t.meleeKills += melee.killed();
+                if (melee.actor() == melee.target()) {
+                    t.meleeHits++;
+                    t.meleeDamage += melee.damage();
+                    t.meleeKills += melee.killed();
+                } else {
+                    t.enemyDamage += melee.damage();
+                    t.enemyKills += melee.killed();
+                }
             }
         }
     }
@@ -151,8 +161,9 @@ class FriendlyFireDiagnosisHarness {
                 .append("Solver: StrategicAutoSolver. Deterministisch — identischer Code ")
                 .append("liefert identische Zahlen.\n\n");
         sb.append("| Faktion | Battles | FF-Treffer fern | FF-Schaden fern | FF-Kills fern ")
-                .append("| FF-Treffer nah | FF-Schaden nah | FF-Kills nah | Ø FF-Schaden/Battle |\n");
-        sb.append("|--|--|--|--|--|--|--|--|--|\n");
+                .append("| FF-Treffer nah | FF-Schaden nah | FF-Kills nah | Ø FF-Schaden/Battle ")
+                .append("| Gegner-Schaden | Gegner-Kills |\n");
+        sb.append("|--|--|--|--|--|--|--|--|--|--|--|\n");
         long totalDamage = 0;
         for (Faction f : FACTIONS_IN_ORDER) {
             Tally t = tallies.get(f);
@@ -167,6 +178,8 @@ class FriendlyFireDiagnosisHarness {
                     .append(" | ").append(t.meleeKills)
                     .append(" | ").append(String.format(Locale.ROOT, "%.1f",
                             t.battles == 0 ? 0.0 : (double) dmg / t.battles))
+                    .append(" | ").append(t.enemyDamage)
+                    .append(" | ").append(t.enemyKills)
                     .append(" |\n");
         }
         sb.append("\n**Gesamt-Eigenschaden**: ").append(totalDamage).append("\n");
@@ -181,5 +194,7 @@ class FriendlyFireDiagnosisHarness {
         private int meleeHits;
         private long meleeDamage;
         private int meleeKills;
+        private long enemyDamage;
+        private int enemyKills;
     }
 }
