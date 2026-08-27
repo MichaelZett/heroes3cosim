@@ -395,7 +395,11 @@ public final class Battle {
         int currentDamage = active.calculateCurrentDamage(attackType, 0, rng);
         int effectiveDefense = secondary.effectiveDefenseAgainst(active.getAttackerSpecialities());
         int boniMaliPercentage = active.calculateAttackBoniMaliPercentage(effectiveDefense);
-        int realDamage = (currentDamage * (100 + boniMaliPercentage)) / 100;
+        // Splash-Treffer sind normale Angriffe und bekommen dieselben Helden-Modifikatoren
+        // wie das Hauptziel — sonst würde ein Cerberus mit Offense-Held nur beim Primary
+        // profitieren und bei den Kollateralen nicht.
+        int realDamage = applyHeroCombatSkills(active, secondary, attackType,
+                (currentDamage * (100 + boniMaliPercentage)) / 100);
         int countBefore = secondary.getCount();
         BattleLogger.logAttack(active.getName(), secondary.getName());
         secondary.takeDamage(realDamage, active.getAttackerSpecialities());
@@ -408,6 +412,34 @@ public final class Battle {
             events.emit(new BattleEvent.Shoot(active.side(), active.slot(),
                     secondary.side(), secondary.slot(), distance, realDamage, killed, snapshot(secondary)));
         }
+    }
+
+    /**
+     * Schadens-Modifikatoren der beteiligten Helden, angewandt auf den bereits fertig
+     * berechneten Schaden. Das Manual formuliert alle drei als Prozent auf den
+     * <em>zugefügten</em> Schaden — also auf das Ergebnis der Formel von S. 43, nicht auf
+     * den Würfelwurf davor. Offense (Nahkampf) und Archery (Fernkampf) schließen einander
+     * aus, Armorer des Verteidigers greift danach.
+     *
+     * <p>Bewusst nicht erfasst: Fire Shield und Thunderbolts. Beides sind keine Angriffe
+     * des Stacks, sondern feste Reflexions- bzw. Proc-Schäden — Offense und Archery haben
+     * dort keinen Anknüpfungspunkt.
+     */
+    private static int applyHeroCombatSkills(Stack active, Stack passive, AttackType attackType,
+                                             int damage) {
+        int result = damage;
+        Hero attackerHero = active.commander();
+        if (attackerHero != null) {
+            int bonus = attackType == AttackType.HAND_TO_HAND
+                    ? attackerHero.offenseBonusPercent()
+                    : attackerHero.archeryBonusPercent();
+            result = (result * (100 + bonus)) / 100;
+        }
+        Hero defenderHero = passive.commander();
+        if (defenderHero != null) {
+            result = (result * (100 - defenderHero.armorerReductionPercent())) / 100;
+        }
+        return result;
     }
 
     private void applyFireShield(Stack active, Stack passive, int damageDealt) {
@@ -546,7 +578,8 @@ public final class Battle {
         }
         int effectiveDefense = passive.effectiveDefenseAgainst(active.getAttackerSpecialities());
         int boniMaliPercentage = active.calculateAttackBoniMaliPercentage(effectiveDefense);
-        int realDamage = (currentDamage * (100 + boniMaliPercentage)) / 100;
+        int realDamage = applyHeroCombatSkills(active, passive, attackType,
+                (currentDamage * (100 + boniMaliPercentage)) / 100);
 
         BattleLogger.logAttack(active.getName(), passive.getName());
         boolean rebirthUsedBefore = passive.isRebirthUsed();

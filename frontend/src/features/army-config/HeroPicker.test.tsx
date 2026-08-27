@@ -43,4 +43,31 @@ describe('HeroPicker', () => {
 
         expect(screen.queryByText(/\+4/)).not.toBeInTheDocument();
     });
+
+    it('lists the skills that actually affect combat, with their percentage', () => {
+        // Crag Hack hat Advanced Offense -> +20 % (Manual S. 38).
+        render(<HeroPicker heroes={TEST_HEROES} selectedName="Crag Hack" onChange={vi.fn()}/>);
+
+        expect(screen.getByText(/\+20%/)).toBeInTheDocument();
+    });
+
+    it('shows Armorer as a reduction, not as a bonus', () => {
+        // Tazar hat Advanced Armorer -> -10 % erlittener Schaden (Manual S. 35).
+        render(<HeroPicker heroes={TEST_HEROES} selectedName="Tazar" onChange={vi.fn()}/>);
+
+        expect(screen.getByText(/-10%/)).toBeInTheDocument();
+    });
+
+    it('does not advertise skills the engine ignores', () => {
+        // Leadership braucht das Moralsystem, Scholar wirkt ausserhalb des Kampfes - beide
+        // duerfen nicht als Kampfwirkung erscheinen.
+        const scholar = {
+            ...TEST_HEROES[0],
+            name: 'Neela',
+            skills: {SCHOLAR: 'BASIC', LEADERSHIP: 'EXPERT'} as const,
+        };
+        render(<HeroPicker heroes={[scholar]} selectedName="Neela" onChange={vi.fn()}/>);
+
+        expect(screen.queryByText(/wirkt im Kampf|effective in combat/)).not.toBeInTheDocument();
+    });
 });

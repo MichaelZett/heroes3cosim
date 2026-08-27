@@ -32,9 +32,11 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Werte aus dem RoE-Manual. Sein Angriffs- und Verteidigungswert wird auf
   jede Kreatur der geführten Armee addiert (Manual S. 33) und wirkt damit
   durch die gesamte Schadensformel. Auswahl im Army-Konfigurator, das
-  Fraktions-Preset schlägt den passenden Helden vor. Power, Knowledge und
-  Sekundärfertigkeiten sind noch ohne Wirkung — sie brauchen das
-  Zaubersystem bzw. die nächste Ausbaustufe.
+  Fraktions-Preset schlägt den passenden Helden vor. Dazu wirken drei
+  Sekundärfertigkeiten: Offense (+10/20/30 % Nahkampfschaden), Archery
+  (+10/25/50 % Fernkampf) und Armorer (−5/10/15 % erlittener Schaden).
+  Power, Knowledge und die übrigen Fertigkeiten sind noch ohne Wirkung —
+  sie brauchen das Zauber- bzw. Moralsystem.
 - **Rundenablauf in zwei Phasen** (Manual S. 43): Stacks ziehen nach
   Speed absteigend; wer *Wait* wählt, verschiebt seine Aktion ans Ende
   der Runde und handelt dort in umgekehrter Reihenfolge — langsamste
@@ -272,10 +274,10 @@ zu lesen, nicht als universelle H3-Tier-Liste.
   sie senkte die Eigenverluste deutlich, kostete aber 14 Prozentpunkte
   gegen Dungeon, weil die geretteten Einheiten Tier-1/2 sind und der
   aufgegebene Positionsvorteil schwerer wiegt.
-- **Helden, Stufe 2**: Offense, Archery und Armorer greifen alle in
-  denselben Schadenspfad; Tactics an die vorhandene Aufstellungs-Logik.
-  Erst damit werden die neun Helden voneinander unterscheidbar — heute
-  hängen ihre Werte allein an der Heldenklasse.
+- **Helden, nächste Stufe**: Leadership und Luck — beide brauchen erst ein
+  Armee-Moral- und Luck-System (Manual S. 43-44: negative Moral kostet die
+  Aktion, Luck gibt Doppelschaden). Danach Zauberei, die Power und
+  Knowledge überhaupt erst zu Wirkung verhilft.
 - **Taktisches Warten ausbauen**: Nahkämpfer nutzen *Wait* bereits, wenn
   sie ihr Ziel diese Runde nicht erreichen — messbar stärker, aber der
   Gewinn kommt fast nur von Tower. Offen sind Schützen (warten, bis der
