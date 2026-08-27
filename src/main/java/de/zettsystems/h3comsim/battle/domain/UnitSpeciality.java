@@ -40,31 +40,42 @@ public enum UnitSpeciality {
     DEVIL_RACE(SPECIAL),
     TITAN_RACE(SPECIAL),
 
-    // Not yet evaluated by the engine — defined for unit catalog tagging only.
-    IMMUNE_TO_BLIND(DEFENSE),
+    // Evaluated by the engine.
+    /** Cavalier/Champion: +5 % damage per hex of run-up, capped at +50 % (Stack). */
     IMPACT_DAMAGE(ATTACK),
+    /** Negates the half-damage penalty for an obstacle in the line of fire (Battle). */
     NO_OBSTACLE_PENALTY(SPECIAL),
+    /** Harpy: returns to its starting hex after a melee strike (Battle). */
     MOVE_BACK(SPECIAL),
-    RESURRECTION(SPECIAL),
     COUNTERSTRIKE_TWICE(DEFENSE),
     COUNTERSTRIKE_UNLIMITED(DEFENSE),
+    /** Behemoth line: cuts the defender's effective defense (Stack). */
+    DEFENSE_REDUCTION_40(ATTACK),
+    DEFENSE_REDUCTION_80(ATTACK),
+
+    // Not yet evaluated by the engine — defined for unit catalog tagging only.
+    // Most of these need the spell/hero system before they can be evaluated.
+    IMMUNE_TO_BLIND(DEFENSE),
+    RESURRECTION(SPECIAL),
     GOOD_ARMY_MORALE(SPECIAL),
     SPELL_COST_REDUCTION(SPECIAL),
     IMMUNE_TO_SPELLS(SPECIAL),
     IMMUNE_TO_SPELLS_BELOW_4(SPECIAL),
-    DEFENSE_REDUCTION_40(ATTACK),
-    DEFENSE_REDUCTION_80(ATTACK),
     CASTS_BLOODLUST(SPECIAL),
     ATTACKS_WALLS(SPECIAL),
 
     // Multi-Stack-Fähigkeiten (greifen erst, wenn mehr als ein Gegner-Stack auf dem Feld steht).
-    /** Cerberus: Nahkampf trifft drei adjazente Gegner-Hexen gleichzeitig. */
+    /** Cerberus: Nahkampf trifft bis zu drei adjazente Hexen der eigenen Position
+     *  gleichzeitig — Friendly Fire inklusive, eigene Nachbarn werden mitgetroffen. */
     THREE_HEADED_ATTACK(ATTACK),
-    /** Green/Gold/Red/Black/Azure Dragon: Nahkampf trifft zwei inline-Hexe (Ziel + dahinterliegender). */
+    /** Green/Gold/Red/Black/Azure Dragon: Nahkampf trifft zwei inline-Hexe (Ziel +
+     *  dahinterliegender). Friendly Fire inklusive, wenn dort ein eigener Stack steht. */
     FIRE_BREATH(ATTACK),
-    /** Magog: ranged-Hit als 3-Hex-Splash (Ziel-Hex + zwei seitliche Gegner-Nachbarn). */
+    /** Magog: ranged-Hit als 3-Hex-Splash (Ziel-Hex + zwei seitliche Nachbarn).
+     *  Friendly Fire inklusive — eigene Stacks im Radius werden mitgetroffen. */
     SPLASH_SHOT(ATTACK),
-    /** Lich: ranged-Hit erzeugt 7-Hex-AoE rund ums Ziel (Death Cloud). */
+    /** Lich: ranged-Hit erzeugt 7-Hex-AoE rund ums Ziel (Death Cloud). Friendly Fire
+     *  inklusive, aber Untote sind immun — eine reine Necropolis-Armee trifft sich nicht. */
     DEATH_CLOUD(ATTACK);
 
     private final UnitSpecialityType unitSpecialityType;

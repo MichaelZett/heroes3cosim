@@ -239,10 +239,21 @@ zu lesen, nicht als universelle H3-Tier-Liste.
   taktischen Aufstellung und Stance-unabhängigen Tank-Wall (Snapshot
   unter `build/reports/spawn-layout-comparison.md`) ist Tower zwar
   von 0.95 auf 0.89 Ø-Win-Rate zurück, dominiert aber weiter; Fortress
-  und Inferno bleiben am unteren Ende. Offene Feinheiten siehe
+  bleibt am unteren Ende. Offene Feinheiten siehe
   Backlog: Sticky-Target für Multi-Stack-Schützen, Anti-IMPACT_DAMAGE-
   Defense, und Replay-Inspection einzelner Flip-Cells (z.B. CON vs
   NEC) zur Trennung Heuristik-Effekt vs. Faction-Balance.
+- **Friendly-Fire-Awareness — Nahkampf fehlt noch**. Der Splash der
+  Engine trifft beide Seiten. Seit die Ziel-Wahl der AoE-Schützen das
+  mitrechnet (Netto-Splash + Veto gegen Eigentor-Ziele), ist der
+  gemessene Eigenbeschuss von Inferno um 61 % gefallen und dessen
+  Ø-Win-Rate in der Faction-Matrix von 0.38 auf 0.46 gestiegen
+  (`build/reports/friendly-fire.md`, erzeugt vom
+  `FriendlyFireDiagnosisHarness`). Unangetastet ist der Nahkampf-Splash:
+  Cerberus (`THREE_HEADED_ATTACK`) und die Drachen (`FIRE_BREATH`)
+  streuen weiter in die eigenen Reihen, weil die Trefferfläche erst
+  nach dem Anmarsch feststeht und damit in der Bewegungs-, nicht in der
+  Ziel-Entscheidung korrigiert werden muss.
 - **Helden** mit Primärwerten, Sekundärfertigkeiten und Zauberbuch.
 - **Belagerung**: Mauern, Catapult, Wall-Penalty für Schützen — eigene
   Battlefield-Variante mit Wall-Hexes.

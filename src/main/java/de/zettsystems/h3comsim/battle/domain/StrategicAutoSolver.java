@@ -37,6 +37,8 @@ public final class StrategicAutoSolver implements AutoSolver {
 
     private static final double DOMINANCE_THRESHOLD = 1.2;
     private static final int SHOT_HORIZON = 4;
+    /** Spiegelt den Zwei-Kollateral-Deckel aus {@code Battle.applySplashShot}. */
+    private static final int SPLASH_SHOT_COLLATERAL_CAP = 2;
 
     private final GreedyAutoSolver greedy = new GreedyAutoSolver();
 
@@ -73,19 +75,65 @@ public final class StrategicAutoSolver implements AutoSolver {
             return adjacent;
         }
 
-        Stack bySpeciality = pickBySpeciality(active, alive, battlefield);
-        if (bySpeciality != null) {
-            return bySpeciality;
+        Stack chosen = pickBySpeciality(active, alive, battlefield);
+        if (chosen == null) {
+            // (C) Focus-Fire: Team-Plan vorgeben lassen, sonst Greedy.
+            Stack focus = plan.focusOf(active.side());
+            chosen = focus != null && focus.isAlive() && alive.contains(focus)
+                    ? focus
+                    : greedy.pickTarget(active, opponents, battlefield);
         }
 
-        // (C) Focus-Fire: Team-Plan vorgeben lassen.
-        Stack focus = plan.focusOf(active.side());
-        if (focus != null && focus.isAlive() && alive.contains(focus)) {
-            return focus;
-        }
+        // (F) Friendly-Fire-Veto: gilt für JEDEN Pfad oben, nicht nur für die AoE-Heuristik.
+        return avoidSelfSplash(active, chosen, alive);
+    }
 
-        // Fallback: Greedy.
-        return greedy.pickTarget(active, opponents, battlefield);
+    /**
+     * Letzte Instanz vor der Zielabgabe: verhindert, dass ein AoE-Schütze auf ein Ziel feuert,
+     * dessen Splash-Radius eigene Stacks enthält, obwohl ein sauberes Ziel verfügbar wäre.
+     *
+     * <p>Nötig, weil {@link #pickByAoeHitCount} nur greift, solange irgendein Ziel einen
+     * positiven Netto-Splash hat. Sonst übernimmt Focus-Fire bzw. Greedy — und beide kennen
+     * Friendly Fire nicht. Genau dieser Pfad war der größere Anteil des gemessenen
+     * Inferno-Eigenbeschusses.
+     *
+     * <p>Bewusst als Veto und nicht als Gewichtung formuliert: das Team-Ziel bleibt gesetzt,
+     * solange es kein Eigentor ist. Nur wenn es eines wäre und eine treffergleiche saubere
+     * Alternative existiert, wird umgeschwenkt.
+     *
+     * @return das ursprüngliche Ziel, oder das beste eigenbeschussfreie Alternativziel
+     */
+    private @Nullable Stack avoidSelfSplash(Stack active, @Nullable Stack chosen,
+                                            List<Stack> alive) {
+        if (chosen == null || !active.canShoot()) {
+            return chosen;
+        }
+        boolean deathCloud = active.hasSpeciality(UnitSpeciality.DEATH_CLOUD);
+        if (!deathCloud && !active.hasSpeciality(UnitSpeciality.SPLASH_SHOT)) {
+            return chosen;
+        }
+        BattleSetup setup = currentSetup;
+        List<Stack> aliveAll = setup == null ? alive : setup.aliveStacks();
+        if (tallySplash(active, chosen, aliveAll, deathCloud).ownHits() == 0) {
+            return chosen;
+        }
+        Stack cleanest = null;
+        int bestEnemyHits = -1;
+        int bestDanger = -1;
+        for (Stack candidate : alive) {
+            SplashTally tally = tallySplash(active, candidate, aliveAll, deathCloud);
+            if (tally.ownHits() > 0) {
+                continue;
+            }
+            int danger = dangerScore(candidate);
+            if (tally.enemyHits() > bestEnemyHits
+                    || (tally.enemyHits() == bestEnemyHits && danger > bestDanger)) {
+                bestEnemyHits = tally.enemyHits();
+                bestDanger = danger;
+                cleanest = candidate;
+            }
+        }
+        return cleanest != null ? cleanest : chosen;
     }
 
     /**
@@ -106,11 +154,13 @@ public final class StrategicAutoSolver implements AutoSolver {
             }
         }
 
-        // (B) AoE-Schützen: Splash/Death-Cloud-Hits maximieren.
+        // (B) AoE-Schützen: Netto-Splash maximieren (Gegner-Treffer minus Eigenbeschuss).
         if (active.canShoot()
                 && (active.hasSpeciality(UnitSpeciality.SPLASH_SHOT)
                 || active.hasSpeciality(UnitSpeciality.DEATH_CLOUD))) {
-            return pickByAoeHitCount(alive);
+            BattleSetup setup = currentSetup;
+            return pickByAoeHitCount(active, alive,
+                    setup == null ? alive : setup.aliveStacks());
         }
 
         // (B) Fire-Breath-Nahkämpfer: Inline-Paare bevorzugen.
@@ -278,22 +328,27 @@ public final class StrategicAutoSolver implements AutoSolver {
     // Target-Pick-Helpers
     // ------------------------------------------------------------------ //
 
-    // other == target: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
-    @SuppressWarnings("ReferenceEquality")
-    private static @Nullable Stack pickByAoeHitCount(List<Stack> aliveEnemies) {
+    /**
+     * Wählt für einen AoE-Schützen (SPLASH_SHOT / DEATH_CLOUD) das Ziel mit dem besten
+     * Netto-Splash: getroffene Gegner minus getroffene <em>eigene</em> Stacks.
+     *
+     * <p>Friendly Fire ist engine-seitig aktiv — {@code Battle.findStackAt} iteriert beide
+     * Seiten. Eine Heuristik, die nur Gegner-Cluster zählt, optimiert deshalb auf Eigentore.
+     * Die Trefferzählung spiegelt die Engine-Geometrie exakt: SPLASH_SHOT nimmt die ersten
+     * zwei Stacks in Nachbar-Reihenfolge (eigene konkurrieren um dieselben zwei Plätze),
+     * DEATH_CLOUD trifft alle Nachbarn außer Untoten.
+     *
+     * @return bestes Ziel oder {@code null}, wenn kein Ziel einen positiven Netto-Splash hat
+     */
+    private static @Nullable Stack pickByAoeHitCount(Stack active, List<Stack> aliveEnemies,
+                                                     List<Stack> aliveAll) {
+        boolean deathCloud = active.hasSpeciality(UnitSpeciality.DEATH_CLOUD);
         Stack best = null;
         int bestScore = 0;
         int bestDanger = -1;
         for (Stack target : aliveEnemies) {
-            int score = 0;
-            for (Stack other : aliveEnemies) {
-                if (other == target) {
-                    continue;
-                }
-                if (target.position().distanceTo(other.position()) == 1) {
-                    score++;
-                }
-            }
+            SplashTally tally = tallySplash(active, target, aliveAll, deathCloud);
+            int score = tally.enemyHits() - tally.ownHits();
             int danger = dangerScore(target);
             if (score > bestScore || (score == bestScore && danger > bestDanger)) {
                 bestScore = score;
@@ -304,6 +359,70 @@ public final class StrategicAutoSolver implements AutoSolver {
         return bestScore > 0 ? best : null;
     }
 
+    /**
+     * Zählt die Splash-Kollateralen rund um {@code target}, getrennt nach Gegnern und eigenen
+     * Stacks. Spiegelt {@code Battle.applySplashShot} / {@code Battle.applyDeathCloud}:
+     * gleiche Nachbar-Reihenfolge, gleicher Zwei-Treffer-Deckel bei SPLASH_SHOT, gleiche
+     * Undead-Ausnahme bei DEATH_CLOUD. Der Schütze selbst und das Hauptziel zählen nicht mit.
+     */
+    private static SplashTally tallySplash(Stack active, Stack target, List<Stack> aliveAll,
+                                           boolean deathCloud) {
+        int enemyHits = 0;
+        int ownHits = 0;
+        int found = 0;
+        for (Hex neighbor : target.position().neighbors()) {
+            if (!deathCloud && found >= SPLASH_SHOT_COLLATERAL_CAP) {
+                break;
+            }
+            Stack collateral = splashVictimAt(neighbor, active, target, aliveAll, deathCloud);
+            if (collateral != null) {
+                found++;
+                if (collateral.side() == active.side()) {
+                    ownHits++;
+                } else {
+                    enemyHits++;
+                }
+            }
+        }
+        return new SplashTally(enemyHits, ownHits);
+    }
+
+    /**
+     * Der Stack auf {@code hex}, den der Splash tatsächlich treffen würde — sonst {@code null}.
+     * Der Schütze selbst und das Hauptziel zählen nicht als Kollateral, und Death Cloud
+     * verschont Untote (auf beiden Seiten).
+     */
+    // s == target / s == active: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
+    @SuppressWarnings("ReferenceEquality")
+    private static @Nullable Stack splashVictimAt(Hex hex, Stack active, Stack target,
+                                                  List<Stack> aliveAll, boolean deathCloud) {
+        for (Stack s : aliveAll) {
+            if (s == active || s == target || !s.position().equals(hex)) {
+                continue;
+            }
+            return deathCloud && s.unit().isUndead() ? null : s;
+        }
+        return null;
+    }
+
+    private record SplashTally(int enemyHits, int ownHits) {
+    }
+
+    /**
+     * Wählt für einen FIRE_BREATH-Nahkämpfer ein Ziel, hinter dem ein zweiter gegnerischer
+     * Stack steht. Nur Gegner sind Kandidaten, eigene Stacks im Breath-Hex können hier also
+     * gar nicht gewählt werden.
+     *
+     * <p><strong>Grenze der Heuristik</strong>: Der Breath-Hex wird aus
+     * {@code active.position()} <em>vor</em> der Bewegung bestimmt. {@code applyMeleeSplash}
+     * wertet ihn aber aus der Position <em>nach</em> dem Anmarsch aus. Die Vorhersage stimmt
+     * deshalb nur, wenn der Drache bereits in der Angriffslinie steht. Der gemessene
+     * FIRE_BREATH-Eigenbeschuss entsteht folgerichtig nicht hier, sondern im Fallback-Pfad.
+     * Sauber lösen lässt er sich nur über die Wahl des Lande-Hex, nicht über die Ziel-Wahl.
+     *
+     * @return bestes Inline-Ziel oder {@code null}, wenn keins existiert (dann entscheidet
+     *         der Team-Plan bzw. Greedy)
+     */
     private static @Nullable Stack pickInlineBreathTarget(Stack active, List<Stack> aliveEnemies) {
         Hex from = active.position();
         Stack best = null;
