@@ -70,10 +70,18 @@ dependencies {
 
 test {
     useJUnitPlatform()
+    // Diagnose-Harnesses sind per @EnabledIfSystemProperty ausgeschaltet und laufen nur,
+    // wenn -Ph3.harness=<name> gesetzt ist. Gradle forkt die Test-JVM, deshalb muss die
+    // Property explizit durchgereicht werden.
+    if (project.hasProperty('h3.harness')) {
+        systemProperty 'h3.harness', project.property('h3.harness')
+    }
     finalizedBy jacocoTestReport
 }
 
 
+import com.github.spotbugs.snom.Confidence
+import com.github.spotbugs.snom.Effort
 import com.github.spotbugs.snom.SpotBugsTask
 import net.ltgt.gradle.errorprone.CheckSeverity
 import org.gradle.internal.os.OperatingSystem
@@ -97,8 +105,11 @@ tasks.named("compileTestJava") {
 }
 
 spotbugs {
-    effort = 'MAX'
-    reportLevel = 'LOW'
+    // Kein String-Literal: Gradle 10 entfernt die String-zu-Enum-Coercion.
+    // Confidence ist ein Kotlin-Enum mit Konstanten-Bodies, deshalb sind die
+    // Konstanten in Groovy als Nested-Class sichtbar - valueOf statt Confidence.LOW.
+    effort = Effort.MAX
+    reportLevel = Confidence.valueOf('LOW')
     excludeFilter = file('config/spotbugs/exclude.xml')
 }
 
