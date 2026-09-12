@@ -63,25 +63,35 @@ jobs:
           min-coverage-overall: 80
           min-coverage-changed-files: 80
 
+      # Berichte nur bei Fehlschlag und nur kurz: Im Erfolgsfall stehen
+      # JUnit-Ergebnisse als Check, SpotBugs im Code Scanning und Coverage als
+      # PR-Kommentar; die Artefakte lagen sonst 90 Tage (Default-Aufbewahrung)
+      # ungeöffnet herum.
       - name: Upload test reports
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: test-reports
           path: |
             build/reports/tests/
             build/test-results/
+          retention-days: 3
+          compression-level: 9
 
       - name: Upload SpotBugs reports
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: spotbugs-reports
           path: build/reports/spotbugs/
+          retention-days: 3
+          compression-level: 9
 
       - name: Upload JaCoCo report
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: jacoco-report
           path: build/reports/jacoco/
+          retention-days: 3
+          compression-level: 9
