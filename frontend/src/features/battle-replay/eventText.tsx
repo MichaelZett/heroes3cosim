@@ -29,6 +29,11 @@ function sideSpan(side: Side) {
     return <span className={SIDE_CLASS[side]}/>;
 }
 
+/** Moral mit Vorzeichen: `+1`, `0`, `-2` — das Vorzeichen ist hier die eigentliche Information. */
+function signed(morale: number): string {
+    return morale > 0 ? `+${morale}` : String(morale);
+}
+
 interface EventTextProps {
     event: BattleEvent;
     names: SideNames;
@@ -37,19 +42,39 @@ interface EventTextProps {
 export function EventText({event, names}: Readonly<EventTextProps>) {
     const {t} = useTranslation();
     switch (event.type) {
-        case 'BattleStart':
+        case 'BattleStart': {
+            // Moral nur zeigen, wenn eine Seite überhaupt eine hat — bei 0 zu 0 wäre die
+            // Zeile reines Rauschen.
+            const attackerMorale = event.attackerMorale ?? 0;
+            const defenderMorale = event.defenderMorale ?? 0;
             return (
-                <Trans
-                    i18nKey="events.battleStart"
-                    values={{
-                        attacker: names.attacker,
-                        attackerCount: event.attacker.count,
-                        defender: names.defender,
-                        defenderCount: event.defender.count,
-                    }}
-                    components={{actor: sideSpan('ATTACKER'), target: sideSpan('DEFENDER')}}
-                />
+                <>
+                    <Trans
+                        i18nKey="events.battleStart"
+                        values={{
+                            attacker: names.attacker,
+                            attackerCount: event.attacker.count,
+                            defender: names.defender,
+                            defenderCount: event.defender.count,
+                        }}
+                        components={{actor: sideSpan('ATTACKER'), target: sideSpan('DEFENDER')}}
+                    />
+                    {(attackerMorale !== 0 || defenderMorale !== 0) && (
+                        <>
+                            {' '}
+                            <Trans
+                                i18nKey="events.battleStartMorale"
+                                values={{
+                                    attackerMorale: signed(attackerMorale),
+                                    defenderMorale: signed(defenderMorale),
+                                }}
+                                components={{actor: sideSpan('ATTACKER'), target: sideSpan('DEFENDER')}}
+                            />
+                        </>
+                    )}
+                </>
             );
+        }
         case 'Move':
             return (
                 <Trans
@@ -143,6 +168,14 @@ export function EventText({event, names}: Readonly<EventTextProps>) {
             return (
                 <Trans
                     i18nKey="events.goodMorale"
+                    values={{actor: sideName(event.actor, event.actorSlot ?? 0, names)}}
+                    components={{actor: sideSpan(event.actor)}}
+                />
+            );
+        case 'BadMorale':
+            return (
+                <Trans
+                    i18nKey="events.badMorale"
                     values={{actor: sideName(event.actor, event.actorSlot ?? 0, names)}}
                     components={{actor: sideSpan(event.actor)}}
                 />

@@ -31,6 +31,16 @@ export const TEST_HEROES: HeroDto[] = [
         knowledge: 1,
         skills: {ARMORER: 'ADVANCED'},
     },
+    {
+        name: 'Sorsha',
+        heroClass: 'KNIGHT',
+        faction: 'CASTLE',
+        attack: 2,
+        defense: 2,
+        power: 1,
+        knowledge: 1,
+        skills: {LEADERSHIP: 'BASIC', OFFENSE: 'BASIC'},
+    },
 ];
 
 export function unit(overrides: Partial<UnitDto> & { name: string }): UnitDto {
@@ -78,6 +88,8 @@ export function simulationFixture(): BattleSimulationDto {
             attacker: attackerSnap,
             defender: defenderSnap,
             stacks: [attackerSnap, defenderSnap],
+            attackerMorale: 0,
+            defenderMorale: 0,
         },
         {
             type: 'Move',

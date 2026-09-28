@@ -67,6 +67,8 @@ export const de = {
     events: {
         battleStart:
             'Kampf beginnt: <actor>{{attacker}}</actor> ({{attackerCount}}×) gegen <target>{{defender}}</target> ({{defenderCount}}×).',
+        battleStartMorale:
+            'Moral: <actor>Angreifer {{attackerMorale}}</actor>, <target>Verteidiger {{defenderMorale}}</target>.',
         move: '<actor>{{actor}}</actor> bewegt sich von ({{fromQ}},{{fromR}}) nach ({{toQ}},{{toR}}).',
         moveBack: '<actor>{{actor}}</actor> fliegt zurück nach ({{toQ}},{{toR}}).',
         wait: '<actor>{{actor}}</actor> wartet.',
@@ -79,6 +81,7 @@ export const de = {
         twoBlows: '<actor>{{actor}}</actor> schlägt ein zweites Mal.',
         twoShots: '<actor>{{actor}}</actor> schießt ein zweites Mal.',
         goodMorale: '<actor>{{actor}}</actor> hat gute Moral und greift erneut an.',
+        badMorale: '<actor>{{actor}}</actor> hat schlechte Moral und verliert die Aktion.',
         deathStare:
             '<actor>{{actor}}</actor> tötet {{kills}} Einheit(en) von <target>{{target}}</target> mit Death Stare.',
         thunderbolts:
@@ -122,7 +125,9 @@ export const de = {
         heroSkillOFFENSE: 'Angriff',
         heroSkillARCHERY: 'Bogenschießen',
         heroSkillARMORER: 'Rüstkunde',
+        heroSkillLEADERSHIP: 'Führerschaft',
         heroSkillEffective: '{{skills}} — wirkt im Kampf',
+        heroMorale: '{{value}} Moral auf jede Einheit, die nicht untot oder elementar ist',
         startBattle: 'Schlacht starten',
         battleTitle: 'Army-Battle Replay',
     },

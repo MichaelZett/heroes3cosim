@@ -2,23 +2,27 @@ import {useTranslation} from 'react-i18next';
 import type {HeroDto, SkillLevel} from '../../shared/api/types';
 
 /**
- * Nur diese drei Fertigkeiten wertet die Engine aus. Leadership braucht das Moralsystem,
- * Scholar und Necromancy wirken ausserhalb des Kampfes — sie hier zu zeigen waere ein
- * Versprechen, das die Simulation nicht einloest.
+ * Die drei Fertigkeiten, die als Prozent auf den Schaden wirken. Scholar und Necromancy wirken
+ * ausserhalb des Kampfes, Tactics hat kein Katalog-Held — sie hier zu zeigen waere ein
+ * Versprechen, das die Simulation nicht einloest. Leadership wirkt zwar, aber nicht auf den
+ * Schaden; es bekommt weiter unten eine eigene Zeile.
  *
  * Der enge Typ haelt die Liste mit den i18n-Keys army.heroSkill* synchron: ein Skill ohne
  * passenden Key waere ein Compile-Fehler statt eines fehlenden Labels zur Laufzeit.
  */
-type EffectiveSkill = 'OFFENSE' | 'ARCHERY' | 'ARMORER';
+type DamageSkill = 'OFFENSE' | 'ARCHERY' | 'ARMORER';
 
-const EFFECTIVE_SKILLS: EffectiveSkill[] = ['OFFENSE', 'ARCHERY', 'ARMORER'];
+const DAMAGE_SKILLS: DamageSkill[] = ['OFFENSE', 'ARCHERY', 'ARMORER'];
 
 /** Manual S. 35/38: Offense 10/20/30 %, Archery 10/25/50 %, Armorer 5/10/15 %. */
-const PERCENT: Record<EffectiveSkill, Partial<Record<SkillLevel, number>>> = {
+const PERCENT: Record<DamageSkill, Partial<Record<SkillLevel, number>>> = {
     OFFENSE: {BASIC: 10, ADVANCED: 20, EXPERT: 30},
     ARCHERY: {BASIC: 10, ADVANCED: 25, EXPERT: 50},
     ARMORER: {BASIC: 5, ADVANCED: 10, EXPERT: 15},
 };
+
+/** Leadership, Manual S. 37: +1/2/3 auf das Moral-Rating der Armee. */
+const LEADERSHIP_MORALE: Partial<Record<SkillLevel, number>> = {BASIC: 1, ADVANCED: 2, EXPERT: 3};
 
 interface HeroPickerProps {
     heroes: HeroDto[];
@@ -29,7 +33,7 @@ interface HeroPickerProps {
 /**
  * Auswahl des Helden, der diese Armee fuehrt.
  *
- * Angezeigt werden Angriff und Verteidigung sowie die drei Fertigkeiten, die die Engine
+ * Angezeigt werden Angriff und Verteidigung sowie die vier Fertigkeiten, die die Engine
  * auswertet. Power und Knowledge bleiben aussen vor: sie steuern ausschliesslich das Zaubern
  * und haben ohne Zaubersystem keinen Effekt — sie hier zu zeigen waere ein Versprechen, das
  * die Simulation nicht einloest.
@@ -38,7 +42,7 @@ export default function HeroPicker({heroes, selectedName, onChange}: Readonly<He
     const {t} = useTranslation();
     const current = heroes.find((h) => h.name === selectedName) ?? null;
     const skillText = current
-        ? EFFECTIVE_SKILLS.flatMap((skill) => {
+        ? DAMAGE_SKILLS.flatMap((skill) => {
               const level = current.skills[skill];
               if (!level || level === 'NONE') return [];
               const sign = skill === 'ARMORER' ? '-' : '+';
@@ -46,6 +50,7 @@ export default function HeroPicker({heroes, selectedName, onChange}: Readonly<He
               return [`${label} ${sign}${PERCENT[skill][level]}%`];
           }).join(', ')
         : '';
+    const leadership = current ? LEADERSHIP_MORALE[current.skills.LEADERSHIP ?? 'NONE'] : undefined;
 
     return (
         <div className="rounded-md border border-slate-800 bg-slate-950 p-3">
@@ -72,6 +77,12 @@ export default function HeroPicker({heroes, selectedName, onChange}: Readonly<He
                     {skillText && (
                         <p className="mt-1 text-xs text-amber-300/80">
                             {t('army.heroSkillEffective', {skills: skillText})}
+                        </p>
+                    )}
+                    {leadership !== undefined && (
+                        <p className="mt-1 text-xs text-amber-300/80">
+                            {t('army.heroSkillLEADERSHIP')}:{' '}
+                            {t('army.heroMorale', {value: `+${leadership}`})}
                         </p>
                     )}
                 </>

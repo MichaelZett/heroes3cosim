@@ -71,6 +71,8 @@ export const en: Dictionary = {
     events: {
         battleStart:
             'Battle begins: <actor>{{attacker}}</actor> ({{attackerCount}}×) vs. <target>{{defender}}</target> ({{defenderCount}}×).',
+        battleStartMorale:
+            'Morale: <actor>attacker {{attackerMorale}}</actor>, <target>defender {{defenderMorale}}</target>.',
         move: '<actor>{{actor}}</actor> moves from ({{fromQ}},{{fromR}}) to ({{toQ}},{{toR}}).',
         moveBack: '<actor>{{actor}}</actor> flies back to ({{toQ}},{{toR}}).',
         wait: '<actor>{{actor}}</actor> waits.',
@@ -83,6 +85,7 @@ export const en: Dictionary = {
         twoBlows: '<actor>{{actor}}</actor> strikes a second time.',
         twoShots: '<actor>{{actor}}</actor> shoots a second time.',
         goodMorale: '<actor>{{actor}}</actor> has good morale and attacks again.',
+        badMorale: '<actor>{{actor}}</actor> has bad morale and loses the action.',
         deathStare:
             '<actor>{{actor}}</actor> kills {{kills}} of <target>{{target}}</target> with Death Stare.',
         thunderbolts:
@@ -126,7 +129,9 @@ export const en: Dictionary = {
         heroSkillOFFENSE: 'Offense',
         heroSkillARCHERY: 'Archery',
         heroSkillARMORER: 'Armorer',
+        heroSkillLEADERSHIP: 'Leadership',
         heroSkillEffective: '{{skills}} — effective in combat',
+        heroMorale: '{{value}} morale on every creature that is neither undead nor elemental',
         startBattle: 'Start battle',
         battleTitle: 'Army battle replay',
     },

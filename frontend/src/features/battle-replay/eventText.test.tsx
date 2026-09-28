@@ -19,10 +19,50 @@ describe('eventToNode', () => {
             attacker: {side: 'ATTACKER', slot: 0, unitName: 'Pikeman', count: 10, topHp: 10, q: 0, r: 5},
             defender: {side: 'DEFENDER', slot: 0, unitName: 'Goblin', count: 8, topHp: 5, q: 14, r: 5},
             stacks: [],
+            attackerMorale: 0,
+            defenderMorale: 0,
         });
         expect(getByText('Pikeman')).toBeInTheDocument();
         expect(getByText('Goblin')).toBeInTheDocument();
         expect(container.textContent).toContain('Kampf beginnt');
+    });
+
+    it('adds the morale rating of both armies when at least one side has one', () => {
+        const {container} = renderEvent({
+            type: 'BattleStart',
+            battlefieldWidth: 15,
+            battlefieldHeight: 11,
+            obstacles: [],
+            attacker: {side: 'ATTACKER', slot: 0, unitName: 'Pikeman', count: 10, topHp: 10, q: 0, r: 5},
+            defender: {side: 'DEFENDER', slot: 0, unitName: 'Goblin', count: 8, topHp: 5, q: 14, r: 5},
+            stacks: [],
+            attackerMorale: 2,
+            defenderMorale: -1,
+        });
+        // Das Vorzeichen ist die Information - +2 wirkt anders als -1.
+        expect(container.textContent).toContain('+2');
+        expect(container.textContent).toContain('-1');
+    });
+
+    it('stays silent about morale when neither side has any', () => {
+        const {container} = renderEvent({
+            type: 'BattleStart',
+            battlefieldWidth: 15,
+            battlefieldHeight: 11,
+            obstacles: [],
+            attacker: {side: 'ATTACKER', slot: 0, unitName: 'Pikeman', count: 10, topHp: 10, q: 0, r: 5},
+            defender: {side: 'DEFENDER', slot: 0, unitName: 'Goblin', count: 8, topHp: 5, q: 14, r: 5},
+            stacks: [],
+            attackerMorale: 0,
+            defenderMorale: 0,
+        });
+        expect(container.textContent).not.toContain('Moral');
+    });
+
+    it('renders BadMorale as a lost action', () => {
+        const {container} = renderEvent({type: 'BadMorale', actor: 'DEFENDER', actorSlot: 0});
+
+        expect(container.textContent).toContain('schlechte Moral');
     });
 
     it('paints the attacker name in amber and the defender name in blue', () => {

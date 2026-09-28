@@ -71,7 +71,8 @@ public final class Battle {
         StackSnapshot defenderSnap = snapshot(setup.getDefender());
         List<StackSnapshot> initialStacks = setup.aliveStacks().stream().map(Battle::snapshot).toList();
         events.emit(new BattleEvent.BattleStart(bf.width(), bf.height(), obstacleCoords,
-                attackerSnap, defenderSnap, initialStacks));
+                attackerSnap, defenderSnap, initialStacks,
+                setup.moraleOf(Side.ATTACKER), setup.moraleOf(Side.DEFENDER)));
 
         int attackerStart = setup.getAttackerCount();
         int defenderStart = setup.getDefenderCount();
@@ -145,12 +146,24 @@ public final class Battle {
     }
 
     /**
-     * Reguläre Aktion eines Stacks plus die optionale zweite Aktion durch
-     * {@link UnitSpeciality#GOOD_MORALE}. Der Moral-Wurf passiert bewusst erst nach den
-     * beiden Vorbedingungen — das hält den RNG-Strom bei gleichem Seed identisch.
+     * Reguläre Aktion eines Stacks, eingerahmt von den beiden Moral-Würfen (Manual S. 43):
+     * negative Moral kann die Aktion davor kosten, positive kann eine zweite dahinter setzen.
+     *
+     * <p>Beide Würfe passieren bewusst erst nach ihren Vorbedingungen — sie ziehen nur dann
+     * einen Zufallswert, wenn die Moral überhaupt in die jeweilige Richtung zeigt. So hält
+     * eine Armee mit Moral 0 den RNG-Strom bei gleichem Seed identisch.
      */
     private void actWithMorale(Stack activeStack, BattleSetup setup) {
         Battlefield battlefield = setup.battlefield();
+        // Der Freeze-Wurf gehört vor die Entscheidung, nicht dahinter: in H3 friert die Kreatur
+        // ein, bevor der Spieler überhaupt zwischen Angriff, Wait und Defend wählen darf.
+        // Wer in Phase 1 gewartet hat, hat dort bereits gewürfelt — in der Late-Phase würde ein
+        // zweiter Wurf dem Warten eine doppelte Einfrier-Chance aufbürden.
+        if (!activeStack.hasWaitedThisTurn() && activeStack.freezes(rng)) {
+            BattleLogger.logBadMorale(activeStack.getName());
+            events.emit(new BattleEvent.BadMorale(activeStack.side(), activeStack.slot()));
+            return;
+        }
         Stack opponent = autoSolver.pickTarget(activeStack, setup.opponentsOf(activeStack), battlefield);
         if (opponent == null) {
             return;

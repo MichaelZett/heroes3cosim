@@ -92,7 +92,7 @@ function applyEvent(stacks: Map<string, SideState>, event: BattleEvent): void {
       snapshotInto(stacks, event.actorAfter);
       return;
     default:
-      // Marker-Events (Wait, TwoBlows, TwoShots, GoodMorale, Petrifying, Cursing,
+      // Marker-Events (Wait, TwoBlows, TwoShots, GoodMorale, BadMorale, Petrifying, Cursing,
       // Poisoning, Diseasing, Aging, BattleStart, BattleEnd) — kein Grid-State.
       return;
   }

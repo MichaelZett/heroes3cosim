@@ -33,6 +33,7 @@ public class Stack {
     private boolean defending;
     private boolean waitedThisTurn;
     private @Nullable Hero commander;
+    private int armyMorale;
 
     /** Convenience constructor — defaults the side to {@link Side#ATTACKER}. */
     public Stack(Unit unit, int count, Hex position) {
@@ -140,6 +141,11 @@ public class Stack {
         this.commander = hero;
     }
 
+    /** Moral-Rating der Armee, zu der dieser Stack gehoert — gesetzt von {@link BattleSetup}. */
+    void assignArmyMorale(int rating) {
+        this.armyMorale = rating;
+    }
+
     /**
      * Manual S. 43: Wait verschiebt die Aktion ans Ende der ersten Phase. Die Verzögerung ist
      * damit pro Runde verbraucht — ein zweites Wait gibt es nicht, sonst könnte sich ein Stack
@@ -233,15 +239,39 @@ public class Stack {
         return 1;
     }
 
-    public boolean hasGoodMorale(RandomGenerator rng) {
-        int morale = unit.morale();
-        if (morale > 0) {
-            int random = rng.nextInt(1000);
-            return (morale == 3 && random <= 125)
-                    || (morale == 2 && random <= 83)
-                    || (morale == 1 && random <= 42);
+    /**
+     * Moral dieses Stacks: Armee-Rating plus individueller Bonus der Kreatur, gekappt auf
+     * [-3, +3] (Manual S. 43).
+     *
+     * <p>Untote und Elementare stehen außerhalb: ihre Moral ist fest 0, „independent of their
+     * army's morale rating". Ein Necropolis-Held mit Leadership hebt seine Skelette also nicht —
+     * weshalb das Manual Necromancern die Fertigkeit gleich ganz verwehrt.
+     */
+    public int getMorale() {
+        if (unit.hasFixedZeroMorale()) {
+            return 0;
         }
-        return false;
+        return ArmyMorale.clamp(armyMorale + unit.morale());
+    }
+
+    /**
+     * Positive Moral, Manual S. 43: Chance auf eine zweite Aktion — 4.2 / 8.3 / 12.5 %.
+     * Zieht nur bei positiver Moral einen Zufallswert; bei 0 oder negativer Moral bleibt der
+     * Zufallsstrom unangetastet.
+     */
+    public boolean hasGoodMorale(RandomGenerator rng) {
+        int morale = getMorale();
+        return morale > 0 && rng.nextInt(1000) < ArmyMorale.triggerChancePerMille(morale);
+    }
+
+    /**
+     * Negative Moral, Manual S. 43: Chance, die Aktion dieser Runde zu verlieren — mit denselben
+     * 4.2 / 8.3 / 12.5 %. Die Kreatur „freezes", sie handelt gar nicht; sie verteidigt auch
+     * nicht ersatzweise.
+     */
+    public boolean freezes(RandomGenerator rng) {
+        int morale = getMorale();
+        return morale < 0 && rng.nextInt(1000) < ArmyMorale.triggerChancePerMille(-morale);
     }
 
     public void takeDamage(int baseDamage, Set<UnitSpeciality> attackerSpecialities) {

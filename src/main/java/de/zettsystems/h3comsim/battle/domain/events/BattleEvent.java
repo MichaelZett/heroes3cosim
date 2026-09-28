@@ -19,6 +19,7 @@ import java.util.List;
         @JsonSubTypes.Type(value = BattleEvent.TwoBlows.class, name = "TwoBlows"),
         @JsonSubTypes.Type(value = BattleEvent.TwoShots.class, name = "TwoShots"),
         @JsonSubTypes.Type(value = BattleEvent.GoodMorale.class, name = "GoodMorale"),
+        @JsonSubTypes.Type(value = BattleEvent.BadMorale.class, name = "BadMorale"),
         @JsonSubTypes.Type(value = BattleEvent.MoveBack.class, name = "MoveBack"),
         @JsonSubTypes.Type(value = BattleEvent.DeathStare.class, name = "DeathStare"),
         @JsonSubTypes.Type(value = BattleEvent.Thunderbolts.class, name = "Thunderbolts"),
@@ -45,6 +46,7 @@ import java.util.List;
                 BattleEvent.Defend.class,
                 BattleEvent.Shoot.class, BattleEvent.Melee.class, BattleEvent.Retaliation.class,
                 BattleEvent.TwoBlows.class, BattleEvent.TwoShots.class, BattleEvent.GoodMorale.class,
+                BattleEvent.BadMorale.class,
                 BattleEvent.MoveBack.class, BattleEvent.DeathStare.class, BattleEvent.Thunderbolts.class,
                 BattleEvent.Petrifying.class, BattleEvent.Cursing.class, BattleEvent.Poisoning.class,
                 BattleEvent.Diseasing.class, BattleEvent.Aging.class, BattleEvent.FireShield.class,
@@ -62,6 +64,7 @@ import java.util.List;
                 @DiscriminatorMapping(value = "TwoBlows", schema = BattleEvent.TwoBlows.class),
                 @DiscriminatorMapping(value = "TwoShots", schema = BattleEvent.TwoShots.class),
                 @DiscriminatorMapping(value = "GoodMorale", schema = BattleEvent.GoodMorale.class),
+                @DiscriminatorMapping(value = "BadMorale", schema = BattleEvent.BadMorale.class),
                 @DiscriminatorMapping(value = "MoveBack", schema = BattleEvent.MoveBack.class),
                 @DiscriminatorMapping(value = "DeathStare", schema = BattleEvent.DeathStare.class),
                 @DiscriminatorMapping(value = "Thunderbolts", schema = BattleEvent.Thunderbolts.class),
@@ -77,14 +80,16 @@ import java.util.List;
 public sealed interface BattleEvent {
 
     @Schema(name = "BattleStart",
-            description = "Eröffnungs-Event. Liefert die Battlefield-Dimensionen, alle Obstacles, die initialen Single-Battle-Snapshots (slot 0) und für Army-Battles die vollständige Stack-Liste `stacks`.")
+            description = "Eröffnungs-Event. Liefert die Battlefield-Dimensionen, alle Obstacles, die initialen Single-Battle-Snapshots (slot 0), für Army-Battles die vollständige Stack-Liste `stacks` sowie das Moral-Rating beider Armeen.")
     record BattleStart(
             @Schema(description = "Anzahl Hex-Spalten des Battlefields", example = "15") int battlefieldWidth,
             @Schema(description = "Anzahl Hex-Reihen des Battlefields", example = "11") int battlefieldHeight,
             @Schema(description = "Liste aller blockenden Obstacles auf dem Feld") List<HexCoord> obstacles,
             @Schema(description = "Start-Snapshot des Attacker-Stacks (Slot 0 — für Single-Battle Vollständigkeit, für Army-Battles der Stack auf Slot 0)") StackSnapshot attacker,
             @Schema(description = "Start-Snapshot des Defender-Stacks (Slot 0)") StackSnapshot defender,
-            @Schema(description = "Alle initialen Stacks beider Seiten (Army-Battle). Single-Battle: zwei Snapshots — Slot 0 Attacker + Slot 0 Defender.") List<StackSnapshot> stacks) implements BattleEvent {
+            @Schema(description = "Alle initialen Stacks beider Seiten (Army-Battle). Single-Battle: zwei Snapshots — Slot 0 Attacker + Slot 0 Defender.") List<StackSnapshot> stacks,
+            @Schema(description = "Moral-Rating der Angreifer-Armee (Manual S. 43): Stadt-Typen, Untoten-Mischung, Leadership des Helden und Angel-Bonus zusammengerechnet. Untote und Elementare bleiben davon unberührt und haben immer Moral 0.", example = "1") int attackerMorale,
+            @Schema(description = "Moral-Rating der Verteidiger-Armee, analog zu `attackerMorale`.", example = "0") int defenderMorale) implements BattleEvent {
         public BattleStart {
             obstacles = List.copyOf(obstacles);
             stacks = List.copyOf(stacks);
@@ -177,6 +182,13 @@ public sealed interface BattleEvent {
             description = "Marker: Good-Morale-Trigger — der Stack erhält direkt im Anschluss eine zweite Aktion.")
     record GoodMorale(
             @Schema(description = "Stack mit Morale-Bonus") Side actor,
+            @Schema(description = "Slot des Stacks") int actorSlot) implements BattleEvent {
+    }
+
+    @Schema(name = "BadMorale",
+            description = "Marker: Bad-Morale-Trigger — der Stack ist eingefroren und verliert seine Aktion in dieser Runde vollständig. Er verteidigt auch nicht ersatzweise.")
+    record BadMorale(
+            @Schema(description = "Stack mit negativer Moral") Side actor,
             @Schema(description = "Slot des Stacks") int actorSlot) implements BattleEvent {
     }
 
