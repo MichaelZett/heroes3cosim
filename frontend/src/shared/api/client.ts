@@ -1,14 +1,14 @@
 import type {
-    ArmyBattleRequest,
-    ArmyBattleSimulation,
-    ArmyPresetsResponse,
-    BattleConfigRequest,
-    BattleSimulationDto,
-    Faction,
-    HeroDto,
-    MatrixJobSnapshot,
-    MatrixRequestDto,
-    UnitDto,
+  ArmyBattleRequest,
+  ArmyBattleSimulation,
+  ArmyPresetsResponse,
+  BattleConfigRequest,
+  BattleSimulationDto,
+  Faction,
+  HeroDto,
+  MatrixJobSnapshot,
+  MatrixRequestDto,
+  UnitDto,
 } from './types';
 
 // Im Dev-Modus reicht Vite das `/api`-Präfix transparent an Spring auf 8080 weiter
@@ -16,49 +16,49 @@ import type {
 const API_BASE = '/api';
 
 async function jsonFetch<T>(path: string, init?: RequestInit): Promise<T> {
-    const response = await fetch(`${API_BASE}${path}`, {
-        headers: {'Content-Type': 'application/json', Accept: 'application/json'},
-        ...init,
-    });
-    if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`API ${response.status} ${response.statusText}: ${text || path}`);
-    }
-    return (await response.json()) as T;
+  const response = await fetch(`${API_BASE}${path}`, {
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    ...init,
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`API ${response.status} ${response.statusText}: ${text || path}`);
+  }
+  return (await response.json()) as T;
 }
 
 export const api = {
-    listUnits(): Promise<UnitDto[]> {
-        return jsonFetch<UnitDto[]>('/units');
-    },
-    listFactions(): Promise<Faction[]> {
-        return jsonFetch<Faction[]>('/factions');
-    },
-    listHeroes(): Promise<HeroDto[]> {
-        return jsonFetch<HeroDto[]>('/heroes');
-    },
-    simulateBattle(request: BattleConfigRequest): Promise<BattleSimulationDto> {
-        return jsonFetch<BattleSimulationDto>('/battles/simulate', {
-            method: 'POST',
-            body: JSON.stringify(request),
-        });
-    },
-    startMatrix(request: MatrixRequestDto): Promise<MatrixJobSnapshot> {
-        return jsonFetch<MatrixJobSnapshot>('/experiments/matrix', {
-            method: 'POST',
-            body: JSON.stringify(request),
-        });
-    },
-    getMatrixJob(jobId: string): Promise<MatrixJobSnapshot> {
-        return jsonFetch<MatrixJobSnapshot>(`/experiments/matrix/${jobId}`);
-    },
-    simulateArmyBattle(request: ArmyBattleRequest): Promise<ArmyBattleSimulation> {
-        return jsonFetch<ArmyBattleSimulation>('/army-battles/simulate', {
-            method: 'POST',
-            body: JSON.stringify(request),
-        });
-    },
-    listArmyPresets(): Promise<ArmyPresetsResponse> {
-        return jsonFetch<ArmyPresetsResponse>('/army-battles/presets');
-    },
+  listUnits(): Promise<UnitDto[]> {
+    return jsonFetch<UnitDto[]>('/units');
+  },
+  listFactions(): Promise<Faction[]> {
+    return jsonFetch<Faction[]>('/factions');
+  },
+  listHeroes(): Promise<HeroDto[]> {
+    return jsonFetch<HeroDto[]>('/heroes');
+  },
+  simulateBattle(request: BattleConfigRequest): Promise<BattleSimulationDto> {
+    return jsonFetch<BattleSimulationDto>('/battles/simulate', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  },
+  startMatrix(request: MatrixRequestDto): Promise<MatrixJobSnapshot> {
+    return jsonFetch<MatrixJobSnapshot>('/experiments/matrix', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  },
+  getMatrixJob(jobId: string): Promise<MatrixJobSnapshot> {
+    return jsonFetch<MatrixJobSnapshot>(`/experiments/matrix/${jobId}`);
+  },
+  simulateArmyBattle(request: ArmyBattleRequest): Promise<ArmyBattleSimulation> {
+    return jsonFetch<ArmyBattleSimulation>('/army-battles/simulate', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  },
+  listArmyPresets(): Promise<ArmyPresetsResponse> {
+    return jsonFetch<ArmyPresetsResponse>('/army-battles/presets');
+  },
 };

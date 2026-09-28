@@ -1,156 +1,156 @@
-import type {ReactNode, SyntheticEvent} from 'react';
-import {useNavigate} from 'react-router-dom';
-import {useTranslation} from 'react-i18next';
+import type { ReactNode, SyntheticEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import ArmySelector from './ArmySelector';
 import LanguageSwitcher from '../../shared/ui/LanguageSwitcher';
 import ModeSwitcher from '../../shared/ui/ModeSwitcher';
-import {useFactions, useSimulateBattle, useUnits} from '../../shared/api/hooks';
-import {useBattleStore} from '../battle-replay/battleStore';
-import {useBattleConfigStore} from './battleConfigStore';
+import { useFactions, useSimulateBattle, useUnits } from '../../shared/api/hooks';
+import { useBattleStore } from '../battle-replay/battleStore';
+import { useBattleConfigStore } from './battleConfigStore';
 
 export default function ConfigPage() {
-    const navigate = useNavigate();
-    const {t} = useTranslation();
-    const loadSimulation = useBattleStore((s) => s.loadSimulation);
-    const form = useBattleConfigStore((s) => s.form);
-    const setForm = useBattleConfigStore((s) => s.setForm);
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+  const loadSimulation = useBattleStore((s) => s.loadSimulation);
+  const form = useBattleConfigStore((s) => s.form);
+  const setForm = useBattleConfigStore((s) => s.setForm);
 
-    const unitsQuery = useUnits();
-    const factionsQuery = useFactions();
+  const unitsQuery = useUnits();
+  const factionsQuery = useFactions();
 
-    const simulate = useSimulateBattle((sim, request) => {
-        loadSimulation(sim, request);
-        navigate('/battle');
+  const simulate = useSimulateBattle((sim, request) => {
+    loadSimulation(sim, request);
+    navigate('/battle');
+  });
+
+  function handleSubmit(e: SyntheticEvent) {
+    e.preventDefault();
+    if (!form.attackerUnit || !form.defenderUnit) return;
+    const seedNum = form.seedText.trim() === '' ? null : Number(form.seedText);
+    simulate.mutate({
+      attackerUnit: form.attackerUnit,
+      attackerCount: form.attackerCount,
+      defenderUnit: form.defenderUnit,
+      defenderCount: form.defenderCount,
+      seed: seedNum !== null && Number.isFinite(seedNum) ? seedNum : null,
     });
+  }
 
-    function handleSubmit(e: SyntheticEvent) {
-        e.preventDefault();
-        if (!form.attackerUnit || !form.defenderUnit) return;
-        const seedNum = form.seedText.trim() === '' ? null : Number(form.seedText);
-        simulate.mutate({
-            attackerUnit: form.attackerUnit,
-            attackerCount: form.attackerCount,
-            defenderUnit: form.defenderUnit,
-            defenderCount: form.defenderCount,
-            seed: seedNum !== null && Number.isFinite(seedNum) ? seedNum : null,
-        });
-    }
+  function rollSeed() {
+    setForm({ seedText: String(Math.floor(Math.random() * 1_000_000)) });
+  }
 
-    function rollSeed() {
-        setForm({seedText: String(Math.floor(Math.random() * 1_000_000))});
-    }
-
-    if (unitsQuery.isPending || factionsQuery.isPending) {
-        return <CenteredMessage>{t('config.loading')}</CenteredMessage>;
-    }
-    if (unitsQuery.isError || factionsQuery.isError) {
-        return (
-            <CenteredMessage tone="error">
-                {t('config.apiDown', {url: 'localhost:8080'})}
-            </CenteredMessage>
-        );
-    }
-
-    const submitDisabled = !form.attackerUnit || !form.defenderUnit || simulate.isPending;
-
+  if (unitsQuery.isPending || factionsQuery.isPending) {
+    return <CenteredMessage>{t('config.loading')}</CenteredMessage>;
+  }
+  if (unitsQuery.isError || factionsQuery.isError) {
     return (
-        <main className="mx-auto max-w-5xl p-8">
-            <header className="mb-6 flex items-start justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold text-slate-100">{t('config.title')}</h1>
-                    <p className="mt-2 text-slate-400">{t('config.subtitle')}</p>
-                </div>
-                <LanguageSwitcher/>
-            </header>
-
-            <div className="mb-6">
-                <ModeSwitcher current="single"/>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid gap-6 md:grid-cols-2">
-                    <ArmySelector
-                        title={t('config.attackerTitle')}
-                        factions={factionsQuery.data}
-                        units={unitsQuery.data}
-                        selectedFaction={form.attackerFaction}
-                        selectedTier={form.attackerTier}
-                        selectedUnit={form.attackerUnit}
-                        count={form.attackerCount}
-                        onFactionChange={(v) => setForm({attackerFaction: v})}
-                        onTierChange={(v) => setForm({attackerTier: v})}
-                        onUnitChange={(v) => setForm({attackerUnit: v})}
-                        onCountChange={(v) => setForm({attackerCount: v})}
-                    />
-                    <ArmySelector
-                        title={t('config.defenderTitle')}
-                        factions={factionsQuery.data}
-                        units={unitsQuery.data}
-                        selectedFaction={form.defenderFaction}
-                        selectedTier={form.defenderTier}
-                        selectedUnit={form.defenderUnit}
-                        count={form.defenderCount}
-                        onFactionChange={(v) => setForm({defenderFaction: v})}
-                        onTierChange={(v) => setForm({defenderTier: v})}
-                        onUnitChange={(v) => setForm({defenderUnit: v})}
-                        onCountChange={(v) => setForm({defenderCount: v})}
-                    />
-                </div>
-
-                <section className="rounded-lg border border-slate-800 bg-slate-900 p-6">
-                    <h2 className="text-lg font-semibold text-slate-100">{t('config.seedTitle')}</h2>
-                    <div className="mt-4 flex items-end gap-3">
-                        <label className="flex-1">
-                            <span className="text-sm text-slate-400">{t('config.seedHint')}</span>
-                            <input
-                                type="number"
-                                inputMode="numeric"
-                                placeholder={t('config.seedPlaceholder')}
-                                className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-amber-500 focus:outline-none"
-                                value={form.seedText}
-                                onChange={(e) => setForm({seedText: e.target.value})}
-                            />
-                        </label>
-                        <button
-                            type="button"
-                            onClick={rollSeed}
-                            className="rounded-md border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:border-amber-500 hover:text-amber-400"
-                        >
-                            {t('config.rollSeed')}
-                        </button>
-                    </div>
-                </section>
-
-                {simulate.isError && (
-                    <p className="text-sm text-red-400">
-                        {t('config.simulationFailed', {message: simulate.error.message})}
-                    </p>
-                )}
-
-                <div className="flex justify-end">
-                    <button
-                        type="submit"
-                        disabled={submitDisabled}
-                        className="rounded-md bg-amber-500 px-6 py-3 text-base font-semibold text-slate-950 transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
-                    >
-                        {simulate.isPending ? t('config.simulating') : t('config.startBattle')}
-                    </button>
-                </div>
-            </form>
-        </main>
+      <CenteredMessage tone="error">
+        {t('config.apiDown', { url: 'localhost:8080' })}
+      </CenteredMessage>
     );
+  }
+
+  const submitDisabled = !form.attackerUnit || !form.defenderUnit || simulate.isPending;
+
+  return (
+    <main className="mx-auto max-w-5xl p-8">
+      <header className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-100">{t('config.title')}</h1>
+          <p className="mt-2 text-slate-400">{t('config.subtitle')}</p>
+        </div>
+        <LanguageSwitcher />
+      </header>
+
+      <div className="mb-6">
+        <ModeSwitcher current="single" />
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid gap-6 md:grid-cols-2">
+          <ArmySelector
+            title={t('config.attackerTitle')}
+            factions={factionsQuery.data}
+            units={unitsQuery.data}
+            selectedFaction={form.attackerFaction}
+            selectedTier={form.attackerTier}
+            selectedUnit={form.attackerUnit}
+            count={form.attackerCount}
+            onFactionChange={(v) => setForm({ attackerFaction: v })}
+            onTierChange={(v) => setForm({ attackerTier: v })}
+            onUnitChange={(v) => setForm({ attackerUnit: v })}
+            onCountChange={(v) => setForm({ attackerCount: v })}
+          />
+          <ArmySelector
+            title={t('config.defenderTitle')}
+            factions={factionsQuery.data}
+            units={unitsQuery.data}
+            selectedFaction={form.defenderFaction}
+            selectedTier={form.defenderTier}
+            selectedUnit={form.defenderUnit}
+            count={form.defenderCount}
+            onFactionChange={(v) => setForm({ defenderFaction: v })}
+            onTierChange={(v) => setForm({ defenderTier: v })}
+            onUnitChange={(v) => setForm({ defenderUnit: v })}
+            onCountChange={(v) => setForm({ defenderCount: v })}
+          />
+        </div>
+
+        <section className="rounded-lg border border-slate-800 bg-slate-900 p-6">
+          <h2 className="text-lg font-semibold text-slate-100">{t('config.seedTitle')}</h2>
+          <div className="mt-4 flex items-end gap-3">
+            <label className="flex-1">
+              <span className="text-sm text-slate-400">{t('config.seedHint')}</span>
+              <input
+                type="number"
+                inputMode="numeric"
+                placeholder={t('config.seedPlaceholder')}
+                className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-amber-500 focus:outline-none"
+                value={form.seedText}
+                onChange={(e) => setForm({ seedText: e.target.value })}
+              />
+            </label>
+            <button
+              type="button"
+              onClick={rollSeed}
+              className="rounded-md border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:border-amber-500 hover:text-amber-400"
+            >
+              {t('config.rollSeed')}
+            </button>
+          </div>
+        </section>
+
+        {simulate.isError && (
+          <p className="text-sm text-red-400">
+            {t('config.simulationFailed', { message: simulate.error.message })}
+          </p>
+        )}
+
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={submitDisabled}
+            className="rounded-md bg-amber-500 px-6 py-3 text-base font-semibold text-slate-950 transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+          >
+            {simulate.isPending ? t('config.simulating') : t('config.startBattle')}
+          </button>
+        </div>
+      </form>
+    </main>
+  );
 }
 
 function CenteredMessage({
-                             children,
-                             tone = 'info',
-                         }: Readonly<{
-    children: ReactNode;
-    tone?: 'info' | 'error';
+  children,
+  tone = 'info',
+}: Readonly<{
+  children: ReactNode;
+  tone?: 'info' | 'error';
 }>) {
-    return (
-        <main className="flex min-h-screen items-center justify-center p-8">
-            <p className={tone === 'error' ? 'text-red-400' : 'text-slate-400'}>{children}</p>
-        </main>
-    );
+  return (
+    <main className="flex min-h-screen items-center justify-center p-8">
+      <p className={tone === 'error' ? 'text-red-400' : 'text-slate-400'}>{children}</p>
+    </main>
+  );
 }
