@@ -1,109 +1,105 @@
-import {afterEach, beforeEach, describe, expect, it} from 'vitest';
-import {render, screen, waitFor} from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {http, HttpResponse} from 'msw';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { http, HttpResponse } from 'msw';
 import MatrixConfigPage from './MatrixConfigPage';
-import {useMatrixStore} from './matrixStore';
-import {server} from '../../test/setup';
+import { useMatrixStore } from './matrixStore';
+import { server } from '../../test/setup';
 
 function renderConfig() {
-    const queryClient = new QueryClient({
-        defaultOptions: {queries: {retry: false}, mutations: {retry: false}},
-    });
-    return render(
-        <QueryClientProvider client={queryClient}>
-            <MemoryRouter initialEntries={['/matrix']}>
-                <Routes>
-                    <Route path="/matrix" element={<MatrixConfigPage/>}/>
-                    <Route path="/matrix/result" element={<div>MATRIX-RESULT-MARKER</div>}/>
-                </Routes>
-            </MemoryRouter>
-        </QueryClientProvider>,
-    );
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={['/matrix']}>
+        <Routes>
+          <Route path="/matrix" element={<MatrixConfigPage />} />
+          <Route path="/matrix/result" element={<div>MATRIX-RESULT-MARKER</div>} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
 }
 
 async function waitForCatalog() {
-    await waitFor(() => expect(screen.getByText('Faktionen')).toBeInTheDocument());
+  await waitFor(() => expect(screen.getByText('Faktionen')).toBeInTheDocument());
 }
 
 beforeEach(() => {
-    useMatrixStore.getState().reset();
+  useMatrixStore.getState().reset();
 });
 
 afterEach(() => {
-    server.resetHandlers();
+  server.resetHandlers();
 });
 
 describe('MatrixConfigPage', () => {
-    it('renders one checkbox per faction', async () => {
-        renderConfig();
-        await waitForCatalog();
-        // TEST_FACTIONS hat 3 Einträge — Castle, Rampart, Tower.
-        expect(screen.getByLabelText('Castle')).toBeChecked();
-        expect(screen.getByLabelText('Rampart')).toBeChecked();
-        expect(screen.getByLabelText('Tower')).toBeChecked();
-    });
+  it('renders one checkbox per faction', async () => {
+    renderConfig();
+    await waitForCatalog();
+    // TEST_FACTIONS hat 3 Einträge — Castle, Rampart, Tower.
+    expect(screen.getByLabelText('Castle')).toBeChecked();
+    expect(screen.getByLabelText('Rampart')).toBeChecked();
+    expect(screen.getByLabelText('Tower')).toBeChecked();
+  });
 
-    it('hides units when their faction is excluded', async () => {
-        const user = userEvent.setup();
-        renderConfig();
-        await waitForCatalog();
-        expect(screen.getByLabelText('Pikeman')).toBeInTheDocument();
-        await user.click(screen.getByLabelText('Castle'));
-        expect(screen.queryByLabelText('Pikeman')).not.toBeInTheDocument();
-    });
+  it('hides units when their faction is excluded', async () => {
+    const user = userEvent.setup();
+    renderConfig();
+    await waitForCatalog();
+    expect(screen.getByLabelText('Pikeman')).toBeInTheDocument();
+    await user.click(screen.getByLabelText('Castle'));
+    expect(screen.queryByLabelText('Pikeman')).not.toBeInTheDocument();
+  });
 
-    it('submits and hydrates the matrix store with the report and request', async () => {
-        const user = userEvent.setup();
-        renderConfig();
-        await waitForCatalog();
+  it('submits and hydrates the matrix store with the report and request', async () => {
+    const user = userEvent.setup();
+    renderConfig();
+    await waitForCatalog();
 
-        await user.click(screen.getByRole('button', {name: /Auswertung starten/}));
+    await user.click(screen.getByRole('button', { name: /Auswertung starten/ }));
 
-        await waitFor(() =>
-            expect(screen.getByText('MATRIX-RESULT-MARKER')).toBeInTheDocument(),
-        );
-        const state = useMatrixStore.getState();
-        expect(state.report).not.toBeNull();
-        expect(state.lastRequest).not.toBeNull();
-        expect(state.lastRequest!.unitCount).toBe(20);
-    });
+    await waitFor(() => expect(screen.getByText('MATRIX-RESULT-MARKER')).toBeInTheDocument());
+    const state = useMatrixStore.getState();
+    expect(state.report).not.toBeNull();
+    expect(state.lastRequest).not.toBeNull();
+    expect(state.lastRequest!.unitCount).toBe(20);
+  });
 
-    it('restores form state after unmount/remount (config-persistence)', async () => {
-        const user = userEvent.setup();
-        const {unmount} = renderConfig();
-        await waitForCatalog();
+  it('restores form state after unmount/remount (config-persistence)', async () => {
+    const user = userEvent.setup();
+    const { unmount } = renderConfig();
+    await waitForCatalog();
 
-        // User exkludiert Tower (Faction) und Pikeman (Unit), dann simuliert „weg navigiert".
-        await user.click(screen.getByLabelText('Tower'));
-        await user.click(screen.getByLabelText('Pikeman'));
-        unmount();
+    // User exkludiert Tower (Faction) und Pikeman (Unit), dann simuliert „weg navigiert".
+    await user.click(screen.getByLabelText('Tower'));
+    await user.click(screen.getByLabelText('Pikeman'));
+    unmount();
 
-        // Erneut mounten — Form-State muss aus dem Store kommen.
-        renderConfig();
-        await waitForCatalog();
-        expect(screen.getByLabelText('Tower')).not.toBeChecked();
-        expect(screen.getByLabelText('Pikeman')).not.toBeChecked();
-        // Gremlin gehört zu Tower → durch Faction-Exklude aus der Liste raus.
-        expect(screen.queryByLabelText('Gremlin')).not.toBeInTheDocument();
-    });
+    // Erneut mounten — Form-State muss aus dem Store kommen.
+    renderConfig();
+    await waitForCatalog();
+    expect(screen.getByLabelText('Tower')).not.toBeChecked();
+    expect(screen.getByLabelText('Pikeman')).not.toBeChecked();
+    // Gremlin gehört zu Tower → durch Faction-Exklude aus der Liste raus.
+    expect(screen.queryByLabelText('Gremlin')).not.toBeInTheDocument();
+  });
 
-    it('shows an error when the experiment endpoint fails', async () => {
-        server.use(
-            http.post('*/api/experiments/matrix', () =>
-                HttpResponse.json({message: 'boom'}, {status: 500}),
-            ),
-        );
-        const user = userEvent.setup();
-        renderConfig();
-        await waitForCatalog();
+  it('shows an error when the experiment endpoint fails', async () => {
+    server.use(
+      http.post('*/api/experiments/matrix', () =>
+        HttpResponse.json({ message: 'boom' }, { status: 500 }),
+      ),
+    );
+    const user = userEvent.setup();
+    renderConfig();
+    await waitForCatalog();
 
-        await user.click(screen.getByRole('button', {name: /Auswertung starten/}));
+    await user.click(screen.getByRole('button', { name: /Auswertung starten/ }));
 
-        await waitFor(() =>
-            expect(screen.getByText(/Auswertung fehlgeschlagen/)).toBeInTheDocument(),
-        );
-    });
+    await waitFor(() => expect(screen.getByText(/Auswertung fehlgeschlagen/)).toBeInTheDocument());
+  });
 });
