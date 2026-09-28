@@ -80,6 +80,9 @@ export type BattleEvent =
     attacker: StackSnapshot;
     defender: StackSnapshot;
     stacks: StackSnapshot[];
+    /** Moral-Rating der Armee (Manual S. 43), -3..+3. */
+    attackerMorale: number;
+    defenderMorale: number;
 }
     | {
     type: 'Move';
@@ -127,6 +130,7 @@ export type BattleEvent =
     | { type: 'TwoBlows'; actor: Side; actorSlot: number }
     | { type: 'TwoShots'; actor: Side; actorSlot: number }
     | { type: 'GoodMorale'; actor: Side; actorSlot: number }
+    | { type: 'BadMorale'; actor: Side; actorSlot: number }
     | {
     type: 'MoveBack';
     actor: Side;

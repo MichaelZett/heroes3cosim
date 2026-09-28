@@ -17,7 +17,8 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Stronghold, Fortress, Conflux) inklusive Upgrade-Varianten, Stats aus
   dem RoE-Manual.
 - **Engine-evaluierte Spezialfähigkeiten** unter anderem No Retaliation,
-  Two Blows / Two Shots, Good Morale, Death Stare, Thunderbolts,
+  Two Blows / Two Shots, Good Morale (Minotaur), Good Army Morale
+  (Angel/Arch Angel), Death Stare, Thunderbolts,
   Petryfying (Medusa/Scorpicore), Cursing, Poisonous, Diseases, Aging,
   Death Blow, Angel/Devil/Titan Hate, Impact Damage (Cavalier-Jousting),
   Defense Reduction (Behemoth), Move Back (Harpy), Counterstrike
@@ -32,11 +33,18 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Werte aus dem RoE-Manual. Sein Angriffs- und Verteidigungswert wird auf
   jede Kreatur der geführten Armee addiert (Manual S. 33) und wirkt damit
   durch die gesamte Schadensformel. Auswahl im Army-Konfigurator, das
-  Fraktions-Preset schlägt den passenden Helden vor. Dazu wirken drei
+  Fraktions-Preset schlägt den passenden Helden vor. Dazu wirken vier
   Sekundärfertigkeiten: Offense (+10/20/30 % Nahkampfschaden), Archery
-  (+10/25/50 % Fernkampf) und Armorer (−5/10/15 % erlittener Schaden).
-  Power, Knowledge und die übrigen Fertigkeiten sind noch ohne Wirkung —
-  sie brauchen das Zauber- bzw. Moralsystem.
+  (+10/25/50 % Fernkampf), Armorer (−5/10/15 % erlittener Schaden) und
+  Leadership (+1/2/3 Moral). Power, Knowledge und die übrigen
+  Fertigkeiten sind noch ohne Wirkung — sie brauchen das Zaubersystem.
+- **Moral** (Manual S. 43) — jede Armee hat ein Rating, das sich aus ihrer
+  Zusammenstellung ergibt: +1, wenn alle Kreaturen aus derselben Stadt
+  stammen (außer Necropolis), −1 für Untote unter Lebenden, −1 je
+  Stadt-Typ ab dem dritten, dazu Angel/Arch Angel und die Leadership des
+  Helden. Positive Moral gibt eine Chance auf eine zweite Aktion, negative
+  eine Chance, die Aktion ganz zu verlieren (4.2 / 8.3 / 12.5 %). Untote
+  und Elementare stehen außerhalb — ihre Moral ist immer 0.
 - **Rundenablauf in zwei Phasen** (Manual S. 43): Stacks ziehen nach
   Speed absteigend; wer *Wait* wählt, verschiebt seine Aktion ans Ende
   der Runde und handelt dort in umgekehrter Reihenfolge — langsamste
@@ -239,7 +247,8 @@ Match-ups:
 - Keine Sprüche → Necropolis (Animate Dead), Tower (Magi-Casts),
   Conflux (Spell-Imm./Fire-Imm.), Black Dragon (Spell-Imm.) verlieren
   ihren H3-Hauptvorteil.
-- Keine Hero-Skills → Necromancy, Tactics, Logistics, Sorcery wirken nicht.
+- Von den Hero-Skills wirken Offense, Archery, Armorer und Leadership;
+  Necromancy, Tactics, Logistics und Sorcery nicht.
 - Im Single-Battle-Modus fehlen die Multi-Stack-AoE-Effekte (Cerberus,
   Fire-Breath, Magog Splash, Lich Death Cloud) — die werden erst im
   Army-vs-Army-Modus aktiv.
@@ -274,10 +283,12 @@ zu lesen, nicht als universelle H3-Tier-Liste.
   sie senkte die Eigenverluste deutlich, kostete aber 14 Prozentpunkte
   gegen Dungeon, weil die geretteten Einheiten Tier-1/2 sind und der
   aufgegebene Positionsvorteil schwerer wiegt.
-- **Helden, nächste Stufe**: Leadership und Luck — beide brauchen erst ein
-  Armee-Moral- und Luck-System (Manual S. 43-44: negative Moral kostet die
-  Aktion, Luck gibt Doppelschaden). Danach Zauberei, die Power und
-  Knowledge überhaupt erst zu Wirkung verhilft.
+- **Helden, nächste Stufe**: Luck (Doppelschaden mit 4.2 / 8.3 / 12.5 %)
+  und Tactics (Aufstellung vor Kampfbeginn) hängen beide an derselben
+  Vorbedingung — im Katalog steht je Fraktion nur ein Held, und keiner
+  von den neunen bringt eine der beiden Fertigkeiten mit. Erst ein
+  zweiter Held je Fraktion macht sie zu mehr als totem Code. Danach
+  Zauberei, die Power und Knowledge überhaupt erst zu Wirkung verhilft.
 - **Taktisches Warten ausbauen**: Nahkämpfer nutzen *Wait* bereits, wenn
   sie ihr Ziel diese Runde nicht erreichen — messbar stärker, aber der
   Gewinn kommt fast nur von Tower. Offen sind Schützen (warten, bis der

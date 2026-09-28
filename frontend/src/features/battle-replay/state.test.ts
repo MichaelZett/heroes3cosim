@@ -28,6 +28,8 @@ const start: BattleEvent = {
     attacker: attackerStart,
     defender: defenderStart,
     stacks: [attackerStart, defenderStart],
+    attackerMorale: 0,
+    defenderMorale: 0,
 };
 
 describe('reduceEvents', () => {
@@ -174,6 +176,8 @@ describe('reduceEvents', () => {
             attacker: attackerStacks[0],
             defender: defenderStacks[0],
             stacks: [...attackerStacks, ...defenderStacks],
+            attackerMorale: 0,
+            defenderMorale: 0,
         };
         const move: BattleEvent = {
             type: 'Move', actor: 'ATTACKER', actorSlot: 3,

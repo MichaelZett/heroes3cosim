@@ -111,10 +111,13 @@ class WaitMechanicsTest {
         // Late-Phase. Zöge die Engine schon beim Warten, verschöbe sich der komplette
         // Zufallsstrom und damit die Determinismus-Garantie über alle Seeds.
         Stack minotaur = new Stack(UnitCatalog.MINOTAUR, 5, new Hex(0, 5), Side.ATTACKER, 0);
-        Stack enemy = new Stack(SLOW, 10, new Hex(14, 5), Side.DEFENDER, 0);
+        // Skelette als Gegner, damit nur eine Seite würfelt: Untote haben laut Manual S. 43
+        // fest Moral 0 und ziehen nie einen Zufallswert.
+        Stack enemy = new Stack(UnitCatalog.SKELETON, 10, new Hex(14, 5), Side.DEFENDER, 0);
         BattleSetup setup = new BattleSetup(List.of(minotaur), List.of(enemy),
                 Battlefield.STANDARD);
         assertThat(minotaur.hasSpeciality(UnitSpeciality.GOOD_MORALE)).isTrue();
+        assertThat(enemy.getMorale()).isZero();
 
         CountingRandom rng = new CountingRandom(1L);
         AutoSolver waitThenDefend = (active, opponent, bf) ->
@@ -123,7 +126,6 @@ class WaitMechanicsTest {
         new Battle(rng, waitThenDefend, new ListEventCollector()).simulate(setup);
 
         // Pro Runde genau ein Moral-Wurf: der aus der Late-Phase, keiner aus dem Wait selbst.
-        // Der Defender hat Moral 0 und würfelt gar nicht.
         long rounds = 20L;
         assertThat(rng.intCalls).isEqualTo(rounds);
     }

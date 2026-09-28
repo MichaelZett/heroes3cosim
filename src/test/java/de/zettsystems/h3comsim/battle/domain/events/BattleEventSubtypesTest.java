@@ -25,7 +25,7 @@ class BattleEventSubtypesTest {
         List<HexCoord> mutable = new ArrayList<>(List.of(new HexCoord(7, 5)));
         BattleEvent.BattleStart event =
                 new BattleEvent.BattleStart(15, 11, mutable, ATTACKER_SNAP, DEFENDER_SNAP,
-                        List.of(ATTACKER_SNAP, DEFENDER_SNAP));
+                        List.of(ATTACKER_SNAP, DEFENDER_SNAP), 1, -2);
 
         mutable.add(new HexCoord(99, 99));
 
@@ -35,6 +35,8 @@ class BattleEventSubtypesTest {
         assertThat(event.attacker()).isSameAs(ATTACKER_SNAP);
         assertThat(event.defender()).isSameAs(DEFENDER_SNAP);
         assertThat(event.stacks()).containsExactly(ATTACKER_SNAP, DEFENDER_SNAP);
+        assertThat(event.attackerMorale()).isEqualTo(1);
+        assertThat(event.defenderMorale()).isEqualTo(-2);
     }
 
     @Test
@@ -114,6 +116,7 @@ class BattleEventSubtypesTest {
         assertThat(new BattleEvent.TwoBlows(Side.ATTACKER, 0).actor()).isEqualTo(Side.ATTACKER);
         assertThat(new BattleEvent.TwoShots(Side.DEFENDER, 0).actor()).isEqualTo(Side.DEFENDER);
         assertThat(new BattleEvent.GoodMorale(Side.ATTACKER, 0).actor()).isEqualTo(Side.ATTACKER);
+        assertThat(new BattleEvent.BadMorale(Side.DEFENDER, 3).actorSlot()).isEqualTo(3);
     }
 
     @Test

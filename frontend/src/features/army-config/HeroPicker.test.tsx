@@ -59,15 +59,29 @@ describe('HeroPicker', () => {
     });
 
     it('does not advertise skills the engine ignores', () => {
-        // Leadership braucht das Moralsystem, Scholar wirkt ausserhalb des Kampfes - beide
-        // duerfen nicht als Kampfwirkung erscheinen.
+        // Scholar wirkt ausserhalb des Kampfes, Tactics hat kein Katalog-Held - beide duerfen
+        // nicht als Kampfwirkung erscheinen.
         const scholar = {
             ...TEST_HEROES[0],
             name: 'Neela',
-            skills: {SCHOLAR: 'BASIC', LEADERSHIP: 'EXPERT'} as const,
+            skills: {SCHOLAR: 'BASIC', TACTICS: 'EXPERT'} as const,
         };
         render(<HeroPicker heroes={[scholar]} selectedName="Neela" onChange={vi.fn()}/>);
 
         expect(screen.queryByText(/wirkt im Kampf|effective in combat/)).not.toBeInTheDocument();
+    });
+
+    it('shows Leadership as morale points, not as a percentage', () => {
+        // Sorsha hat Basic Leadership -> +1 Moral (Manual S. 37). Die Zeile steht getrennt von
+        // den Prozent-Fertigkeiten, weil Moral keine Schadensgroesse ist.
+        render(<HeroPicker heroes={TEST_HEROES} selectedName="Sorsha" onChange={vi.fn()}/>);
+
+        expect(screen.getByText(/\+1 Moral|\+1 morale/)).toBeInTheDocument();
+    });
+
+    it('stays silent about morale when the hero has no Leadership', () => {
+        render(<HeroPicker heroes={TEST_HEROES} selectedName="Crag Hack" onChange={vi.fn()}/>);
+
+        expect(screen.queryByText(/Moral|morale/)).not.toBeInTheDocument();
     });
 });

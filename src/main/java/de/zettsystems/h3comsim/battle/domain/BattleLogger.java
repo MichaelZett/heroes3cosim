@@ -100,6 +100,10 @@ public final class BattleLogger {
         LOG.debug("Stack von {} hat gute Moral und greift erneut an.", name);
     }
 
+    static void logBadMorale(String name) {
+        LOG.debug("Stack von {} hat schlechte Moral und verliert seine Aktion.", name);
+    }
+
     static void logMoveBack(String name, int q, int r) {
         LOG.debug("Stack von {} fliegt zurueck nach ({},{}).", name, q, r);
     }

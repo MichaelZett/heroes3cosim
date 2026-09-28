@@ -39,6 +39,12 @@ public enum UnitSpeciality {
     ANGEL_RACE(SPECIAL),
     DEVIL_RACE(SPECIAL),
     TITAN_RACE(SPECIAL),
+    /** Elementar-Marker (Manual S. 43): „Undead creatures and elementals have a morale of zero,
+     *  independent of their army's morale rating." Gesetzt auf die zehn Conflux-Elementale —
+     *  Firebird, Phoenix, Pixie und Sprite gehören ausdrücklich <em>nicht</em> dazu.
+     *  Bewusst ein eigener Marker statt einer Namensprüfung auf „… Elemental": die Zugehörigkeit
+     *  ist eine Eigenschaft der Kreatur, keine ihrer Schreibweise. */
+    ELEMENTAL_RACE(SPECIAL),
 
     // Evaluated by the engine.
     /** Cavalier/Champion: +5 % damage per hex of run-up, capped at +50 % (Stack). */

@@ -20,8 +20,8 @@ import java.util.Objects;
  * <p>Das Level fehlt bewusst: Fortschritt gehört auf die Abenteuerkarte, die es hier nicht
  * gibt. Der Katalog führt die Startwerte, mit denen ein Held rekrutiert wird.
  *
- * @param skills Startfertigkeiten mit ihrer Ausbaustufe. Heute nirgends ausgewertet —
- *               siehe {@link SecondarySkill}.
+ * @param skills Startfertigkeiten mit ihrer Ausbaustufe. Welche davon wirken, steht bei
+ *               {@link SecondarySkill}.
  */
 public record Hero(
         String name,
@@ -92,6 +92,24 @@ public record Hero(
             case BASIC -> 5;
             case ADVANCED -> 10;
             case EXPERT -> 15;
+        };
+    }
+
+    /**
+     * Leadership, Manual S. 37: „The hero's troops gain a morale rating bonus" — +1/2/3.
+     * Anders als die drei Schadens-Fertigkeiten wirkt Leadership nicht auf den Schaden,
+     * sondern auf das Armee-Moral-Rating; ausgewertet in {@link ArmyMorale}.
+     *
+     * <p>Das Manual schließt Necromancer und Death Knights von der Fertigkeit aus — der
+     * Katalog bildet das über die Daten ab, nicht über eine Prüfung hier: kein
+     * Necropolis-Held bringt Leadership mit.
+     */
+    public int leadershipMoraleBonus() {
+        return switch (levelOf(SecondarySkill.LEADERSHIP)) {
+            case NONE -> 0;
+            case BASIC -> 1;
+            case ADVANCED -> 2;
+            case EXPERT -> 3;
         };
     }
 }

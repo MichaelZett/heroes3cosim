@@ -60,8 +60,21 @@ public record Unit(
         return combat.attackType();
     }
 
+    /**
+     * Individueller Moral-Bonus der Kreatur selbst, additiv zum Armee-Rating.
+     * In RoE tragen ihn nur Minotaur und Minotaur King (Manual S. 89: „have good morale").
+     */
     public int morale() {
         return specialities.contains(UnitSpeciality.GOOD_MORALE) ? 1 : 0;
+    }
+
+    /**
+     * Manual S. 43: „Undead creatures and elementals have a morale of zero, independent of
+     * their army's morale rating." Weder Leadership noch eine Armee-Zusammenstellung bewegt
+     * diese Kreaturen — sie haben nie eine zweite Aktion und frieren nie ein.
+     */
+    public boolean hasFixedZeroMorale() {
+        return isUndead() || specialities.contains(UnitSpeciality.ELEMENTAL_RACE);
     }
 
     public boolean hasSpeciality(UnitSpeciality speciality) {

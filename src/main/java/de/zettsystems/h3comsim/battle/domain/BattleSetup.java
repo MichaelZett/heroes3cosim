@@ -22,6 +22,8 @@ public class BattleSetup {
     private final Battlefield battlefield;
     private final @Nullable Hero attackerHero;
     private final @Nullable Hero defenderHero;
+    private final int attackerMorale;
+    private final int defenderMorale;
 
     public BattleSetup(Unit attackerUnit, int attackerCount,
                        Unit defenderUnit, int defenderCount) {
@@ -64,6 +66,19 @@ public class BattleSetup {
         this.defenderHero = defenderHero;
         this.attackerStacks.forEach(stack -> stack.assignCommander(attackerHero));
         this.defenderStacks.forEach(stack -> stack.assignCommander(defenderHero));
+        this.attackerMorale = ArmyMorale.ratingOf(this.attackerStacks, attackerHero);
+        this.defenderMorale = ArmyMorale.ratingOf(this.defenderStacks, defenderHero);
+        this.attackerStacks.forEach(stack -> stack.assignArmyMorale(attackerMorale));
+        this.defenderStacks.forEach(stack -> stack.assignArmyMorale(defenderMorale));
+    }
+
+    /**
+     * Moral-Rating der Armee (Manual S. 43), ohne den individuellen Bonus der einzelnen
+     * Kreatur. Zu Kampfbeginn aus der Zusammenstellung berechnet und danach fest — dass ein
+     * Stack im Verlauf fällt, ändert die Moral der Überlebenden in H3 nicht.
+     */
+    public int moraleOf(Side side) {
+        return side == Side.ATTACKER ? attackerMorale : defenderMorale;
     }
 
     public @Nullable Hero attackerHero() {
