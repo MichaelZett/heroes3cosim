@@ -38,18 +38,18 @@ import java.util.Set;
  *
  * <p>Der Umweg über das Spiegel-Duell ist nötig, nicht bequem. Eine Aufschlüsselung nach
  * Faktion aus einem Lauf über wechselnde Gegner würde die Faction-Stärke messen statt den
- * Heldeneffekt (Castle gewinnt sowieso), und die {@code FactionMatrixHarness} kann den Effekt
+ * Heldeneffekt (Castle gewinnt sowieso), und die {@code FactionMatrixTest} kann den Effekt
  * grundsätzlich nicht zeigen, solange beide Seiten gleich ausgestattet sind.
  *
  * <p>Jedes Pairing läuft zweimal mit getauschten Rollen, damit der Attacker-Vorzug (bei
  * Speed-Gleichstand zieht der Attacker zuerst) sich herausmittelt. 0.500 heißt „kein
  * Unterschied".
  *
- * <p>Aktivieren: {@code .\gradlew.bat test --tests "*HeroImpactHarness" "-Ph3.harness=hero-impact"}.
+ * <p>Aktivieren: {@code .\gradlew.bat test --tests "*HeroImpactTest" "-Ph3.harness=hero-impact"}.
  * Report unter {@code build/reports/hero-impact.md}.
  */
 @EnabledIfSystemProperty(named = "h3.harness", matches = "hero-impact")
-class HeroImpactHarness {
+class HeroImpactTest {
 
     private static final int SEEDS_PER_PAIR = 40;
 
@@ -118,14 +118,14 @@ class HeroImpactHarness {
         BattleResult result = new Battle(new Random(seed), new StrategicAutoSolver()).simulate(setup);
         Side heroSide = heroLeadsAttacker ? Side.ATTACKER : Side.DEFENDER;
         if (perFaction != null) {
-            record(perFaction, result, heroSide);
+            tally(perFaction, result, heroSide);
         }
         if (overall != null) {
-            record(overall, result, heroSide);
+            tally(overall, result, heroSide);
         }
     }
 
-    private static void record(Tally tally, BattleResult result, Side heroSide) {
+    private static void tally(Tally tally, BattleResult result, Side heroSide) {
         tally.battles++;
         Winner winner = result.winner();
         if (winner == Winner.DRAW) {

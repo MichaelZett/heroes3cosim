@@ -41,7 +41,7 @@ import java.util.Set;
  * Ergebnis: {@code build/reports/lich-splash-diagnosis.md}. Falsifiziert oder bestätigt
  * die Hypothese durch konkrete Splash-Hit-Zahlen statt aggregierter Win-Rates.
  */
-class LichSplashDiagnosisHarness {
+class LichSplashDiagnosisTest {
 
     private static final int SEEDS = 30;
 

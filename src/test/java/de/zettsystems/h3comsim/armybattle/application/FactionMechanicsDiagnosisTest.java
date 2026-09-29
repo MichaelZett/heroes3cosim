@@ -48,7 +48,7 @@ import java.util.Set;
  * <p>Snapshot landet unter {@code build/reports/faction-mechanics.md} und ist Basis
  * für Faction-Balance-Hypothesen (NEC-Stärke, DUN-Schwäche etc.).
  */
-class FactionMechanicsDiagnosisHarness {
+class FactionMechanicsDiagnosisTest {
 
     private static final int SEEDS_PER_PAIR = 10;
 
