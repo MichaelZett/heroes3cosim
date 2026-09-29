@@ -220,7 +220,7 @@ class GreedyAutoSolverTest {
 
     @Test
     void tactical_wait_can_be_switched_off_for_ab_measurements() {
-        // Der SolverDuelHarness stellt beide Varianten direkt gegeneinander — ohne diesen
+        // Der SolverDuelTest stellt beide Varianten direkt gegeneinander — ohne diesen
         // Schalter wäre der Effekt einer Solver-Heuristik nicht isolierbar.
         Stack active = new Stack(UnitCatalog.PIKEMAN, 10, new Hex(0, 5));
         Stack opponent = new Stack(UnitCatalog.PIKEMAN, 10, new Hex(14, 5));

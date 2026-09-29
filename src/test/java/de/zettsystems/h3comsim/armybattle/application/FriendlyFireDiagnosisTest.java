@@ -45,11 +45,11 @@ import java.util.Set;
  * (Seed pro Pairing aus den Faction-Ordinals abgeleitet), zwei Läufe desselben Codes liefern
  * identische Zahlen.
  *
- * <p>Aktivieren: {@code .\gradlew.bat test --tests "*FriendlyFireDiagnosisHarness"
+ * <p>Aktivieren: {@code .\gradlew.bat test --tests "*FriendlyFireDiagnosisTest"
  * "-Ph3.harness=friendly-fire"}.
  */
 @EnabledIfSystemProperty(named = "h3.harness", matches = "friendly-fire")
-class FriendlyFireDiagnosisHarness {
+class FriendlyFireDiagnosisTest {
 
     private static final int SEEDS_PER_PAIR = 10;
 

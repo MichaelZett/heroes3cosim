@@ -6,7 +6,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class ComSimApp {
 
-    static void main(String[] args) {
+    private ComSimApp() {
+    }
+
+    public static void main(String[] args) {
         SpringApplication.run(ComSimApp.class, args);
     }
 }
