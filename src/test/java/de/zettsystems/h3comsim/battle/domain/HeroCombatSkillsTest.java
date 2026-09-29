@@ -54,7 +54,7 @@ class HeroCombatSkillsTest {
      */
     private static int firstDamage(Hero attackerHero, Hero defenderHero,
                                    Unit attackerUnit, Class<? extends BattleEvent> eventType) {
-        Hex defenderHex = eventType == BattleEvent.Melee.class ? new Hex(1, 5) : new Hex(5, 5);
+        Hex defenderHex = new Hex(eventType == BattleEvent.Melee.class ? 1 : 5, 5);
         Stack attacker = new Stack(attackerUnit, 10, new Hex(0, 5), Side.ATTACKER, 0);
         Stack defender = new Stack(UnitCatalog.PIKEMAN, 10, defenderHex, Side.DEFENDER, 0);
         BattleSetup setup = new BattleSetup(List.of(attacker), List.of(defender),

@@ -36,7 +36,7 @@ import java.util.Set;
 /**
  * Lässt zwei Solver-Varianten <strong>direkt gegeneinander</strong> antreten.
  *
- * <p>Motivation: Die {@code FactionMatrixHarness} beantwortet die Frage nach der Solver-Qualität
+ * <p>Motivation: Die {@code FactionMatrixTest} beantwortet die Frage nach der Solver-Qualität
  * <em>nicht</em>. Dort spielen beide Seiten denselben Solver, eine Verbesserung hebt also beide
  * Seiten gleichermaßen an und bleibt in der Win-Rate unsichtbar. Wer wissen will, ob eine neue
  * Heuristik trägt, muss sie gegen die Variante ohne sie stellen.
@@ -46,11 +46,11 @@ import java.util.Set;
  * Attacker-Vorteil (bei Speed-Gleichstand zieht der Attacker zuerst) sich herausmittelt.
  * Gemessen wird die Win-Rate von A über alle Läufe; 0.50 heißt „kein Unterschied".
  *
- * <p>Aktivieren: {@code .\gradlew.bat test --tests "*SolverDuelHarness" "-Ph3.harness=solver-duel"}.
+ * <p>Aktivieren: {@code .\gradlew.bat test --tests "*SolverDuelTest" "-Ph3.harness=solver-duel"}.
  * Report unter {@code build/reports/solver-duel.md}.
  */
 @EnabledIfSystemProperty(named = "h3.harness", matches = "solver-duel")
-class SolverDuelHarness {
+class SolverDuelTest {
 
     private static final int SEEDS_PER_PAIR = 40;
 
@@ -124,14 +124,14 @@ class SolverDuelHarness {
         Side waitSide = waitPlaysAttacker ? Side.ATTACKER : Side.DEFENDER;
 
         if (overall != null) {
-            record(overall, result, waitSide);
+            tally(overall, result, waitSide);
         }
         if (perFaction != null) {
-            record(perFaction, result, waitSide);
+            tally(perFaction, result, waitSide);
         }
     }
 
-    private static void record(Tally tally, BattleResult result, Side waitSide) {
+    private static void tally(Tally tally, BattleResult result, Side waitSide) {
         tally.battles++;
         Winner winner = result.winner();
         if (winner == Winner.DRAW) {

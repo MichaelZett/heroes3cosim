@@ -276,7 +276,7 @@ zu lesen, nicht als universelle H3-Tier-Liste.
   80 Sims je Match-up; inzwischen 0.42, weil das taktische Warten
   zusätzlich wirkt)
   (`build/reports/friendly-fire.md`, erzeugt vom
-  `FriendlyFireDiagnosisHarness`). Offen bleibt der Nahkampf am Boden:
+  `FriendlyFireDiagnosisTest`). Offen bleibt der Nahkampf am Boden:
   Cerberus (`THREE_HEADED_ATTACK`) streut weiter in die eigenen Reihen,
   weil die Trefferfläche erst nach dem Anmarsch feststeht. Eine
   splash-optimale Lande-Hex-Wahl wurde gebaut und nach Messung verworfen —
