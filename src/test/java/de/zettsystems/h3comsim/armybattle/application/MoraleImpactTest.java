@@ -50,11 +50,11 @@ import java.util.Set;
  * <p>Negative Moral kommt hier nicht vor: kein Held kann sie verursachen, sie entsteht nur aus
  * gemischten Armeen. Dieser Pfad ist über {@code MoraleInBattleTest} abgedeckt.
  *
- * <p>Aktivieren: {@code .\gradlew.bat test --tests "*MoraleImpactHarness" "-Ph3.harness=morale-impact"}.
+ * <p>Aktivieren: {@code .\gradlew.bat test --tests "*MoraleImpactTest" "-Ph3.harness=morale-impact"}.
  * Report unter {@code build/reports/morale-impact.md}.
  */
 @EnabledIfSystemProperty(named = "h3.harness", matches = "morale-impact")
-class MoraleImpactHarness {
+class MoraleImpactTest {
 
     private static final int SEEDS_PER_PAIR = 80;
 
@@ -119,11 +119,11 @@ class MoraleImpactHarness {
 
         BattleResult result = new Battle(new Random(seed), new StrategicAutoSolver()).simulate(setup);
         Side heroSide = heroLeadsAttacker ? Side.ATTACKER : Side.DEFENDER;
-        record(perFaction, result, heroSide);
-        record(overall, result, heroSide);
+        tally(perFaction, result, heroSide);
+        tally(overall, result, heroSide);
     }
 
-    private static void record(Tally tally, BattleResult result, Side heroSide) {
+    private static void tally(Tally tally, BattleResult result, Side heroSide) {
         tally.battles++;
         Winner winner = result.winner();
         if (winner == Winner.DRAW) {
