@@ -52,7 +52,9 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
 - **Rundenablauf in zwei Phasen** (Manual S. 43): Stacks ziehen nach
   Speed absteigend; wer *Wait* wählt, verschiebt seine Aktion ans Ende
   der Runde und handelt dort in umgekehrter Reihenfolge — langsamste
-  Wartende zuerst. Jeder Stack darf pro Runde nur einmal warten.
+  Wartende zuerst. Jeder Stack darf pro Runde nur einmal warten. Bei
+  gleichem Speed zieht zu Kampfbeginn der Angreifer (Manual S. 40),
+  danach die Seite, die zuletzt nicht am Zug war.
   *Defend* gibt dafür +20 % Defense bis Rundenende. Die Auto-Solver
   nutzen das taktisch: wer sein Ziel diese Runde nicht erreicht, wartet,
   statt sich exponiert ins Niemandsland zu stellen.
