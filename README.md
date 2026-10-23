@@ -39,14 +39,28 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   ohne Auswahl den Standardhelden der Fraktion, die den größten Goldwert
   der Armee stellt (Sorsha, Jenova, Neela, Nymus, Tamika, Damacon, Crag
   Hack, Tazar, Fiur). Angriffs- und Verteidigungswert des Helden werden
-  auf jede Kreatur addiert (Manual S. 33). Dazu wirken fünf
+  auf jede Kreatur addiert (Manual S. 33). Dazu wirken sechs
   Sekundärfertigkeiten: Offense (+10/20/30 % Nahkampfschaden), Archery
   (+10/25/50 % Fernkampf), Armorer (−5/10/15 % erlittener Schaden),
-  Leadership (+1/2/3 Moral) und Luck (+1/2/3 Glück). Glück und Moral, die
-  der Held über Artefakte, Gebäude und Abenteuer-Orte gesammelt hat, sind
-  je Armee einstellbar. Power, Knowledge, Spezialfähigkeiten und die
+  Leadership (+1/2/3 Moral), Luck (+1/2/3 Glück) und Tactics (siehe
+  unten). Je Armee einstellbar ist, was der Held unterwegs gesammelt hat:
+  Level (1..99), zusätzliche Attack-/Defense-Punkte, gelernte oder
+  verbesserte Fertigkeiten (höchstens acht) sowie Glück und Moral aus
+  Artefakten, Gebäuden und Abenteuer-Orten. Power, Knowledge und die
   übrigen Fertigkeiten sind noch ohne Wirkung. Single Battle und
   Einheiten-Matrix bleiben ohne Helden.
+- **Spezialfähigkeiten** der Helden in der SoD-Fassung: Kreatur-
+  Spezialisten geben ihren Kreaturen (Basis- und Ausbaustufe) +1 Speed und
+  +5 % Attack und Defense je angefangene Spanne von Kreaturstufe Leveln;
+  Fertigkeits-Spezialisten heben Offense, Archery oder Armorer um 5 % je
+  Level; die Planeswalker geben ihren Elementaren feste Boni auf Attack,
+  Defense und Schaden. Zauber-, Ressourcen- und Ballista-Spezialitäten
+  werden angezeigt, wirken aber nicht.
+- **Tactics** (Manual S. 42) — hat ein Held die Fertigkeit auf höherer
+  Stufe als der Gegner, stellt er vor Kampfbeginn in den ersten 3/5/7
+  Spalten auf (ein, zwei, drei Grade Vorsprung). Die Nahkämpfer rücken in
+  ihrer Reihe an die vorderste freie Zelle vor, höchstens fünf Spalten
+  tief; die Schützen bleiben am Rand.
 - **Moral** (Manual S. 43) — jede Armee hat ein Rating, das sich aus ihrer
   Zusammenstellung ergibt: +1, wenn alle Kreaturen aus derselben Stadt
   stammen (außer Necropolis), −1 für Untote unter Lebenden, −1 je
@@ -268,8 +282,8 @@ Match-ups:
 - Keine Sprüche → Necropolis (Animate Dead), Tower (Magi-Casts),
   Conflux (Spell-Imm./Fire-Imm.), Black Dragon (Spell-Imm.) verlieren
   ihren H3-Hauptvorteil.
-- Von den Hero-Skills wirken Offense, Archery, Armorer, Leadership und
-  Luck; Necromancy, Tactics, Logistics und Sorcery nicht.
+- Von den Hero-Skills wirken Offense, Archery, Armorer, Leadership, Luck
+  und Tactics; Necromancy, Logistics und Sorcery nicht.
 - Im Single-Battle-Modus fehlen die Multi-Stack-AoE-Effekte (Cerberus,
   Fire-Breath, Magog Splash, Lich Death Cloud) — die werden erst im
   Army-vs-Army-Modus aktiv.
@@ -299,10 +313,9 @@ zu lesen, nicht als universelle H3-Tier-Liste.
   `FriendlyFireDiagnosisTest`). Diese Zahlen stammen noch aus der Zeit,
   in der der Cerberus wahllos zwei Nachbarn traf, eigene eingeschlossen,
   und der Magog nur zwei statt aller sechs Felder ums Ziel.
-- **Helden, nächste Stufe**: Spezialfähigkeiten (etwa Kreatur-Boni wie
-  Fiurs für Fire/Energy Elementals), Tactics (Aufstellung vor
-  Kampfbeginn) und Zauberei, die Power und Knowledge überhaupt erst zu
-  Wirkung verhilft.
+- **Helden, nächste Stufe**: Zauberei, die Power und Knowledge überhaupt
+  erst zu Wirkung verhilft, und Kriegsmaschinen (Ballista, First Aid
+  Tent) samt Artillery und First Aid.
 - **Taktisches Warten ausbauen**: Nahkämpfer nutzen *Wait* bereits, wenn
   sie ihr Ziel diese Runde nicht erreichen — messbar stärker, aber der
   Gewinn kommt fast nur von Tower. Offen sind Schützen (warten, bis der
