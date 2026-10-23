@@ -22,7 +22,7 @@ public interface AutoSolver {
      * @return {@code null}, wenn keine Gegner mehr leben.
      */
     default @Nullable Stack pickTarget(Stack active, List<Stack> opponents, Battlefield battlefield) {
-        return opponents.isEmpty() ? null : opponents.get(0);
+        return opponents.isEmpty() ? null : opponents.getFirst();
     }
 
     Action decide(Stack active, Stack opponent, Battlefield battlefield);

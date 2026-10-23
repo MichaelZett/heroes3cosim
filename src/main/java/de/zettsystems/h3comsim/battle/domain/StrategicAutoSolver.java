@@ -484,13 +484,27 @@ public final class StrategicAutoSolver implements AutoSolver {
      */
     private static boolean isTankCandidate(Stack stack) {
         Unit u = stack.unit();
-        if (u.hasSpeciality(UnitSpeciality.MOVE_BACK)) return false;
-        if (u.hasSpeciality(UnitSpeciality.IMPACT_DAMAGE)) return false;
-        if (u.hasSpeciality(UnitSpeciality.FIRE_BREATH)) return false;
-        if (u.hasSpeciality(UnitSpeciality.THREE_HEADED_ATTACK)) return false;
-        if (u.hasSpeciality(UnitSpeciality.TELEPORT_NO_COST)) return false;
-        if (u.hasSpeciality(UnitSpeciality.LIFE_DRAIN)) return false;
-        if (u.hasSpeciality(UnitSpeciality.NO_RETALIATION)) return false;
+        if (u.hasSpeciality(UnitSpeciality.MOVE_BACK)) {
+            return false;
+        }
+        if (u.hasSpeciality(UnitSpeciality.IMPACT_DAMAGE)) {
+            return false;
+        }
+        if (u.hasSpeciality(UnitSpeciality.FIRE_BREATH)) {
+            return false;
+        }
+        if (u.hasSpeciality(UnitSpeciality.THREE_HEADED_ATTACK)) {
+            return false;
+        }
+        if (u.hasSpeciality(UnitSpeciality.TELEPORT_NO_COST)) {
+            return false;
+        }
+        if (u.hasSpeciality(UnitSpeciality.LIFE_DRAIN)) {
+            return false;
+        }
+        if (u.hasSpeciality(UnitSpeciality.NO_RETALIATION)) {
+            return false;
+        }
         return u.tier() <= 5;
     }
 

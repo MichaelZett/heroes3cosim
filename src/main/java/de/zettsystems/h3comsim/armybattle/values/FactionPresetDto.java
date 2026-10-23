@@ -2,7 +2,6 @@ package de.zettsystems.h3comsim.armybattle.values;
 
 import de.zettsystems.h3comsim.battle.domain.Faction;
 import io.swagger.v3.oas.annotations.media.Schema;
-
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;

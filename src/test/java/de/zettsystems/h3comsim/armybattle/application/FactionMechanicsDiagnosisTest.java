@@ -20,7 +20,6 @@ import de.zettsystems.h3comsim.battle.domain.events.Winner;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -60,7 +59,7 @@ class FactionMechanicsDiagnosisTest {
     @Test
     @Disabled("Diagnose-Harness — manuell aktivieren wenn neue Faction-Balance-Daten "
             + "gebraucht werden. Snapshot in build/reports/faction-mechanics.md.")
-    void diagnose_faction_mechanics() throws IOException {
+    void diagnose_faction_mechanics() throws Exception {
         FactionPresetCatalog presets = new FactionPresetCatalog();
         Map<Faction, FactionPresetDto> presetByFaction = new EnumMap<>(Faction.class);
         for (FactionPresetDto p : presets.all()) {
@@ -89,7 +88,7 @@ class FactionMechanicsDiagnosisTest {
         Files.createDirectories(reportsDir);
         Path out = reportsDir.resolve("faction-mechanics.md");
         Files.writeString(out, report);
-        System.out.println("Faction-Mechanics-Report: " + out.toAbsolutePath());
+        IO.println("Faction-Mechanics-Report: " + out.toAbsolutePath());
     }
 
     private static void runOne(FactionPresetDto attackerPreset, FactionPresetDto defenderPreset,
@@ -280,7 +279,9 @@ class FactionMechanicsDiagnosisTest {
         StringBuilder sb = new StringBuilder();
         int n = Math.min(max, sorted.size());
         for (int i = 0; i < n; i++) {
-            if (i > 0) sb.append(", ");
+            if (i > 0) {
+                sb.append(", ");
+            }
             Map.Entry<String, Long> e = sorted.get(i);
             double perBattle = (double) e.getValue() / Math.max(1, u.appearances);
             sb.append(e.getKey()).append(" ")
@@ -362,13 +363,17 @@ class FactionMechanicsDiagnosisTest {
 
         double avgDamagePerBattle() {
             long total = 0;
-            for (UnitStats u : perUnit.values()) total += u.totalDamage;
+            for (UnitStats u : perUnit.values()) {
+                total += u.totalDamage;
+            }
             return totalBattles == 0 ? 0 : (double) total / totalBattles;
         }
 
         double avgHitsPerBattle() {
             long total = 0;
-            for (UnitStats u : perUnit.values()) total += u.totalHits;
+            for (UnitStats u : perUnit.values()) {
+                total += u.totalHits;
+            }
             return totalBattles == 0 ? 0 : (double) total / totalBattles;
         }
 
@@ -385,7 +390,9 @@ class FactionMechanicsDiagnosisTest {
         double avgTriggersPerBattle() {
             long total = 0;
             for (UnitStats u : perUnit.values()) {
-                for (long v : u.triggerTotals.values()) total += v;
+                for (long v : u.triggerTotals.values()) {
+                    total += v;
+                }
             }
             return totalBattles == 0 ? 0 : (double) total / totalBattles;
         }

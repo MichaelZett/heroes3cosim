@@ -94,7 +94,7 @@ public final class GreedyAutoSolver implements AutoSolver {
         if (active.canShoot()) {
             return alive.stream()
                     .max(Comparator
-                            .comparingInt((Stack o) -> dangerScore(o))
+                            .comparingInt(GreedyAutoSolver::dangerScore)
                             .thenComparingInt(o -> -from.distanceTo(o.position()))
                             .thenComparingInt(o -> -o.slot()))
                     .orElseThrow();

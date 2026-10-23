@@ -136,14 +136,14 @@ public class BattleSetup {
      * sollte stattdessen {@link #attackerStacks()} verwendet werden.
      */
     public Stack getAttacker() {
-        return attackerStacks.get(0);
+        return attackerStacks.getFirst();
     }
 
     /**
      * Single-Battle-Convenience: liefert den ersten Defender-Stack.
      */
     public Stack getDefender() {
-        return defenderStacks.get(0);
+        return defenderStacks.getFirst();
     }
 
     public Battlefield battlefield() {
@@ -189,6 +189,6 @@ public class BattleSetup {
                     "getTarget(...) ist nur für 1-vs-1-Pfade definiert; gefunden: " + opponents.size()
                             + " lebende Gegner. Im Multi-Stack-Pfad opponentsOf(...) nutzen.");
         }
-        return opponents.get(0);
+        return opponents.getFirst();
     }
 }

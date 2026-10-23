@@ -21,7 +21,6 @@ import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -60,7 +59,7 @@ class SolverDuelTest {
             Faction.CONFLUX);
 
     @Test
-    void tactical_wait_versus_no_wait() throws IOException {
+    void tactical_wait_versus_no_wait() throws Exception {
         FactionPresetCatalog presets = new FactionPresetCatalog();
         Map<Faction, FactionPresetDto> presetByFaction = new EnumMap<>(Faction.class);
         for (FactionPresetDto p : presets.all()) {
@@ -102,8 +101,8 @@ class SolverDuelTest {
         Files.createDirectories(reportsDir);
         Path out = reportsDir.resolve("solver-duel.md");
         Files.writeString(out, report);
-        System.out.println("Solver-Duell-Report: " + out.toAbsolutePath());
-        System.out.println(report);
+        IO.println("Solver-Duell-Report: " + out.toAbsolutePath());
+        IO.println(report);
     }
 
     private static void duel(Map<Faction, FactionPresetDto> presets, Faction attackerFaction,

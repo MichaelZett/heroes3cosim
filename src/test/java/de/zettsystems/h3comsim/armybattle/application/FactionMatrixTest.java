@@ -17,7 +17,6 @@ import de.zettsystems.h3comsim.battle.domain.events.Side;
 import de.zettsystems.h3comsim.battle.domain.events.Winner;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -53,7 +52,7 @@ class FactionMatrixTest {
             Faction.CONFLUX);
 
     @Test
-    void run_full_faction_matrix_and_write_report() throws IOException {
+    void run_full_faction_matrix_and_write_report() throws Exception {
         FactionPresetCatalog presets = new FactionPresetCatalog();
         Map<Faction, FactionPresetDto> presetByFaction = new EnumMap<>(Faction.class);
         for (FactionPresetDto p : presets.all()) {
@@ -74,8 +73,8 @@ class FactionMatrixTest {
         Path out = reportsDir.resolve("faction-matrix.md");
         Files.writeString(out, report);
 
-        System.out.println("Faction-Matrix-Report: " + out.toAbsolutePath());
-        System.out.println(report);
+        IO.println("Faction-Matrix-Report: " + out.toAbsolutePath());
+        IO.println(report);
     }
 
     private static Map<String, AggregatedPair> runMatrix(Map<Faction, FactionPresetDto> presets,
@@ -222,7 +221,9 @@ class FactionMatrixTest {
         List<Map.Entry<String, Double>> jumps = new ArrayList<>();
         for (Map.Entry<String, AggregatedPair> e : strategic.entrySet()) {
             String[] parts = e.getKey().split("\\|");
-            if (parts[0].equals(parts[1])) continue;
+            if (parts[0].equals(parts[1])) {
+                continue;
+            }
             double delta = e.getValue().aWinRate() - greedy.get(e.getKey()).aWinRate();
             if (Math.abs(delta) > 0.30) {
                 jumps.add(Map.entry(e.getKey(), delta));
@@ -257,9 +258,13 @@ class FactionMatrixTest {
     private static void renderMatrix(StringBuilder sb, String title, Map<String, AggregatedPair> m) {
         sb.append(title);
         sb.append("| | ");
-        for (Faction d : FACTIONS_IN_ORDER) sb.append(abbr(d)).append(" | ");
+        for (Faction d : FACTIONS_IN_ORDER) {
+            sb.append(abbr(d)).append(" | ");
+        }
         sb.append("\n|--|");
-        for (int i = 0; i < FACTIONS_IN_ORDER.size(); i++) sb.append("---|");
+        for (int i = 0; i < FACTIONS_IN_ORDER.size(); i++) {
+            sb.append("---|");
+        }
         sb.append("\n");
         for (Faction a : FACTIONS_IN_ORDER) {
             sb.append("| **").append(abbr(a)).append("** | ");
@@ -275,7 +280,9 @@ class FactionMatrixTest {
         double sum = 0;
         int n = 0;
         for (Faction other : FACTIONS_IN_ORDER) {
-            if (other == f) continue;
+            if (other == f) {
+                continue;
+            }
             sum += aggregated.get(key(f, other)).aWinRate();
             n++;
         }

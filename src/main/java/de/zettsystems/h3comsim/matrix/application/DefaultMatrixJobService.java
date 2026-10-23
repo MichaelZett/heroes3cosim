@@ -65,8 +65,10 @@ public class DefaultMatrixJobService implements MatrixJobService {
     private void runJob(String jobId, MatrixRequest request, JobState state) {
         LOG.info("Matrix run started:\n{}", configSummary(jobId, request, state.total));
         try {
+            // Benannter statt unbenannter Parameter: Mit "_" macht OpenRewrite daraus
+            // state::recordProgress, das bei zwei Parametern nicht kompiliert.
             MatrixReport report = experiment.run(request,
-                    (completed, _) -> state.recordProgress(completed));
+                    (completed, total) -> state.recordProgress(completed));
             state.complete(report);
             LOG.info("Matrix run completed:\n{}", reportSummary(jobId, request, report));
         } catch (RuntimeException ex) {

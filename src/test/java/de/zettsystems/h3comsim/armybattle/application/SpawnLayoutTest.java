@@ -126,7 +126,7 @@ class SpawnLayoutTest {
         // die Außen-Plätze in der zentrierten Auswahl {4, 5, 6}).
         assertThat(positions.get(1).r()).isIn(4, 6);
         // Arch Angel (speed 18) ist schnellster Melee → Zentrum.
-        assertThat(positions.get(0).r()).isEqualTo(5);
+        assertThat(positions.getFirst().r()).isEqualTo(5);
     }
 
     @Test
@@ -198,7 +198,7 @@ class SpawnLayoutTest {
         List<Hex> positions = SpawnLayout.assignPositions(Side.ATTACKER, units);
 
         // rowsFor(3) = {4, 5, 6}. outsideIn (|r-5| desc, r asc): {4, 6, 5}.
-        assertThat(positions.get(0).r()).isEqualTo(4);
+        assertThat(positions.getFirst().r()).isEqualTo(4);
         assertThat(positions.get(1).r()).isEqualTo(6);
         assertThat(positions.get(2).r()).isEqualTo(5);
     }
@@ -208,8 +208,8 @@ class SpawnLayoutTest {
         List<Hex> shooterAlone = SpawnLayout.assignPositions(Side.ATTACKER, List.of(UnitCatalog.MARKSMAN));
         List<Hex> meleeAlone = SpawnLayout.assignPositions(Side.ATTACKER, List.of(UnitCatalog.ARCH_ANGEL));
 
-        assertThat(shooterAlone.get(0)).isEqualTo(new Hex(0, 5));
-        assertThat(meleeAlone.get(0)).isEqualTo(new Hex(0, 5));
+        assertThat(shooterAlone).first().isEqualTo(new Hex(0, 5));
+        assertThat(meleeAlone).first().isEqualTo(new Hex(0, 5));
     }
 
     @Test
@@ -238,7 +238,7 @@ class SpawnLayoutTest {
 
         // Schützen belegen outsideIn[0..4] = {0, 10, 2, 8, 4}.
         Set<Integer> shooterRows = Set.of(
-                positions.get(0).r(), positions.get(1).r(), positions.get(2).r(),
+                positions.getFirst().r(), positions.get(1).r(), positions.get(2).r(),
                 positions.get(3).r(), positions.get(4).r());
         assertThat(shooterRows).containsExactlyInAnyOrder(0, 10, 2, 8, 4);
         // Arch Angel (schnellster Melee) bekommt das Zentrum r=5.

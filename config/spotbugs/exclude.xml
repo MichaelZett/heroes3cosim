@@ -32,4 +32,11 @@
     <Match>
         <Bug pattern="CT_CONSTRUCTOR_THROW"/>
     </Match>
+
+    <!-- Testmethoden deklarieren "throws Exception" (JUnit-Konvention, OpenRewrite stellt
+         spezifischere Klauseln darauf um); welche Checked Exception genau fliegt, ist dort egal. -->
+    <Match>
+        <Class name="~.*Test"/>
+        <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+    </Match>
 </FindBugsFilter>

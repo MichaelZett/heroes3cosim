@@ -18,7 +18,6 @@ import de.zettsystems.h3comsim.battle.domain.events.Side;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -51,7 +50,7 @@ class LichSplashDiagnosisTest {
     @Disabled("Diagnose-Harness — manuell aktivieren, wenn der Tank-Wall-vs-AoE-Effekt für "
             + "andere Splash/Death-Cloud-Schützen erneut quantifiziert werden soll. "
             + "Snapshot liegt in build/reports/lich-splash-diagnosis.md.")
-    void diagnose_lich_splash_in_nec_vs_ram() throws IOException {
+    void diagnose_lich_splash_in_nec_vs_ram() throws Exception {
         FactionPresetCatalog presets = new FactionPresetCatalog();
         FactionPresetDto nec = presetFor(presets, Faction.NECROPOLIS);
         FactionPresetDto ram = presetFor(presets, Faction.RAMPART);
@@ -65,8 +64,8 @@ class LichSplashDiagnosisTest {
         Files.createDirectories(reportsDir);
         Path out = reportsDir.resolve("lich-splash-diagnosis.md");
         Files.writeString(out, report);
-        System.out.println("Lich-Diagnose-Report: " + out.toAbsolutePath());
-        System.out.println(report);
+        IO.println("Lich-Diagnose-Report: " + out.toAbsolutePath());
+        IO.println(report);
     }
 
     private static FactionPresetDto presetFor(FactionPresetCatalog presets, Faction faction) {
