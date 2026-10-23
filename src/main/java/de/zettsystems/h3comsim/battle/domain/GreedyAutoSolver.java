@@ -131,6 +131,10 @@ public final class GreedyAutoSolver implements AutoSolver {
         if (resurrectionTarget != null) {
             return new Action.Resurrect(resurrectionTarget);
         }
+        Stack corpse = DemonRaising.worthwhileCorpse(active, currentSetup);
+        if (corpse != null) {
+            return new Action.RaiseDemons(corpse);
+        }
         Hex from = active.position();
         Hex to = opponent.position();
         int distance = from.distanceTo(to);

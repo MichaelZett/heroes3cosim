@@ -85,11 +85,16 @@ public record Unit(
      * wiederbelebbar.
      */
     public boolean isResurrectable() {
-        return !isUndead()
-                && !specialities.contains(UnitSpeciality.ELEMENTAL_RACE)
-                && !specialities.contains(UnitSpeciality.NON_LIVING)
+        return isLiving()
                 && !specialities.contains(UnitSpeciality.IMMUNE_TO_SPELLS)
                 && !specialities.contains(UnitSpeciality.IMMUNE_TO_SPELLS_BELOW_5);
+    }
+
+    /** Lebewesen: weder untot noch Elementar noch Golem oder Gargoyle. */
+    public boolean isLiving() {
+        return !isUndead()
+                && !specialities.contains(UnitSpeciality.ELEMENTAL_RACE)
+                && !specialities.contains(UnitSpeciality.NON_LIVING);
     }
 
     public boolean hasSpeciality(UnitSpeciality speciality) {

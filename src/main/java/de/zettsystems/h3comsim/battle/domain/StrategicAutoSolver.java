@@ -185,6 +185,10 @@ public final class StrategicAutoSolver implements AutoSolver {
         if (resurrectionTarget != null) {
             return new Action.Resurrect(resurrectionTarget);
         }
+        Stack corpse = DemonRaising.worthwhileCorpse(active, currentSetup);
+        if (corpse != null) {
+            return new Action.RaiseDemons(corpse);
+        }
         // (A) Tank-Pattern: positionieren statt chargen, wenn eigene Schützen Schutz brauchen.
         // Aktiviert sich bei RANGED_DOMINANT (alle Schützen schutzwürdig) und bei BALANCED
         // mit Rand-Schützen — siehe RoundPlan.hasTankDuty / StrategicAutoSolver#buildPlan.

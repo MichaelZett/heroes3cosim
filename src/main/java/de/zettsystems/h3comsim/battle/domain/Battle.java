@@ -219,8 +219,28 @@ public final class Battle {
             case Action.Melee(Stack target) -> meleeAttack(active, target, 0, setup);
             case Action.Shoot(Stack target) -> shoot(active, target, setup);
             case Action.Resurrect(Stack target) -> resurrect(active, target);
+            case Action.RaiseDemons(Stack corpse) -> raiseDemons(active, corpse, setup);
         }
         return true;
+    }
+
+    /**
+     * Pit Lord: beschwört aus einem ganz gefallenen verbündeten Stack Dämonen (Manual S. 98).
+     * Verbraucht die Aktion. Ein ungültiger Leichnam oder ein zweiter Versuch fällt auf Defend
+     * zurück, wie bei {@link #resurrect}.
+     */
+    private void raiseDemons(Stack caster, Stack corpse, BattleSetup setup) {
+        if (!caster.canRaiseDemons() || !DemonRaising.isValidCorpse(caster, corpse, setup)) {
+            emitDefend(caster);
+            return;
+        }
+        int demons = DemonRaising.demonsFrom(caster, corpse);
+        String fallen = corpse.getName();
+        corpse.riseAs(UnitCatalog.DEMON, demons);
+        caster.markDemonsRaised();
+        BattleLogger.logRaiseDemons(caster.getName(), fallen, demons);
+        events.emit(new BattleEvent.RaiseDemons(caster.side(), caster.slot(),
+                corpse.side(), corpse.slot(), demons, snapshot(corpse)));
     }
 
     /**

@@ -100,6 +100,7 @@ export const en: Dictionary = {
     rebirth: '<actor>{{actor}}</actor> is reborn with {{count}} creatures.',
     resurrection:
       '<actor>{{actor}}</actor> resurrects {{count}} creatures of <target>{{target}}</target>.',
+    raiseDemons: '<actor>{{actor}}</actor> raise {{count}} demons from the fallen.',
     battleEnd:
       'Battle over — winner: <winner>{{winner}}</winner> after {{turns}} turns. Survivors: {{attackerSurvivors}} vs. {{defenderSurvivors}}.',
     draw: 'Draw',

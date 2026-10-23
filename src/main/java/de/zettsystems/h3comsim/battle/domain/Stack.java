@@ -11,10 +11,11 @@ import java.util.random.RandomGenerator;
 @Slf4j
 public class Stack {
 
-    private final Unit unit;
+    /** Nicht final: Ein gefallener Stack kann als Dämonen zurückkehren ({@link #riseAs}). */
+    private Unit unit;
     private final Side side;
     private final int slot;
-    private final int startCount;
+    private int startCount;
     private int aliveCount;
     private int topUnitCurrentHealth;
     private int shotsRemaining;
@@ -31,6 +32,7 @@ public class Stack {
     private boolean aged;
     private boolean rebirthUsed;
     private boolean resurrectionUsed;
+    private boolean demonsRaised;
     private boolean defending;
     private boolean waitedThisTurn;
     private @Nullable Hero commander;
@@ -361,6 +363,49 @@ public class Stack {
 
     public void markResurrectionUsed() {
         resurrectionUsed = true;
+    }
+
+    /** Ob der Stack seine Dämonen-Beschwörung noch wirken kann — einmal pro Kampf (Manual S. 98). */
+    public boolean canRaiseDemons() {
+        return aliveCount > 0 && !demonsRaised && unit.hasSpeciality(UnitSpeciality.RAISE_DEMONS);
+    }
+
+    public void markDemonsRaised() {
+        demonsRaised = true;
+    }
+
+    /**
+     * Lässt einen ganz gefallenen Stack als andere Kreatur auf demselben Feld zurückkehren —
+     * die Pit Lords machen aus den Toten Dämonen. Der Stack beginnt frisch: volle Lebenspunkte,
+     * keine Zustände, {@code count} ist seine neue Start-Stärke.
+     */
+    public void riseAs(Unit newUnit, int count) {
+        if (aliveCount > 0) {
+            throw new IllegalStateException(getName() + " lebt noch und kann nicht auferstehen");
+        }
+        if (count <= 0) {
+            throw new IllegalArgumentException("count must be > 0, was " + count);
+        }
+        unit = Objects.requireNonNull(newUnit, "newUnit");
+        startCount = count;
+        aliveCount = count;
+        topUnitCurrentHealth = newUnit.health();
+        shotsRemaining = newUnit.shots();
+        petrified = false;
+        petrifiedCounter = 0;
+        cursed = false;
+        cursedCounter = 0;
+        poisoned = false;
+        poisonedCounter = 0;
+        diseased = false;
+        diseasedCounter = 0;
+        aged = false;
+        retaliationsThisTurn = 0;
+    }
+
+    /** Kreaturen, mit denen der Stack in den Kampf ging (nach einer Auferstehung: die neue Zahl). */
+    public int startCount() {
+        return startCount;
     }
 
     /** Lebenspunkte, die dem Stack zur vollen Start-Stärke fehlen. */

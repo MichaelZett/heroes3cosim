@@ -188,6 +188,15 @@ export type BattleEvent =
       targetAfter: StackSnapshot;
     }
   | {
+      type: 'RaiseDemons';
+      actor: Side;
+      actorSlot: number;
+      target: Side;
+      targetSlot: number;
+      raisedCount: number;
+      targetAfter: StackSnapshot;
+    }
+  | {
       type: 'BattleEnd';
       winner: Winner;
       attackerSurvivors: number;

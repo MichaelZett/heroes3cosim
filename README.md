@@ -25,7 +25,9 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Twice/Unlimited (Griffin), Regeneration (Wight), Fire Shield (Efreet
   Sultan), Rebirth (Phoenix), No Hand-to-Hand Penalty, Moral-Senkung
   (Bone/Ghost Dragon), Resurrection (Arch Angel: einmal pro Kampf 100 HP
-  je Arch Angel für einen verbündeten Stack).
+  je Arch Angel für einen verbündeten Stack), Dämonen-Beschwörung (Pit
+  Lord: einmal pro Kampf aus einem ganz gefallenen verbündeten Stack,
+  50 HP je Pit Lord).
 - **Multi-Stack-Fähigkeiten** für die Army-Battles: Cerberus
   Three-Headed Attack (Ziel + die beiden Felder links und rechts davon,
   nur Gegner), Fire Breath (Green/Gold/Red/Black Dragon — Ziel + Stack

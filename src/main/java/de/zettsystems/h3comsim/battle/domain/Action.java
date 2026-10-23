@@ -17,6 +17,10 @@ public sealed interface Action {
     record Wait() implements Action {
     }
 
+    /** Pit Lord: beschwört aus einem ganz gefallenen verbündeten Stack Dämonen, einmal pro Kampf. */
+    record RaiseDemons(Stack corpse) implements Action {
+    }
+
     /** Arch Angel: Resurrection auf einen verbündeten Stack, einmal pro Kampf. */
     record Resurrect(Stack target) implements Action {
     }

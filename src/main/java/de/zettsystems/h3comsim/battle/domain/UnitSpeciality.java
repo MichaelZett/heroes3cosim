@@ -70,6 +70,9 @@ public enum UnitSpeciality {
      *  wiederbelebbar (heroes.thelazy.net, Archangel: „Golems, Gargoyles, Elementals …
      *  can never be resurrected"). */
     NON_LIVING(SPECIAL),
+    /** Pit Lord (Manual S. 98): beschwört einmal pro Kampf statt einer Aktion aus einem ganz
+     *  gefallenen verbündeten Stack Dämonen. Regeln und Ziel-Wahl in {@link DemonRaising}. */
+    RAISE_DEMONS(SPECIAL),
 
     // Not yet evaluated by the engine — defined for unit catalog tagging only.
     // Most of these need the spell/hero system before they can be evaluated.

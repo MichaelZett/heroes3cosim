@@ -111,6 +111,28 @@ describe('eventToNode', () => {
     expect(container.textContent).toContain('belebt 3 Einheiten');
   });
 
+  it('renders RaiseDemons with the number of demons', () => {
+    const { container } = renderEvent({
+      type: 'RaiseDemons',
+      actor: 'ATTACKER',
+      actorSlot: 0,
+      target: 'ATTACKER',
+      targetSlot: 1,
+      raisedCount: 4,
+      targetAfter: {
+        side: 'ATTACKER',
+        slot: 1,
+        unitName: 'Demon',
+        count: 4,
+        topHp: 35,
+        q: 0,
+        r: 5,
+      },
+    });
+
+    expect(container.textContent).toContain('4 Dämonen');
+  });
+
   it('paints the attacker name in amber and the defender name in blue', () => {
     const { getByText } = renderEvent({
       type: 'Melee',
