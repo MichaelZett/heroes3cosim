@@ -45,7 +45,9 @@ interface HeroPickerProps {
 }
 
 /**
- * Auswahl des Helden, der diese Armee fuehrt.
+ * Auswahl des Helden, der diese Armee fuehrt. Jede Armee hat einen Helden: die leere Auswahl
+ * ueberlaesst ihn dem Backend, das den Standardhelden der Fraktion mit dem groessten Goldwert
+ * nimmt.
  *
  * Angezeigt werden Angriff und Verteidigung sowie die vier Fertigkeiten, die die Engine
  * auswertet. Power und Knowledge bleiben aussen vor: sie steuern ausschliesslich das Zaubern

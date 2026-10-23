@@ -87,6 +87,8 @@ export const de = {
   events: {
     battleStart:
       'Kampf beginnt: <actor>{{attacker}}</actor> ({{attackerCount}}×) gegen <target>{{defender}}</target> ({{defenderCount}}×).',
+    battleStartHeroes:
+      'Helden: <actor>{{attackerHero}}</actor> gegen <target>{{defenderHero}}</target>.',
     battleStartMorale:
       'Moral: <actor>Angreifer {{attackerMorale}}</actor>, <target>Verteidiger {{defenderMorale}}</target>.',
     move: '<actor>{{actor}}</actor> bewegt sich von ({{fromQ}},{{fromR}}) nach ({{toQ}},{{toR}}).',
@@ -144,7 +146,7 @@ export const de = {
     slotN: 'S{{slot}}',
     slotEmpty: '— leer —',
     hero: 'Held',
-    heroNone: '— ohne Held —',
+    heroNone: '— Standardheld der Hauptfraktion —',
     heroEffect: '+{{attack}} Angriff / +{{defense}} Verteidigung auf jede Einheit dieser Armee',
     heroPending: 'Helden werden geladen …',
     heroSkillOFFENSE: 'Angriff',

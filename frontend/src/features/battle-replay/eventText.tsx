@@ -59,6 +59,19 @@ export function EventText({ event, names }: Readonly<EventTextProps>) {
             }}
             components={{ actor: sideSpan('ATTACKER'), target: sideSpan('DEFENDER') }}
           />
+          {(event.attackerHero || event.defenderHero) && (
+            <>
+              {' '}
+              <Trans
+                i18nKey="events.battleStartHeroes"
+                values={{
+                  attackerHero: event.attackerHero ?? '—',
+                  defenderHero: event.defenderHero ?? '—',
+                }}
+                components={{ actor: sideSpan('ATTACKER'), target: sideSpan('DEFENDER') }}
+              />
+            </>
+          )}
           {(attackerMorale !== 0 || defenderMorale !== 0) && (
             <>
               {' '}

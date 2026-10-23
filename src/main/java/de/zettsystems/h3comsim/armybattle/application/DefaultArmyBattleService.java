@@ -18,7 +18,6 @@ import de.zettsystems.h3comsim.battle.domain.Unit;
 import de.zettsystems.h3comsim.battle.domain.UnitCatalog;
 import de.zettsystems.h3comsim.battle.domain.events.ListEventCollector;
 import de.zettsystems.h3comsim.battle.domain.events.Side;
-import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -39,17 +38,19 @@ public class DefaultArmyBattleService implements ArmyBattleService {
 
         Battlefield battlefield = buildBattlefield(attackerStacks.size(), defenderStacks.size(), seed);
         BattleSetup setup = new BattleSetup(attackerStacks, defenderStacks, battlefield,
-                resolveHero(request.attacker()), resolveHero(request.defender()));
+                resolveHero(request.attacker(), attackerStacks),
+                resolveHero(request.defender(), defenderStacks));
 
         ListEventCollector collector = new ListEventCollector();
         BattleResult result = new Battle(new Random(seed), new StrategicAutoSolver(), collector).simulate(setup);
         return new ArmyBattleSimulation(result, collector.events());
     }
 
-    private static @Nullable Hero resolveHero(ArmySpec army) {
+    /** Jede Armee hat einen Helden; ohne Auswahl den Standardhelden ihrer Hauptfraktion. */
+    private static Hero resolveHero(ArmySpec army, List<Stack> stacks) {
         String name = army.heroName();
         if (name == null || name.isBlank()) {
-            return null;
+            return HeroCatalog.defaultForArmy(stacks);
         }
         return HeroCatalog.byName(name)
                 .orElseThrow(() -> new ResponseStatusException(

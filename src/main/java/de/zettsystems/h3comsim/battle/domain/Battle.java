@@ -57,7 +57,8 @@ public final class Battle {
         List<StackSnapshot> initialStacks = setup.aliveStacks().stream().map(Battle::snapshot).toList();
         events.emit(new BattleEvent.BattleStart(bf.width(), bf.height(), obstacleCoords,
                 attackerSnap, defenderSnap, initialStacks,
-                setup.moraleOf(Side.ATTACKER), setup.moraleOf(Side.DEFENDER)));
+                setup.moraleOf(Side.ATTACKER), setup.moraleOf(Side.DEFENDER),
+                heroName(setup.attackerHero()), heroName(setup.defenderHero())));
 
         int attackerStart = setup.getAttackerCount();
         int defenderStart = setup.getDefenderCount();
@@ -746,6 +747,10 @@ public final class Battle {
             events.emit(new BattleEvent.Aging(active.side(), active.slot(),
                     target.side(), target.slot()));
         }
+    }
+
+    private static @Nullable String heroName(@Nullable Hero hero) {
+        return hero == null ? null : hero.name();
     }
 
     private static StackSnapshot snapshot(Stack stack) {

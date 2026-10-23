@@ -83,6 +83,31 @@ describe('eventToNode', () => {
     expect(container.textContent).not.toContain('Moral');
   });
 
+  it('names the heroes of both armies when the battle has them', () => {
+    const { container } = renderEvent({
+      type: 'BattleStart',
+      battlefieldWidth: 15,
+      battlefieldHeight: 11,
+      obstacles: [],
+      attacker: {
+        side: 'ATTACKER',
+        slot: 0,
+        unitName: 'Pikeman',
+        count: 10,
+        topHp: 10,
+        q: 0,
+        r: 5,
+      },
+      defender: { side: 'DEFENDER', slot: 0, unitName: 'Goblin', count: 8, topHp: 5, q: 14, r: 5 },
+      stacks: [],
+      attackerMorale: 0,
+      defenderMorale: 0,
+      attackerHero: 'Sorsha',
+      defenderHero: 'Crag Hack',
+    });
+    expect(container.textContent).toContain('Helden: Sorsha gegen Crag Hack');
+  });
+
   it('renders BadMorale as a lost action', () => {
     const { container } = renderEvent({ type: 'BadMorale', actor: 'DEFENDER', actorSlot: 0 });
 

@@ -67,7 +67,7 @@ import static de.zettsystems.h3comsim.battle.domain.SkillLevel.BASIC;
  * Zeilen Attack und Defense, ihre Werte sind die aller Elementalisten.
  *
  * <p>Je Fraktion gibt es einen <strong>Standardhelden</strong> ({@link #defaultFor}), der eine
- * Armee führt, wenn niemand ausgewählt ist. Gewählt ist jeweils ein Held der martialischen
+ * Armee führt, wenn niemand ausgewählt ist ({@link #defaultForArmy}). Gewählt ist jeweils ein Held der martialischen
  * Klasse — Power und Knowledge wirken ohne Zaubersystem nicht, ein Magier wäre ein Held fast
  * ohne Wirkung. Innerhalb der Klasse entschied die Startfertigkeit: bevorzugt eine
  * kampfrelevante auf {@code ADVANCED}. Bei Tower und Necropolis bringt kein Held der
@@ -297,5 +297,31 @@ public final class HeroCatalog {
     /** Der Standardheld dieser Fraktion; leer für {@link Faction#NEUTRAL}. */
     public static Optional<Hero> defaultFor(Faction faction) {
         return Optional.ofNullable(DEFAULTS.get(faction));
+    }
+
+    /**
+     * Der Standardheld für eine Armee ohne ausgewählten Helden: der der Fraktion, die den größten
+     * Goldwert (Anzahl × Kosten) stellt. Bei Gleichstand gewinnt die Fraktion, die in
+     * {@link Faction} zuerst steht. Neutrale Kreaturen zählen nicht; eine rein neutrale Armee
+     * führt {@link #SORSHA} — die Wahl ist willkürlich, aber fest, damit jede Armee einen Helden
+     * hat.
+     */
+    public static Hero defaultForArmy(List<Stack> stacks) {
+        Map<Faction, Long> value = new EnumMap<>(Faction.class);
+        for (Stack stack : stacks) {
+            Faction faction = stack.unit().faction();
+            if (faction != Faction.NEUTRAL) {
+                value.merge(faction, (long) stack.getCount() * stack.unit().cost(), Long::sum);
+            }
+        }
+        Faction dominant = null;
+        long best = -1;
+        for (Map.Entry<Faction, Long> entry : value.entrySet()) {
+            if (entry.getValue() > best) {
+                dominant = entry.getKey();
+                best = entry.getValue();
+            }
+        }
+        return dominant == null ? SORSHA : defaultFor(dominant).orElseThrow();
     }
 }

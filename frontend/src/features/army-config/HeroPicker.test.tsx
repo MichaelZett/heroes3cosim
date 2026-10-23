@@ -5,7 +5,7 @@ import HeroPicker from './HeroPicker';
 import { TEST_HEROES } from '../../test/fixtures';
 
 describe('HeroPicker', () => {
-  it('offers every hero plus the option to fight without one', () => {
+  it('offers every hero plus the default-hero option', () => {
     render(<HeroPicker heroes={TEST_HEROES} selectedName={null} onChange={vi.fn()} />);
 
     const options = screen.getAllByRole('option');
@@ -29,7 +29,7 @@ describe('HeroPicker', () => {
     expect(onChange).toHaveBeenCalledWith('Tazar');
   });
 
-  it('reports null when the hero is removed again', async () => {
+  it('reports null when switching back to the default hero', async () => {
     const onChange = vi.fn();
     render(<HeroPicker heroes={TEST_HEROES} selectedName="Tazar" onChange={onChange} />);
 

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.swagger.v3.oas.annotations.media.DiscriminatorMapping;
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 
@@ -94,7 +95,9 @@ public sealed interface BattleEvent {
             @Schema(description = "Start-Snapshot des Defender-Stacks (Slot 0)") StackSnapshot defender,
             @Schema(description = "Alle initialen Stacks beider Seiten (Army-Battle). Single-Battle: zwei Snapshots — Slot 0 Attacker + Slot 0 Defender.") List<StackSnapshot> stacks,
             @Schema(description = "Moral-Rating der Angreifer-Armee (Manual S. 43): Stadt-Typen, Untoten-Mischung, Leadership des Helden und Angel-Bonus zusammengerechnet. Untote und Elementare bleiben davon unberührt und haben immer Moral 0.", example = "1") int attackerMorale,
-            @Schema(description = "Moral-Rating der Verteidiger-Armee, analog zu `attackerMorale`.", example = "0") int defenderMorale) implements BattleEvent {
+            @Schema(description = "Moral-Rating der Verteidiger-Armee, analog zu `attackerMorale`.", example = "0") int defenderMorale,
+            @Schema(description = "Held der Angreifer-Armee. Im Army-Battle immer gesetzt (ohne Auswahl der Standardheld), im Single-Battle null.", example = "Crag Hack", nullable = true) @Nullable String attackerHero,
+            @Schema(description = "Held der Verteidiger-Armee, analog zu `attackerHero`.", example = "Tazar", nullable = true) @Nullable String defenderHero) implements BattleEvent {
         public BattleStart {
             obstacles = List.copyOf(obstacles);
             stacks = List.copyOf(stacks);

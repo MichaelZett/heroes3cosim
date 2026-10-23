@@ -91,6 +91,8 @@ export const en: Dictionary = {
   events: {
     battleStart:
       'Battle begins: <actor>{{attacker}}</actor> ({{attackerCount}}×) vs. <target>{{defender}}</target> ({{defenderCount}}×).',
+    battleStartHeroes:
+      'Heroes: <actor>{{attackerHero}}</actor> vs. <target>{{defenderHero}}</target>.',
     battleStartMorale:
       'Morale: <actor>attacker {{attackerMorale}}</actor>, <target>defender {{defenderMorale}}</target>.',
     move: '<actor>{{actor}}</actor> moves from ({{fromQ}},{{fromR}}) to ({{toQ}},{{toR}}).',
@@ -146,7 +148,7 @@ export const en: Dictionary = {
     slotN: 'S{{slot}}',
     slotEmpty: '— empty —',
     hero: 'Hero',
-    heroNone: '— no hero —',
+    heroNone: '— default hero of the main faction —',
     heroEffect: '+{{attack}} attack / +{{defense}} defense on every creature of this army',
     heroPending: 'Loading heroes …',
     heroSkillOFFENSE: 'Offense',

@@ -14,16 +14,16 @@ public record ArmySpec(
         @NotNull @Valid @Size(min = 1, max = 7) List<StackSpec> stacks,
 
         @Schema(description = """
-                Optionaler Held, exakter Name aus `/api/heroes` (z.B. `Crag Hack`). Sein
-                Attack- und Defense-Wert wird auf jede Kreatur dieser Armee addiert. Bei
-                null kämpft die Armee führerlos.
+                Held, exakter Name aus `/api/heroes` (z.B. `Crag Hack`). Sein Attack- und
+                Defense-Wert wird auf jede Kreatur dieser Armee addiert. Bei null führt der
+                Standardheld der Fraktion, die den größten Goldwert der Armee stellt.
                 """, example = "Crag Hack", nullable = true)
         @Nullable String heroName) {
     public ArmySpec {
         stacks = List.copyOf(stacks);
     }
 
-    /** Rückwärtskompatibler Konstruktor für heldenlose Armeen. */
+    /** Armee mit dem Standardhelden ihrer Hauptfraktion. */
     public ArmySpec(List<StackSpec> stacks) {
         this(stacks, null);
     }

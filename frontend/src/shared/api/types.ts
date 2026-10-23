@@ -83,6 +83,9 @@ export type BattleEvent =
       /** Moral-Rating der Armee (Manual S. 43), -3..+3. */
       attackerMorale: number;
       defenderMorale: number;
+      /** Held der Armee; im Army-Battle immer gesetzt, im Single-Battle null. */
+      attackerHero?: string | null;
+      defenderHero?: string | null;
     }
   | {
       type: 'Move';
@@ -218,7 +221,7 @@ export interface StackSpec {
 
 export interface ArmySpec {
   stacks: StackSpec[];
-  /** Name aus /api/heroes. Null bedeutet: Armee kaempft fuehrerlos. */
+  /** Name aus /api/heroes. Null bedeutet: Standardheld der Fraktion mit dem groessten Goldwert. */
   heroName?: string | null;
 }
 
