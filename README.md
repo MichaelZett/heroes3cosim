@@ -58,9 +58,12 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   *Defend* gibt dafür +20 % Defense bis Rundenende. Die Auto-Solver
   nutzen das taktisch: wer sein Ziel diese Runde nicht erreicht, wartet,
   statt sich exponiert ins Niemandsland zu stellen.
-- **Hex-Schlachtfeld 15 × 11** mit zufälligen Hindernissen pro Sim,
-  Hex-A*-Pathfinding um Obstacles herum, zugbasierte Move-Sequenz pro
-  Hex (Token wandert sichtbar Schritt für Schritt).
+- **Hex-Schlachtfeld 15 × 11** wie in H3 als Rechteck mit versetzten
+  Reihen, abwechselnd 15 und 14 Hexe breit und damit exakt
+  links-rechts-symmetrisch: Beide Armeen stellen sich spiegelbildlich am
+  Rand auf. Zufällige Hindernisse pro Sim, Hex-A*-Pathfinding um
+  Obstacles herum, zugbasierte Move-Sequenz pro Hex (Token wandert
+  sichtbar Schritt für Schritt).
 - **Fernkampf** mit `shotsRemaining`, Nahkampf-Penalty bei Distanz 1,
   ½-Schaden ab >10 Hex Distanz und nochmal ½ wenn ein Hindernis in der
   Schusslinie liegt — beide negierbar durch entsprechende Marker.

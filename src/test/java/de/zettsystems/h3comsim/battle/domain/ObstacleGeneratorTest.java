@@ -21,8 +21,9 @@ class ObstacleGeneratorTest {
     @Test
     void keeps_the_outer_two_columns_clear_for_spawn_zones() {
         Set<Hex> obstacles = ObstacleGenerator.generate(Battlefield.STANDARD, new Random(7L), 30);
+        Battlefield field = Battlefield.STANDARD;
         for (Hex h : obstacles) {
-            assertThat(h.q()).isBetween(2, Battlefield.STANDARD.width() - 3);
+            assertThat(h.q()).isBetween(field.leftmostQ(h.r()) + 2, field.rightmostQ(h.r()) - 2);
         }
     }
 
@@ -35,8 +36,8 @@ class ObstacleGeneratorTest {
 
     @Test
     void caps_count_at_available_hexes() {
-        // 11 valid columns × 11 rows = 121 candidate hexes.
+        // Ohne die zwei Randzellen je Seite: 5 lange Reihen à 11, 6 kurze à 10.
         Set<Hex> obstacles = ObstacleGenerator.generate(Battlefield.STANDARD, new Random(1L), 500);
-        assertThat(obstacles).hasSize(121);
+        assertThat(obstacles).hasSize(5 * 11 + 6 * 10);
     }
 }

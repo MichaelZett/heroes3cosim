@@ -48,7 +48,8 @@ public final class PathFinder {
         if (from.equals(destination) || !bf.isPassable(destination)) {
             return List.of();
         }
-        return aStarSearch(bf, from, destination::equals, h -> h.distanceTo(destination));
+        return aStarSearch(bf, from, destination::equals, h -> h.distanceTo(destination),
+                Hex.isLeftward(from, destination));
     }
 
     /**
@@ -77,17 +78,29 @@ public final class PathFinder {
         if (goals.isEmpty()) {
             return List.of();
         }
-        return aStarSearch(bf, from, goals::contains, h -> minDistance(h, goals));
+        return aStarSearch(bf, from, goals::contains, h -> minDistance(h, goals),
+                Hex.isLeftward(from, target));
     }
 
+    /**
+     * @param leftward ob die Suche nach links läuft. Gleich lange Pfade gibt es viele; welcher
+     *                 gewinnt, hängt von der Nachbar-Reihenfolge und den Gleichständen in der
+     *                 Queue ab. Beides wird in Laufrichtung gespiegelt, damit ein Stack nach links
+     *                 denselben Weg nimmt wie sein Spiegelbild nach rechts.
+     */
     private static List<Hex> aStarSearch(Battlefield bf, Hex from,
                                          Predicate<Hex> goalReached,
-                                         ToIntFunction<Hex> heuristic) {
+                                         ToIntFunction<Hex> heuristic,
+                                         boolean leftward) {
         Map<Hex, Hex> cameFrom = new HashMap<>();
         Map<Hex, Integer> gScore = new HashMap<>();
         gScore.put(from, 0);
+        int lateral = leftward ? -1 : 1;
         PriorityQueue<Hex> open = new PriorityQueue<>(
-                Comparator.comparingInt(h -> gScore.getOrDefault(h, Integer.MAX_VALUE) + heuristic.applyAsInt(h)));
+                Comparator.comparingInt((Hex h) -> gScore.getOrDefault(h, Integer.MAX_VALUE) + heuristic.applyAsInt(h))
+                        .thenComparingInt(heuristic)
+                        .thenComparingInt(Hex::r)
+                        .thenComparingInt(h -> lateral * h.q()));
         open.add(from);
         Set<Hex> closed = new HashSet<>();
 
@@ -98,7 +111,7 @@ public final class PathFinder {
                 return reconstruct(cameFrom, current);
             }
             if (closed.add(current)) {
-                expandNeighbors(current, bf, cameFrom, gScore, open);
+                expandNeighbors(current, bf, cameFrom, gScore, open, leftward);
             }
         }
         return List.of();
@@ -106,9 +119,9 @@ public final class PathFinder {
 
     private static void expandNeighbors(Hex current, Battlefield bf,
                                         Map<Hex, Hex> cameFrom, Map<Hex, Integer> gScore,
-                                        PriorityQueue<Hex> open) {
+                                        PriorityQueue<Hex> open, boolean leftward) {
         int currentG = gScore.getOrDefault(current, Integer.MAX_VALUE);
-        for (Hex neighbor : current.neighbors()) {
+        for (Hex neighbor : current.neighbors(leftward)) {
             if (!bf.contains(neighbor) || bf.hasObstacle(neighbor)) {
                 continue;
             }

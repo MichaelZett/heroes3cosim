@@ -106,10 +106,11 @@ class GreedyAutoSolverTest {
 
     @Test
     void faster_shooter_kites_when_engagement_is_imminent_next_turn() {
-        // Marksman speed 6 vs Pikeman speed 4. Pikeman bei (2,5) → Distanz 2, Pikeman würde
-        // nächste Runde adjacent sein. Marksman ist schneller → kite, statt zu schießen.
-        Stack shooter = new Stack(UnitCatalog.MARKSMAN, 10, new Hex(0, 5));
-        Stack opponent = new Stack(UnitCatalog.PIKEMAN, 10, new Hex(2, 5));
+        // Marksman speed 6 vs Pikeman speed 4. Pikeman bei (6,5) → Distanz 2, Pikeman würde
+        // nächste Runde adjacent sein. Marksman ist schneller → kite, statt zu schießen. Er
+        // steht vier Felder vor dem Rand, sonst bliebe ihm kein Raum nach hinten.
+        Stack shooter = new Stack(UnitCatalog.MARKSMAN, 10, new Hex(4, 5));
+        Stack opponent = new Stack(UnitCatalog.PIKEMAN, 10, new Hex(6, 5));
 
         Action action = solver.decide(shooter, opponent, battlefield);
 
@@ -138,8 +139,8 @@ class GreedyAutoSolverTest {
     @Test
     void shooter_still_kites_when_dps_race_is_not_winnable() {
         // 5 Marksman vs 20 Pikeman: kein DPS-Race-Win, threatIsDeadly bleibt true → kiten.
-        Stack shooter = new Stack(UnitCatalog.MARKSMAN, 5, new Hex(0, 5));
-        Stack opponent = new Stack(UnitCatalog.PIKEMAN, 20, new Hex(2, 5));
+        Stack shooter = new Stack(UnitCatalog.MARKSMAN, 5, new Hex(4, 5));
+        Stack opponent = new Stack(UnitCatalog.PIKEMAN, 20, new Hex(6, 5));
 
         Action action = solver.decide(shooter, opponent, battlefield);
 

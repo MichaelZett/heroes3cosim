@@ -378,7 +378,8 @@ public final class Battle {
     private void applyMeleeSplash(Stack active, Stack primary, BattleSetup setup) {
         if (active.hasSpeciality(UnitSpeciality.THREE_HEADED_ATTACK)) {
             int splashes = 0;
-            for (Hex neighbor : active.position().neighbors()) {
+            boolean leftward = Hex.isLeftward(active.position(), primary.position());
+            for (Hex neighbor : active.position().neighbors(leftward)) {
                 if (splashes >= 2) {
                     break;
                 }
@@ -560,7 +561,8 @@ public final class Battle {
      */
     private void applySplashShot(Stack active, Stack primary, BattleSetup setup) {
         int splashes = 0;
-        for (Hex neighbor : primary.position().neighbors()) {
+        boolean leftward = Hex.isLeftward(active.position(), primary.position());
+        for (Hex neighbor : primary.position().neighbors(leftward)) {
             if (splashes >= 2) {
                 break;
             }
@@ -576,7 +578,8 @@ public final class Battle {
      * DEATH_CLOUD: alle non-undead Stacks im 1-Hex-Radius, ohne Stück-Limit.
      */
     private void applyDeathCloud(Stack active, Stack primary, BattleSetup setup) {
-        for (Hex neighbor : primary.position().neighbors()) {
+        boolean leftward = Hex.isLeftward(active.position(), primary.position());
+        for (Hex neighbor : primary.position().neighbors(leftward)) {
             Stack collateral = collateralAt(active, neighbor, primary, setup);
             if (collateral != null && !collateral.unit().isUndead()) {
                 applySplashHit(active, collateral, AttackType.LONG_RANGE);

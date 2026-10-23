@@ -5,6 +5,21 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Das Schlachtfeld: ein Rechteck aus {@code height} Reihen mit versetzten Hexen, wie in H3.
+ *
+ * <p>{@link Hex} rechnet in axialen Koordinaten (Distanz und Nachbarn stimmen dort ohne
+ * Sonderfälle). Ein Rechteck ist in axialen Koordinaten aber nicht {@code 0 ≤ q < width} — das
+ * wäre ein Parallelogramm mit zwei spitzen und zwei stumpfen Ecken, und spiegelbildlich
+ * aufgestellte Armeen stünden darin nicht gleichwertig. Stattdessen gehört eine Zelle dazu, wenn
+ * ihre waagerechte Lage {@code q + r/2} innerhalb der Mittelreihe liegt:
+ * {@code c ≤ 2q + r ≤ c + 2(width − 1)} mit {@code c = height / 2}.
+ *
+ * <p>Folgen: Die Mittelreihe {@code r = c} hat wie bisher {@code q = 0 … width − 1}. Reihen mit
+ * derselben Parität haben {@code width} Zellen, die anderen eine weniger — nur so ist das Feld
+ * exakt links-rechts-spiegelsymmetrisch ({@link #mirror(Hex)}). In den oberen Reihen beginnt q
+ * später, in den unteren früher, auch negativ.
+ */
 public record Battlefield(int width, int height, Set<Hex> obstacles) {
 
     public Battlefield {
@@ -19,7 +34,43 @@ public record Battlefield(int width, int height, Set<Hex> obstacles) {
     }
 
     public boolean contains(Hex hex) {
-        return hex.q() >= 0 && hex.q() < width && hex.r() >= 0 && hex.r() < height;
+        int lateral = 2 * hex.q() + hex.r();
+        return hex.r() >= 0 && hex.r() < height
+                && lateral >= centerRow() && lateral <= centerRow() + 2 * (width - 1);
+    }
+
+    /** Die Mittelreihe, deren Zellen wie früher {@code q = 0 … width − 1} tragen. */
+    public int centerRow() {
+        return height / 2;
+    }
+
+    /** Kleinstes q der Reihe {@code r} — die linke Randzelle, auf der der Angreifer aufstellt. */
+    public int leftmostQ(int r) {
+        return Math.ceilDiv(centerRow() - r, 2);
+    }
+
+    /** Größtes q der Reihe {@code r} — die rechte Randzelle, auf der der Verteidiger aufstellt. */
+    public int rightmostQ(int r) {
+        return Math.floorDiv(centerRow() + 2 * (width - 1) - r, 2);
+    }
+
+    /**
+     * Spiegelbild an der senkrechten Mittelachse: dieselbe Reihe, gleicher Abstand zum
+     * gegenüberliegenden Rand. Erhält Distanzen und bildet das Feld auf sich selbst ab.
+     */
+    public Hex mirror(Hex hex) {
+        return new Hex(leftmostQ(hex.r()) + rightmostQ(hex.r()) - hex.q(), hex.r());
+    }
+
+    /** Alle Zellen des Felds, Reihe für Reihe von links nach rechts. */
+    public List<Hex> cells() {
+        List<Hex> cells = new ArrayList<>();
+        for (int r = 0; r < height; r++) {
+            for (int q = leftmostQ(r); q <= rightmostQ(r); q++) {
+                cells.add(new Hex(q, r));
+            }
+        }
+        return cells;
     }
 
     public boolean hasObstacle(Hex hex) {
@@ -51,10 +102,18 @@ public record Battlefield(int width, int height, Set<Hex> obstacles) {
         if (hexesToMove == 0) {
             return from;
         }
-        double t = (double) hexesToMove / distance;
-        int q = (int) Math.round(from.q() + t * (target.q() - from.q()));
-        int r = (int) Math.round(from.r() + t * (target.r() - from.r()));
-        return new Hex(q, r);
+        // Auf der Linie zwischen zwei Zellen bleibt man im Rechteck; nur das Runden kann am
+        // Rand der kürzeren Reihen eine halbe Zelle hinausschieben. Dann einen Schritt weniger.
+        for (int steps = hexesToMove; steps > 0; steps--) {
+            double t = (double) steps / distance;
+            int q = (int) Math.round(from.q() + t * (target.q() - from.q()));
+            int r = (int) Math.round(from.r() + t * (target.r() - from.r()));
+            Hex candidate = new Hex(q, r);
+            if (contains(candidate)) {
+                return candidate;
+            }
+        }
+        return from;
     }
 
     /**

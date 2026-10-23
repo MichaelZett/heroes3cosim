@@ -385,7 +385,8 @@ public final class StrategicAutoSolver implements AutoSolver {
         int enemyHits = 0;
         int ownHits = 0;
         int found = 0;
-        for (Hex neighbor : target.position().neighbors()) {
+        boolean leftward = Hex.isLeftward(active.position(), target.position());
+        for (Hex neighbor : target.position().neighbors(leftward)) {
             if (!deathCloud && found >= SPLASH_SHOT_COLLATERAL_CAP) {
                 break;
             }
@@ -579,7 +580,8 @@ public final class StrategicAutoSolver implements AutoSolver {
         if (isReachableLandingSpot(active, preferred, battlefield, setup)) {
             return preferred;
         }
-        for (Hex neighbor : shooterPos.neighbors()) {
+        boolean leftward = Hex.isLeftward(shooterPos, threatened.threat().position());
+        for (Hex neighbor : shooterPos.neighbors(leftward)) {
             if (isReachableLandingSpot(active, neighbor, battlefield, setup)) {
                 return neighbor;
             }
@@ -680,7 +682,7 @@ public final class StrategicAutoSolver implements AutoSolver {
     private static Hex adjacentTowards(Hex from, Hex to) {
         Hex best = from;
         int bestDist = Integer.MAX_VALUE;
-        for (Hex n : from.neighbors()) {
+        for (Hex n : from.neighbors(Hex.isLeftward(from, to))) {
             int d = n.distanceTo(to);
             if (d < bestDist) {
                 bestDist = d;

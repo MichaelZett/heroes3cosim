@@ -1,5 +1,6 @@
 package de.zettsystems.h3comsim.battle.domain;
 
+import de.zettsystems.h3comsim.battle.domain.events.Side;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -192,7 +193,7 @@ public final class GreedyAutoSolver implements AutoSolver {
         Hex best = null;
         int bestScore = Integer.MIN_VALUE;
         int bestDist = Integer.MAX_VALUE;
-        for (Hex candidate : opponent.position().neighbors()) {
+        for (Hex candidate : opponent.position().neighbors(Hex.isLeftward(from, opponent.position()))) {
             int d = from.distanceTo(candidate);
             if (candidate.equals(from)
                     || !bf.isPassable(candidate)
@@ -246,7 +247,8 @@ public final class GreedyAutoSolver implements AutoSolver {
         }
         if (threeHeaded) {
             int splashes = 0;
-            for (Hex adj : landingHex.neighbors()) {
+            // Reihenfolge wie Battle.applyMeleeSplash, sonst sagt die Bewertung etwas anderes voraus.
+            for (Hex adj : landingHex.neighbors(Hex.isLeftward(landingHex, primary.position()))) {
                 if (splashes >= MELEE_SPLASH_CAP) {
                     break;
                 }
@@ -289,7 +291,7 @@ public final class GreedyAutoSolver implements AutoSolver {
     private @Nullable Hex findMaxRunupCharge(Stack active, Hex to, Battlefield bf, int speed,
                                              Movement movement) {
         Hex from = active.position();
-        return to.neighbors().stream()
+        return to.neighbors(Hex.isLeftward(from, to)).stream()
                 .filter(c -> isReachableInOneTurn(active, c, from, bf, speed, movement))
                 .filter(c -> from.distanceTo(c) > 0)
                 .max(Comparator.comparingInt(c -> Math.min(from.distanceTo(c), 10)))
@@ -507,14 +509,19 @@ public final class GreedyAutoSolver implements AutoSolver {
     private List<Hex> reachableCandidates(Stack active, Hex from, Hex to, Battlefield bf,
                                           int mySpeed, Movement movement) {
         List<Hex> candidates = new ArrayList<>();
-        for (int q = 0; q < bf.width(); q++) {
-            for (int r = 0; r < bf.height(); r++) {
-                Hex c = new Hex(q, r);
-                if (isKiteCandidate(active, c, from, to, bf, mySpeed, movement)) {
-                    candidates.add(c);
-                }
+        for (Hex c : bf.cells()) {
+            if (isKiteCandidate(active, c, from, to, bf, mySpeed, movement)) {
+                candidates.add(c);
             }
         }
+        // Die Aufrufer nehmen bei Gleichstand das erste Element (findFirst, max). Eine feste
+        // Reihenfolge nach q bevorzugte Zellen der linken Seite — also die des Angreifers. Die
+        // Sortierung hier ist spiegelsymmetrisch: kürzester Weg, dann Reihe, dann q von der
+        // eigenen Seite aus gezählt.
+        int lateral = active.side() == Side.ATTACKER ? 1 : -1;
+        candidates.sort(Comparator.<Hex>comparingInt(c -> c.distanceTo(from))
+                .thenComparingInt(Hex::r)
+                .thenComparingInt(c -> lateral * c.q()));
         return candidates;
     }
 
