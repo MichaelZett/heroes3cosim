@@ -52,6 +52,16 @@ class ArmyBattleControllerIT {
     }
 
     @Test
+    void a_hero_level_outside_one_to_ninety_nine_is_rejected() throws Exception {
+        for (String level : new String[]{"0", "100"}) {
+            mockMvc().perform(post("/api/army-battles/simulate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request(", \"heroLevel\": " + level)))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Test
     void a_morale_bonus_below_minus_three_is_rejected() throws Exception {
         mockMvc().perform(post("/api/army-battles/simulate")
                         .contentType(MediaType.APPLICATION_JSON)

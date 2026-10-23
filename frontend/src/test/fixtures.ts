@@ -3,12 +3,25 @@ import type {
   BattleSimulationDto,
   Faction,
   HeroDto,
+  HeroSpecialtyDto,
   MatrixReport,
   StackSnapshot,
   UnitDto,
 } from '../shared/api/types';
 
 export const TEST_FACTIONS: Faction[] = ['CASTLE', 'RAMPART', 'TOWER'];
+
+function specialty(overrides: Partial<HeroSpecialtyDto>): HeroSpecialtyDto {
+  return {
+    kind: 'OTHER',
+    creatureTier: 0,
+    attack: 0,
+    defense: 0,
+    damage: 0,
+    effective: true,
+    ...overrides,
+  };
+}
 
 export const TEST_HEROES: HeroDto[] = [
   {
@@ -20,6 +33,7 @@ export const TEST_HEROES: HeroDto[] = [
     power: 1,
     knowledge: 1,
     skills: { OFFENSE: 'ADVANCED' },
+    specialty: specialty({ kind: 'SKILL', skill: 'OFFENSE' }),
   },
   {
     name: 'Tazar',
@@ -30,6 +44,7 @@ export const TEST_HEROES: HeroDto[] = [
     power: 1,
     knowledge: 1,
     skills: { ARMORER: 'ADVANCED' },
+    specialty: specialty({ kind: 'SKILL', skill: 'ARMORER' }),
   },
   {
     name: 'Sorsha',
@@ -40,6 +55,7 @@ export const TEST_HEROES: HeroDto[] = [
     power: 1,
     knowledge: 1,
     skills: { LEADERSHIP: 'BASIC', OFFENSE: 'BASIC' },
+    specialty: specialty({ kind: 'CREATURE', unitName: 'Swordsman', creatureTier: 4 }),
   },
 ];
 

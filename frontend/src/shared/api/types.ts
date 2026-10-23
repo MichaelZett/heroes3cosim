@@ -232,6 +232,8 @@ export interface ArmySpec {
   luckBonus?: number;
   /** Gesammelte Moral des Helden, -3..+3. */
   moraleBonus?: number;
+  /** Level des Helden, 1..99; wirkt ueber die Spezialitaet. */
+  heroLevel?: number;
 }
 
 export type HeroClass =
@@ -300,6 +302,20 @@ export interface HeroDto {
   power: number;
   knowledge: number;
   skills: Partial<Record<SecondarySkill, SkillLevel>>;
+  specialty: HeroSpecialtyDto;
+}
+
+/** Spezialfaehigkeit eines Helden; kind bestimmt, welche Felder belegt sind. */
+export interface HeroSpecialtyDto {
+  kind: 'CREATURE' | 'SKILL' | 'FIXED_CREATURE' | 'OTHER';
+  unitName?: string | null;
+  creatureTier: number;
+  skill?: SecondarySkill | null;
+  attack: number;
+  defense: number;
+  damage: number;
+  description?: string | null;
+  effective: boolean;
 }
 
 export interface ArmyBattleRequest {

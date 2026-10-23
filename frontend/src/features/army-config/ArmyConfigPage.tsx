@@ -7,7 +7,7 @@ import { useArmyPresets, useHeroes, useSimulateArmyBattle, useUnits } from '../.
 import { useArmyConfigStore } from './armyConfigStore';
 import { useArmyBattleStore } from './armyBattleStore';
 import FactionPresetPicker from './FactionPresetPicker';
-import HeroBonusPicker from './HeroBonusPicker';
+import HeroBonusPicker, { type HeroBuild } from './HeroBonusPicker';
 import HeroPicker from './HeroPicker';
 import SlotEditor from './SlotEditor';
 import type { Faction, FactionPresetDto, HeroDto, StackSpec } from '../../shared/api/types';
@@ -42,12 +42,14 @@ export default function ArmyConfigPage() {
         heroName: form.attackerHeroName,
         luckBonus: form.attackerLuckBonus ?? 0,
         moraleBonus: form.attackerMoraleBonus ?? 0,
+        heroLevel: form.attackerHeroLevel ?? 1,
       },
       defender: {
         stacks: defenderStacks,
         heroName: form.defenderHeroName,
         luckBonus: form.defenderLuckBonus ?? 0,
         moraleBonus: form.defenderMoraleBonus ?? 0,
+        heroLevel: form.defenderHeroLevel ?? 1,
       },
       seed: seedNum !== null && Number.isFinite(seedNum) ? seedNum : null,
     });
@@ -117,10 +119,17 @@ export default function ArmyConfigPage() {
             heroes={heroes}
             heroName={form.attackerHeroName}
             onHeroChange={(name) => setForm({ attackerHeroName: name })}
-            luckBonus={form.attackerLuckBonus ?? 0}
-            moraleBonus={form.attackerMoraleBonus ?? 0}
-            onBonusChange={(luck, morale) =>
-              setForm({ attackerLuckBonus: luck, attackerMoraleBonus: morale })
+            build={{
+              level: form.attackerHeroLevel ?? 1,
+              luck: form.attackerLuckBonus ?? 0,
+              morale: form.attackerMoraleBonus ?? 0,
+            }}
+            onBuildChange={(patch) =>
+              setForm({
+                ...(patch.level !== undefined && { attackerHeroLevel: patch.level }),
+                ...(patch.luck !== undefined && { attackerLuckBonus: patch.luck }),
+                ...(patch.morale !== undefined && { attackerMoraleBonus: patch.morale }),
+              })
             }
           />
           <SideColumn
@@ -136,10 +145,17 @@ export default function ArmyConfigPage() {
             heroes={heroes}
             heroName={form.defenderHeroName}
             onHeroChange={(name) => setForm({ defenderHeroName: name })}
-            luckBonus={form.defenderLuckBonus ?? 0}
-            moraleBonus={form.defenderMoraleBonus ?? 0}
-            onBonusChange={(luck, morale) =>
-              setForm({ defenderLuckBonus: luck, defenderMoraleBonus: morale })
+            build={{
+              level: form.defenderHeroLevel ?? 1,
+              luck: form.defenderLuckBonus ?? 0,
+              morale: form.defenderMoraleBonus ?? 0,
+            }}
+            onBuildChange={(patch) =>
+              setForm({
+                ...(patch.level !== undefined && { defenderHeroLevel: patch.level }),
+                ...(patch.luck !== undefined && { defenderLuckBonus: patch.luck }),
+                ...(patch.morale !== undefined && { defenderMoraleBonus: patch.morale }),
+              })
             }
           />
         </div>
@@ -208,9 +224,8 @@ interface SideColumnProps {
   heroes: HeroDto[];
   heroName: string | null;
   onHeroChange: (name: string | null) => void;
-  luckBonus: number;
-  moraleBonus: number;
-  onBonusChange: (luck: number, morale: number) => void;
+  build: HeroBuild;
+  onBuildChange: (patch: Partial<HeroBuild>) => void;
 }
 
 function SideColumn(props: Readonly<SideColumnProps>) {
@@ -230,11 +245,7 @@ function SideColumn(props: Readonly<SideColumnProps>) {
         selectedName={props.heroName}
         onChange={props.onHeroChange}
       />
-      <HeroBonusPicker
-        luck={props.luckBonus}
-        morale={props.moraleBonus}
-        onChange={props.onBonusChange}
-      />
+      <HeroBonusPicker value={props.build} onChange={props.onBuildChange} />
       <div className="space-y-1.5">
         {SLOTS.map((slot) => (
           <SlotEditor

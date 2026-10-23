@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
-import type { Faction, HeroDto, SkillLevel } from '../../shared/api/types';
+import type { TFunction } from 'i18next';
+import type { Faction, HeroDto, HeroSpecialtyDto, SkillLevel } from '../../shared/api/types';
 
 /**
  * Die drei Fertigkeiten, die als Prozent auf den Schaden wirken. Die meisten uebrigen wirken
@@ -36,6 +37,19 @@ function groupByFaction(heroes: HeroDto[]): [Faction, HeroDto[]][] {
     else groups.set(hero.faction, [hero]);
   }
   return [...groups.entries()];
+}
+
+/** Text der Spezialitaet; die Felder des DTO je nach Art. */
+function specialtyText(specialty: HeroSpecialtyDto, t: TFunction): string {
+  return t(`army.heroSpecialty${specialty.kind}`, {
+    unit: specialty.unitName ?? '',
+    tier: specialty.creatureTier,
+    skill: specialty.skill ? t(`secondarySkill.${specialty.skill}`) : '',
+    attack: specialty.attack,
+    defense: specialty.defense,
+    damage: specialty.damage,
+    description: specialty.description ?? '',
+  });
 }
 
 interface HeroPickerProps {
@@ -103,6 +117,14 @@ export default function HeroPicker({ heroes, selectedName, onChange }: Readonly<
           {leadership !== undefined && (
             <p className="mt-1 text-xs text-amber-300/80">
               {t('army.heroSkillLEADERSHIP')}: {t('army.heroMorale', { value: `+${leadership}` })}
+            </p>
+          )}
+          {current.specialty && (
+            <p
+              className={`mt-1 text-xs ${current.specialty.effective ? 'text-amber-300/80' : 'text-slate-500'}`}
+            >
+              {t('army.heroSpecialty')}: {specialtyText(current.specialty, t)}
+              {!current.specialty.effective && ` — ${t('army.heroSpecialtyInert')}`}
             </p>
           )}
           {luck !== undefined && (

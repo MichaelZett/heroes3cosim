@@ -48,15 +48,18 @@ public class DefaultArmyBattleService implements ArmyBattleService {
         return new ArmyBattleSimulation(result, collector.events());
     }
 
-    /** Jede Armee hat einen Helden; ohne Auswahl den Standardhelden ihrer Hauptfraktion. */
+    /**
+     * Jede Armee hat einen Helden; ohne Auswahl den Standardhelden ihrer Hauptfraktion. Das
+     * Level aus dem Request gilt für beide Fälle.
+     */
     private static Hero resolveHero(ArmySpec army, List<Stack> stacks) {
         String name = army.heroName();
-        if (name == null || name.isBlank()) {
-            return HeroCatalog.defaultForArmy(stacks);
-        }
-        return HeroCatalog.byName(name)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST, "Unknown hero: " + name));
+        Hero hero = name == null || name.isBlank()
+                ? HeroCatalog.defaultForArmy(stacks)
+                : HeroCatalog.byName(name)
+                        .orElseThrow(() -> new ResponseStatusException(
+                                HttpStatus.BAD_REQUEST, "Unknown hero: " + name));
+        return hero.withLevel(Objects.requireNonNullElse(army.heroLevel(), 1));
     }
 
     private static CollectedBonus bonusOf(ArmySpec army) {

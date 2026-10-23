@@ -34,16 +34,28 @@ public record ArmySpec(
                 Gesammelte Moral des Helden (Artefakte, Gebäude, Abenteuer-Orte), -3..+3.
                 Addiert sich zum Moral-Rating der Armee. Fehlt das Feld oder ist es null, gilt 0.
                 """, example = "0", minimum = "-3", maximum = "3", nullable = true)
-        @Min(-3) @Max(3) @Nullable Integer moraleBonus) {
+        @Min(-3) @Max(3) @Nullable Integer moraleBonus,
+
+        @Schema(description = """
+                Level des Helden, 1..99. Wirkt über die Spezialität: Kreatur-Spezialisten +5 %
+                Attack/Defense je angefangene Spanne von (Stufe der Kreatur) Leveln,
+                Fertigkeits-Spezialisten +5 % je Level auf den Effekt. Fehlt das Feld, gilt 1.
+                """, example = "10", minimum = "1", maximum = "99", nullable = true)
+        @Min(1) @Max(MAX_HERO_LEVEL) @Nullable Integer heroLevel) {
+
+    /** Obergrenze des Simulators, kein Spielwert — Kreatur-Boni wachsen linear weiter. */
+    public static final int MAX_HERO_LEVEL = 99;
+
     public ArmySpec {
         stacks = List.copyOf(stacks);
         luckBonus = Objects.requireNonNullElse(luckBonus, 0);
         moraleBonus = Objects.requireNonNullElse(moraleBonus, 0);
+        heroLevel = Objects.requireNonNullElse(heroLevel, 1);
     }
 
     /** Armee mit Helden, ohne gesammelte Boni. */
     public ArmySpec(List<StackSpec> stacks, @Nullable String heroName) {
-        this(stacks, heroName, 0, 0);
+        this(stacks, heroName, 0, 0, 1);
     }
 
     /** Armee mit dem Standardhelden ihrer Hauptfraktion. */

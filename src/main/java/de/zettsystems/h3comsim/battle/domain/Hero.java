@@ -17,11 +17,15 @@ import java.util.Objects;
  *       sie reine Daten — sie werden geführt und ausgeliefert, aber nirgends gelesen.</li>
  * </ul>
  *
- * <p>Das Level fehlt bewusst: Fortschritt gehört auf die Abenteuerkarte, die es hier nicht
- * gibt. Der Katalog führt die Startwerte, mit denen ein Held rekrutiert wird.
+ * <p>Der Katalog führt die Startwerte, mit denen ein Held rekrutiert wird, auf Level 1. Das
+ * Level wirkt nur über die Spezialität ({@link HeroSpecialty}); was ein Held beim Aufstieg an
+ * Primärwerten und Fertigkeiten dazugewinnt, ist Zufall auf der Abenteuerkarte und wird nicht
+ * nachgewürfelt.
  *
- * @param skills Startfertigkeiten mit ihrer Ausbaustufe. Welche davon wirken, steht bei
- *               {@link SecondarySkill}.
+ * @param skills    Startfertigkeiten mit ihrer Ausbaustufe. Welche davon wirken, steht bei
+ *                  {@link SecondarySkill}.
+ * @param specialty Spezialfähigkeit („Unique Ability")
+ * @param level     Heldenlevel, ab 1
  */
 public record Hero(
         String name,
@@ -31,18 +35,37 @@ public record Hero(
         int defense,
         int power,
         int knowledge,
-        Map<SecondarySkill, SkillLevel> skills
+        Map<SecondarySkill, SkillLevel> skills,
+        HeroSpecialty specialty,
+        int level
 ) {
     public Hero {
         Objects.requireNonNull(name, "name");
         Objects.requireNonNull(heroClass, "heroClass");
         Objects.requireNonNull(faction, "faction");
         Objects.requireNonNull(skills, "skills");
+        Objects.requireNonNull(specialty, "specialty");
+        if (level < 1) {
+            throw new IllegalArgumentException("level must be at least 1, was " + level);
+        }
         requireNonNegative(attack, "attack");
         requireNonNegative(defense, "defense");
         requireNonNegative(power, "power");
         requireNonNegative(knowledge, "knowledge");
         skills = Map.copyOf(skills);
+    }
+
+    /** Held ohne Spezialität auf Level 1 — für Tests, die eine Wirkung isolieren. */
+    public Hero(String name, HeroClass heroClass, Faction faction, int attack, int defense,
+                int power, int knowledge, Map<SecondarySkill, SkillLevel> skills) {
+        this(name, heroClass, faction, attack, defense, power, knowledge, skills,
+                HeroSpecialty.Other.NONE, 1);
+    }
+
+    /** Derselbe Held auf einem anderen Level. */
+    public Hero withLevel(int newLevel) {
+        return new Hero(name, heroClass, faction, attack, defense, power, knowledge, skills,
+                specialty, newLevel);
     }
 
     private static void requireNonNegative(int value, String field) {
@@ -80,6 +103,34 @@ public record Hero(
             case ADVANCED -> 25;
             case EXPERT -> 50;
         };
+    }
+
+    /**
+     * Offense in Promille, mit Spezialität (+5 % je Level auf den Effekt, siehe
+     * {@link HeroSpecialty.Skill}). Crag Hack auf Level 1 mit Advanced Offense: 210 ‰.
+     */
+    public int offenseBonusPerMille() {
+        return offenseBonusPercent() * specialty.skillFactorPerMille(SecondarySkill.OFFENSE, level) / 100;
+    }
+
+    /** Archery in Promille, mit Spezialität. */
+    public int archeryBonusPerMille() {
+        return archeryBonusPercent() * specialty.skillFactorPerMille(SecondarySkill.ARCHERY, level) / 100;
+    }
+
+    /** Armorer in Promille, mit Spezialität. */
+    public int armorerReductionPerMille() {
+        return armorerReductionPercent() * specialty.skillFactorPerMille(SecondarySkill.ARMORER, level) / 100;
+    }
+
+    /** Attack-Aufschlag der Spezialität für diese Kreatur. */
+    public int specialtyAttackBonus(Unit unit) {
+        return specialty.attackBonus(unit, level);
+    }
+
+    /** Defense-Aufschlag der Spezialität für diese Kreatur. */
+    public int specialtyDefenseBonus(Unit unit) {
+        return specialty.defenseBonus(unit, level);
     }
 
     /**

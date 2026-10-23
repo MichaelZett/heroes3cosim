@@ -73,6 +73,20 @@ class HeroArmyBattleTest {
     }
 
     @Test
+    void the_hero_level_strengthens_the_creatures_of_a_specialist() {
+        // Sorsha ist Swordsman-Spezialistin: auf Level 40 bekommen ihre Swordsmen +50 % Attack
+        // und Defense statt +5 % — gegen dieselbe Armee auf Level 1 muss das ankommen.
+        List<StackSpec> army = List.of(new StackSpec("Swordsman", 20));
+        ArmyBattleSimulation even = service.simulate(new ArmyBattleRequest(
+                new ArmySpec(army, "Sorsha"), new ArmySpec(army, "Sorsha"), SEED), SEED);
+        ArmyBattleSimulation veteran = service.simulate(new ArmyBattleRequest(
+                new ArmySpec(army, "Sorsha", 0, 0, 40), new ArmySpec(army, "Sorsha"), SEED), SEED);
+
+        assertThat(veteran.result().attackerSurvivors())
+                .isGreaterThan(even.result().attackerSurvivors());
+    }
+
+    @Test
     void an_unknown_hero_is_rejected_instead_of_silently_ignored() {
         // Request außerhalb des Lambdas bauen: sonst stünden dort zwei Aufrufe, die werfen
         // könnten, und der Test würde auch bestehen, wenn schon duel(...) fehlschlägt.

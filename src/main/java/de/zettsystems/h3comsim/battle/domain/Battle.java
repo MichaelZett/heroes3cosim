@@ -481,13 +481,13 @@ public final class Battle {
         Hero attackerHero = active.commander();
         if (attackerHero != null) {
             int bonus = attackType == AttackType.HAND_TO_HAND
-                    ? attackerHero.offenseBonusPercent()
-                    : attackerHero.archeryBonusPercent();
-            result = (result * (100 + bonus)) / 100;
+                    ? attackerHero.offenseBonusPerMille()
+                    : attackerHero.archeryBonusPerMille();
+            result = (result * (1000 + bonus)) / 1000;
         }
         Hero defenderHero = passive.commander();
         if (defenderHero != null) {
-            result = (result * (100 - defenderHero.armorerReductionPercent())) / 100;
+            result = (result * (1000 - defenderHero.armorerReductionPerMille())) / 1000;
         }
         return result;
     }

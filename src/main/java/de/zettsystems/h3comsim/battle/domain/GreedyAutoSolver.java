@@ -138,7 +138,7 @@ public final class GreedyAutoSolver implements AutoSolver {
         Hex from = active.position();
         Hex to = opponent.position();
         int distance = from.distanceTo(to);
-        int speed = active.unit().speed();
+        int speed = active.getSpeed();
         Movement movement = active.unit().movement();
 
         if (distance == 1) {
@@ -201,7 +201,7 @@ public final class GreedyAutoSolver implements AutoSolver {
      */
     private @Nullable Hex findFlyerLanding(Stack active, Stack opponent, Battlefield bf) {
         Hex from = active.position();
-        int speed = active.unit().speed();
+        int speed = active.getSpeed();
         // Devil/Arch Devil (TELEPORT_NO_COST): Speed-Schranke entfällt, jeder freie
         // passierbare Adjacent-Hex am Ziel ist erreichbar (Manual S. 99).
         boolean teleports = active.hasSpeciality(UnitSpeciality.TELEPORT_NO_COST);

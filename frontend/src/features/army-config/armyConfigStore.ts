@@ -14,11 +14,14 @@ export interface ArmyConfigForm {
   /** Gesammeltes Glueck (0..3) und gesammelte Moral (-3..+3) des Angreifer-Helden. */
   attackerLuckBonus: number;
   attackerMoraleBonus: number;
+  /** Level des Angreifer-Helden, 1..99. */
+  attackerHeroLevel: number;
   defenderFaction: Faction | null;
   defenderStacks: StackSpec[];
   defenderHeroName: string | null;
   defenderLuckBonus: number;
   defenderMoraleBonus: number;
+  defenderHeroLevel: number;
   seedText: string;
 }
 
@@ -37,11 +40,13 @@ const DEFAULT_FORM: ArmyConfigForm = {
   attackerHeroName: null,
   attackerLuckBonus: 0,
   attackerMoraleBonus: 0,
+  attackerHeroLevel: 1,
   defenderFaction: null,
   defenderStacks: EMPTY_SLOTS,
   defenderHeroName: null,
   defenderLuckBonus: 0,
   defenderMoraleBonus: 0,
+  defenderHeroLevel: 1,
   seedText: '',
 };
 

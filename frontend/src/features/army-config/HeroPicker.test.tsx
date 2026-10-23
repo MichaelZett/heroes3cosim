@@ -97,6 +97,29 @@ describe('HeroPicker', () => {
     expect(screen.getByText(/\+1 Glück|\+1 luck/)).toBeInTheDocument();
   });
 
+  it('describes a creature specialty with its creature and level span', () => {
+    render(<HeroPicker heroes={TEST_HEROES} selectedName="Sorsha" onChange={vi.fn()} />);
+
+    expect(screen.getByText(/Spezialität: Swordsman/)).toBeInTheDocument();
+    expect(screen.getByText(/je angefangene 4 Level/)).toBeInTheDocument();
+  });
+
+  it('marks a specialty without combat effect as such', () => {
+    const jenova = {
+      ...TEST_HEROES[0],
+      name: 'Jenova',
+      specialty: {
+        ...TEST_HEROES[0].specialty,
+        kind: 'OTHER',
+        description: '+350 gold per day',
+        effective: false,
+      },
+    } as const;
+    render(<HeroPicker heroes={[jenova]} selectedName="Jenova" onChange={vi.fn()} />);
+
+    expect(screen.getByText(/\+350 gold per day — ohne Kampfwirkung/)).toBeInTheDocument();
+  });
+
   it('stays silent about morale when the hero has no Leadership', () => {
     render(<HeroPicker heroes={TEST_HEROES} selectedName="Crag Hack" onChange={vi.fn()} />);
 
