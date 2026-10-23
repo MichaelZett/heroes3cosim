@@ -163,4 +163,19 @@ class HeroPrimarySkillsTest {
         // gesamten Unterschied, es kommt noch kein Fertigkeits-Aufschlag dazu.
         assertThat(led.getAttack()).isEqualTo(UnitCatalog.PIKEMAN.attack() + 4);
     }
+
+    @Test
+    void a_build_adds_primary_points_and_raises_or_adds_skills_but_never_lowers_them() {
+        Hero built = HeroCatalog.SORSHA.withBuild(3, 1,
+                java.util.Map.of(SecondarySkill.OFFENSE, SkillLevel.EXPERT,
+                        SecondarySkill.LEADERSHIP, SkillLevel.NONE,
+                        SecondarySkill.LUCK, SkillLevel.ADVANCED));
+
+        assertThat(built.attack()).isEqualTo(5);
+        assertThat(built.defense()).isEqualTo(3);
+        assertThat(built.levelOf(SecondarySkill.OFFENSE)).isEqualTo(SkillLevel.EXPERT);
+        assertThat(built.levelOf(SecondarySkill.LEADERSHIP)).isEqualTo(SkillLevel.BASIC);
+        assertThat(built.levelOf(SecondarySkill.LUCK)).isEqualTo(SkillLevel.ADVANCED);
+        assertThat(built.specialty()).isEqualTo(HeroCatalog.SORSHA.specialty());
+    }
 }

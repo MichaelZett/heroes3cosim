@@ -5,9 +5,10 @@ import LanguageSwitcher from '../../shared/ui/LanguageSwitcher';
 import ModeSwitcher from '../../shared/ui/ModeSwitcher';
 import { useArmyPresets, useHeroes, useSimulateArmyBattle, useUnits } from '../../shared/api/hooks';
 import { useArmyConfigStore } from './armyConfigStore';
+import { DEFAULT_BUILD, type HeroBuild } from './heroBuild';
 import { useArmyBattleStore } from './armyBattleStore';
 import FactionPresetPicker from './FactionPresetPicker';
-import HeroBonusPicker, { type HeroBuild } from './HeroBonusPicker';
+import HeroBonusPicker from './HeroBonusPicker';
 import HeroPicker from './HeroPicker';
 import SlotEditor from './SlotEditor';
 import type { Faction, FactionPresetDto, HeroDto, StackSpec } from '../../shared/api/types';
@@ -36,20 +37,15 @@ export default function ArmyConfigPage() {
     if (attackerStacks.length === 0 || defenderStacks.length === 0) return;
     const seedNum = form.seedText.trim() === '' ? null : Number(form.seedText);
     simulate.mutate({
-      // Aeltere, im Browser gespeicherte Formulare kennen die Bonus-Felder noch nicht.
       attacker: {
         stacks: attackerStacks,
         heroName: form.attackerHeroName,
-        luckBonus: form.attackerLuckBonus ?? 0,
-        moraleBonus: form.attackerMoraleBonus ?? 0,
-        heroLevel: form.attackerHeroLevel ?? 1,
+        ...buildSpec(form.attackerBuild),
       },
       defender: {
         stacks: defenderStacks,
         heroName: form.defenderHeroName,
-        luckBonus: form.defenderLuckBonus ?? 0,
-        moraleBonus: form.defenderMoraleBonus ?? 0,
-        heroLevel: form.defenderHeroLevel ?? 1,
+        ...buildSpec(form.defenderBuild),
       },
       seed: seedNum !== null && Number.isFinite(seedNum) ? seedNum : null,
     });
@@ -119,17 +115,9 @@ export default function ArmyConfigPage() {
             heroes={heroes}
             heroName={form.attackerHeroName}
             onHeroChange={(name) => setForm({ attackerHeroName: name })}
-            build={{
-              level: form.attackerHeroLevel ?? 1,
-              luck: form.attackerLuckBonus ?? 0,
-              morale: form.attackerMoraleBonus ?? 0,
-            }}
+            build={{ ...DEFAULT_BUILD, ...form.attackerBuild }}
             onBuildChange={(patch) =>
-              setForm({
-                ...(patch.level !== undefined && { attackerHeroLevel: patch.level }),
-                ...(patch.luck !== undefined && { attackerLuckBonus: patch.luck }),
-                ...(patch.morale !== undefined && { attackerMoraleBonus: patch.morale }),
-              })
+              setForm({ attackerBuild: { ...DEFAULT_BUILD, ...form.attackerBuild, ...patch } })
             }
           />
           <SideColumn
@@ -145,17 +133,9 @@ export default function ArmyConfigPage() {
             heroes={heroes}
             heroName={form.defenderHeroName}
             onHeroChange={(name) => setForm({ defenderHeroName: name })}
-            build={{
-              level: form.defenderHeroLevel ?? 1,
-              luck: form.defenderLuckBonus ?? 0,
-              morale: form.defenderMoraleBonus ?? 0,
-            }}
+            build={{ ...DEFAULT_BUILD, ...form.defenderBuild }}
             onBuildChange={(patch) =>
-              setForm({
-                ...(patch.level !== undefined && { defenderHeroLevel: patch.level }),
-                ...(patch.luck !== undefined && { defenderLuckBonus: patch.luck }),
-                ...(patch.morale !== undefined && { defenderMoraleBonus: patch.morale }),
-              })
+              setForm({ defenderBuild: { ...DEFAULT_BUILD, ...form.defenderBuild, ...patch } })
             }
           />
         </div>
@@ -245,7 +225,11 @@ function SideColumn(props: Readonly<SideColumnProps>) {
         selectedName={props.heroName}
         onChange={props.onHeroChange}
       />
-      <HeroBonusPicker value={props.build} onChange={props.onBuildChange} />
+      <HeroBonusPicker
+        value={props.build}
+        startSkills={props.heroes.find((h) => h.name === props.heroName)?.skills ?? {}}
+        onChange={props.onBuildChange}
+      />
       <div className="space-y-1.5">
         {SLOTS.map((slot) => (
           <SlotEditor
@@ -259,6 +243,22 @@ function SideColumn(props: Readonly<SideColumnProps>) {
       </div>
     </section>
   );
+}
+
+/**
+ * Request-Felder des Helden-Aufbaus. Aeltere, im Browser gespeicherte Formulare kennen den
+ * Aufbau noch nicht — dann gelten die Defaults.
+ */
+function buildSpec(stored: Partial<HeroBuild> | undefined) {
+  const build = { ...DEFAULT_BUILD, ...stored };
+  return {
+    heroLevel: build.level,
+    attackBonus: build.attack,
+    defenseBonus: build.defense,
+    skills: build.skills,
+    luckBonus: build.luck,
+    moraleBonus: build.morale,
+  };
 }
 
 function trimEmpty(stacks: StackSpec[]): StackSpec[] {

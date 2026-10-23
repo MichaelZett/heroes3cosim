@@ -1,5 +1,6 @@
 package de.zettsystems.h3comsim.battle.domain;
 
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -66,6 +67,36 @@ public record Hero(
     public Hero withLevel(int newLevel) {
         return new Hero(name, heroClass, faction, attack, defense, power, knowledge, skills,
                 specialty, newLevel);
+    }
+
+    /** Höchstens acht Sekundärfertigkeiten je Held (Manual S. 35). */
+    public static final int MAX_SKILLS = 8;
+
+    /**
+     * Derselbe Held mit dem, was er unterwegs gesammelt hat: zusätzliche Attack- und
+     * Defense-Punkte (Level-Aufstiege, Artefakte) und weitere oder verbesserte Fertigkeiten.
+     * Fertigkeiten lassen sich nur hinzufügen oder heben, nie senken — eine einmal gelernte
+     * Fertigkeit verliert ein Held in H3 nicht.
+     *
+     * @throws IllegalArgumentException wenn der Held danach mehr als {@value #MAX_SKILLS}
+     *                                  Fertigkeiten hätte
+     */
+    public Hero withBuild(int attackBonus, int defenseBonus, Map<SecondarySkill, SkillLevel> learned) {
+        requireNonNegative(attackBonus, "attackBonus");
+        requireNonNegative(defenseBonus, "defenseBonus");
+        Map<SecondarySkill, SkillLevel> merged = new EnumMap<>(SecondarySkill.class);
+        merged.putAll(skills);
+        learned.forEach((skill, lvl) -> {
+            if (lvl != SkillLevel.NONE) {
+                merged.merge(skill, lvl, (a, b) -> a.compareTo(b) >= 0 ? a : b);
+            }
+        });
+        if (merged.size() > MAX_SKILLS) {
+            throw new IllegalArgumentException("a hero knows at most " + MAX_SKILLS
+                    + " secondary skills, would have " + merged.size());
+        }
+        return new Hero(name, heroClass, faction, attack + attackBonus, defense + defenseBonus,
+                power, knowledge, merged, specialty, level);
     }
 
     private static void requireNonNegative(int value, String field) {

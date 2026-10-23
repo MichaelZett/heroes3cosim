@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Faction, StackSpec } from '../../shared/api/types';
+import { DEFAULT_BUILD, type HeroBuild } from './heroBuild';
 
 /**
  * Konfigurations-State für Army-vs-Army. Hält 7 Slots pro Seite (Default-leer) plus Seed
@@ -11,17 +12,12 @@ export interface ArmyConfigForm {
   attackerStacks: StackSpec[];
   /** Held der Angreifer-Armee; null = Standardheld der Hauptfraktion. */
   attackerHeroName: string | null;
-  /** Gesammeltes Glueck (0..3) und gesammelte Moral (-3..+3) des Angreifer-Helden. */
-  attackerLuckBonus: number;
-  attackerMoraleBonus: number;
-  /** Level des Angreifer-Helden, 1..99. */
-  attackerHeroLevel: number;
+  /** Level, Punkte, Fertigkeiten und gesammelte Boni des Angreifer-Helden. */
+  attackerBuild: HeroBuild;
   defenderFaction: Faction | null;
   defenderStacks: StackSpec[];
   defenderHeroName: string | null;
-  defenderLuckBonus: number;
-  defenderMoraleBonus: number;
-  defenderHeroLevel: number;
+  defenderBuild: HeroBuild;
   seedText: string;
 }
 
@@ -38,15 +34,11 @@ const DEFAULT_FORM: ArmyConfigForm = {
   attackerFaction: null,
   attackerStacks: EMPTY_SLOTS,
   attackerHeroName: null,
-  attackerLuckBonus: 0,
-  attackerMoraleBonus: 0,
-  attackerHeroLevel: 1,
+  attackerBuild: DEFAULT_BUILD,
   defenderFaction: null,
   defenderStacks: EMPTY_SLOTS,
   defenderHeroName: null,
-  defenderLuckBonus: 0,
-  defenderMoraleBonus: 0,
-  defenderHeroLevel: 1,
+  defenderBuild: DEFAULT_BUILD,
   seedText: '',
 };
 

@@ -234,6 +234,11 @@ export interface ArmySpec {
   moraleBonus?: number;
   /** Level des Helden, 1..99; wirkt ueber die Spezialitaet. */
   heroLevel?: number;
+  /** Zusaetzliche Attack-/Defense-Punkte des Helden, 0..99. */
+  attackBonus?: number;
+  defenseBonus?: number;
+  /** Gelernte oder verbesserte Fertigkeiten; Startfertigkeiten lassen sich nur heben. */
+  skills?: Partial<Record<SecondarySkill, SkillLevel>>;
 }
 
 export type HeroClass =

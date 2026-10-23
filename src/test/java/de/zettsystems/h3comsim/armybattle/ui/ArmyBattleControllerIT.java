@@ -62,6 +62,18 @@ class ArmyBattleControllerIT {
     }
 
     @Test
+    void more_than_eight_secondary_skills_are_rejected() throws Exception {
+        // Sorsha bringt Leadership und Offense mit; sieben weitere wären neun.
+        String skills = ", \"heroName\": \"Sorsha\", \"skills\": {\"ARCHERY\": \"BASIC\", "
+                + "\"ARMORER\": \"BASIC\", \"LUCK\": \"BASIC\", \"TACTICS\": \"BASIC\", "
+                + "\"WISDOM\": \"BASIC\", \"LOGISTICS\": \"BASIC\", \"SCOUTING\": \"BASIC\"}";
+        mockMvc().perform(post("/api/army-battles/simulate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request(skills)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void a_morale_bonus_below_minus_three_is_rejected() throws Exception {
         mockMvc().perform(post("/api/army-battles/simulate")
                         .contentType(MediaType.APPLICATION_JSON)

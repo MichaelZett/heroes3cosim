@@ -13,6 +13,8 @@ import de.zettsystems.h3comsim.battle.domain.Hero;
 import de.zettsystems.h3comsim.battle.domain.HeroCatalog;
 import de.zettsystems.h3comsim.battle.domain.Hex;
 import de.zettsystems.h3comsim.battle.domain.ObstacleGenerator;
+import de.zettsystems.h3comsim.battle.domain.SecondarySkill;
+import de.zettsystems.h3comsim.battle.domain.SkillLevel;
 import de.zettsystems.h3comsim.battle.domain.Stack;
 import de.zettsystems.h3comsim.battle.domain.StrategicAutoSolver;
 import de.zettsystems.h3comsim.battle.domain.Unit;
@@ -26,6 +28,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
@@ -49,8 +52,8 @@ public class DefaultArmyBattleService implements ArmyBattleService {
     }
 
     /**
-     * Jede Armee hat einen Helden; ohne Auswahl den Standardhelden ihrer Hauptfraktion. Das
-     * Level aus dem Request gilt für beide Fälle.
+     * Jede Armee hat einen Helden; ohne Auswahl den Standardhelden ihrer Hauptfraktion. Level
+     * und Aufbau aus dem Request gelten für beide Fälle.
      */
     private static Hero resolveHero(ArmySpec army, List<Stack> stacks) {
         String name = army.heroName();
@@ -59,7 +62,14 @@ public class DefaultArmyBattleService implements ArmyBattleService {
                 : HeroCatalog.byName(name)
                         .orElseThrow(() -> new ResponseStatusException(
                                 HttpStatus.BAD_REQUEST, "Unknown hero: " + name));
-        return hero.withLevel(Objects.requireNonNullElse(army.heroLevel(), 1));
+        Map<SecondarySkill, SkillLevel> learned = Objects.requireNonNullElse(army.skills(), Map.of());
+        try {
+            return hero.withLevel(Objects.requireNonNullElse(army.heroLevel(), 1))
+                    .withBuild(Objects.requireNonNullElse(army.attackBonus(), 0),
+                            Objects.requireNonNullElse(army.defenseBonus(), 0), learned);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+        }
     }
 
     private static CollectedBonus bonusOf(ArmySpec army) {
