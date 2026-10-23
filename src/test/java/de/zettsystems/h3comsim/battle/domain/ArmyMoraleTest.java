@@ -17,8 +17,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  *   +1  wenn alle Kreaturen aus derselben Stadt stammen (außer Necropolis)
  *   -1  je Stadt-Typ jenseits des zweiten
  * </pre>
- * Dazu die beiden Quellen, die dieser Simulator kennt: Leadership des Helden und
- * {@code GOOD_ARMY_MORALE} von Angel und Arch Angel.
+ * Dazu die Quellen, die dieser Simulator kennt: Leadership des Helden,
+ * {@code GOOD_ARMY_MORALE} von Angel und Arch Angel und, von der Gegenseite,
+ * {@code LOWERS_ENEMY_MORALE} von Bone und Ghost Dragon.
  */
 class ArmyMoraleTest {
 
@@ -27,7 +28,15 @@ class ArmyMoraleTest {
     }
 
     private static int rating(@Nullable Hero hero, Unit... units) {
-        return ArmyMorale.ratingOf(Stream.of(units).map(ArmyMoraleTest::stackOf).toList(), hero);
+        return ArmyMorale.ratingOf(stacksOf(units), hero, List.of());
+    }
+
+    private static int ratingAgainst(List<Unit> enemies, Unit... units) {
+        return ArmyMorale.ratingOf(stacksOf(units), null, stacksOf(enemies.toArray(Unit[]::new)));
+    }
+
+    private static List<Stack> stacksOf(Unit... units) {
+        return Stream.of(units).map(ArmyMoraleTest::stackOf).toList();
     }
 
     private static Hero heroWith(SecondarySkill skill, SkillLevel level) {
@@ -86,6 +95,28 @@ class ArmyMoraleTest {
     }
 
     @Test
+    void bone_and_ghost_dragons_lower_the_enemy_rating_by_one() {
+        // Manual S. 102: „lower the morale of enemy units by one when they appear on the
+        // battlefield". Ein-Stadt-Armee: +1, durch den Drachen gegenüber wieder 0.
+        for (Unit dragon : List.of(UnitCatalog.BONE_DRAGON, UnitCatalog.GHOST_DRAGON)) {
+            assertThat(ratingAgainst(List.of(dragon), UnitCatalog.PIKEMAN, UnitCatalog.MARKSMAN))
+                    .as("gegen %s", dragon.name())
+                    .isZero();
+        }
+    }
+
+    @Test
+    void several_dragons_lower_the_rating_only_once() {
+        assertThat(ratingAgainst(List.of(UnitCatalog.BONE_DRAGON, UnitCatalog.GHOST_DRAGON),
+                UnitCatalog.PIKEMAN, UnitCatalog.MARKSMAN)).isZero();
+    }
+
+    @Test
+    void a_dragon_does_not_lower_the_morale_of_its_own_army() {
+        assertThat(rating(null, UnitCatalog.SKELETON, UnitCatalog.BONE_DRAGON)).isZero();
+    }
+
+    @Test
     void the_rating_is_capped_only_at_the_stack() {
         // ArmyMorale rechnet ungekappt weiter — erst Stack.getMorale() bindet auf [-3, 3].
         Hero expertLeader = heroWith(SecondarySkill.LEADERSHIP, SkillLevel.EXPERT);
@@ -139,5 +170,32 @@ class ArmyMoraleTest {
         // Necropolis bekommt weder den Stadt-Bonus noch überhaupt eine Moral.
         assertThat(setup.moraleOf(Side.DEFENDER)).isZero();
         assertThat(defender.getMorale()).isZero();
+    }
+
+    @Test
+    void the_setup_lowers_the_rating_of_the_side_facing_a_dragon() {
+        // Zwei Stadt-Typen (kein Bonus) gegen einen Ghost Dragon: das Rating rutscht auf -1,
+        // die Stacks können ihre Aktion durch schlechte Moral verlieren.
+        Stack pikemen = new Stack(UnitCatalog.PIKEMAN, 10, new Hex(0, 3), Side.ATTACKER, 0);
+        Stack centaurs = new Stack(UnitCatalog.CENTAUR, 10, new Hex(0, 7), Side.ATTACKER, 1);
+        Stack dragon = new Stack(UnitCatalog.GHOST_DRAGON, 1, new Hex(14, 5), Side.DEFENDER, 0);
+        BattleSetup setup = new BattleSetup(List.of(pikemen, centaurs), List.of(dragon),
+                Battlefield.STANDARD);
+
+        assertThat(setup.moraleOf(Side.ATTACKER)).isEqualTo(-1);
+        assertThat(pikemen.getMorale()).isEqualTo(-1);
+        assertThat(centaurs.getMorale()).isEqualTo(-1);
+        // Der Drache selbst ist untot und steht außerhalb der Moral.
+        assertThat(dragon.getMorale()).isZero();
+    }
+
+    @Test
+    void undead_facing_a_dragon_stay_at_zero() {
+        Stack skeletons = new Stack(UnitCatalog.SKELETON, 10, new Hex(0, 5), Side.ATTACKER, 0);
+        Stack dragon = new Stack(UnitCatalog.BONE_DRAGON, 1, new Hex(14, 5), Side.DEFENDER, 0);
+        BattleSetup setup = new BattleSetup(List.of(skeletons), List.of(dragon), Battlefield.STANDARD);
+
+        assertThat(setup.moraleOf(Side.ATTACKER)).isEqualTo(-1);
+        assertThat(skeletons.getMorale()).isZero();
     }
 }

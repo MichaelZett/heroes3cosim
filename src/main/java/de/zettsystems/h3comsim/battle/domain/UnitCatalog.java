@@ -46,6 +46,7 @@ import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.IMMUNE_TO_SPE
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.IMMUNE_TO_SPELLS_BELOW_4;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.IMPACT_DAMAGE;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.LIFE_DRAIN;
+import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.LOWERS_ENEMY_MORALE;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.MOVE_BACK;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.NO_HAND_TO_HAND_PENALTY;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.NO_OBSTACLE_PENALTY;
@@ -80,7 +81,7 @@ public final class UnitCatalog {
     public static final Unit BEHOLDER = basic("Beholder", new Stats(9, 7, 22, 5), ranged(3, 5, 12), GROUND, DUNGEON, 3, 250, NO_HAND_TO_HAND_PENALTY);
     public static final Unit BLACK_DRAGON = upgrade("Black Dragon", new Stats(25, 25, 300, 15), melee(40, 50), FLYING, DUNGEON, 7, 4000, IMMUNE_TO_SPELLS, TITAN_HATE, FIRE_BREATH);
     public static final Unit BLACK_KNIGHT = basic("Black Knight", new Stats(16, 16, 120, 7), melee(15, 30), GROUND, NECROPOLIS, 6, 1200, CURSING);
-    public static final Unit BONE_DRAGON = basic("Bone Dragon", new Stats(17, 15, 150, 9), melee(25, 50), FLYING, NECROPOLIS, 7, 1800);
+    public static final Unit BONE_DRAGON = basic("Bone Dragon", new Stats(17, 15, 150, 9), melee(25, 50), FLYING, NECROPOLIS, 7, 1800, LOWERS_ENEMY_MORALE);
     public static final Unit CAVALIER = basic("Cavalier", new Stats(15, 15, 100, 7), melee(15, 25), GROUND, CASTLE, 6, 1000, IMPACT_DAMAGE);
     public static final Unit CENTAUR = basic("Centaur", new Stats(5, 3, 8, 6), melee(2, 3), GROUND, RAMPART, 1, 70);
     public static final Unit CENTAUR_CAPTAIN = upgrade("Centaur Captain", new Stats(6, 3, 10, 8), melee(2, 3), GROUND, RAMPART, 1, 90);
@@ -106,7 +107,7 @@ public final class UnitCatalog {
     public static final Unit FIREBIRD = basic("Firebird", new Stats(18, 18, 150, 15), melee(30, 40), FLYING, CONFLUX, 7, 1500);
     public static final Unit FIRE_ELEMENTAL = basic("Fire Elemental", new Stats(10, 8, 35, 6), melee(4, 6), GROUND, CONFLUX, 4, 350, ELEMENTAL_RACE);
     public static final Unit GENIE = basic("Genie", new Stats(12, 12, 40, 7), melee(13, 16), FLYING, TOWER, 5, 550);
-    public static final Unit GHOST_DRAGON = upgrade("Ghost Dragon", new Stats(19, 17, 200, 14), melee(25, 50), FLYING, NECROPOLIS, 7, 3000, AGING);
+    public static final Unit GHOST_DRAGON = upgrade("Ghost Dragon", new Stats(19, 17, 200, 14), melee(25, 50), FLYING, NECROPOLIS, 7, 3000, AGING, LOWERS_ENEMY_MORALE);
     public static final Unit GIANT = basic("Giant", new Stats(19, 16, 150, 7), melee(40, 60), GROUND, TOWER, 7, 2000);
     public static final Unit GNOLL = basic("Gnoll", new Stats(3, 5, 6, 4), melee(2, 3), GROUND, FORTRESS, 1, 50);
     public static final Unit GNOLL_MARAUDER = upgrade("Gnoll Marauder", new Stats(4, 6, 6, 5), melee(2, 3), GROUND, FORTRESS, 1, 70);

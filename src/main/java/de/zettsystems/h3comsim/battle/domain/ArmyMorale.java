@@ -19,9 +19,12 @@ import java.util.Set;
  *   -1  je Stadt-Typ jenseits des zweiten
  * </pre>
  *
- * <p>Dazu kommen die beiden Quellen, die es in diesem Simulator gibt: die Leadership-Fertigkeit
+ * <p>Dazu kommen die Quellen, die es in diesem Simulator gibt: die Leadership-Fertigkeit
  * des Helden (+1/2/3, Manual S. 37) und {@link UnitSpeciality#GOOD_ARMY_MORALE} — Angel und
  * Arch Angel heben laut Manual S. 96 die Moral der gesamten Armee, nicht nur ihre eigene.
+ * Von der Gegenseite kommt {@link UnitSpeciality#LOWERS_ENEMY_MORALE}: Bone und Ghost Dragon
+ * senken laut Manual S. 102 die Moral der gegnerischen Armee um eins, ebenfalls einmal pro
+ * Armee und nicht je Drachen-Stack.
  *
  * <p>Bewusst <strong>nicht</strong> abgebildet: Artefakte, Gebäude, Abenteuer-Orte und Zauber.
  * Sie alle stehen außerhalb der Schlacht, die dieser Simulator kennt.
@@ -46,11 +49,14 @@ public final class ArmyMorale {
     /**
      * Moral-Rating der Armee, ohne den individuellen Bonus der einzelnen Kreatur.
      *
-     * @param stacks alle Stacks einer Seite, auch die bereits gefallenen — die Zusammenstellung
-     *               wird zu Kampfbeginn bewertet und ändert sich während der Schlacht nicht
-     * @param hero   Anführer der Armee, {@code null} bei führerloser Armee
+     * @param stacks       alle Stacks einer Seite, auch die bereits gefallenen — die
+     *                     Zusammenstellung wird zu Kampfbeginn bewertet und ändert sich während
+     *                     der Schlacht nicht
+     * @param hero         Anführer der Armee, {@code null} bei führerloser Armee
+     * @param enemyStacks  alle Stacks der Gegenseite; zählt nur für Fähigkeiten, die die Moral
+     *                     des Gegners senken
      */
-    public static int ratingOf(List<Stack> stacks, @Nullable Hero hero) {
+    public static int ratingOf(List<Stack> stacks, @Nullable Hero hero, List<Stack> enemyStacks) {
         Set<Faction> towns = EnumSet.noneOf(Faction.class);
         boolean undead = false;
         boolean living = false;
@@ -78,6 +84,11 @@ public final class ArmyMorale {
         }
         if (hero != null) {
             rating += hero.leadershipMoraleBonus();
+        }
+        boolean enemyLowersMorale = enemyStacks.stream()
+                .anyMatch(stack -> stack.unit().hasSpeciality(UnitSpeciality.LOWERS_ENEMY_MORALE));
+        if (enemyLowersMorale) {
+            rating--;
         }
         return rating;
     }

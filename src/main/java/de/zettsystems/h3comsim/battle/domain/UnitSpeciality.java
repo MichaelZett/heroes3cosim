@@ -58,6 +58,10 @@ public enum UnitSpeciality {
     /** Behemoth line: cuts the defender's effective defense (Stack). */
     DEFENSE_REDUCTION_40(ATTACK),
     DEFENSE_REDUCTION_80(ATTACK),
+    /** Bone/Ghost Dragon (Manual S. 102): „lower the morale of enemy units by one when they
+     *  appear on the battlefield". Wirkt auf das Moral-Rating der Gegenseite (ArmyMorale),
+     *  einmal pro Armee — zwei Drachen-Stacks senken nicht um zwei. */
+    LOWERS_ENEMY_MORALE(SPECIAL),
 
     // Not yet evaluated by the engine — defined for unit catalog tagging only.
     // Most of these need the spell/hero system before they can be evaluated.

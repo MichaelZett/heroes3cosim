@@ -23,7 +23,8 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Death Blow, Angel/Devil/Titan Hate, Impact Damage (Cavalier-Jousting),
   Defense Reduction (Behemoth), Move Back (Harpy), Counterstrike
   Twice/Unlimited (Griffin), Regeneration (Wight), Fire Shield (Efreet
-  Sultan), Rebirth (Phoenix), No Hand-to-Hand Penalty.
+  Sultan), Rebirth (Phoenix), No Hand-to-Hand Penalty, Moral-Senkung
+  (Bone/Ghost Dragon).
 - **Multi-Stack-Fähigkeiten** für die Army-Battles: Cerberus
   Three-Headed Attack (3 adjazente Gegner gleichzeitig), Fire Breath
   (Green/Gold/Red/Black Dragon — Ziel + Stack dahinter), Magog
@@ -42,7 +43,8 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Zusammenstellung ergibt: +1, wenn alle Kreaturen aus derselben Stadt
   stammen (außer Necropolis), −1 für Untote unter Lebenden, −1 je
   Stadt-Typ ab dem dritten, dazu Angel/Arch Angel und die Leadership des
-  Helden. Positive Moral gibt eine Chance auf eine zweite Aktion, negative
+  Helden. Steht auf der Gegenseite ein Bone oder Ghost Dragon, sinkt das
+  Rating um 1 (Manual S. 102), egal wie viele Drachen es sind. Positive Moral gibt eine Chance auf eine zweite Aktion, negative
   eine Chance, die Aktion ganz zu verlieren (4.2 / 8.3 / 12.5 %). Untote
   und Elementare stehen außerhalb — ihre Moral ist immer 0.
 - **Rundenablauf in zwei Phasen** (Manual S. 43): Stacks ziehen nach
