@@ -58,15 +58,29 @@ public enum UnitSpeciality {
     /** Behemoth line: cuts the defender's effective defense (Stack). */
     DEFENSE_REDUCTION_40(ATTACK),
     DEFENSE_REDUCTION_80(ATTACK),
+    /** Bone/Ghost Dragon (Manual S. 103): „lower the morale of enemy units by one when they
+     *  appear on the battlefield". Wirkt auf das Moral-Rating der Gegenseite (ArmyMorale),
+     *  einmal pro Armee — zwei Drachen-Stacks senken nicht um zwei. */
+    LOWERS_ENEMY_MORALE(SPECIAL),
+    /** Arch Angel (Manual S. 87): „able to resurrect dead allied troops once per combat".
+     *  Die Menge steht nicht im Manual; SoD-Vanilla laut heroes.thelazy.net: 100 HP je Arch
+     *  Angel im Stack, dauerhaft. Regeln und Ziel-Wahl in {@link Resurrection}. */
+    RESURRECTION(SPECIAL),
+    /** Golems und Gargoyles: keine Lebewesen. Wie Untote und Elementare nicht
+     *  wiederbelebbar (heroes.thelazy.net, Archangel: „Golems, Gargoyles, Elementals …
+     *  can never be resurrected"). */
+    NON_LIVING(SPECIAL),
 
     // Not yet evaluated by the engine — defined for unit catalog tagging only.
     // Most of these need the spell/hero system before they can be evaluated.
     IMMUNE_TO_BLIND(DEFENSE),
-    RESURRECTION(SPECIAL),
     GOOD_ARMY_MORALE(SPECIAL),
     SPELL_COST_REDUCTION(SPECIAL),
     IMMUNE_TO_SPELLS(SPECIAL),
+    /** Red Dragon (Manual S. 107): „immune to spells below the fourth level". */
     IMMUNE_TO_SPELLS_BELOW_4(SPECIAL),
+    /** Gold Dragon (Manual S. 107): „only affected by spells of level five". */
+    IMMUNE_TO_SPELLS_BELOW_5(SPECIAL),
     CASTS_BLOODLUST(SPECIAL),
     ATTACKS_WALLS(SPECIAL),
 

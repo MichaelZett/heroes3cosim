@@ -145,6 +145,23 @@ describe('reduceEvents', () => {
     expect(state!.attacker.topHp).toBe(4);
   });
 
+  it('applies Resurrection post-state to the resurrected stack, not the caster', () => {
+    const events: BattleEvent[] = [
+      start,
+      {
+        type: 'Resurrection',
+        actor: 'ATTACKER',
+        actorSlot: 1,
+        target: 'ATTACKER',
+        targetSlot: 0,
+        restoredCount: 3,
+        targetAfter: { ...attackerStart, count: 7, topHp: 10 },
+      },
+    ];
+    const state = reduceEvents(events, 2);
+    expect(state!.attacker.count).toBe(7);
+  });
+
   it('ignores marker events that carry no state mutation', () => {
     const events: BattleEvent[] = [
       start,

@@ -48,7 +48,7 @@ public final class StrategicAutoSolver implements AutoSolver {
 
     /** @see GreedyAutoSolver#GreedyAutoSolver(boolean) */
     public StrategicAutoSolver(boolean tacticalWait) {
-        this.greedy = new GreedyAutoSolver(tacticalWait);
+        this.greedy = new GreedyAutoSolver(tacticalWait, false);
     }
 
     private RoundPlan plan = RoundPlan.EMPTY;
@@ -181,6 +181,12 @@ public final class StrategicAutoSolver implements AutoSolver {
 
     @Override
     public Action decide(Stack active, Stack opponent, Battlefield battlefield) {
+        // Resurrection vor allem anderen: ein Arch Angel, der lieber Tank spielt, verschenkt
+        // seinen einzigen Wurf.
+        Stack resurrectionTarget = Resurrection.worthwhileTarget(active, currentSetup);
+        if (resurrectionTarget != null) {
+            return new Action.Resurrect(resurrectionTarget);
+        }
         // (A) Tank-Pattern: positionieren statt chargen, wenn eigene Schützen Schutz brauchen.
         // Aktiviert sich bei RANGED_DOMINANT (alle Schützen schutzwürdig) und bei BALANCED
         // mit Rand-Schützen — siehe RoundPlan.hasTankDuty / StrategicAutoSolver#buildPlan.
@@ -379,7 +385,8 @@ public final class StrategicAutoSolver implements AutoSolver {
         int enemyHits = 0;
         int ownHits = 0;
         int found = 0;
-        for (Hex neighbor : target.position().neighbors()) {
+        boolean leftward = Hex.isLeftward(active.position(), target.position());
+        for (Hex neighbor : target.position().neighbors(leftward)) {
             if (!deathCloud && found >= SPLASH_SHOT_COLLATERAL_CAP) {
                 break;
             }
@@ -573,7 +580,8 @@ public final class StrategicAutoSolver implements AutoSolver {
         if (isReachableLandingSpot(active, preferred, battlefield, setup)) {
             return preferred;
         }
-        for (Hex neighbor : shooterPos.neighbors()) {
+        boolean leftward = Hex.isLeftward(shooterPos, threatened.threat().position());
+        for (Hex neighbor : shooterPos.neighbors(leftward)) {
             if (isReachableLandingSpot(active, neighbor, battlefield, setup)) {
                 return neighbor;
             }
@@ -674,7 +682,7 @@ public final class StrategicAutoSolver implements AutoSolver {
     private static Hex adjacentTowards(Hex from, Hex to) {
         Hex best = from;
         int bestDist = Integer.MAX_VALUE;
-        for (Hex n : from.neighbors()) {
+        for (Hex n : from.neighbors(Hex.isLeftward(from, to))) {
             int d = n.distanceTo(to);
             if (d < bestDist) {
                 bestDist = d;

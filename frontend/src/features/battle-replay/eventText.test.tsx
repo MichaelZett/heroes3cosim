@@ -89,6 +89,28 @@ describe('eventToNode', () => {
     expect(container.textContent).toContain('schlechte Moral');
   });
 
+  it('renders Resurrection with the number of restored creatures', () => {
+    const { container } = renderEvent({
+      type: 'Resurrection',
+      actor: 'ATTACKER',
+      actorSlot: 0,
+      target: 'ATTACKER',
+      targetSlot: 0,
+      restoredCount: 3,
+      targetAfter: {
+        side: 'ATTACKER',
+        slot: 0,
+        unitName: 'Pikeman',
+        count: 7,
+        topHp: 10,
+        q: 0,
+        r: 5,
+      },
+    });
+
+    expect(container.textContent).toContain('belebt 3 Einheiten');
+  });
+
   it('paints the attacker name in amber and the defender name in blue', () => {
     const { getByText } = renderEvent({
       type: 'Melee',

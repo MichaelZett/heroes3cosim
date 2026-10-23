@@ -24,8 +24,9 @@ public final class ObstacleGenerator {
 
     public static Set<Hex> generate(Battlefield base, RandomGenerator rng, int count) {
         List<Hex> candidates = new ArrayList<>();
-        for (int q = SPAWN_COLUMN_MARGIN; q < base.width() - SPAWN_COLUMN_MARGIN; q++) {
-            for (int r = 0; r < base.height(); r++) {
+        for (int r = 0; r < base.height(); r++) {
+            for (int q = base.leftmostQ(r) + SPAWN_COLUMN_MARGIN;
+                 q <= base.rightmostQ(r) - SPAWN_COLUMN_MARGIN; q++) {
                 candidates.add(new Hex(q, r));
             }
         }

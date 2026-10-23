@@ -23,7 +23,9 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Death Blow, Angel/Devil/Titan Hate, Impact Damage (Cavalier-Jousting),
   Defense Reduction (Behemoth), Move Back (Harpy), Counterstrike
   Twice/Unlimited (Griffin), Regeneration (Wight), Fire Shield (Efreet
-  Sultan), Rebirth (Phoenix), No Hand-to-Hand Penalty.
+  Sultan), Rebirth (Phoenix), No Hand-to-Hand Penalty, Moral-Senkung
+  (Bone/Ghost Dragon), Resurrection (Arch Angel: einmal pro Kampf 100 HP
+  je Arch Angel für einen verbündeten Stack).
 - **Multi-Stack-Fähigkeiten** für die Army-Battles: Cerberus
   Three-Headed Attack (3 adjazente Gegner gleichzeitig), Fire Breath
   (Green/Gold/Red/Black Dragon — Ziel + Stack dahinter), Magog
@@ -42,19 +44,26 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Zusammenstellung ergibt: +1, wenn alle Kreaturen aus derselben Stadt
   stammen (außer Necropolis), −1 für Untote unter Lebenden, −1 je
   Stadt-Typ ab dem dritten, dazu Angel/Arch Angel und die Leadership des
-  Helden. Positive Moral gibt eine Chance auf eine zweite Aktion, negative
-  eine Chance, die Aktion ganz zu verlieren (4.2 / 8.3 / 12.5 %). Untote
+  Helden. Steht auf der Gegenseite ein Bone oder Ghost Dragon, sinkt das
+  Rating um 1 (Manual S. 103), egal wie viele Drachen es sind. Positive
+  Moral gibt eine Chance auf eine zweite Aktion, negative eine Chance,
+  die Aktion ganz zu verlieren (4.2 / 8.3 / 12.5 %). Untote
   und Elementare stehen außerhalb — ihre Moral ist immer 0.
 - **Rundenablauf in zwei Phasen** (Manual S. 43): Stacks ziehen nach
   Speed absteigend; wer *Wait* wählt, verschiebt seine Aktion ans Ende
   der Runde und handelt dort in umgekehrter Reihenfolge — langsamste
-  Wartende zuerst. Jeder Stack darf pro Runde nur einmal warten.
+  Wartende zuerst. Jeder Stack darf pro Runde nur einmal warten. Bei
+  gleichem Speed zieht zu Kampfbeginn der Angreifer (Manual S. 40),
+  danach die Seite, die zuletzt nicht am Zug war.
   *Defend* gibt dafür +20 % Defense bis Rundenende. Die Auto-Solver
   nutzen das taktisch: wer sein Ziel diese Runde nicht erreicht, wartet,
   statt sich exponiert ins Niemandsland zu stellen.
-- **Hex-Schlachtfeld 15 × 11** mit zufälligen Hindernissen pro Sim,
-  Hex-A*-Pathfinding um Obstacles herum, zugbasierte Move-Sequenz pro
-  Hex (Token wandert sichtbar Schritt für Schritt).
+- **Hex-Schlachtfeld 15 × 11** wie in H3 als Rechteck mit versetzten
+  Reihen, abwechselnd 15 und 14 Hexe breit und damit exakt
+  links-rechts-symmetrisch: Beide Armeen stellen sich spiegelbildlich am
+  Rand auf. Zufällige Hindernisse pro Sim, Hex-A*-Pathfinding um
+  Obstacles herum, zugbasierte Move-Sequenz pro Hex (Token wandert
+  sichtbar Schritt für Schritt).
 - **Fernkampf** mit `shotsRemaining`, Nahkampf-Penalty bei Distanz 1,
   ½-Schaden ab >10 Hex Distanz und nochmal ½ wenn ein Hindernis in der
   Schusslinie liegt — beide negierbar durch entsprechende Marker.

@@ -95,6 +95,8 @@ export const de = {
       '<shielded>{{shielded}}</shielded> reflektiert {{damage}} Schaden durch Feuerschild auf <attacker>{{attacker}}</attacker>.',
     rebirth:
       '<actor>{{actor}}</actor> wird durch Wiedergeburt mit {{count}} Einheiten zurückgebracht.',
+    resurrection:
+      '<actor>{{actor}}</actor> belebt {{count}} Einheiten von <target>{{target}}</target> wieder.',
     battleEnd:
       'Kampf vorbei — Sieger: <winner>{{winner}}</winner> nach {{turns}} Runden. Überlebende: {{attackerSurvivors}} vs. {{defenderSurvivors}}.',
     draw: 'Unentschieden',

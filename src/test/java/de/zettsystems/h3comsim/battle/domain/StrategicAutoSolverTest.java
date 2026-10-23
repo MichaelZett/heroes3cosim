@@ -276,16 +276,17 @@ class StrategicAutoSolverTest {
 
     @Test
     void two_tanks_form_complete_wall_in_front_of_corner_shooter() {
-        // Marksman im Eck (0,0) — strukturell nur 2 in-board Nachbarn: (1,0) und (0,1).
-        // 2 Tanks sollten beide adjacenten Hexen besetzen → komplette Wall.
+        // Marksman im Eck (3,0) — strukturell nur 3 Nachbarn auf dem Feld: (4,0), (2,1), (3,1).
+        // 3 Tanks sollten alle drei besetzen → komplette Wall.
         // Stance ist RANGED_DOMINANT, weil der einzige Schütze auf Attacker-Seite steht.
-        // Hier verifizieren wir nur, dass die bestehende Tank-Heuristik tatsächlich beide
-        // Tanks koordiniert und nicht beide auf denselben preferred Spot schickt.
-        Stack mark = new Stack(UnitCatalog.MARKSMAN, 9, new Hex(0, 0), Side.ATTACKER, 0);
-        Stack hal = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(0, 2), Side.ATTACKER, 1);
-        Stack sword = new Stack(UnitCatalog.SWORDSMAN, 10, new Hex(0, 4), Side.ATTACKER, 2);
+        // Hier verifizieren wir nur, dass die bestehende Tank-Heuristik die Tanks tatsächlich
+        // koordiniert und nicht alle auf denselben preferred Spot schickt.
+        Stack mark = new Stack(UnitCatalog.MARKSMAN, 9, new Hex(3, 0), Side.ATTACKER, 0);
+        Stack hal = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(2, 2), Side.ATTACKER, 1);
+        Stack sword = new Stack(UnitCatalog.SWORDSMAN, 10, new Hex(1, 4), Side.ATTACKER, 2);
+        Stack pike = new Stack(UnitCatalog.PIKEMAN, 10, new Hex(1, 3), Side.ATTACKER, 3);
         Stack threat = new Stack(UnitCatalog.PIKEMAN, 14, new Hex(8, 5), Side.DEFENDER, 0);
-        BattleSetup setup = new BattleSetup(List.of(mark, hal, sword), List.of(threat), battlefield);
+        BattleSetup setup = new BattleSetup(List.of(mark, hal, sword, pike), List.of(threat), battlefield);
         solver.planRound(setup);
         assertThat(solver.currentPlan().stanceOf(Side.ATTACKER)).isEqualTo(TeamStance.RANGED_DOMINANT);
 
@@ -296,14 +297,18 @@ class StrategicAutoSolverTest {
 
         Action actB = solver.decide(sword, threat, battlefield);
         Hex destB = ((Action.Move) actB).destination();
+        sword.moveTo(destB);
 
-        assertThat(destA.distanceTo(mark.position())).isEqualTo(1);
-        assertThat(destB.distanceTo(mark.position())).isEqualTo(1);
-        assertThat(destA).isNotEqualTo(destB);
-        // Vollständige Wall: kein in-board-Nachbar des Schützen ist mehr frei.
+        Action actC = solver.decide(pike, threat, battlefield);
+        Hex destC = ((Action.Move) actC).destination();
+
+        assertThat(List.of(destA, destB, destC)).allSatisfy(
+                dest -> assertThat(dest.distanceTo(mark.position())).isEqualTo(1));
+        assertThat(Set.of(destA, destB, destC)).hasSize(3);
+        // Vollständige Wall: kein Nachbar des Schützen auf dem Feld ist mehr frei.
         Set<Hex> stillFreeAdjacents = mark.position().neighbors().stream()
                 .filter(battlefield::isPassable)
-                .filter(h -> !h.equals(destA) && !h.equals(destB))
+                .filter(h -> !h.equals(destA) && !h.equals(destB) && !h.equals(destC))
                 .collect(Collectors.toSet());
         assertThat(stillFreeAdjacents).isEmpty();
     }
@@ -312,12 +317,13 @@ class StrategicAutoSolverTest {
     void balanced_stance_still_protects_corner_shooter_via_tank_duty() {
         // Spiegel-Setup: beide Seiten haben Marksman + 2 Tanks → BALANCED-Stance.
         // Trotz BALANCED soll der Tank den Eck-Schützen (r=0) decken, weil dieser strukturell
-        // verwundbar ist (nur 2 in-board Nachbarn). Trigger: RoundPlan.hasTankDuty.
-        Stack mark = new Stack(UnitCatalog.MARKSMAN, 9, new Hex(0, 0), Side.ATTACKER, 0);
-        Stack hal = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(0, 2), Side.ATTACKER, 1);
-        Stack sword = new Stack(UnitCatalog.SWORDSMAN, 10, new Hex(0, 4), Side.ATTACKER, 2);
-        Stack enemyMark = new Stack(UnitCatalog.MARKSMAN, 9, new Hex(14, 0), Side.DEFENDER, 0);
-        Stack enemyHal = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(14, 2), Side.DEFENDER, 1);
+        // verwundbar ist (nur 3 Nachbarn auf dem Feld). Trigger: RoundPlan.hasTankDuty.
+        // Randzellen der Reihen 0/2/4, Verteidiger gespiegelt.
+        Stack mark = new Stack(UnitCatalog.MARKSMAN, 9, new Hex(3, 0), Side.ATTACKER, 0);
+        Stack hal = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(2, 2), Side.ATTACKER, 1);
+        Stack sword = new Stack(UnitCatalog.SWORDSMAN, 10, new Hex(1, 4), Side.ATTACKER, 2);
+        Stack enemyMark = new Stack(UnitCatalog.MARKSMAN, 9, new Hex(16, 0), Side.DEFENDER, 0);
+        Stack enemyHal = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(15, 2), Side.DEFENDER, 1);
         Stack enemySword = new Stack(UnitCatalog.SWORDSMAN, 10, new Hex(14, 4), Side.DEFENDER, 2);
         BattleSetup setup = new BattleSetup(
                 List.of(mark, hal, sword),
@@ -335,7 +341,7 @@ class StrategicAutoSolverTest {
         Action actB = solver.decide(sword, enemyHal, battlefield);
         Hex destB = ((Action.Move) actB).destination();
 
-        // Beide Tanks adjacent zum Eck-Marksman → komplette Wall (Eck hat nur 2 Adjacents).
+        // Beide Tanks adjacent zum Eck-Marksman.
         assertThat(destA.distanceTo(mark.position())).isEqualTo(1);
         assertThat(destB.distanceTo(mark.position())).isEqualTo(1);
         assertThat(destA).isNotEqualTo(destB);
@@ -398,11 +404,12 @@ class StrategicAutoSolverTest {
         // Marksman im Eck, Tank-Wall vor ihm (alle in-board Adjacents besetzt von Defendern).
         // Flieger-Heuristik findet keinen freien Lande-Hex → fallback zum default Focus
         // (hier: Swordsman wegen höherem Rohschaden).
-        Stack dragon = new Stack(UnitCatalog.BLACK_DRAGON, 1, new Hex(0, 5), Side.ATTACKER, 0);
-        Stack marksman = new Stack(UnitCatalog.MARKSMAN, 5, new Hex(14, 0), Side.DEFENDER, 0);
-        Stack tank1 = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(13, 0), Side.DEFENDER, 1);
-        Stack tank2 = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(13, 1), Side.DEFENDER, 2);
-        Stack tank3 = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(14, 1), Side.DEFENDER, 3);
+        // Eck-Schütze auf (16,0), die drei Nachbarn auf dem Feld sind besetzt.
+        Stack dragon = new Stack(UnitCatalog.BLACK_DRAGON, 1, new Hex(2, 5), Side.ATTACKER, 0);
+        Stack marksman = new Stack(UnitCatalog.MARKSMAN, 5, new Hex(16, 0), Side.DEFENDER, 0);
+        Stack tank1 = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(15, 0), Side.DEFENDER, 1);
+        Stack tank2 = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(15, 1), Side.DEFENDER, 2);
+        Stack tank3 = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(16, 1), Side.DEFENDER, 3);
         Stack swordsman = new Stack(UnitCatalog.SWORDSMAN, 10, new Hex(8, 5), Side.DEFENDER, 4);
         BattleSetup setup = new BattleSetup(List.of(dragon),
                 List.of(marksman, tank1, tank2, tank3, swordsman), battlefield);
@@ -418,15 +425,15 @@ class StrategicAutoSolverTest {
     @Test
     void flyer_picks_free_adjacent_when_straight_line_to_shooter_is_blocked() {
         // Black Dragon (ATTACKER, FLYING, speed 15) gegen einen Eck-Schützen (Marksman auf
-        // (14,0)). Defender baut Tank-Wall vor dem Schützen — Halberdier auf (13,0),
-        // Swordsman auf (13,1). Nur (14,1) bleibt als freier Adjacent.
+        // (16,0)). Defender baut Tank-Wall vor dem Schützen — Halberdier auf (15,0),
+        // Swordsman auf (15,1). Nur (16,1) bleibt als freier Adjacent.
         //
-        // Heute ohne Flieger-Heuristik: Greedy.moveToward straight-line landet auf (13,0),
-        // Engine erkennt Belegung → Wait. Mit Heuristik: findFlyerLanding wählt (14,1).
-        Stack dragon = new Stack(UnitCatalog.BLACK_DRAGON, 1, new Hex(0, 5), Side.ATTACKER, 0);
-        Stack tank1 = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(13, 0), Side.DEFENDER, 0);
-        Stack tank2 = new Stack(UnitCatalog.SWORDSMAN, 10, new Hex(13, 1), Side.DEFENDER, 1);
-        Stack marksman = new Stack(UnitCatalog.MARKSMAN, 9, new Hex(14, 0), Side.DEFENDER, 2);
+        // Ohne Flieger-Heuristik: Greedy.moveToward straight-line landet auf einem besetzten
+        // Hex, Engine erkennt Belegung → Wait. Mit Heuristik: findFlyerLanding wählt (16,1).
+        Stack dragon = new Stack(UnitCatalog.BLACK_DRAGON, 1, new Hex(2, 5), Side.ATTACKER, 0);
+        Stack tank1 = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(15, 0), Side.DEFENDER, 0);
+        Stack tank2 = new Stack(UnitCatalog.SWORDSMAN, 10, new Hex(15, 1), Side.DEFENDER, 1);
+        Stack marksman = new Stack(UnitCatalog.MARKSMAN, 9, new Hex(16, 0), Side.DEFENDER, 2);
         BattleSetup setup = new BattleSetup(List.of(dragon),
                 List.of(tank1, tank2, marksman), battlefield);
         solver.planRound(setup);
@@ -435,7 +442,7 @@ class StrategicAutoSolverTest {
 
         assertThat(act).isInstanceOf(Action.MoveAndMelee.class);
         Action.MoveAndMelee mm = (Action.MoveAndMelee) act;
-        assertThat(mm.destination()).isEqualTo(new Hex(14, 1));
+        assertThat(mm.destination()).isEqualTo(new Hex(16, 1));
         assertThat(mm.target()).isSameAs(marksman);
     }
 

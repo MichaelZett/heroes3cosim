@@ -42,7 +42,7 @@ import java.util.Set;
  *
  * <p>Aufbau: {@link SplitSolver} routet nach {@code Stack.side()} — Attacker bekommt Variante A,
  * Defender Variante B. Jedes Pairing läuft zusätzlich mit getauschten Rollen, damit der
- * Attacker-Vorteil (bei Speed-Gleichstand zieht der Attacker zuerst) sich herausmittelt.
+ * Attacker-Vorteil (bei Speed-Gleichstand zu Kampfbeginn zieht der Attacker zuerst) sich herausmittelt.
  * Gemessen wird die Win-Rate von A über alle Läufe; 0.50 heißt „kein Unterschied".
  *
  * <p>Aktivieren: {@code .\gradlew.bat test --tests "*SolverDuelTest" "-Ph3.harness=solver-duel"}.

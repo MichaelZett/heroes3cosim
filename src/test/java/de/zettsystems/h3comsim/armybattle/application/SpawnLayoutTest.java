@@ -1,5 +1,6 @@
 package de.zettsystems.h3comsim.armybattle.application;
 
+import de.zettsystems.h3comsim.battle.domain.Battlefield;
 import de.zettsystems.h3comsim.battle.domain.Hex;
 import de.zettsystems.h3comsim.battle.domain.Unit;
 import de.zettsystems.h3comsim.battle.domain.UnitCatalog;
@@ -21,17 +22,19 @@ class SpawnLayoutTest {
         Set<Integer> attackerRows = new HashSet<>();
         for (int slot = 0; slot < 7; slot++) {
             Hex pos = SpawnLayout.positionFor(Side.ATTACKER, slot, 7);
-            assertThat(pos.q()).isZero();
+            assertThat(pos.q()).isEqualTo(Battlefield.STANDARD.leftmostQ(pos.r()));
             attackerRows.add(pos.r());
         }
         assertThat(attackerRows).containsExactlyInAnyOrder(0, 2, 4, 5, 6, 8, 10);
     }
 
     @Test
-    void defender_spawns_on_column_14() {
+    void defender_spawns_on_the_right_edge_as_mirror_image_of_the_attacker() {
         for (int slot = 0; slot < 7; slot++) {
-            Hex pos = SpawnLayout.positionFor(Side.DEFENDER, slot, 7);
-            assertThat(pos.q()).isEqualTo(14);
+            Hex attacker = SpawnLayout.positionFor(Side.ATTACKER, slot, 7);
+            Hex defender = SpawnLayout.positionFor(Side.DEFENDER, slot, 7);
+            assertThat(defender.q()).isEqualTo(Battlefield.STANDARD.rightmostQ(defender.r()));
+            assertThat(defender).isEqualTo(Battlefield.STANDARD.mirror(attacker));
         }
     }
 
@@ -56,8 +59,9 @@ class SpawnLayoutTest {
     void spawn_hexes_cover_both_sides() {
         Set<Hex> hexes = SpawnLayout.spawnHexesFor(7, 7);
         assertThat(hexes).hasSize(14);
-        assertThat(hexes.stream().filter(h -> h.q() == 0).count()).isEqualTo(7);
-        assertThat(hexes.stream().filter(h -> h.q() == 14).count()).isEqualTo(7);
+        Battlefield field = Battlefield.STANDARD;
+        assertThat(hexes.stream().filter(h -> h.q() == field.leftmostQ(h.r())).count()).isEqualTo(7);
+        assertThat(hexes.stream().filter(h -> h.q() == field.rightmostQ(h.r())).count()).isEqualTo(7);
     }
 
     @Test

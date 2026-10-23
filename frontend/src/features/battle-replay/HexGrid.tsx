@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import type { BattleState } from './state';
-import { gridDimensions, HEX_SIZE, hexToPixel } from './hex';
+import { fieldCells, gridDimensions, HEX_SIZE, hexToPixel } from './hex';
 import StackToken from './StackToken';
 
 interface HexGridProps {
@@ -10,16 +10,15 @@ interface HexGridProps {
 
 export default function HexGrid({ state, transitionMs }: Readonly<HexGridProps>) {
   const { t } = useTranslation();
-  const { w, h } = gridDimensions(state.width, state.height);
+  const { x0, w, h } = gridDimensions(state.width, state.height);
   const padding = HEX_SIZE;
-  const viewBox = `${-padding} ${-padding} ${w + padding} ${h + padding}`;
+  const viewBox = `${x0 - padding} ${-padding} ${w + padding} ${h + padding}`;
 
-  const cells: { q: number; r: number; pixel: { x: number; y: number } }[] = [];
-  for (let r = 0; r < state.height; r++) {
-    for (let q = 0; q < state.width; q++) {
-      cells.push({ q, r, pixel: hexToPixel(q, r) });
-    }
-  }
+  const cells = fieldCells(state.width, state.height).map(({ q, r }) => ({
+    q,
+    r,
+    pixel: hexToPixel(q, r),
+  }));
 
   return (
     <svg

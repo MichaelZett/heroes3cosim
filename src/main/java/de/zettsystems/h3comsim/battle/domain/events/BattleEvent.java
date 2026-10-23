@@ -30,6 +30,7 @@ import java.util.List;
         @JsonSubTypes.Type(value = BattleEvent.Aging.class, name = "Aging"),
         @JsonSubTypes.Type(value = BattleEvent.FireShield.class, name = "FireShield"),
         @JsonSubTypes.Type(value = BattleEvent.Rebirth.class, name = "Rebirth"),
+        @JsonSubTypes.Type(value = BattleEvent.Resurrection.class, name = "Resurrection"),
         @JsonSubTypes.Type(value = BattleEvent.BattleEnd.class, name = "BattleEnd"),
 })
 @Schema(
@@ -50,7 +51,7 @@ import java.util.List;
                 BattleEvent.MoveBack.class, BattleEvent.DeathStare.class, BattleEvent.Thunderbolts.class,
                 BattleEvent.Petrifying.class, BattleEvent.Cursing.class, BattleEvent.Poisoning.class,
                 BattleEvent.Diseasing.class, BattleEvent.Aging.class, BattleEvent.FireShield.class,
-                BattleEvent.Rebirth.class, BattleEvent.BattleEnd.class
+                BattleEvent.Rebirth.class, BattleEvent.Resurrection.class, BattleEvent.BattleEnd.class
         },
         discriminatorProperty = "type",
         discriminatorMapping = {
@@ -75,6 +76,7 @@ import java.util.List;
                 @DiscriminatorMapping(value = "Aging", schema = BattleEvent.Aging.class),
                 @DiscriminatorMapping(value = "FireShield", schema = BattleEvent.FireShield.class),
                 @DiscriminatorMapping(value = "Rebirth", schema = BattleEvent.Rebirth.class),
+                @DiscriminatorMapping(value = "Resurrection", schema = BattleEvent.Resurrection.class),
                 @DiscriminatorMapping(value = "BattleEnd", schema = BattleEvent.BattleEnd.class)
         })
 public sealed interface BattleEvent {
@@ -290,6 +292,17 @@ public sealed interface BattleEvent {
             @Schema(description = "Slot des wiederbelebten Stacks") int actorSlot,
             @Schema(description = "Zahl der wiederbelebten Einheiten", example = "1") int restoredCount,
             @Schema(description = "Stack-Snapshot nach der Wiederbelebung") StackSnapshot actorAfter) implements BattleEvent {
+    }
+
+    @Schema(name = "Resurrection",
+            description = "Skill-Event: Resurrection (Arch Angel) — ein verbündeter Stack bekommt gefallene Einheiten zurück, einmal pro Kampf.")
+    record Resurrection(
+            @Schema(description = "Wirkender Arch-Angel-Stack") Side actor,
+            @Schema(description = "Slot des Arch-Angel-Stacks") int actorSlot,
+            @Schema(description = "Seite des Ziel-Stacks (immer dieselbe wie actor)") Side target,
+            @Schema(description = "Slot des Ziel-Stacks") int targetSlot,
+            @Schema(description = "Zahl der zurückgeholten Einheiten (0, wenn nur die oberste Einheit aufgefüllt wurde)", example = "2") int restoredCount,
+            @Schema(description = "Snapshot des Ziel-Stacks nach der Resurrection") StackSnapshot targetAfter) implements BattleEvent {
     }
 
     @Schema(name = "BattleEnd",

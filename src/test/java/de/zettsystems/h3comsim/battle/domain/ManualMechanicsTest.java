@@ -245,8 +245,9 @@ class ManualMechanicsTest {
         // Tank-Duty greift heute für jeden Melee auf RANGED_DOMINANT-Seite.
         // Mit isTankCandidate-Filter sollen T7+ und Stacks mit aggressiven Specials
         // (FIRE_BREATH) NICHT als Tank abgezogen werden, sondern angreifen.
-        Stack beholder = new Stack(UnitCatalog.BEHOLDER, 5, new Hex(0, 0), Side.ATTACKER, 0);
-        Stack troglodyte = new Stack(UnitCatalog.TROGLODYTE, 14, new Hex(0, 2),
+        // Linke Randzellen der Reihen 0 und 2: (3,0) und (2,2).
+        Stack beholder = new Stack(UnitCatalog.BEHOLDER, 5, new Hex(3, 0), Side.ATTACKER, 0);
+        Stack troglodyte = new Stack(UnitCatalog.TROGLODYTE, 14, new Hex(2, 2),
                 Side.ATTACKER, 1);
         Stack blackDragon = new Stack(UnitCatalog.BLACK_DRAGON, 1, new Hex(0, 5),
                 Side.ATTACKER, 2);

@@ -66,8 +66,8 @@ public class BattleSetup {
         this.defenderHero = defenderHero;
         this.attackerStacks.forEach(stack -> stack.assignCommander(attackerHero));
         this.defenderStacks.forEach(stack -> stack.assignCommander(defenderHero));
-        this.attackerMorale = ArmyMorale.ratingOf(this.attackerStacks, attackerHero);
-        this.defenderMorale = ArmyMorale.ratingOf(this.defenderStacks, defenderHero);
+        this.attackerMorale = ArmyMorale.ratingOf(this.attackerStacks, attackerHero, this.defenderStacks);
+        this.defenderMorale = ArmyMorale.ratingOf(this.defenderStacks, defenderHero, this.attackerStacks);
         this.attackerStacks.forEach(stack -> stack.assignArmyMorale(attackerMorale));
         this.defenderStacks.forEach(stack -> stack.assignArmyMorale(defenderMorale));
     }

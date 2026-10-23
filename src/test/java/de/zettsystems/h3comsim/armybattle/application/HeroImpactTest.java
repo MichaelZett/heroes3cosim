@@ -41,7 +41,7 @@ import java.util.Set;
  * grundsätzlich nicht zeigen, solange beide Seiten gleich ausgestattet sind.
  *
  * <p>Jedes Pairing läuft zweimal mit getauschten Rollen, damit der Attacker-Vorzug (bei
- * Speed-Gleichstand zieht der Attacker zuerst) sich herausmittelt. 0.500 heißt „kein
+ * Speed-Gleichstand zu Kampfbeginn zieht der Attacker zuerst) sich herausmittelt. 0.500 heißt „kein
  * Unterschied".
  *
  * <p>Aktivieren: {@code .\gradlew.bat test --tests "*HeroImpactTest" "-Ph3.harness=hero-impact"}.

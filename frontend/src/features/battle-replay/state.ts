@@ -91,6 +91,9 @@ function applyEvent(stacks: Map<string, SideState>, event: BattleEvent): void {
     case 'Rebirth':
       snapshotInto(stacks, event.actorAfter);
       return;
+    case 'Resurrection':
+      snapshotInto(stacks, event.targetAfter);
+      return;
     default:
       // Marker-Events (Wait, TwoBlows, TwoShots, GoodMorale, BadMorale, Petrifying, Cursing,
       // Poisoning, Diseasing, Aging, BattleStart, BattleEnd) — kein Grid-State.

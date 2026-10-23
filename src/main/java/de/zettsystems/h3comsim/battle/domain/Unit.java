@@ -77,6 +77,21 @@ public record Unit(
         return isUndead() || specialities.contains(UnitSpeciality.ELEMENTAL_RACE);
     }
 
+    /**
+     * Ob eine Resurrection diese Kreatur zurückholen kann. Ausgenommen sind Untote, Elementare
+     * und nicht-lebende Kreaturen (Golems, Gargoyles), dazu wer gegen Resurrection als Zauber
+     * der vierten Stufe (Manual S. 71) immun ist: Magic Elemental und Black Dragon ganz, Gold
+     * Dragon unterhalb Stufe 5. Der Red Dragon ist nur gegen Stufe 1–3 immun und bleibt
+     * wiederbelebbar.
+     */
+    public boolean isResurrectable() {
+        return !isUndead()
+                && !specialities.contains(UnitSpeciality.ELEMENTAL_RACE)
+                && !specialities.contains(UnitSpeciality.NON_LIVING)
+                && !specialities.contains(UnitSpeciality.IMMUNE_TO_SPELLS)
+                && !specialities.contains(UnitSpeciality.IMMUNE_TO_SPELLS_BELOW_5);
+    }
+
     public boolean hasSpeciality(UnitSpeciality speciality) {
         return specialities.contains(speciality);
     }

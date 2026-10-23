@@ -20,7 +20,10 @@ import java.util.stream.Collectors;
  * <p>Reihenfolge {@code {0, 2, 4, 5, 6, 8, 10}}: Mitte besetzt, 1-Hex-Lücken oben/unten
  * vermeiden Wand-an-Wand-Adjazenz und geben dem A* Pfad-Spielraum.
  *
- * <p>Attacker spawnt auf q=0, Defender auf q=14.
+ * <p>Attacker spawnt auf der linken Randzelle jeder Reihe, Defender auf der rechten
+ * ({@link Battlefield#leftmostQ(int)} / {@link Battlefield#rightmostQ(int)}). Das Feld ist ein
+ * Rechteck mit versetzten Reihen, die Randzellen liegen deshalb nicht in einer festen q-Spalte;
+ * beide Aufstellungen sind exakte Spiegelbilder.
  *
  * <p><strong>Taktische Aufstellung</strong>: {@link #assignPositions(Side, List)} ordnet die
  * Stacks anhand ihrer Eigenschaften auf die Reihen — Schützen nach außen (am weitesten von
@@ -33,8 +36,6 @@ public final class SpawnLayout {
 
     static final int[] ROWS_7 = {0, 2, 4, 5, 6, 8, 10};
     static final int CENTER_ROW = 5;
-    static final int ATTACKER_COLUMN = 0;
-    static final int DEFENDER_COLUMN = 14;
 
     private SpawnLayout() {
     }
@@ -67,7 +68,6 @@ public final class SpawnLayout {
         if (total < 1 || total > 7) {
             throw new IllegalArgumentException("units size must be 1..7, was " + total);
         }
-        int q = side == Side.ATTACKER ? ATTACKER_COLUMN : DEFENDER_COLUMN;
         int[] rows = rowsFor(total);
 
         // Reihen-Indices in zwei Reihenfolgen: außen→innen (für Shooter) und innen→außen
@@ -93,7 +93,7 @@ public final class SpawnLayout {
 
         Hex[] result = new Hex[total];
         for (int i = 0; i < shooterSlots.size(); i++) {
-            result[shooterSlots.get(i)] = new Hex(q, outsideIn.get(i));
+            result[shooterSlots.get(i)] = edgeHex(side, outsideIn.get(i));
         }
         // Melees verbrauchen die Reihen vom Zentrum nach außen, überspringen aber jene, die
         // bereits an Schützen vergeben sind (= die äußersten shooterCount Einträge).
@@ -104,7 +104,7 @@ public final class SpawnLayout {
             while (usedRows.contains(centerOut.get(meleeRowIdx))) {
                 meleeRowIdx++;
             }
-            result[slot] = new Hex(q, centerOut.get(meleeRowIdx++));
+            result[slot] = edgeHex(side, centerOut.get(meleeRowIdx++));
         }
         return Arrays.asList(result);
     }
@@ -126,9 +126,13 @@ public final class SpawnLayout {
         if (totalSlots < 1 || totalSlots > 7) {
             throw new IllegalArgumentException("totalSlots must be 1..7, was " + totalSlots);
         }
-        int q = side == Side.ATTACKER ? ATTACKER_COLUMN : DEFENDER_COLUMN;
-        int r = rowsFor(totalSlots)[slotIndex];
-        return new Hex(q, r);
+        return edgeHex(side, rowsFor(totalSlots)[slotIndex]);
+    }
+
+    /** Die Randzelle der Reihe {@code r} auf der Seite von {@code side}. */
+    static Hex edgeHex(Side side, int r) {
+        Battlefield field = Battlefield.STANDARD;
+        return new Hex(side == Side.ATTACKER ? field.leftmostQ(r) : field.rightmostQ(r), r);
     }
 
     /**

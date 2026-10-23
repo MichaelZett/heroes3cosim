@@ -1,5 +1,6 @@
 package de.zettsystems.h3comsim.battle.domain;
 
+import de.zettsystems.h3comsim.battle.domain.events.Side;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -44,6 +45,7 @@ public final class GreedyAutoSolver implements AutoSolver {
     private @Nullable BattleSetup currentSetup;
 
     private final boolean tacticalWait;
+    private final boolean avoidExposedCharges;
 
     public GreedyAutoSolver() {
         this(true);
@@ -57,7 +59,20 @@ public final class GreedyAutoSolver implements AutoSolver {
      *                     ist ein Solver-Vorteil per Konstruktion unsichtbar.
      */
     public GreedyAutoSolver(boolean tacticalWait) {
+        this(tacticalWait, true);
+    }
+
+    /**
+     * @param avoidExposedCharges ob ein Anlauf, der allein in die gegnerische Armee führen würde,
+     *                            per Wait verschoben wird ({@link #chargeOrWait}). Der
+     *                            {@link StrategicAutoSolver} schaltet das ab: Im Duell gewann
+     *                            Greedy damit 0.585 gegen sich selbst ohne (+16.9 Sigma),
+     *                            Strategic verlor leicht (0.490, −2.0 Sigma) — das Warten stört
+     *                            dort die geplanten Fokus-Angriffe.
+     */
+    GreedyAutoSolver(boolean tacticalWait, boolean avoidExposedCharges) {
         this.tacticalWait = tacticalWait;
+        this.avoidExposedCharges = avoidExposedCharges;
     }
 
     @Override
@@ -113,6 +128,10 @@ public final class GreedyAutoSolver implements AutoSolver {
 
     @Override
     public Action decide(Stack active, Stack opponent, Battlefield battlefield) {
+        Stack resurrectionTarget = Resurrection.worthwhileTarget(active, currentSetup);
+        if (resurrectionTarget != null) {
+            return new Action.Resurrect(resurrectionTarget);
+        }
         Hex from = active.position();
         Hex to = opponent.position();
         int distance = from.distanceTo(to);
@@ -132,7 +151,7 @@ public final class GreedyAutoSolver implements AutoSolver {
         if (movement == Movement.FLYING) {
             Hex landing = findFlyerLanding(active, opponent, battlefield);
             if (landing != null) {
-                return new Action.MoveAndMelee(landing, opponent);
+                return chargeOrWait(active, opponent, landing);
             }
             return waitOr(active, new Action.Defend());
         }
@@ -141,7 +160,7 @@ public final class GreedyAutoSolver implements AutoSolver {
         if (active.hasSpeciality(UnitSpeciality.IMPACT_DAMAGE)) {
             Hex charge = findMaxRunupCharge(active, to, battlefield, speed, movement);
             if (charge != null) {
-                return new Action.MoveAndMelee(charge, opponent);
+                return chargeOrWait(active, opponent, charge);
             }
         }
         Hex moveTarget = battlefield.moveToward(from, to, speed, movement);
@@ -155,7 +174,7 @@ public final class GreedyAutoSolver implements AutoSolver {
             return waitOr(active, new Action.Defend());
         }
         if (moveTarget.distanceTo(to) == 1) {
-            return new Action.MoveAndMelee(moveTarget, opponent);
+            return chargeOrWait(active, opponent, moveTarget);
         }
         // Reiner Annäherungsschritt: der Stack erreicht sein Ziel diese Runde nicht und würde
         // sich nur exponiert ins Niemandsland stellen. H3-Standardzug ist hier Wait (Manual
@@ -188,7 +207,7 @@ public final class GreedyAutoSolver implements AutoSolver {
         Hex best = null;
         int bestScore = Integer.MIN_VALUE;
         int bestDist = Integer.MAX_VALUE;
-        for (Hex candidate : opponent.position().neighbors()) {
+        for (Hex candidate : opponent.position().neighbors(Hex.isLeftward(from, opponent.position()))) {
             int d = from.distanceTo(candidate);
             if (candidate.equals(from)
                     || !bf.isPassable(candidate)
@@ -242,7 +261,8 @@ public final class GreedyAutoSolver implements AutoSolver {
         }
         if (threeHeaded) {
             int splashes = 0;
-            for (Hex adj : landingHex.neighbors()) {
+            // Reihenfolge wie Battle.applyMeleeSplash, sonst sagt die Bewertung etwas anderes voraus.
+            for (Hex adj : landingHex.neighbors(Hex.isLeftward(landingHex, primary.position()))) {
                 if (splashes >= MELEE_SPLASH_CAP) {
                     break;
                 }
@@ -285,7 +305,7 @@ public final class GreedyAutoSolver implements AutoSolver {
     private @Nullable Hex findMaxRunupCharge(Stack active, Hex to, Battlefield bf, int speed,
                                              Movement movement) {
         Hex from = active.position();
-        return to.neighbors().stream()
+        return to.neighbors(Hex.isLeftward(from, to)).stream()
                 .filter(c -> isReachableInOneTurn(active, c, from, bf, speed, movement))
                 .filter(c -> from.distanceTo(c) > 0)
                 .max(Comparator.comparingInt(c -> Math.min(from.distanceTo(c), 10)))
@@ -378,6 +398,51 @@ public final class GreedyAutoSolver implements AutoSolver {
             return new Action.Shoot(opponent);
         }
         return new Action.Move(kite);
+    }
+
+    /**
+     * Anlauf in den Nahkampf — es sei denn, der Stack liefe allein in die gegnerische Armee.
+     *
+     * <p>Im Spiegel-Duell verlor fast immer, wer zuerst zog: Der schnellste Stack stürmte in
+     * Runde 1 los und wurde von allen langsameren Gegnern zusammengeschlagen, bevor die eigene
+     * Armee nachkam. Ein H3-Spieler wartet hier. Deshalb: Können gegnerische Nahkämpfer, die
+     * noch dran sind, das Landefeld erreichen und zusammen mindestens die Hälfte der eigenen
+     * Lebenspunkte ausrichten, wird gewartet. In der Wait-Phase wird gehandelt, wie bei
+     * {@link #waitOr}.
+     */
+    private Action chargeOrWait(Stack active, Stack target, Hex landing) {
+        if (avoidExposedCharges && tacticalWait && !active.hasWaitedThisTurn() && active.getSpeed() > 0
+                && isExposedCharge(active, target, landing)) {
+            return new Action.Wait();
+        }
+        return new Action.MoveAndMelee(landing, target);
+    }
+
+    /**
+     * Schätzt den Nahkampfschaden, der das Landefeld in dieser Runde noch treffen kann: Gegner,
+     * die nicht schneller sind als der Angreifer (sie haben vermutlich noch nicht gezogen) und das
+     * Feld erreichen. Schützen zählen nicht, sie treffen ihn ohnehin überall; das Ziel selbst
+     * auch nicht, dessen Gegenschlag kommt bei jedem Angriff.
+     */
+    // enemy != target: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
+    @SuppressWarnings("ReferenceEquality")
+    private boolean isExposedCharge(Stack active, Stack target, Hex landing) {
+        BattleSetup setup = currentSetup;
+        if (setup == null) {
+            return false;
+        }
+        int incoming = 0;
+        for (Stack enemy : setup.opponentsOf(active)) {
+            if (!enemy.isAlive() || enemy == target || enemy.canShoot()
+                    || enemy.getSpeed() > active.getSpeed()) {
+                continue;
+            }
+            if (landing.distanceTo(enemy.position()) <= enemy.getSpeed() + 1) {
+                incoming += dangerScore(enemy);
+            }
+        }
+        int ownHealth = (active.getCount() - 1) * active.unit().health() + active.getCurrentHealth();
+        return 2 * incoming >= ownHealth;
     }
 
     /**
@@ -503,14 +568,19 @@ public final class GreedyAutoSolver implements AutoSolver {
     private List<Hex> reachableCandidates(Stack active, Hex from, Hex to, Battlefield bf,
                                           int mySpeed, Movement movement) {
         List<Hex> candidates = new ArrayList<>();
-        for (int q = 0; q < bf.width(); q++) {
-            for (int r = 0; r < bf.height(); r++) {
-                Hex c = new Hex(q, r);
-                if (isKiteCandidate(active, c, from, to, bf, mySpeed, movement)) {
-                    candidates.add(c);
-                }
+        for (Hex c : bf.cells()) {
+            if (isKiteCandidate(active, c, from, to, bf, mySpeed, movement)) {
+                candidates.add(c);
             }
         }
+        // Die Aufrufer nehmen bei Gleichstand das erste Element (findFirst, max). Eine feste
+        // Reihenfolge nach q bevorzugte Zellen der linken Seite — also die des Angreifers. Die
+        // Sortierung hier ist spiegelsymmetrisch: kürzester Weg, dann Reihe, dann q von der
+        // eigenen Seite aus gezählt.
+        int lateral = active.side() == Side.ATTACKER ? 1 : -1;
+        candidates.sort(Comparator.<Hex>comparingInt(c -> c.distanceTo(from))
+                .thenComparingInt(Hex::r)
+                .thenComparingInt(c -> lateral * c.q()));
         return candidates;
     }
 
