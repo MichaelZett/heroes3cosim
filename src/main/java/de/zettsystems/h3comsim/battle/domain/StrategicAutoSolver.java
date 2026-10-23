@@ -48,7 +48,7 @@ public final class StrategicAutoSolver implements AutoSolver {
 
     /** @see GreedyAutoSolver#GreedyAutoSolver(boolean) */
     public StrategicAutoSolver(boolean tacticalWait) {
-        this.greedy = new GreedyAutoSolver(tacticalWait);
+        this.greedy = new GreedyAutoSolver(tacticalWait, false);
     }
 
     private RoundPlan plan = RoundPlan.EMPTY;

@@ -45,6 +45,7 @@ public final class GreedyAutoSolver implements AutoSolver {
     private @Nullable BattleSetup currentSetup;
 
     private final boolean tacticalWait;
+    private final boolean avoidExposedCharges;
 
     public GreedyAutoSolver() {
         this(true);
@@ -58,7 +59,20 @@ public final class GreedyAutoSolver implements AutoSolver {
      *                     ist ein Solver-Vorteil per Konstruktion unsichtbar.
      */
     public GreedyAutoSolver(boolean tacticalWait) {
+        this(tacticalWait, true);
+    }
+
+    /**
+     * @param avoidExposedCharges ob ein Anlauf, der allein in die gegnerische Armee führen würde,
+     *                            per Wait verschoben wird ({@link #chargeOrWait}). Der
+     *                            {@link StrategicAutoSolver} schaltet das ab: Im Duell gewann
+     *                            Greedy damit 0.585 gegen sich selbst ohne (+16.9 Sigma),
+     *                            Strategic verlor leicht (0.490, −2.0 Sigma) — das Warten stört
+     *                            dort die geplanten Fokus-Angriffe.
+     */
+    GreedyAutoSolver(boolean tacticalWait, boolean avoidExposedCharges) {
         this.tacticalWait = tacticalWait;
+        this.avoidExposedCharges = avoidExposedCharges;
     }
 
     @Override
@@ -137,7 +151,7 @@ public final class GreedyAutoSolver implements AutoSolver {
         if (movement == Movement.FLYING) {
             Hex landing = findFlyerLanding(active, opponent, battlefield);
             if (landing != null) {
-                return new Action.MoveAndMelee(landing, opponent);
+                return chargeOrWait(active, opponent, landing);
             }
             return waitOr(active, new Action.Defend());
         }
@@ -146,7 +160,7 @@ public final class GreedyAutoSolver implements AutoSolver {
         if (active.hasSpeciality(UnitSpeciality.IMPACT_DAMAGE)) {
             Hex charge = findMaxRunupCharge(active, to, battlefield, speed, movement);
             if (charge != null) {
-                return new Action.MoveAndMelee(charge, opponent);
+                return chargeOrWait(active, opponent, charge);
             }
         }
         Hex moveTarget = battlefield.moveToward(from, to, speed, movement);
@@ -160,7 +174,7 @@ public final class GreedyAutoSolver implements AutoSolver {
             return waitOr(active, new Action.Defend());
         }
         if (moveTarget.distanceTo(to) == 1) {
-            return new Action.MoveAndMelee(moveTarget, opponent);
+            return chargeOrWait(active, opponent, moveTarget);
         }
         // Reiner Annäherungsschritt: der Stack erreicht sein Ziel diese Runde nicht und würde
         // sich nur exponiert ins Niemandsland stellen. H3-Standardzug ist hier Wait (Manual
@@ -384,6 +398,51 @@ public final class GreedyAutoSolver implements AutoSolver {
             return new Action.Shoot(opponent);
         }
         return new Action.Move(kite);
+    }
+
+    /**
+     * Anlauf in den Nahkampf — es sei denn, der Stack liefe allein in die gegnerische Armee.
+     *
+     * <p>Im Spiegel-Duell verlor fast immer, wer zuerst zog: Der schnellste Stack stürmte in
+     * Runde 1 los und wurde von allen langsameren Gegnern zusammengeschlagen, bevor die eigene
+     * Armee nachkam. Ein H3-Spieler wartet hier. Deshalb: Können gegnerische Nahkämpfer, die
+     * noch dran sind, das Landefeld erreichen und zusammen mindestens die Hälfte der eigenen
+     * Lebenspunkte ausrichten, wird gewartet. In der Wait-Phase wird gehandelt, wie bei
+     * {@link #waitOr}.
+     */
+    private Action chargeOrWait(Stack active, Stack target, Hex landing) {
+        if (avoidExposedCharges && tacticalWait && !active.hasWaitedThisTurn() && active.getSpeed() > 0
+                && isExposedCharge(active, target, landing)) {
+            return new Action.Wait();
+        }
+        return new Action.MoveAndMelee(landing, target);
+    }
+
+    /**
+     * Schätzt den Nahkampfschaden, der das Landefeld in dieser Runde noch treffen kann: Gegner,
+     * die nicht schneller sind als der Angreifer (sie haben vermutlich noch nicht gezogen) und das
+     * Feld erreichen. Schützen zählen nicht, sie treffen ihn ohnehin überall; das Ziel selbst
+     * auch nicht, dessen Gegenschlag kommt bei jedem Angriff.
+     */
+    // enemy != target: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
+    @SuppressWarnings("ReferenceEquality")
+    private boolean isExposedCharge(Stack active, Stack target, Hex landing) {
+        BattleSetup setup = currentSetup;
+        if (setup == null) {
+            return false;
+        }
+        int incoming = 0;
+        for (Stack enemy : setup.opponentsOf(active)) {
+            if (!enemy.isAlive() || enemy == target || enemy.canShoot()
+                    || enemy.getSpeed() > active.getSpeed()) {
+                continue;
+            }
+            if (landing.distanceTo(enemy.position()) <= enemy.getSpeed() + 1) {
+                incoming += dangerScore(enemy);
+            }
+        }
+        int ownHealth = (active.getCount() - 1) * active.unit().health() + active.getCurrentHealth();
+        return 2 * incoming >= ownHealth;
     }
 
     /**

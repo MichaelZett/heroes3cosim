@@ -1,7 +1,9 @@
 package de.zettsystems.h3comsim.battle.domain;
 
+import de.zettsystems.h3comsim.battle.domain.events.Side;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -234,6 +236,53 @@ class GreedyAutoSolverTest {
      * Simuliert die späte Rundenphase: der Stack hat seine Verzögerung bereits verbraucht und
      * muss jetzt handeln. {@code decide} fällt damit auf den Bewegungs-Pfad zurück.
      */
+    /**
+     * Ein Arch Angel könnte den Pikeman auf (14,5) in einem Zug erreichen. Neben dem Ziel stehen
+     * zwei große Halberdier-Stacks, die das Landefeld noch in derselben Runde erreichen
+     * (Speed 5 gegen 18) und zusammen mehr als die Hälfte seiner 250 HP ausrichten.
+     */
+    private static List<Stack> loneChargeSetup(int halberdiers) {
+        Stack angel = new Stack(UnitCatalog.ARCH_ANGEL, 1, new Hex(0, 5), Side.ATTACKER, 0);
+        Stack target = new Stack(UnitCatalog.PIKEMAN, 10, new Hex(14, 5), Side.DEFENDER, 0);
+        Stack upper = new Stack(UnitCatalog.HALBERDIER, halberdiers, new Hex(15, 3), Side.DEFENDER, 1);
+        Stack lower = new Stack(UnitCatalog.HALBERDIER, halberdiers, new Hex(13, 7), Side.DEFENDER, 2);
+        return List.of(angel, target, upper, lower);
+    }
+
+    private static Action decideCharge(GreedyAutoSolver greedy, List<Stack> stacks) {
+        greedy.planRound(new BattleSetup(List.of(stacks.getFirst()), stacks.subList(1, stacks.size()),
+                Battlefield.STANDARD));
+        return greedy.decide(stacks.getFirst(), stacks.get(1), Battlefield.STANDARD);
+    }
+
+    @Test
+    void a_lone_charge_into_the_enemy_army_is_postponed() {
+        // 2 × 40 Halberdiers à 2 Durchschnittsschaden = 160 ≥ 125 (halbe Engel-HP).
+        assertThat(decideCharge(new GreedyAutoSolver(), loneChargeSetup(40))).isInstanceOf(Action.Wait.class);
+    }
+
+    @Test
+    void the_charge_goes_ahead_when_the_neighbours_are_too_weak_to_punish_it() {
+        // 2 × 10 Halberdiers = 40 < 125.
+        assertThat(decideCharge(new GreedyAutoSolver(), loneChargeSetup(10))).isInstanceOf(Action.MoveAndMelee.class);
+    }
+
+    @Test
+    void after_waiting_the_charge_goes_ahead() {
+        List<Stack> stacks = loneChargeSetup(40);
+        inLatePhase(stacks.getFirst());
+
+        assertThat(decideCharge(new GreedyAutoSolver(), stacks)).isInstanceOf(Action.MoveAndMelee.class);
+    }
+
+    @Test
+    void without_tactical_wait_or_for_the_strategic_solver_the_charge_is_not_postponed() {
+        assertThat(decideCharge(new GreedyAutoSolver(false), loneChargeSetup(40)))
+                .isInstanceOf(Action.MoveAndMelee.class);
+        assertThat(decideCharge(new GreedyAutoSolver(true, false), loneChargeSetup(40)))
+                .isInstanceOf(Action.MoveAndMelee.class);
+    }
+
     private static Stack inLatePhase(Stack stack) {
         stack.markWaited();
         return stack;
