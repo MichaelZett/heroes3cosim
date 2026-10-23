@@ -59,11 +59,12 @@ class WaitMechanicsTest {
 
         ListEventCollector collector = waitFor(setup, fast, medium, slow);
 
-        // Phase 1 nach Speed absteigend (7, 5, 4); bei Gleichstand zwischen slow und enemy
-        // (beide Speed 4) zieht der Attacker zuerst. Die drei Attacker emittieren dort Wait.
+        // Phase 1 nach Speed absteigend (7, 5, 4). Im Gleichstand zwischen slow und enemy (beide
+        // Speed 4) ist enemy dran, weil zuletzt ein Attacker gehandelt hat (medium, per Wait —
+        // auch Warten zählt als Zug). Die drei Attacker emittieren in Phase 1 Wait.
         // Phase 2 dreht den Speed um: slow (4), medium (5), fast (7).
         assertThat(actorsOfFirstRound(collector, 7)).containsExactly(
-                slotOf(fast), slotOf(medium), slotOf(slow), slotOf(enemy),
+                slotOf(fast), slotOf(medium), slotOf(enemy), slotOf(slow),
                 slotOf(slow), slotOf(medium), slotOf(fast));
     }
 

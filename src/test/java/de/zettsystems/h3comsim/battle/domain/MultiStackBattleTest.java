@@ -81,11 +81,10 @@ class MultiStackBattleTest {
     }
 
     @Test
-    void move_order_uses_speed_with_attacker_priority_tiebreaker() {
-        // Beide Seiten haben einen Pikeman (Speed 4) und einen Archer (Speed 4).
-        // Erwartung: 4 Stacks mit gleicher Speed → Reihenfolge Attacker-Slot-0, Attacker-Slot-1,
-        // Defender-Slot-0, Defender-Slot-1.
-        // Verifiziert indirekt durch BattleResult-Determinismus: gleicher Seed liefert gleichen Outcome.
+    void symmetric_battles_with_tied_speeds_are_deterministic() {
+        // Beide Seiten haben einen Pikeman (Speed 4) und einen Archer (Speed 4) — vier Stacks im
+        // Gleichstand, die Reihenfolge entscheidet TurnOrder (siehe TurnOrderTest). Hier nur:
+        // gleicher Seed liefert gleichen Ausgang.
         BattleSetup setup1 = newSymmetricSetup();
         BattleSetup setup2 = newSymmetricSetup();
 

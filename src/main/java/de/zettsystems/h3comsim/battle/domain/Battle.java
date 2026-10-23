@@ -9,10 +9,7 @@ import de.zettsystems.h3comsim.battle.domain.events.StackSnapshot;
 import de.zettsystems.h3comsim.battle.domain.events.Winner;
 import org.jspecify.annotations.Nullable;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Deque;
 import java.util.List;
 import java.util.Set;
 import java.util.random.RandomGenerator;
@@ -29,17 +26,6 @@ public final class Battle {
      * läuft, ohne dass jemand stirbt.
      */
     private static final int NO_PROGRESS_LIMIT = 20;
-
-    /**
-     * Reihenfolge der Late-Queue: langsamste Wartende zuerst, also genau umgekehrt zur
-     * Hauptphase. Das Verhalten ist H3-Spielverhalten, im RoE-Manual steht dazu nichts — belegt
-     * ist dort nur die Phasen-Trennung selbst (S. 43). Die Tiebreaker bleiben bewusst wie in
-     * {@code determineMoveOrder} (Attacker vor Defender, dann Slot): nur der Speed dreht sich um.
-     */
-    private static final Comparator<Stack> LATE_PHASE_ORDER = Comparator
-            .comparingInt(Stack::getSpeed)
-            .thenComparingInt((Stack s) -> s.side() == Side.ATTACKER ? 0 : 1)
-            .thenComparingInt(Stack::slot);
 
     private final RandomGenerator rng;
     private final AutoSolver autoSolver;
@@ -80,8 +66,9 @@ public final class Battle {
         int lastAttackerCount = attackerStart;
         int lastDefenderCount = defenderStart;
         int stalledRounds = 0;
+        TurnOrder order = new TurnOrder();
         while (setup.bothAlive() && turn < TURN_CAP && stalledRounds < NO_PROGRESS_LIMIT) {
-            doTurn(setup);
+            doTurn(setup, order);
             turn++;
             int aCount = setup.getAttackerCount();
             int dCount = setup.getDefenderCount();
@@ -113,13 +100,20 @@ public final class Battle {
      * to the waiting creature at the end of the first phase, after all other creatures have had a
      * chance to move." Wer in Phase 1 wartet, landet in der Late-Queue und handelt erst, wenn alle
      * anderen gezogen sind — mit dem Brett, wie es dann aussieht.
+     *
+     * <p>Die Reihenfolge entsteht Schritt für Schritt statt als vorab sortierte Queue: Bei
+     * Speed-Gleichstand hängt sie davon ab, welche Seite zuletzt gehandelt hat
+     * ({@link TurnOrder}). Tote Stacks fallen über {@link Stack#isAbleToAct()} heraus.
      */
-    private void doTurn(BattleSetup setup) {
+    private void doTurn(BattleSetup setup, TurnOrder order) {
         autoSolver.planRound(setup);
-        Deque<Stack> queue = determineMoveOrder(setup);
+        List<Stack> roundStacks = setup.aliveStacks();
+        List<Stack> pending = new ArrayList<>(roundStacks);
         List<Stack> waiting = new ArrayList<>();
-        for (Stack activeStack : queue) {
+        while (!pending.isEmpty()) {
+            Stack activeStack = order.next(pending, true);
             if (activeStack.isAbleToAct() && setup.bothAlive()) {
+                order.acted(activeStack);
                 actWithMorale(activeStack, setup);
                 if (activeStack.hasWaitedThisTurn()) {
                     waiting.add(activeStack);
@@ -127,17 +121,21 @@ public final class Battle {
             }
             BattleLogger.logShortDelimiter();
         }
-        runLatePhase(waiting, setup);
-        queue.forEach(Stack::endTurn);
+        runLatePhase(waiting, setup, order);
+        roundStacks.forEach(Stack::endTurn);
     }
 
-    private void runLatePhase(List<Stack> waiting, BattleSetup setup) {
-        if (waiting.isEmpty()) {
-            return;
-        }
-        waiting.sort(LATE_PHASE_ORDER);
-        for (Stack activeStack : waiting) {
+    /**
+     * Wait-Phase: langsamste Wartende zuerst, also umgekehrt zur Hauptphase. Im RoE-Manual steht
+     * dazu nichts — belegt ist dort nur die Phasen-Trennung selbst (S. 43); die Reihenfolge ist
+     * H3-Spielverhalten. Die Gleichstandsregel gilt hier genauso.
+     */
+    private void runLatePhase(List<Stack> waiting, BattleSetup setup, TurnOrder order) {
+        List<Stack> pending = new ArrayList<>(waiting);
+        while (!pending.isEmpty()) {
+            Stack activeStack = order.next(pending, false);
             if (activeStack.isAbleToAct() && setup.bothAlive()) {
+                order.acted(activeStack);
                 actWithMorale(activeStack, setup);
             }
             BattleLogger.logShortDelimiter();
@@ -773,26 +771,6 @@ public final class Battle {
     private static int totalHp(Stack stack) {
         int max = stack.unit().health();
         return Math.max(0, stack.getCount() - 1) * max + stack.getCurrentHealth();
-    }
-
-    /**
-     * Move-Order über alle lebenden Stacks beider Seiten. Sortier-Kette:
-     * <ol>
-     *   <li>Speed absteigend.</li>
-     *   <li>Bei Speed-Gleichstand: Attacker vor Defender (H3-Tactical-Phase-Regel).</li>
-     *   <li>Bei Speed + Seite gleich: niedrigerer Slot zuerst.</li>
-     * </ol>
-     * Tote Stacks tauchen nicht in der Queue auf; ein Stack, der während der Runde stirbt,
-     * wird über {@link Stack#isAbleToAct()} im Loop übersprungen.
-     */
-    private static Deque<Stack> determineMoveOrder(BattleSetup setup) {
-        Comparator<Stack> order = Comparator
-                .comparingInt(Stack::getSpeed).reversed()
-                .thenComparingInt((Stack s) -> s.side() == Side.ATTACKER ? 0 : 1)
-                .thenComparingInt(Stack::slot);
-        List<Stack> alive = setup.aliveStacks();
-        alive.sort(order);
-        return new ArrayDeque<>(alive);
     }
 
 }
