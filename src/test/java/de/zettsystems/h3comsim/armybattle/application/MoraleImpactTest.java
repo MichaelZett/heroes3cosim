@@ -22,7 +22,6 @@ import de.zettsystems.h3comsim.battle.domain.events.Winner;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -73,7 +72,7 @@ class MoraleImpactTest {
     }
 
     @Test
-    void morale_versus_no_morale() throws IOException {
+    void morale_versus_no_morale() throws Exception {
         FactionPresetCatalog presets = new FactionPresetCatalog();
         Map<Faction, FactionPresetDto> presetByFaction = new EnumMap<>(Faction.class);
         for (FactionPresetDto p : presets.all()) {
@@ -104,8 +103,8 @@ class MoraleImpactTest {
         Files.createDirectories(reportsDir);
         Path out = reportsDir.resolve("morale-impact.md");
         Files.writeString(out, report);
-        System.out.println("Morale-Impact-Report: " + out.toAbsolutePath());
-        System.out.println(report);
+        IO.println("Morale-Impact-Report: " + out.toAbsolutePath());
+        IO.println(report);
     }
 
     private static void duel(Map<Faction, FactionPresetDto> presets, Faction faction, Hero hero,

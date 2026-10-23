@@ -19,7 +19,6 @@ import de.zettsystems.h3comsim.battle.domain.events.Side;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -59,7 +58,7 @@ class FriendlyFireDiagnosisTest {
             Faction.CONFLUX);
 
     @Test
-    void measure_friendly_fire_per_faction() throws IOException {
+    void measure_friendly_fire_per_faction() throws Exception {
         FactionPresetCatalog presets = new FactionPresetCatalog();
         Map<Faction, FactionPresetDto> presetByFaction = new EnumMap<>(Faction.class);
         for (FactionPresetDto p : presets.all()) {
@@ -87,8 +86,8 @@ class FriendlyFireDiagnosisTest {
         Files.createDirectories(reportsDir);
         Path out = reportsDir.resolve("friendly-fire.md");
         Files.writeString(out, report);
-        System.out.println("Friendly-Fire-Report: " + out.toAbsolutePath());
-        System.out.println(report);
+        IO.println("Friendly-Fire-Report: " + out.toAbsolutePath());
+        IO.println(report);
     }
 
     private static void runOne(List<StackSpec> attackerSpec, List<StackSpec> defenderSpec,

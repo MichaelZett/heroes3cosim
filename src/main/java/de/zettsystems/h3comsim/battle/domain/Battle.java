@@ -7,7 +7,6 @@ import de.zettsystems.h3comsim.battle.domain.events.NoopEventCollector;
 import de.zettsystems.h3comsim.battle.domain.events.Side;
 import de.zettsystems.h3comsim.battle.domain.events.StackSnapshot;
 import de.zettsystems.h3comsim.battle.domain.events.Winner;
-
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayDeque;
@@ -362,7 +361,9 @@ public final class Battle {
         if (active.hasSpeciality(UnitSpeciality.THREE_HEADED_ATTACK)) {
             int splashes = 0;
             for (Hex neighbor : active.position().neighbors()) {
-                if (splashes >= 2) break;
+                if (splashes >= 2) {
+                    break;
+                }
                 Stack candidate = findStackAt(active, neighbor, setup);
                 if (candidate != null && candidate != primary && candidate.isAlive()) {
                     applySplashHit(active, candidate, AttackType.HAND_TO_HAND);

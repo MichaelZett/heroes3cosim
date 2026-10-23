@@ -35,8 +35,8 @@ import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.DEFENSE_REDUC
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.DEFENSE_REDUCTION_80;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.DEVIL_HATE;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.DEVIL_RACE;
-import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.ELEMENTAL_RACE;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.DISEASES;
+import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.ELEMENTAL_RACE;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.FIRE_BREATH;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.FIRE_SHIELD;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.GOOD_ARMY_MORALE;

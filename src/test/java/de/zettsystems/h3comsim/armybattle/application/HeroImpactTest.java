@@ -20,7 +20,6 @@ import de.zettsystems.h3comsim.battle.domain.events.Winner;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -59,7 +58,7 @@ class HeroImpactTest {
             Faction.CONFLUX);
 
     @Test
-    void hero_versus_no_hero() throws IOException {
+    void hero_versus_no_hero() throws Exception {
         FactionPresetCatalog presets = new FactionPresetCatalog();
         Map<Faction, FactionPresetDto> presetByFaction = new EnumMap<>(Faction.class);
         for (FactionPresetDto p : presets.all()) {
@@ -101,8 +100,8 @@ class HeroImpactTest {
         Files.createDirectories(reportsDir);
         Path out = reportsDir.resolve("hero-impact.md");
         Files.writeString(out, report);
-        System.out.println("Hero-Impact-Report: " + out.toAbsolutePath());
-        System.out.println(report);
+        IO.println("Hero-Impact-Report: " + out.toAbsolutePath());
+        IO.println(report);
     }
 
     private static void duel(Map<Faction, FactionPresetDto> presets, Faction attackerFaction,
