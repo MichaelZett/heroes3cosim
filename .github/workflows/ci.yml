@@ -26,6 +26,13 @@ jobs:
           distribution: temurin
           java-version: '25'
 
+      # Vitest 5 und MSW 3 brauchen Node >= 22.12; das vorinstallierte Node des
+      # Runners ist nicht garantiert so neu.
+      - name: Set up Node 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
