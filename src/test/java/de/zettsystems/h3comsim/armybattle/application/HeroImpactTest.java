@@ -73,7 +73,7 @@ class HeroImpactTest {
 
         // (1) Spiegel-Duelle: isolierter Heldeneffekt je Faktion.
         for (Faction f : FACTIONS_IN_ORDER) {
-            Hero hero = HeroCatalog.byFaction(f).orElseThrow();
+            Hero hero = HeroCatalog.defaultFor(f).orElseThrow();
             for (int s = 0; s < SEEDS_PER_PAIR; s++) {
                 long seed = (long) f.ordinal() * 9929L + f.ordinal() * 113L + s;
                 duel(presetByFaction, f, f, hero, seed, true, mirror.get(f), null);
@@ -87,9 +87,9 @@ class HeroImpactTest {
             for (Faction d : FACTIONS_IN_ORDER) {
                 for (int s = 0; s < SEEDS_PER_PAIR; s++) {
                     long seed = (long) a.ordinal() * 9929L + d.ordinal() * 113L + s;
-                    duel(presetByFaction, a, d, HeroCatalog.byFaction(a).orElseThrow(),
+                    duel(presetByFaction, a, d, HeroCatalog.defaultFor(a).orElseThrow(),
                             seed, true, null, overall);
-                    duel(presetByFaction, a, d, HeroCatalog.byFaction(d).orElseThrow(),
+                    duel(presetByFaction, a, d, HeroCatalog.defaultFor(d).orElseThrow(),
                             seed, false, null, overall);
                 }
             }
@@ -178,7 +178,7 @@ class HeroImpactTest {
         sb.append("| Faktion | Held | A/D | Battles | Siege | Niederlagen | Draws | Win-Rate | Sigma |\n");
         sb.append("|--|--|--|--|--|--|--|--|--|\n");
         for (Faction f : FACTIONS_IN_ORDER) {
-            Hero hero = HeroCatalog.byFaction(f).orElseThrow();
+            Hero hero = HeroCatalog.defaultFor(f).orElseThrow();
             Tally t = mirror.get(f);
             sb.append("| ").append(f.name())
                     .append(" | ").append(hero.name())

@@ -224,31 +224,60 @@ export interface ArmySpec {
 
 export type HeroClass =
   | 'KNIGHT'
+  | 'CLERIC'
   | 'RANGER'
+  | 'DRUID'
   | 'ALCHEMIST'
+  | 'WIZARD'
   | 'DEMONIAC'
+  | 'HERETIC'
   | 'DEATH_KNIGHT'
+  | 'NECROMANCER'
   | 'OVERLORD'
+  | 'WARLOCK'
   | 'BARBARIAN'
+  | 'BATTLE_MAGE'
   | 'BEASTMASTER'
-  | 'PLANESWALKER';
+  | 'WITCH'
+  | 'PLANESWALKER'
+  | 'ELEMENTALIST';
 
 export type SecondarySkill =
-  | 'OFFENSE'
+  | 'AIR_MAGIC'
   | 'ARCHERY'
   | 'ARMORER'
-  | 'TACTICS'
+  | 'ARTILLERY'
+  | 'BALLISTICS'
+  | 'DIPLOMACY'
+  | 'EAGLE_EYE'
+  | 'EARTH_MAGIC'
+  | 'ESTATES'
+  | 'FIRE_MAGIC'
+  | 'FIRST_AID'
+  | 'INTELLIGENCE'
   | 'LEADERSHIP'
+  | 'LEARNING'
+  | 'LOGISTICS'
+  | 'LUCK'
+  | 'MYSTICISM'
+  | 'NAVIGATION'
   | 'NECROMANCY'
+  | 'OFFENSE'
+  | 'PATHFINDING'
+  | 'RESISTANCE'
   | 'SCHOLAR'
-  | 'MYSTICISM';
+  | 'SCOUTING'
+  | 'SORCERY'
+  | 'TACTICS'
+  | 'WATER_MAGIC'
+  | 'WISDOM';
 
 export type SkillLevel = 'NONE' | 'BASIC' | 'ADVANCED' | 'EXPERT';
 
 /**
  * Held aus /api/heroes. Von den Primaerwerten wirken derzeit nur attack und defense:
- * sie werden auf jede Kreatur der gefuehrten Armee addiert. power, knowledge und skills
- * werden gefuehrt, aber noch nicht ausgewertet.
+ * sie werden auf jede Kreatur der gefuehrten Armee addiert. Von den skills wirken Offense,
+ * Archery, Armorer und Leadership; power, knowledge und die uebrigen skills werden nur gefuehrt.
  */
 export interface HeroDto {
   name: string;

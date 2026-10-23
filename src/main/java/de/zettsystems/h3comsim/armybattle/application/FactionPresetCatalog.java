@@ -125,6 +125,6 @@ public class FactionPresetCatalog {
      */
     private static FactionPresetDto preset(Faction faction, List<StackSpec> stacks) {
         return new FactionPresetDto(faction, stacks,
-                HeroCatalog.byFaction(faction).map(Hero::name).orElse(null));
+                HeroCatalog.defaultFor(faction).map(Hero::name).orElse(null));
     }
 }

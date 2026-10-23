@@ -13,6 +13,13 @@ describe('HeroPicker', () => {
     expect(options[0]).toHaveValue('');
   });
 
+  it('groups the heroes by faction and names their class', () => {
+    render(<HeroPicker heroes={TEST_HEROES} selectedName={null} onChange={vi.fn()} />);
+
+    expect(screen.getByRole('group', { name: 'Stronghold' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /Crag Hack \(Barbarian\)/ })).toBeInTheDocument();
+  });
+
   it('reports the selected hero by name', async () => {
     const onChange = vi.fn();
     render(<HeroPicker heroes={TEST_HEROES} selectedName={null} onChange={onChange} />);
@@ -59,8 +66,8 @@ describe('HeroPicker', () => {
   });
 
   it('does not advertise skills the engine ignores', () => {
-    // Scholar wirkt ausserhalb des Kampfes, Tactics hat kein Katalog-Held - beide duerfen
-    // nicht als Kampfwirkung erscheinen.
+    // Scholar wirkt ausserhalb des Kampfes, Tactics braucht eine freie Aufstellung - beide
+    // duerfen nicht als Kampfwirkung erscheinen.
     const scholar = {
       ...TEST_HEROES[0],
       name: 'Neela',

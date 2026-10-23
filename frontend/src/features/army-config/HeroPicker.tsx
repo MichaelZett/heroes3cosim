@@ -1,10 +1,10 @@
 import { useTranslation } from 'react-i18next';
-import type { HeroDto, SkillLevel } from '../../shared/api/types';
+import type { Faction, HeroDto, SkillLevel } from '../../shared/api/types';
 
 /**
- * Die drei Fertigkeiten, die als Prozent auf den Schaden wirken. Scholar und Necromancy wirken
- * ausserhalb des Kampfes, Tactics hat kein Katalog-Held — sie hier zu zeigen waere ein
- * Versprechen, das die Simulation nicht einloest. Leadership wirkt zwar, aber nicht auf den
+ * Die drei Fertigkeiten, die als Prozent auf den Schaden wirken. Die meisten uebrigen wirken
+ * ausserhalb des Kampfes oder brauchen Zauber, Kriegsmaschinen oder eine freie Aufstellung — sie
+ * hier zu zeigen waere ein Versprechen, das die Simulation nicht einloest. Leadership wirkt zwar, aber nicht auf den
  * Schaden; es bekommt weiter unten eine eigene Zeile.
  *
  * Der enge Typ haelt die Liste mit den i18n-Keys army.heroSkill* synchron: ein Skill ohne
@@ -23,6 +23,20 @@ const PERCENT: Record<DamageSkill, Partial<Record<SkillLevel, number>>> = {
 
 /** Leadership, Manual S. 37: +1/2/3 auf das Moral-Rating der Armee. */
 const LEADERSHIP_MORALE: Partial<Record<SkillLevel, number>> = { BASIC: 1, ADVANCED: 2, EXPERT: 3 };
+
+/**
+ * Der Katalog fuehrt 16 Helden je Fraktion; ohne Gruppen waere die Liste kaum zu ueberblicken.
+ * Die Reihenfolge des Backends (Fraktion, martialische Klasse zuerst, Name) bleibt erhalten.
+ */
+function groupByFaction(heroes: HeroDto[]): [Faction, HeroDto[]][] {
+  const groups = new Map<Faction, HeroDto[]>();
+  for (const hero of heroes) {
+    const group = groups.get(hero.faction);
+    if (group) group.push(hero);
+    else groups.set(hero.faction, [hero]);
+  }
+  return [...groups.entries()];
+}
 
 interface HeroPickerProps {
   heroes: HeroDto[];
@@ -62,10 +76,14 @@ export default function HeroPicker({ heroes, selectedName, onChange }: Readonly<
           onChange={(e) => onChange(e.target.value === '' ? null : e.target.value)}
         >
           <option value="">{t('army.heroNone')}</option>
-          {heroes.map((hero) => (
-            <option key={hero.name} value={hero.name}>
-              {hero.name} ({t(`faction.${hero.faction}`)}) — {hero.attack}/{hero.defense}
-            </option>
+          {groupByFaction(heroes).map(([faction, group]) => (
+            <optgroup key={faction} label={t(`faction.${faction}`)}>
+              {group.map((hero) => (
+                <option key={hero.name} value={hero.name}>
+                  {hero.name} ({t(`heroClass.${hero.heroClass}`)}) — {hero.attack}/{hero.defense}
+                </option>
+              ))}
+            </optgroup>
           ))}
         </select>
       </label>
