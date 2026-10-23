@@ -85,14 +85,16 @@ public enum UnitSpeciality {
     ATTACKS_WALLS(SPECIAL),
 
     // Multi-Stack-Fähigkeiten (greifen erst, wenn mehr als ein Gegner-Stack auf dem Feld steht).
-    /** Cerberus: Nahkampf trifft bis zu drei adjazente Hexen der eigenen Position
-     *  gleichzeitig — Friendly Fire inklusive, eigene Nachbarn werden mitgetroffen. */
+    /** Cerberus (Manual S. 97): „can attack three adjacent enemies in a single attack" — das
+     *  Ziel und die beiden Felder links und rechts davon, aus der Angriffsrichtung gesehen
+     *  (heroes.thelazy.net). Trifft nur Gegner. */
     THREE_HEADED_ATTACK(ATTACK),
     /** Green/Gold/Red/Black/Azure Dragon: Nahkampf trifft zwei inline-Hexe (Ziel +
      *  dahinterliegender). Friendly Fire inklusive, wenn dort ein eigener Stack steht. */
     FIRE_BREATH(ATTACK),
-    /** Magog: ranged-Hit als 3-Hex-Splash (Ziel-Hex + zwei seitliche Nachbarn).
-     *  Friendly Fire inklusive — eigene Stacks im Radius werden mitgetroffen. */
+    /** Magog (Manual S. 97): „fireblasts affect the target hex and its surrounding hexes like
+     *  a Fireball spell" — Ziel plus alle sechs Nachbarn. Friendly Fire inklusive, eigene
+     *  Stacks im Radius werden mitgetroffen. */
     SPLASH_SHOT(ATTACK),
     /** Lich: ranged-Hit erzeugt 7-Hex-AoE rund ums Ziel (Death Cloud). Friendly Fire
      *  inklusive, aber Untote sind immun — eine reine Necropolis-Armee trifft sich nicht. */

@@ -27,10 +27,10 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   (Bone/Ghost Dragon), Resurrection (Arch Angel: einmal pro Kampf 100 HP
   je Arch Angel für einen verbündeten Stack).
 - **Multi-Stack-Fähigkeiten** für die Army-Battles: Cerberus
-  Three-Headed Attack (3 adjazente Gegner gleichzeitig), Fire Breath
-  (Green/Gold/Red/Black Dragon — Ziel + Stack dahinter), Magog
-  Splash-Shot (Ziel + 2 adjazente Gegner), Lich Death Cloud (Ziel +
-  alle 1-Hex-Nachbarn).
+  Three-Headed Attack (Ziel + die beiden Felder links und rechts davon,
+  nur Gegner), Fire Breath (Green/Gold/Red/Black Dragon — Ziel + Stack
+  dahinter), Magog-Fireball (Ziel + alle 1-Hex-Nachbarn, Manual S. 97),
+  Lich Death Cloud (Ziel + alle 1-Hex-Nachbarn außer Untoten).
 - **Helden** — ein H3-Held je Fraktion (Crag Hack, Tazar, Sorsha, …),
   Werte aus dem RoE-Manual. Sein Angriffs- und Verteidigungswert wird auf
   jede Kreatur der geführten Armee addiert (Manual S. 33) und wirkt damit
@@ -277,21 +277,18 @@ zu lesen, nicht als universelle H3-Tier-Liste.
   Backlog: Sticky-Target für Multi-Stack-Schützen, Anti-IMPACT_DAMAGE-
   Defense, und Replay-Inspection einzelner Flip-Cells (z.B. CON vs
   NEC) zur Trennung Heuristik-Effekt vs. Faction-Balance.
-- **Friendly-Fire-Awareness — Boden-Nahkampf bleibt offen**. Der Splash
-  der Engine trifft beide Seiten. Die Ziel-Wahl der AoE-Schützen rechnet
+- **Friendly-Fire-Awareness**. Fire Breath, Magog-Fireball und Death
+  Cloud treffen beide Seiten, die Three-Headed Attack des Cerberus nur
+  Gegner. Die Ziel-Wahl der AoE-Schützen rechnet
   das inzwischen mit (Netto-Splash plus Veto gegen Eigentor-Ziele), ebenso
   die Lande-Hex-Wahl der Flieger. Gemessener Eigenschaden über 810
   Battles: 10234 → 6077, Infernos Ø-Win-Rate 0.29 → 0.38 (gemessen mit
   80 Sims je Match-up; inzwischen 0.42, weil das taktische Warten
   zusätzlich wirkt)
   (`build/reports/friendly-fire.md`, erzeugt vom
-  `FriendlyFireDiagnosisTest`). Offen bleibt der Nahkampf am Boden:
-  Cerberus (`THREE_HEADED_ATTACK`) streut weiter in die eigenen Reihen,
-  weil die Trefferfläche erst nach dem Anmarsch feststeht. Eine
-  splash-optimale Lande-Hex-Wahl wurde gebaut und nach Messung verworfen —
-  sie senkte die Eigenverluste deutlich, kostete aber 14 Prozentpunkte
-  gegen Dungeon, weil die geretteten Einheiten Tier-1/2 sind und der
-  aufgegebene Positionsvorteil schwerer wiegt.
+  `FriendlyFireDiagnosisTest`). Diese Zahlen stammen noch aus der Zeit,
+  in der der Cerberus wahllos zwei Nachbarn traf, eigene eingeschlossen,
+  und der Magog nur zwei statt aller sechs Felder ums Ziel.
 - **Helden, nächste Stufe**: Luck (Doppelschaden mit 4.2 / 8.3 / 12.5 %)
   und Tactics (Aufstellung vor Kampfbeginn) hängen beide an derselben
   Vorbedingung — im Katalog steht je Fraktion nur ein Held, und keiner

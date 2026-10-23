@@ -33,12 +33,10 @@ import java.util.List;
  */
 public final class GreedyAutoSolver implements AutoSolver {
 
-    /** Spiegelt den Zwei-Kollateral-Deckel aus {@code Battle.applyMeleeSplash}. */
-    private static final int MELEE_SPLASH_CAP = 2;
     /**
      * Gewicht eines Gegner-Treffers gegenüber einem Eigentreffer bei der Lande-Hex-Wahl.
-     * Größer als {@link #MELEE_SPLASH_CAP}, damit ein Gegner-Treffer jede erreichbare Zahl
-     * vermiedener Eigentreffer überwiegt — die Wertung wird dadurch lexikografisch.
+     * Größer als die höchste erreichbare Zahl vermiedener Eigentreffer, damit ein Gegner-Treffer
+     * sie überwiegt — die Wertung wird dadurch lexikografisch.
      */
     private static final int ENEMY_HIT_WEIGHT = 10;
 
@@ -232,12 +230,11 @@ public final class GreedyAutoSolver implements AutoSolver {
      * getroffene Gegner (+1) minus getroffene eigene Stacks (−1).
      * <ul>
      *   <li>FIRE_BREATH (Dragons): der Inline-Hex hinter dem Primärziel.</li>
-     *   <li>THREE_HEADED_ATTACK (Cerberus): die Nachbarn des Lande-Hex ohne das
-     *       Primärziel, in Nachbar-Reihenfolge und gedeckelt bei zwei Kollateralen —
-     *       so wie {@code Battle.applyMeleeSplash} es abarbeitet.</li>
+     *   <li>THREE_HEADED_ATTACK (Cerberus): die beiden Felder links und rechts des Ziels aus
+     *       Sicht des Lande-Hex, nur Gegner — so wie {@code Battle.applyMeleeSplash}.</li>
      * </ul>
      *
-     * <p>Der Abzug ist der Punkt: der Engine-Splash trifft beide Seiten. Wer nur Gegner
+     * <p>Der Abzug ist der Punkt: der Fire-Breath-Splash trifft beide Seiten. Wer nur Gegner
      * zählt, sucht sich den Lande-Hex mit dem größten Eigenschaden aus, sobald die eigene
      * Linie dicht steht. Und die Wahl ist klebrig — einmal adjacent, schlägt der Stack aus
      * derselben Position weiter zu, ohne sich neu zu positionieren.
@@ -260,19 +257,9 @@ public final class GreedyAutoSolver implements AutoSolver {
             score += collateralValue(active, behindHex(landingHex, primary.position()));
         }
         if (threeHeaded) {
-            int splashes = 0;
-            // Reihenfolge wie Battle.applyMeleeSplash, sonst sagt die Bewertung etwas anderes voraus.
-            for (Hex adj : landingHex.neighbors(Hex.isLeftward(landingHex, primary.position()))) {
-                if (splashes >= MELEE_SPLASH_CAP) {
-                    break;
-                }
-                if (!adj.equals(primary.position())) {
-                    int value = collateralValue(active, adj);
-                    if (value != 0) {
-                        score += value;
-                        splashes++;
-                    }
-                }
+            for (Hex flank : landingHex.commonNeighbors(primary.position())) {
+                // Three-Headed Attack trifft nur Gegner — eigene Stacks auf den Flanken zählen nicht.
+                score += Math.max(0, collateralValue(active, flank));
             }
         }
         return score;
