@@ -16,7 +16,7 @@ void i18n.use(initReactI18next).init({
 
 export const server = setupServer(...defaultHandlers);
 
-beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
 beforeEach(() => {
   void i18n.changeLanguage('de');
 });
