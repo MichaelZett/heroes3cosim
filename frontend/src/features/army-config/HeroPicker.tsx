@@ -4,8 +4,8 @@ import type { Faction, HeroDto, SkillLevel } from '../../shared/api/types';
 /**
  * Die drei Fertigkeiten, die als Prozent auf den Schaden wirken. Die meisten uebrigen wirken
  * ausserhalb des Kampfes oder brauchen Zauber, Kriegsmaschinen oder eine freie Aufstellung — sie
- * hier zu zeigen waere ein Versprechen, das die Simulation nicht einloest. Leadership wirkt zwar, aber nicht auf den
- * Schaden; es bekommt weiter unten eine eigene Zeile.
+ * hier zu zeigen waere ein Versprechen, das die Simulation nicht einloest. Leadership und Luck
+ * wirken zwar, aber nicht als Prozent auf den Schaden; sie bekommen weiter unten eigene Zeilen.
  *
  * Der enge Typ haelt die Liste mit den i18n-Keys army.heroSkill* synchron: ein Skill ohne
  * passenden Key waere ein Compile-Fehler statt eines fehlenden Labels zur Laufzeit.
@@ -21,8 +21,8 @@ const PERCENT: Record<DamageSkill, Partial<Record<SkillLevel, number>>> = {
   ARMORER: { BASIC: 5, ADVANCED: 10, EXPERT: 15 },
 };
 
-/** Leadership, Manual S. 37: +1/2/3 auf das Moral-Rating der Armee. */
-const LEADERSHIP_MORALE: Partial<Record<SkillLevel, number>> = { BASIC: 1, ADVANCED: 2, EXPERT: 3 };
+/** Leadership und Luck, Manual S. 37: je +1/2/3 auf das Moral- bzw. Glücks-Rating der Armee. */
+const RATING_BONUS: Partial<Record<SkillLevel, number>> = { BASIC: 1, ADVANCED: 2, EXPERT: 3 };
 
 /**
  * Der Katalog fuehrt 16 Helden je Fraktion; ohne Gruppen waere die Liste kaum zu ueberblicken.
@@ -49,7 +49,7 @@ interface HeroPickerProps {
  * ueberlaesst ihn dem Backend, das den Standardhelden der Fraktion mit dem groessten Goldwert
  * nimmt.
  *
- * Angezeigt werden Angriff und Verteidigung sowie die vier Fertigkeiten, die die Engine
+ * Angezeigt werden Angriff und Verteidigung sowie die fuenf Fertigkeiten, die die Engine
  * auswertet. Power und Knowledge bleiben aussen vor: sie steuern ausschliesslich das Zaubern
  * und haben ohne Zaubersystem keinen Effekt — sie hier zu zeigen waere ein Versprechen, das
  * die Simulation nicht einloest.
@@ -66,7 +66,8 @@ export default function HeroPicker({ heroes, selectedName, onChange }: Readonly<
         return [`${label} ${sign}${PERCENT[skill][level]}%`];
       }).join(', ')
     : '';
-  const leadership = current ? LEADERSHIP_MORALE[current.skills.LEADERSHIP ?? 'NONE'] : undefined;
+  const leadership = current ? RATING_BONUS[current.skills.LEADERSHIP ?? 'NONE'] : undefined;
+  const luck = current ? RATING_BONUS[current.skills.LUCK ?? 'NONE'] : undefined;
 
   return (
     <div className="rounded-md border border-slate-800 bg-slate-950 p-3">
@@ -102,6 +103,11 @@ export default function HeroPicker({ heroes, selectedName, onChange }: Readonly<
           {leadership !== undefined && (
             <p className="mt-1 text-xs text-amber-300/80">
               {t('army.heroSkillLEADERSHIP')}: {t('army.heroMorale', { value: `+${leadership}` })}
+            </p>
+          )}
+          {luck !== undefined && (
+            <p className="mt-1 text-xs text-amber-300/80">
+              {t('army.heroSkillLUCK')}: {t('army.heroLuck', { value: `+${luck}` })}
             </p>
           )}
         </>

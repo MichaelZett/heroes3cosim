@@ -86,6 +86,17 @@ describe('HeroPicker', () => {
     expect(screen.getByText(/\+1 Moral|\+1 morale/)).toBeInTheDocument();
   });
 
+  it('shows the Luck skill as luck points for the army', () => {
+    const melodia = {
+      ...TEST_HEROES[0],
+      name: 'Melodia',
+      skills: { WISDOM: 'BASIC', LUCK: 'BASIC' } as const,
+    };
+    render(<HeroPicker heroes={[melodia]} selectedName="Melodia" onChange={vi.fn()} />);
+
+    expect(screen.getByText(/\+1 Glück|\+1 luck/)).toBeInTheDocument();
+  });
+
   it('stays silent about morale when the hero has no Leadership', () => {
     render(<HeroPicker heroes={TEST_HEROES} selectedName="Crag Hack" onChange={vi.fn()} />);
 

@@ -17,6 +17,10 @@ public final class BattleLogger {
         LOG.debug("{} ist immun gegen Rueckschlag.", name);
     }
 
+    static void logLuckyStrike(String name) {
+        LOG.debug("Stack von {} hat Glueck und richtet doppelten Schaden an.", name);
+    }
+
     static void logDeath(String name) {
         LOG.debug("Stack von {} ist gestorben.", name);
     }

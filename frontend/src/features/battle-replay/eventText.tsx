@@ -47,6 +47,8 @@ export function EventText({ event, names }: Readonly<EventTextProps>) {
       // Zeile reines Rauschen.
       const attackerMorale = event.attackerMorale ?? 0;
       const defenderMorale = event.defenderMorale ?? 0;
+      const attackerLuck = event.attackerLuck ?? 0;
+      const defenderLuck = event.defenderLuck ?? 0;
       return (
         <>
           <Trans
@@ -67,6 +69,19 @@ export function EventText({ event, names }: Readonly<EventTextProps>) {
                 values={{
                   attackerHero: event.attackerHero ?? '—',
                   defenderHero: event.defenderHero ?? '—',
+                }}
+                components={{ actor: sideSpan('ATTACKER'), target: sideSpan('DEFENDER') }}
+              />
+            </>
+          )}
+          {(attackerLuck !== 0 || defenderLuck !== 0) && (
+            <>
+              {' '}
+              <Trans
+                i18nKey="events.battleStartLuck"
+                values={{
+                  attackerLuck: signed(attackerLuck),
+                  defenderLuck: signed(defenderLuck),
                 }}
                 components={{ actor: sideSpan('ATTACKER'), target: sideSpan('DEFENDER') }}
               />
@@ -181,6 +196,14 @@ export function EventText({ event, names }: Readonly<EventTextProps>) {
       return (
         <Trans
           i18nKey="events.goodMorale"
+          values={{ actor: sideName(event.actor, event.actorSlot ?? 0, names) }}
+          components={{ actor: sideSpan(event.actor) }}
+        />
+      );
+    case 'LuckyStrike':
+      return (
+        <Trans
+          i18nKey="events.luckyStrike"
           values={{ actor: sideName(event.actor, event.actorSlot ?? 0, names) }}
           components={{ actor: sideSpan(event.actor) }}
         />

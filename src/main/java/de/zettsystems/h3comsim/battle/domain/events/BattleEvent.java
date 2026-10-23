@@ -21,6 +21,7 @@ import java.util.List;
         @JsonSubTypes.Type(value = BattleEvent.TwoShots.class, name = "TwoShots"),
         @JsonSubTypes.Type(value = BattleEvent.GoodMorale.class, name = "GoodMorale"),
         @JsonSubTypes.Type(value = BattleEvent.BadMorale.class, name = "BadMorale"),
+        @JsonSubTypes.Type(value = BattleEvent.LuckyStrike.class, name = "LuckyStrike"),
         @JsonSubTypes.Type(value = BattleEvent.MoveBack.class, name = "MoveBack"),
         @JsonSubTypes.Type(value = BattleEvent.DeathStare.class, name = "DeathStare"),
         @JsonSubTypes.Type(value = BattleEvent.Thunderbolts.class, name = "Thunderbolts"),
@@ -49,7 +50,7 @@ import java.util.List;
                 BattleEvent.Defend.class,
                 BattleEvent.Shoot.class, BattleEvent.Melee.class, BattleEvent.Retaliation.class,
                 BattleEvent.TwoBlows.class, BattleEvent.TwoShots.class, BattleEvent.GoodMorale.class,
-                BattleEvent.BadMorale.class,
+                BattleEvent.BadMorale.class, BattleEvent.LuckyStrike.class,
                 BattleEvent.MoveBack.class, BattleEvent.DeathStare.class, BattleEvent.Thunderbolts.class,
                 BattleEvent.Petrifying.class, BattleEvent.Cursing.class, BattleEvent.Poisoning.class,
                 BattleEvent.Diseasing.class, BattleEvent.Aging.class, BattleEvent.FireShield.class,
@@ -69,6 +70,7 @@ import java.util.List;
                 @DiscriminatorMapping(value = "TwoShots", schema = BattleEvent.TwoShots.class),
                 @DiscriminatorMapping(value = "GoodMorale", schema = BattleEvent.GoodMorale.class),
                 @DiscriminatorMapping(value = "BadMorale", schema = BattleEvent.BadMorale.class),
+                @DiscriminatorMapping(value = "LuckyStrike", schema = BattleEvent.LuckyStrike.class),
                 @DiscriminatorMapping(value = "MoveBack", schema = BattleEvent.MoveBack.class),
                 @DiscriminatorMapping(value = "DeathStare", schema = BattleEvent.DeathStare.class),
                 @DiscriminatorMapping(value = "Thunderbolts", schema = BattleEvent.Thunderbolts.class),
@@ -97,7 +99,9 @@ public sealed interface BattleEvent {
             @Schema(description = "Moral-Rating der Angreifer-Armee (Manual S. 43): Stadt-Typen, Untoten-Mischung, Leadership des Helden und Angel-Bonus zusammengerechnet. Untote und Elementare bleiben davon unberührt und haben immer Moral 0.", example = "1") int attackerMorale,
             @Schema(description = "Moral-Rating der Verteidiger-Armee, analog zu `attackerMorale`.", example = "0") int defenderMorale,
             @Schema(description = "Held der Angreifer-Armee. Im Army-Battle immer gesetzt (ohne Auswahl der Standardheld), im Single-Battle null.", example = "Crag Hack", nullable = true) @Nullable String attackerHero,
-            @Schema(description = "Held der Verteidiger-Armee, analog zu `attackerHero`.", example = "Tazar", nullable = true) @Nullable String defenderHero) implements BattleEvent {
+            @Schema(description = "Held der Verteidiger-Armee, analog zu `attackerHero`.", example = "Tazar", nullable = true) @Nullable String defenderHero,
+            @Schema(description = "Glücks-Rating der Angreifer-Armee (Manual S. 44), 0..3: Luck-Fertigkeit des Helden plus gesammeltes Glück, minus eins gegen Devils. Ohne Helden 0.", example = "1") int attackerLuck,
+            @Schema(description = "Glücks-Rating der Verteidiger-Armee, analog zu `attackerLuck`.", example = "0") int defenderLuck) implements BattleEvent {
         public BattleStart {
             obstacles = List.copyOf(obstacles);
             stacks = List.copyOf(stacks);
@@ -190,6 +194,13 @@ public sealed interface BattleEvent {
             description = "Marker: Good-Morale-Trigger — der Stack erhält direkt im Anschluss eine zweite Aktion.")
     record GoodMorale(
             @Schema(description = "Stack mit Morale-Bonus") Side actor,
+            @Schema(description = "Slot des Stacks") int actorSlot) implements BattleEvent {
+    }
+
+    @Schema(name = "LuckyStrike",
+            description = "Marker: Glückstreffer (Manual S. 44) — der unmittelbar folgende Melee-, Shoot- oder Retaliation-Event dieses Stacks richtet doppelten Grundschaden an.")
+    record LuckyStrike(
+            @Schema(description = "Stack mit dem Glückstreffer") Side actor,
             @Schema(description = "Slot des Stacks") int actorSlot) implements BattleEvent {
     }
 

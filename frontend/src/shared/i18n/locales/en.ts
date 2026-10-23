@@ -93,6 +93,8 @@ export const en: Dictionary = {
       'Battle begins: <actor>{{attacker}}</actor> ({{attackerCount}}×) vs. <target>{{defender}}</target> ({{defenderCount}}×).',
     battleStartHeroes:
       'Heroes: <actor>{{attackerHero}}</actor> vs. <target>{{defenderHero}}</target>.',
+    battleStartLuck:
+      'Luck: <actor>attacker {{attackerLuck}}</actor>, <target>defender {{defenderLuck}}</target>.',
     battleStartMorale:
       'Morale: <actor>attacker {{attackerMorale}}</actor>, <target>defender {{defenderMorale}}</target>.',
     move: '<actor>{{actor}}</actor> moves from ({{fromQ}},{{fromR}}) to ({{toQ}},{{toR}}).',
@@ -108,6 +110,7 @@ export const en: Dictionary = {
     twoShots: '<actor>{{actor}}</actor> shoots a second time.',
     goodMorale: '<actor>{{actor}}</actor> has good morale and attacks again.',
     badMorale: '<actor>{{actor}}</actor> has bad morale and loses the action.',
+    luckyStrike: '<actor>{{actor}}</actor> is lucky and deals double damage.',
     deathStare:
       '<actor>{{actor}}</actor> kills {{kills}} of <target>{{target}}</target> with Death Stare.',
     thunderbolts:
@@ -155,8 +158,13 @@ export const en: Dictionary = {
     heroSkillARCHERY: 'Archery',
     heroSkillARMORER: 'Armorer',
     heroSkillLEADERSHIP: 'Leadership',
+    heroSkillLUCK: 'Luck',
     heroSkillEffective: '{{skills}} — effective in combat',
     heroMorale: '{{value}} morale on every creature that is neither undead nor elemental',
+    heroLuck: '{{value}} luck for the whole army',
+    luckBonus: 'Collected luck',
+    moraleBonus: 'Collected morale',
+    bonusHint: 'Artifacts, buildings, visited sites. Army luck at most +3.',
     startBattle: 'Start battle',
     battleTitle: 'Army battle replay',
   },

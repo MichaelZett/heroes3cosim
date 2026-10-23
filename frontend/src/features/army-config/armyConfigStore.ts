@@ -9,11 +9,16 @@ import type { Faction, StackSpec } from '../../shared/api/types';
 export interface ArmyConfigForm {
   attackerFaction: Faction | null;
   attackerStacks: StackSpec[];
-  /** Held der Angreifer-Armee; null = fuehrerlos. */
+  /** Held der Angreifer-Armee; null = Standardheld der Hauptfraktion. */
   attackerHeroName: string | null;
+  /** Gesammeltes Glueck (0..3) und gesammelte Moral (-3..+3) des Angreifer-Helden. */
+  attackerLuckBonus: number;
+  attackerMoraleBonus: number;
   defenderFaction: Faction | null;
   defenderStacks: StackSpec[];
   defenderHeroName: string | null;
+  defenderLuckBonus: number;
+  defenderMoraleBonus: number;
   seedText: string;
 }
 
@@ -30,9 +35,13 @@ const DEFAULT_FORM: ArmyConfigForm = {
   attackerFaction: null,
   attackerStacks: EMPTY_SLOTS,
   attackerHeroName: null,
+  attackerLuckBonus: 0,
+  attackerMoraleBonus: 0,
   defenderFaction: null,
   defenderStacks: EMPTY_SLOTS,
   defenderHeroName: null,
+  defenderLuckBonus: 0,
+  defenderMoraleBonus: 0,
   seedText: '',
 };
 

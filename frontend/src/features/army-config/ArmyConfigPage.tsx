@@ -7,6 +7,7 @@ import { useArmyPresets, useHeroes, useSimulateArmyBattle, useUnits } from '../.
 import { useArmyConfigStore } from './armyConfigStore';
 import { useArmyBattleStore } from './armyBattleStore';
 import FactionPresetPicker from './FactionPresetPicker';
+import HeroBonusPicker from './HeroBonusPicker';
 import HeroPicker from './HeroPicker';
 import SlotEditor from './SlotEditor';
 import type { Faction, FactionPresetDto, HeroDto, StackSpec } from '../../shared/api/types';
@@ -35,8 +36,19 @@ export default function ArmyConfigPage() {
     if (attackerStacks.length === 0 || defenderStacks.length === 0) return;
     const seedNum = form.seedText.trim() === '' ? null : Number(form.seedText);
     simulate.mutate({
-      attacker: { stacks: attackerStacks, heroName: form.attackerHeroName },
-      defender: { stacks: defenderStacks, heroName: form.defenderHeroName },
+      // Aeltere, im Browser gespeicherte Formulare kennen die Bonus-Felder noch nicht.
+      attacker: {
+        stacks: attackerStacks,
+        heroName: form.attackerHeroName,
+        luckBonus: form.attackerLuckBonus ?? 0,
+        moraleBonus: form.attackerMoraleBonus ?? 0,
+      },
+      defender: {
+        stacks: defenderStacks,
+        heroName: form.defenderHeroName,
+        luckBonus: form.defenderLuckBonus ?? 0,
+        moraleBonus: form.defenderMoraleBonus ?? 0,
+      },
       seed: seedNum !== null && Number.isFinite(seedNum) ? seedNum : null,
     });
   }
@@ -105,6 +117,11 @@ export default function ArmyConfigPage() {
             heroes={heroes}
             heroName={form.attackerHeroName}
             onHeroChange={(name) => setForm({ attackerHeroName: name })}
+            luckBonus={form.attackerLuckBonus ?? 0}
+            moraleBonus={form.attackerMoraleBonus ?? 0}
+            onBonusChange={(luck, morale) =>
+              setForm({ attackerLuckBonus: luck, attackerMoraleBonus: morale })
+            }
           />
           <SideColumn
             side="defender"
@@ -119,6 +136,11 @@ export default function ArmyConfigPage() {
             heroes={heroes}
             heroName={form.defenderHeroName}
             onHeroChange={(name) => setForm({ defenderHeroName: name })}
+            luckBonus={form.defenderLuckBonus ?? 0}
+            moraleBonus={form.defenderMoraleBonus ?? 0}
+            onBonusChange={(luck, morale) =>
+              setForm({ defenderLuckBonus: luck, defenderMoraleBonus: morale })
+            }
           />
         </div>
 
@@ -186,6 +208,9 @@ interface SideColumnProps {
   heroes: HeroDto[];
   heroName: string | null;
   onHeroChange: (name: string | null) => void;
+  luckBonus: number;
+  moraleBonus: number;
+  onBonusChange: (luck: number, morale: number) => void;
 }
 
 function SideColumn(props: Readonly<SideColumnProps>) {
@@ -204,6 +229,11 @@ function SideColumn(props: Readonly<SideColumnProps>) {
         heroes={props.heroes}
         selectedName={props.heroName}
         onChange={props.onHeroChange}
+      />
+      <HeroBonusPicker
+        luck={props.luckBonus}
+        morale={props.moraleBonus}
+        onChange={props.onBonusChange}
       />
       <div className="space-y-1.5">
         {SLOTS.map((slot) => (

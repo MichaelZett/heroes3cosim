@@ -73,6 +73,10 @@ public enum UnitSpeciality {
     /** Pit Lord (Manual S. 98): beschwört einmal pro Kampf statt einer Aktion aus einem ganz
      *  gefallenen verbündeten Stack Dämonen. Regeln und Ziel-Wahl in {@link DemonRaising}. */
     RAISE_DEMONS(SPECIAL),
+    /** Devil/Arch Devil (Manual S. 99): „reduce enemy Luck by one when they appear on the
+     *  battlefield". Wirkt auf das Glücks-Rating der Gegenseite ({@link ArmyLuck}), einmal pro
+     *  Armee. */
+    LOWERS_ENEMY_LUCK(SPECIAL),
 
     // Not yet evaluated by the engine — defined for unit catalog tagging only.
     // Most of these need the spell/hero system before they can be evaluated.

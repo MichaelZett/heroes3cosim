@@ -89,6 +89,8 @@ export const de = {
       'Kampf beginnt: <actor>{{attacker}}</actor> ({{attackerCount}}×) gegen <target>{{defender}}</target> ({{defenderCount}}×).',
     battleStartHeroes:
       'Helden: <actor>{{attackerHero}}</actor> gegen <target>{{defenderHero}}</target>.',
+    battleStartLuck:
+      'Glück: <actor>Angreifer {{attackerLuck}}</actor>, <target>Verteidiger {{defenderLuck}}</target>.',
     battleStartMorale:
       'Moral: <actor>Angreifer {{attackerMorale}}</actor>, <target>Verteidiger {{defenderMorale}}</target>.',
     move: '<actor>{{actor}}</actor> bewegt sich von ({{fromQ}},{{fromR}}) nach ({{toQ}},{{toR}}).',
@@ -104,6 +106,7 @@ export const de = {
     twoShots: '<actor>{{actor}}</actor> schießt ein zweites Mal.',
     goodMorale: '<actor>{{actor}}</actor> hat gute Moral und greift erneut an.',
     badMorale: '<actor>{{actor}}</actor> hat schlechte Moral und verliert die Aktion.',
+    luckyStrike: '<actor>{{actor}}</actor> hat Glück und richtet doppelten Schaden an.',
     deathStare:
       '<actor>{{actor}}</actor> tötet {{kills}} Einheit(en) von <target>{{target}}</target> mit Death Stare.',
     thunderbolts:
@@ -153,8 +156,13 @@ export const de = {
     heroSkillARCHERY: 'Bogenschießen',
     heroSkillARMORER: 'Rüstkunde',
     heroSkillLEADERSHIP: 'Führerschaft',
+    heroSkillLUCK: 'Glück',
     heroSkillEffective: '{{skills}} — wirkt im Kampf',
     heroMorale: '{{value}} Moral auf jede Einheit, die nicht untot oder elementar ist',
+    heroLuck: '{{value}} Glück für die ganze Armee',
+    luckBonus: 'Gesammeltes Glück',
+    moraleBonus: 'Gesammelte Moral',
+    bonusHint: 'Artefakte, Gebäude, besuchte Orte. Glück der Armee höchstens +3.',
     startBattle: 'Schlacht starten',
     battleTitle: 'Army-Battle Replay',
   },

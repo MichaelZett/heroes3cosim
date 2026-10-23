@@ -8,6 +8,7 @@ import de.zettsystems.h3comsim.battle.domain.Battle;
 import de.zettsystems.h3comsim.battle.domain.BattleResult;
 import de.zettsystems.h3comsim.battle.domain.BattleSetup;
 import de.zettsystems.h3comsim.battle.domain.Battlefield;
+import de.zettsystems.h3comsim.battle.domain.CollectedBonus;
 import de.zettsystems.h3comsim.battle.domain.Hero;
 import de.zettsystems.h3comsim.battle.domain.HeroCatalog;
 import de.zettsystems.h3comsim.battle.domain.Hex;
@@ -25,6 +26,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 
@@ -38,8 +40,8 @@ public class DefaultArmyBattleService implements ArmyBattleService {
 
         Battlefield battlefield = buildBattlefield(attackerStacks.size(), defenderStacks.size(), seed);
         BattleSetup setup = new BattleSetup(attackerStacks, defenderStacks, battlefield,
-                resolveHero(request.attacker(), attackerStacks),
-                resolveHero(request.defender(), defenderStacks));
+                resolveHero(request.attacker(), attackerStacks), bonusOf(request.attacker()),
+                resolveHero(request.defender(), defenderStacks), bonusOf(request.defender()));
 
         ListEventCollector collector = new ListEventCollector();
         BattleResult result = new Battle(new Random(seed), new StrategicAutoSolver(), collector).simulate(setup);
@@ -55,6 +57,12 @@ public class DefaultArmyBattleService implements ArmyBattleService {
         return HeroCatalog.byName(name)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.BAD_REQUEST, "Unknown hero: " + name));
+    }
+
+    private static CollectedBonus bonusOf(ArmySpec army) {
+        // Der kompakte Konstruktor von ArmySpec setzt fehlende Boni auf 0.
+        return new CollectedBonus(Objects.requireNonNullElse(army.luckBonus(), 0),
+                Objects.requireNonNullElse(army.moraleBonus(), 0));
     }
 
     private static List<Stack> buildStacks(ArmySpec army, Side side) {

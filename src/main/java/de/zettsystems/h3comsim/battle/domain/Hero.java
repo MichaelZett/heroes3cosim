@@ -112,4 +112,17 @@ public record Hero(
             case EXPERT -> 3;
         };
     }
+
+    /**
+     * Luck, Manual S. 37: „The hero's troops gain a bonus to their luck rating" — +1/2/3, geht in
+     * das Armee-Glück ein ({@link ArmyLuck}).
+     */
+    public int luckBonus() {
+        return switch (levelOf(SecondarySkill.LUCK)) {
+            case NONE -> 0;
+            case BASIC -> 1;
+            case ADVANCED -> 2;
+            case EXPERT -> 3;
+        };
+    }
 }

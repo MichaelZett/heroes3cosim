@@ -24,6 +24,8 @@ public class BattleSetup {
     private final @Nullable Hero defenderHero;
     private final int attackerMorale;
     private final int defenderMorale;
+    private final int attackerLuck;
+    private final int defenderLuck;
 
     public BattleSetup(Unit attackerUnit, int attackerCount,
                        Unit defenderUnit, int defenderCount) {
@@ -54,6 +56,18 @@ public class BattleSetup {
     public BattleSetup(List<Stack> attackerStacks, List<Stack> defenderStacks,
                        Battlefield battlefield,
                        @Nullable Hero attackerHero, @Nullable Hero defenderHero) {
+        this(attackerStacks, defenderStacks, battlefield, attackerHero, CollectedBonus.NONE,
+                defenderHero, CollectedBonus.NONE);
+    }
+
+    /**
+     * Variante mit Helden und deren gesammelten Boni (Glück und Moral aus Artefakten, Gebäuden,
+     * Abenteuer-Orten). Ein Bonus ohne Helden bleibt wirkungslos.
+     */
+    public BattleSetup(List<Stack> attackerStacks, List<Stack> defenderStacks,
+                       Battlefield battlefield,
+                       @Nullable Hero attackerHero, CollectedBonus attackerBonus,
+                       @Nullable Hero defenderHero, CollectedBonus defenderBonus) {
         Objects.requireNonNull(attackerStacks, "attackerStacks");
         Objects.requireNonNull(defenderStacks, "defenderStacks");
         if (attackerStacks.isEmpty() || defenderStacks.isEmpty()) {
@@ -62,14 +76,27 @@ public class BattleSetup {
         this.attackerStacks = List.copyOf(attackerStacks);
         this.defenderStacks = List.copyOf(defenderStacks);
         this.battlefield = Objects.requireNonNull(battlefield, "battlefield");
+        Objects.requireNonNull(attackerBonus, "attackerBonus");
+        Objects.requireNonNull(defenderBonus, "defenderBonus");
         this.attackerHero = attackerHero;
         this.defenderHero = defenderHero;
         this.attackerStacks.forEach(stack -> stack.assignCommander(attackerHero));
         this.defenderStacks.forEach(stack -> stack.assignCommander(defenderHero));
-        this.attackerMorale = ArmyMorale.ratingOf(this.attackerStacks, attackerHero, this.defenderStacks);
-        this.defenderMorale = ArmyMorale.ratingOf(this.defenderStacks, defenderHero, this.attackerStacks);
+        this.attackerMorale = ArmyMorale.ratingOf(this.attackerStacks, attackerHero, attackerBonus,
+                this.defenderStacks);
+        this.defenderMorale = ArmyMorale.ratingOf(this.defenderStacks, defenderHero, defenderBonus,
+                this.attackerStacks);
         this.attackerStacks.forEach(stack -> stack.assignArmyMorale(attackerMorale));
         this.defenderStacks.forEach(stack -> stack.assignArmyMorale(defenderMorale));
+        this.attackerLuck = ArmyLuck.ratingOf(attackerHero, attackerBonus, this.defenderStacks);
+        this.defenderLuck = ArmyLuck.ratingOf(defenderHero, defenderBonus, this.attackerStacks);
+        this.attackerStacks.forEach(stack -> stack.assignArmyLuck(attackerLuck));
+        this.defenderStacks.forEach(stack -> stack.assignArmyLuck(defenderLuck));
+    }
+
+    /** Glücks-Rating der Armee (Manual S. 44), 0..3. Ohne Helden immer 0. */
+    public int luckOf(Side side) {
+        return side == Side.ATTACKER ? attackerLuck : defenderLuck;
     }
 
     /**

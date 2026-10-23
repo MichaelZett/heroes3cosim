@@ -86,6 +86,9 @@ export type BattleEvent =
       /** Held der Armee; im Army-Battle immer gesetzt, im Single-Battle null. */
       attackerHero?: string | null;
       defenderHero?: string | null;
+      /** Glücks-Rating der Armee (Manual S. 44), 0..3; ohne Held 0. */
+      attackerLuck?: number;
+      defenderLuck?: number;
     }
   | {
       type: 'Move';
@@ -134,6 +137,8 @@ export type BattleEvent =
   | { type: 'TwoShots'; actor: Side; actorSlot: number }
   | { type: 'GoodMorale'; actor: Side; actorSlot: number }
   | { type: 'BadMorale'; actor: Side; actorSlot: number }
+  /** Der unmittelbar folgende Treffer dieses Stacks richtet doppelten Grundschaden an. */
+  | { type: 'LuckyStrike'; actor: Side; actorSlot: number }
   | {
       type: 'MoveBack';
       actor: Side;
@@ -223,6 +228,10 @@ export interface ArmySpec {
   stacks: StackSpec[];
   /** Name aus /api/heroes. Null bedeutet: Standardheld der Fraktion mit dem groessten Goldwert. */
   heroName?: string | null;
+  /** Gesammeltes Glueck des Helden (Artefakte, Gebaeude, Orte), 0..3. */
+  luckBonus?: number;
+  /** Gesammelte Moral des Helden, -3..+3. */
+  moraleBonus?: number;
 }
 
 export type HeroClass =

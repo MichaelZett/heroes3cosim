@@ -37,6 +37,7 @@ public class Stack {
     private boolean waitedThisTurn;
     private @Nullable Hero commander;
     private int armyMorale;
+    private int armyLuck;
 
     /** Convenience constructor — defaults the side to {@link Side#ATTACKER}. */
     public Stack(Unit unit, int count, Hex position) {
@@ -147,6 +148,24 @@ public class Stack {
     /** Moral-Rating der Armee, zu der dieser Stack gehoert — gesetzt von {@link BattleSetup}. */
     void assignArmyMorale(int rating) {
         this.armyMorale = rating;
+    }
+
+    /** Glücks-Rating der Armee, bereits gekappt — gesetzt von {@link BattleSetup}. */
+    void assignArmyLuck(int rating) {
+        this.armyLuck = rating;
+    }
+
+    /** Glück dieses Stacks, 0..3. Keine Kreatur im Katalog hat eigenes Glück. */
+    public int getLuck() {
+        return armyLuck;
+    }
+
+    /**
+     * Glückstreffer, Manual S. 44: Chance auf doppelten Schaden — 4.2 / 8.3 / 12.5 %. Zieht nur
+     * bei positivem Glück einen Zufallswert; ohne Glück bleibt der Zufallsstrom unangetastet.
+     */
+    public boolean isLucky(RandomGenerator rng) {
+        return armyLuck > 0 && rng.nextInt(1000) < ArmyMorale.triggerChancePerMille(armyLuck);
     }
 
     /**
