@@ -55,6 +55,7 @@ import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.NO_OBSTACLE_P
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.NO_RETALIATION;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.PETRYFYING;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.POISONOUS;
+import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.RAISE_DEMONS;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.REBIRTH;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.REGENERATION;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.RESURRECTION;
@@ -161,6 +162,7 @@ public final class UnitCatalog {
     public static final Unit PEGASUS = basic("Pegasus", new Stats(9, 8, 30, 8), melee(5, 9), FLYING, RAMPART, 4, 250);
     public static final Unit PHOENIX = upgrade("Phoenix", new Stats(21, 18, 200, 21), melee(30, 40), FLYING, CONFLUX, 7, 2000, REBIRTH);
     public static final Unit PIKEMAN = basic("Pikeman", new Stats(4, 5, 10, 4), melee(1, 3), GROUND, CASTLE, 1, 60);
+    public static final Unit PIT_LORD = upgrade("Pit Lord", new Stats(13, 13, 45, 7), melee(13, 17), GROUND, INFERNO, 5, 700, RAISE_DEMONS);
     public static final Unit PIT_FIEND = basic("Pit Fiend", new Stats(13, 13, 45, 6), melee(13, 17), GROUND, INFERNO, 5, 500);
     public static final Unit PIXIE = basic("Pixie", new Stats(2, 2, 3, 7), melee(1, 2), FLYING, CONFLUX, 1, 25);
     public static final Unit POWER_LICH = upgrade("Power Lich", new Stats(13, 10, 40, 7), ranged(11, 15, 24), GROUND, NECROPOLIS, 5, 600, DEATH_CLOUD);
@@ -215,7 +217,7 @@ public final class UnitCatalog {
             MIGHTY_GORGON, MINOTAUR, MINOTAUR_KING, MONK,
             NAGA, NAGA_QUEEN,
             OBSIDIAN_GARGOYLE, OGRE, OGRE_MAGI, ORC, ORC_CHIEFTAIN,
-            PEASANT, PEGASUS, PHOENIX, PIKEMAN, PIT_FIEND, PIXIE, POWER_LICH, PSYCHIC_ELEMENTAL,
+            PEASANT, PEGASUS, PHOENIX, PIKEMAN, PIT_FIEND, PIT_LORD, PIXIE, POWER_LICH, PSYCHIC_ELEMENTAL,
             RED_DRAGON, ROC, ROYAL_GRIFFIN,
             SCORPICORE, SERPENT_FLY, SILVER_PEGASUS, SKELETON, SKELETON_WARRIOR, SPRITE,
             STONE_GARGOYLE, STONE_GOLEM, STORM_ELEMENTAL, SWORDSMAN,

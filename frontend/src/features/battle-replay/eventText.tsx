@@ -297,6 +297,17 @@ export function EventText({ event, names }: Readonly<EventTextProps>) {
           components={{ actor: sideSpan(event.actor), target: sideSpan(event.target) }}
         />
       );
+    case 'RaiseDemons':
+      return (
+        <Trans
+          i18nKey="events.raiseDemons"
+          values={{
+            actor: sideName(event.actor, event.actorSlot ?? 0, names),
+            count: event.raisedCount,
+          }}
+          components={{ actor: sideSpan(event.actor) }}
+        />
+      );
     case 'BattleEnd': {
       const winnerName =
         event.winner === 'DRAW' ? t('events.draw') : sideName(event.winner, 0, names);

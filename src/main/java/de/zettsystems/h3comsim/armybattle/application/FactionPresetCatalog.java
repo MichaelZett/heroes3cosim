@@ -55,7 +55,7 @@ public class FactionPresetCatalog {
         presets.put(Faction.INFERNO, preset(Faction.INFERNO, List.of(
                 new StackSpec("Arch Devil", 1),
                 new StackSpec("Efreet Sultan", 2),
-                new StackSpec("Pit Fiend", 3),
+                new StackSpec("Pit Lord", 3),
                 new StackSpec("Horned Demon", 4),
                 new StackSpec("Cerberus", 5),
                 new StackSpec("Magog", 8),

@@ -33,12 +33,10 @@ import java.util.List;
  */
 public final class GreedyAutoSolver implements AutoSolver {
 
-    /** Spiegelt den Zwei-Kollateral-Deckel aus {@code Battle.applyMeleeSplash}. */
-    private static final int MELEE_SPLASH_CAP = 2;
     /**
      * Gewicht eines Gegner-Treffers gegenüber einem Eigentreffer bei der Lande-Hex-Wahl.
-     * Größer als {@link #MELEE_SPLASH_CAP}, damit ein Gegner-Treffer jede erreichbare Zahl
-     * vermiedener Eigentreffer überwiegt — die Wertung wird dadurch lexikografisch.
+     * Größer als die höchste erreichbare Zahl vermiedener Eigentreffer, damit ein Gegner-Treffer
+     * sie überwiegt — die Wertung wird dadurch lexikografisch.
      */
     private static final int ENEMY_HIT_WEIGHT = 10;
 
@@ -66,9 +64,10 @@ public final class GreedyAutoSolver implements AutoSolver {
      * @param avoidExposedCharges ob ein Anlauf, der allein in die gegnerische Armee führen würde,
      *                            per Wait verschoben wird ({@link #chargeOrWait}). Der
      *                            {@link StrategicAutoSolver} schaltet das ab: Im Duell gewann
-     *                            Greedy damit 0.585 gegen sich selbst ohne (+16.9 Sigma),
-     *                            Strategic verlor leicht (0.490, −2.0 Sigma) — das Warten stört
-     *                            dort die geplanten Fokus-Angriffe.
+     *                            Greedy damit 0.585 gegen sich selbst ohne (+16.9 Sigma) und
+     *                            mit dem Ziel in der Schätzung noch einmal 0.562 (+12.3 Sigma);
+     *                            Strategic verlor in beiden Fassungen leicht (0.490 / 0.493) —
+     *                            das Warten stört dort die geplanten Fokus-Angriffe.
      */
     GreedyAutoSolver(boolean tacticalWait, boolean avoidExposedCharges) {
         this.tacticalWait = tacticalWait;
@@ -131,6 +130,10 @@ public final class GreedyAutoSolver implements AutoSolver {
         Stack resurrectionTarget = Resurrection.worthwhileTarget(active, currentSetup);
         if (resurrectionTarget != null) {
             return new Action.Resurrect(resurrectionTarget);
+        }
+        Stack corpse = DemonRaising.worthwhileCorpse(active, currentSetup);
+        if (corpse != null) {
+            return new Action.RaiseDemons(corpse);
         }
         Hex from = active.position();
         Hex to = opponent.position();
@@ -232,12 +235,11 @@ public final class GreedyAutoSolver implements AutoSolver {
      * getroffene Gegner (+1) minus getroffene eigene Stacks (−1).
      * <ul>
      *   <li>FIRE_BREATH (Dragons): der Inline-Hex hinter dem Primärziel.</li>
-     *   <li>THREE_HEADED_ATTACK (Cerberus): die Nachbarn des Lande-Hex ohne das
-     *       Primärziel, in Nachbar-Reihenfolge und gedeckelt bei zwei Kollateralen —
-     *       so wie {@code Battle.applyMeleeSplash} es abarbeitet.</li>
+     *   <li>THREE_HEADED_ATTACK (Cerberus): die beiden Felder links und rechts des Ziels aus
+     *       Sicht des Lande-Hex, nur Gegner — so wie {@code Battle.applyMeleeSplash}.</li>
      * </ul>
      *
-     * <p>Der Abzug ist der Punkt: der Engine-Splash trifft beide Seiten. Wer nur Gegner
+     * <p>Der Abzug ist der Punkt: der Fire-Breath-Splash trifft beide Seiten. Wer nur Gegner
      * zählt, sucht sich den Lande-Hex mit dem größten Eigenschaden aus, sobald die eigene
      * Linie dicht steht. Und die Wahl ist klebrig — einmal adjacent, schlägt der Stack aus
      * derselben Position weiter zu, ohne sich neu zu positionieren.
@@ -260,19 +262,9 @@ public final class GreedyAutoSolver implements AutoSolver {
             score += collateralValue(active, behindHex(landingHex, primary.position()));
         }
         if (threeHeaded) {
-            int splashes = 0;
-            // Reihenfolge wie Battle.applyMeleeSplash, sonst sagt die Bewertung etwas anderes voraus.
-            for (Hex adj : landingHex.neighbors(Hex.isLeftward(landingHex, primary.position()))) {
-                if (splashes >= MELEE_SPLASH_CAP) {
-                    break;
-                }
-                if (!adj.equals(primary.position())) {
-                    int value = collateralValue(active, adj);
-                    if (value != 0) {
-                        score += value;
-                        splashes++;
-                    }
-                }
+            for (Hex flank : landingHex.commonNeighbors(primary.position())) {
+                // Three-Headed Attack trifft nur Gegner — eigene Stacks auf den Flanken zählen nicht.
+                score += Math.max(0, collateralValue(active, flank));
             }
         }
         return score;
@@ -412,7 +404,7 @@ public final class GreedyAutoSolver implements AutoSolver {
      */
     private Action chargeOrWait(Stack active, Stack target, Hex landing) {
         if (avoidExposedCharges && tacticalWait && !active.hasWaitedThisTurn() && active.getSpeed() > 0
-                && isExposedCharge(active, target, landing)) {
+                && isExposedCharge(active, landing)) {
             return new Action.Wait();
         }
         return new Action.MoveAndMelee(landing, target);
@@ -421,20 +413,18 @@ public final class GreedyAutoSolver implements AutoSolver {
     /**
      * Schätzt den Nahkampfschaden, der das Landefeld in dieser Runde noch treffen kann: Gegner,
      * die nicht schneller sind als der Angreifer (sie haben vermutlich noch nicht gezogen) und das
-     * Feld erreichen. Schützen zählen nicht, sie treffen ihn ohnehin überall; das Ziel selbst
-     * auch nicht, dessen Gegenschlag kommt bei jedem Angriff.
+     * Feld erreichen. Schützen zählen nicht, sie treffen ihn ohnehin überall. Das Ziel zählt mit:
+     * Nach seinem Gegenschlag hat es, wenn es nicht schneller ist, noch seinen eigenen Zug — im
+     * Phoenix- und Black-Dragon-Spiegel war genau das der Schlag, der den Erstzieher erledigte.
      */
-    // enemy != target: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
-    @SuppressWarnings("ReferenceEquality")
-    private boolean isExposedCharge(Stack active, Stack target, Hex landing) {
+    private boolean isExposedCharge(Stack active, Hex landing) {
         BattleSetup setup = currentSetup;
         if (setup == null) {
             return false;
         }
         int incoming = 0;
         for (Stack enemy : setup.opponentsOf(active)) {
-            if (!enemy.isAlive() || enemy == target || enemy.canShoot()
-                    || enemy.getSpeed() > active.getSpeed()) {
+            if (!enemy.isAlive() || enemy.canShoot() || enemy.getSpeed() > active.getSpeed()) {
                 continue;
             }
             if (landing.distanceTo(enemy.position()) <= enemy.getSpeed() + 1) {

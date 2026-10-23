@@ -45,6 +45,8 @@ function snapshotToSideState(snap: StackSnapshot, maxHp: number, startCount: num
 function applySnapshot(side: SideState, snap: StackSnapshot): SideState {
   return {
     ...side,
+    // Pit Lords lassen einen gefallenen Stack als Dämonen zurückkehren — der Name wechselt.
+    unitName: snap.unitName,
     count: snap.count,
     topHp: snap.topHp,
     q: snap.q,
@@ -92,6 +94,7 @@ function applyEvent(stacks: Map<string, SideState>, event: BattleEvent): void {
       snapshotInto(stacks, event.actorAfter);
       return;
     case 'Resurrection':
+    case 'RaiseDemons':
       snapshotInto(stacks, event.targetAfter);
       return;
     default:

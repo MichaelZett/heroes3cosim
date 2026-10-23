@@ -162,6 +162,24 @@ describe('reduceEvents', () => {
     expect(state!.attacker.count).toBe(7);
   });
 
+  it('turns a fallen stack into demons, including the new unit name', () => {
+    const events: BattleEvent[] = [
+      start,
+      {
+        type: 'RaiseDemons',
+        actor: 'ATTACKER',
+        actorSlot: 1,
+        target: 'ATTACKER',
+        targetSlot: 0,
+        raisedCount: 4,
+        targetAfter: { ...attackerStart, unitName: 'Demon', count: 4, topHp: 35 },
+      },
+    ];
+    const state = reduceEvents(events, 2);
+    expect(state!.attacker.unitName).toBe('Demon');
+    expect(state!.attacker.count).toBe(4);
+  });
+
   it('ignores marker events that carry no state mutation', () => {
     const events: BattleEvent[] = [
       start,

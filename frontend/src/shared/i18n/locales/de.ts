@@ -97,6 +97,7 @@ export const de = {
       '<actor>{{actor}}</actor> wird durch Wiedergeburt mit {{count}} Einheiten zurückgebracht.',
     resurrection:
       '<actor>{{actor}}</actor> belebt {{count}} Einheiten von <target>{{target}}</target> wieder.',
+    raiseDemons: '<actor>{{actor}}</actor> beschwören aus den Gefallenen {{count}} Dämonen.',
     battleEnd:
       'Kampf vorbei — Sieger: <winner>{{winner}}</winner> nach {{turns}} Runden. Überlebende: {{attackerSurvivors}} vs. {{defenderSurvivors}}.',
     draw: 'Unentschieden',

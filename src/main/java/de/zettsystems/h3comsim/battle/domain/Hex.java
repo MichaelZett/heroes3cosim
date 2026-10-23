@@ -43,6 +43,17 @@ public record Hex(int q, int r) {
         return result;
     }
 
+    /**
+     * Die Zellen, die an dieser und an {@code other} liegen — bei zwei benachbarten Zellen genau
+     * die beiden links und rechts der Verbindungslinie. Reihenfolge in Blickrichtung auf
+     * {@code other}.
+     */
+    public List<Hex> commonNeighbors(Hex other) {
+        return neighbors(isLeftward(this, other)).stream()
+                .filter(n -> n.isAdjacent(other))
+                .toList();
+    }
+
     /** Ob {@code to} von {@code from} aus gesehen links liegt (waagerechte Lage {@code q + r/2}). */
     public static boolean isLeftward(Hex from, Hex to) {
         return 2 * to.q + to.r < 2 * from.q + from.r;

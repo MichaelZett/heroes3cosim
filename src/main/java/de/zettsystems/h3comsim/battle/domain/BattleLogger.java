@@ -121,6 +121,10 @@ public final class BattleLogger {
                 shieldedName, reverseDamage, attackerName);
     }
 
+    static void logRaiseDemons(String caster, String fallen, int demons) {
+        LOG.debug("{} beschwoert aus den gefallenen {} {} Daemonen.", caster, fallen, demons);
+    }
+
     static void logResurrection(String caster, String target, int restoredCount) {
         LOG.debug("{} belebt {} Einheiten von {} wieder.", caster, restoredCount, target);
     }

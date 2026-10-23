@@ -189,6 +189,17 @@ class BattleEventSubtypesTest {
     }
 
     @Test
+    void raise_demons_carries_caster_corpse_and_snapshot() {
+        BattleEvent.RaiseDemons raised =
+                new BattleEvent.RaiseDemons(Side.ATTACKER, 2, Side.ATTACKER, 5, 4, ATTACKER_SNAP);
+
+        assertThat(raised.actorSlot()).isEqualTo(2);
+        assertThat(raised.targetSlot()).isEqualTo(5);
+        assertThat(raised.raisedCount()).isEqualTo(4);
+        assertThat(raised.targetAfter()).isSameAs(ATTACKER_SNAP);
+    }
+
+    @Test
     void every_subtype_is_registered_for_json_and_openapi() {
         // Ein neuer Event-Typ, der nur als Record existiert, serialisiert ohne "type" und fehlt
         // im OpenAPI-Schema — das Frontend könnte ihn nicht zuordnen.

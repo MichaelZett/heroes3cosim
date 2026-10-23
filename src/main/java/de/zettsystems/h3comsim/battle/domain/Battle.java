@@ -219,8 +219,28 @@ public final class Battle {
             case Action.Melee(Stack target) -> meleeAttack(active, target, 0, setup);
             case Action.Shoot(Stack target) -> shoot(active, target, setup);
             case Action.Resurrect(Stack target) -> resurrect(active, target);
+            case Action.RaiseDemons(Stack corpse) -> raiseDemons(active, corpse, setup);
         }
         return true;
+    }
+
+    /**
+     * Pit Lord: beschwört aus einem ganz gefallenen verbündeten Stack Dämonen (Manual S. 98).
+     * Verbraucht die Aktion. Ein ungültiger Leichnam oder ein zweiter Versuch fällt auf Defend
+     * zurück, wie bei {@link #resurrect}.
+     */
+    private void raiseDemons(Stack caster, Stack corpse, BattleSetup setup) {
+        if (!caster.canRaiseDemons() || !DemonRaising.isValidCorpse(caster, corpse, setup)) {
+            emitDefend(caster);
+            return;
+        }
+        int demons = DemonRaising.demonsFrom(caster, corpse);
+        String fallen = corpse.getName();
+        corpse.riseAs(UnitCatalog.DEMON, demons);
+        caster.markDemonsRaised();
+        BattleLogger.logRaiseDemons(caster.getName(), fallen, demons);
+        events.emit(new BattleEvent.RaiseDemons(caster.side(), caster.slot(),
+                corpse.side(), corpse.slot(), demons, snapshot(corpse)));
     }
 
     /**
@@ -370,23 +390,18 @@ public final class Battle {
      * Stack auf dem inline-Hex direkt hinter dem Hauptziel. Splash-Hits triggern keine
      * Retaliation und keine After-Attack-Procs — sie sind reine Collateral-Hits.
      *
-     * <p><strong>Friendly Fire</strong>: H3-Splash trifft auch eigene Stacks im Radius —
-     * Engine iteriert über {@link #findStackAt}, nicht nur über Gegner.
+     * <p>Three-Headed Attack trifft nur Gegner, und zwar auf den beiden Feldern links und rechts
+     * des Ziels aus der Angriffsrichtung — den gemeinsamen Nachbarn von Cerberus und Ziel.
+     * <strong>Fire Breath</strong> trifft dagegen auch eigene Stacks auf dem Feld dahinter.
      */
-    // collateral/candidate != primary: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
+    // collateral != primary: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
     @SuppressWarnings("ReferenceEquality")
     private void applyMeleeSplash(Stack active, Stack primary, BattleSetup setup) {
         if (active.hasSpeciality(UnitSpeciality.THREE_HEADED_ATTACK)) {
-            int splashes = 0;
-            boolean leftward = Hex.isLeftward(active.position(), primary.position());
-            for (Hex neighbor : active.position().neighbors(leftward)) {
-                if (splashes >= 2) {
-                    break;
-                }
-                Stack candidate = findStackAt(active, neighbor, setup);
-                if (candidate != null && candidate != primary && candidate.isAlive()) {
+            for (Hex flank : active.position().commonNeighbors(primary.position())) {
+                Stack candidate = findStackAt(active, flank, setup);
+                if (candidate != null && candidate.isAlive() && candidate.side() != active.side()) {
                     applySplashHit(active, candidate, AttackType.HAND_TO_HAND);
-                    splashes++;
                 }
             }
         }
@@ -539,8 +554,8 @@ public final class Battle {
     }
 
     /**
-     * Multi-Stack-Splash für Fernkampf: SPLASH_SHOT (Magog) trifft bis zu zwei zusätzliche
-     * Stacks adjazent zum Hauptziel; DEATH_CLOUD (Lich/Power Lich) trifft alle
+     * Multi-Stack-Splash für Fernkampf: SPLASH_SHOT (Magog, Manual S. 97) trifft alle Stacks
+     * im 1-Hex-Radius um das Hauptziel; DEATH_CLOUD (Lich/Power Lich) trifft alle
      * <strong>non-undead</strong> Stacks im 1-Hex-Radius (Manual S. 101).
      *
      * <p><strong>Friendly Fire</strong>: H3-Splash trifft auch eigene Stacks im Radius
@@ -557,19 +572,14 @@ public final class Battle {
     }
 
     /**
-     * SPLASH_SHOT: maximal zwei Kollateral-Stacks rund um das Hauptziel, Undead inklusive.
+     * SPLASH_SHOT: alle Stacks rund um das Hauptziel, wie ein Fireball — Undead inklusive.
      */
     private void applySplashShot(Stack active, Stack primary, BattleSetup setup) {
-        int splashes = 0;
         boolean leftward = Hex.isLeftward(active.position(), primary.position());
         for (Hex neighbor : primary.position().neighbors(leftward)) {
-            if (splashes >= 2) {
-                break;
-            }
             Stack collateral = collateralAt(active, neighbor, primary, setup);
             if (collateral != null) {
                 applySplashHit(active, collateral, AttackType.LONG_RANGE);
-                splashes++;
             }
         }
     }

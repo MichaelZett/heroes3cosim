@@ -37,8 +37,6 @@ public final class StrategicAutoSolver implements AutoSolver {
 
     private static final double DOMINANCE_THRESHOLD = 1.2;
     private static final int SHOT_HORIZON = 4;
-    /** Spiegelt den Zwei-Kollateral-Deckel aus {@code Battle.applySplashShot}. */
-    private static final int SPLASH_SHOT_COLLATERAL_CAP = 2;
 
     private final GreedyAutoSolver greedy;
 
@@ -186,6 +184,10 @@ public final class StrategicAutoSolver implements AutoSolver {
         Stack resurrectionTarget = Resurrection.worthwhileTarget(active, currentSetup);
         if (resurrectionTarget != null) {
             return new Action.Resurrect(resurrectionTarget);
+        }
+        Stack corpse = DemonRaising.worthwhileCorpse(active, currentSetup);
+        if (corpse != null) {
+            return new Action.RaiseDemons(corpse);
         }
         // (A) Tank-Pattern: positionieren statt chargen, wenn eigene Schützen Schutz brauchen.
         // Aktiviert sich bei RANGED_DOMINANT (alle Schützen schutzwürdig) und bei BALANCED
@@ -349,9 +351,8 @@ public final class StrategicAutoSolver implements AutoSolver {
      *
      * <p>Friendly Fire ist engine-seitig aktiv — {@code Battle.findStackAt} iteriert beide
      * Seiten. Eine Heuristik, die nur Gegner-Cluster zählt, optimiert deshalb auf Eigentore.
-     * Die Trefferzählung spiegelt die Engine-Geometrie exakt: SPLASH_SHOT nimmt die ersten
-     * zwei Stacks in Nachbar-Reihenfolge (eigene konkurrieren um dieselben zwei Plätze),
-     * DEATH_CLOUD trifft alle Nachbarn außer Untoten.
+     * Die Trefferzählung spiegelt die Engine-Geometrie exakt: SPLASH_SHOT trifft alle Nachbarn,
+     * DEATH_CLOUD alle Nachbarn außer Untoten.
      *
      * @return bestes Ziel oder {@code null}, wenn kein Ziel einen positiven Netto-Splash hat
      */
@@ -377,22 +378,15 @@ public final class StrategicAutoSolver implements AutoSolver {
     /**
      * Zählt die Splash-Kollateralen rund um {@code target}, getrennt nach Gegnern und eigenen
      * Stacks. Spiegelt {@code Battle.applySplashShot} / {@code Battle.applyDeathCloud}:
-     * gleiche Nachbar-Reihenfolge, gleicher Zwei-Treffer-Deckel bei SPLASH_SHOT, gleiche
-     * Undead-Ausnahme bei DEATH_CLOUD. Der Schütze selbst und das Hauptziel zählen nicht mit.
+     * alle Nachbarn des Ziels, Undead-Ausnahme bei DEATH_CLOUD. Der Schütze selbst und das Hauptziel zählen nicht mit.
      */
     private static SplashTally tallySplash(Stack active, Stack target, List<Stack> aliveAll,
                                            boolean deathCloud) {
         int enemyHits = 0;
         int ownHits = 0;
-        int found = 0;
-        boolean leftward = Hex.isLeftward(active.position(), target.position());
-        for (Hex neighbor : target.position().neighbors(leftward)) {
-            if (!deathCloud && found >= SPLASH_SHOT_COLLATERAL_CAP) {
-                break;
-            }
+        for (Hex neighbor : target.position().neighbors()) {
             Stack collateral = splashVictimAt(neighbor, active, target, aliveAll, deathCloud);
             if (collateral != null) {
-                found++;
                 if (collateral.side() == active.side()) {
                     ownHits++;
                 } else {
