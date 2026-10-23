@@ -77,10 +77,18 @@ import static de.zettsystems.h3comsim.battle.domain.SkillLevel.BASIC;
  */
 public final class HeroCatalog {
 
+    // Mehrfach vergebene Spezialitäten ohne Kampfwirkung. Vor den Helden, weil statische Felder
+    // in Reihenfolge initialisiert werden.
+    private static final HeroSpecialty GOLD = other("+350 gold per day");
+    private static final HeroSpecialty BALLISTA = other("Ballista");
+    private static final HeroSpecialty HASTE = spell("Haste");
+    private static final HeroSpecialty WEAKNESS = spell("Weakness");
+    private static final HeroSpecialty STONE_SKIN = spell("Stone Skin");
+
     // Standardhelden, Begründung je Fraktion in DEFAULTS.
     public static final Hero SORSHA = hero("Sorsha", KNIGHT, creature(UnitCatalog.SWORDSMAN),
             Map.of(LEADERSHIP, BASIC, OFFENSE, BASIC));
-    public static final Hero JENOVA = hero("Jenova", RANGER, other("+350 gold per day"),
+    public static final Hero JENOVA = hero("Jenova", RANGER, GOLD,
             Map.of(ARCHERY, ADVANCED));
     public static final Hero NEELA = hero("Neela", ALCHEMIST, skill(ARMORER),
             Map.of(SCHOLAR, BASIC, ARMORER, BASIC));
@@ -88,7 +96,7 @@ public final class HeroCatalog {
             Map.of(OFFENSE, ADVANCED));
     public static final Hero TAMIKA = hero("Tamika", DEATH_KNIGHT, creature(UnitCatalog.BLACK_KNIGHT),
             Map.of(NECROMANCY, BASIC, OFFENSE, BASIC));
-    public static final Hero DAMACON = hero("Damacon", OVERLORD, other("+350 gold per day"),
+    public static final Hero DAMACON = hero("Damacon", OVERLORD, GOLD,
             Map.of(OFFENSE, ADVANCED));
     public static final Hero CRAG_HACK = hero("Crag Hack", BARBARIAN, skill(OFFENSE),
             Map.of(OFFENSE, ADVANCED));
@@ -98,7 +106,7 @@ public final class HeroCatalog {
 
     private static final List<Hero> ALL = List.of(
             // Castle — Knight
-            hero("Christian", KNIGHT, other("Ballista"), Map.of(LEADERSHIP, BASIC, ARTILLERY, BASIC)),
+            hero("Christian", KNIGHT, BALLISTA, Map.of(LEADERSHIP, BASIC, ARTILLERY, BASIC)),
             hero("Edric", KNIGHT, creature(UnitCatalog.GRIFFIN), Map.of(LEADERSHIP, BASIC, ARMORER, BASIC)),
             hero("Lord Haart", KNIGHT, skill(ESTATES), Map.of(LEADERSHIP, BASIC, ESTATES, BASIC)),
             hero("Orrin", KNIGHT, skill(ARCHERY), Map.of(LEADERSHIP, BASIC, ARCHERY, BASIC)),
@@ -107,12 +115,12 @@ public final class HeroCatalog {
             hero("Tyris", KNIGHT, creature(UnitCatalog.CAVALIER), Map.of(LEADERSHIP, BASIC, TACTICS, BASIC)),
             hero("Valeska", KNIGHT, creature(UnitCatalog.ARCHER), Map.of(LEADERSHIP, BASIC, ARCHERY, BASIC)),
             // Castle — Cleric
-            hero("Adela", CLERIC, other("Spell: Bless"), Map.of(WISDOM, BASIC, DIPLOMACY, BASIC)),
-            hero("Adelaide", CLERIC, other("Spell: Frost Ring"), Map.of(WISDOM, ADVANCED)),
-            hero("Caitlin", CLERIC, other("+350 gold per day"), Map.of(WISDOM, BASIC, INTELLIGENCE, BASIC)),
-            hero("Cuthbert", CLERIC, other("Spell: Weakness"), Map.of(WISDOM, BASIC, ESTATES, BASIC)),
+            hero("Adela", CLERIC, spell("Bless"), Map.of(WISDOM, BASIC, DIPLOMACY, BASIC)),
+            hero("Adelaide", CLERIC, spell("Frost Ring"), Map.of(WISDOM, ADVANCED)),
+            hero("Caitlin", CLERIC, GOLD, Map.of(WISDOM, BASIC, INTELLIGENCE, BASIC)),
+            hero("Cuthbert", CLERIC, WEAKNESS, Map.of(WISDOM, BASIC, ESTATES, BASIC)),
             hero("Ingham", CLERIC, creature(UnitCatalog.MONK), Map.of(WISDOM, BASIC, MYSTICISM, BASIC)),
-            hero("Loynis", CLERIC, other("Spell: Prayer"), Map.of(WISDOM, BASIC, LEARNING, BASIC)),
+            hero("Loynis", CLERIC, spell("Prayer"), Map.of(WISDOM, BASIC, LEARNING, BASIC)),
             hero("Rion", CLERIC, skill(FIRST_AID), Map.of(WISDOM, BASIC, FIRST_AID, BASIC)),
             hero("Sanya", CLERIC, skill(EAGLE_EYE), Map.of(WISDOM, BASIC, EAGLE_EYE, BASIC)),
             // Rampart — Ranger
@@ -128,13 +136,13 @@ public final class HeroCatalog {
             hero("Ufretin", RANGER, creature(UnitCatalog.DWARF), Map.of(RESISTANCE, BASIC, LUCK, BASIC)),
             // Rampart — Druid
             hero("Aeris", DRUID, creature(UnitCatalog.PEGASUS), Map.of(WISDOM, BASIC, SCOUTING, BASIC)),
-            hero("Alagar", DRUID, other("Spell: Ice Bolt"), Map.of(WISDOM, BASIC, SORCERY, BASIC)),
-            hero("Coronius", DRUID, other("Spell: Slayer"), Map.of(WISDOM, BASIC, SCHOLAR, BASIC)),
+            hero("Alagar", DRUID, spell("Ice Bolt"), Map.of(WISDOM, BASIC, SORCERY, BASIC)),
+            hero("Coronius", DRUID, spell("Slayer"), Map.of(WISDOM, BASIC, SCHOLAR, BASIC)),
             hero("Elleshar", DRUID, skill(INTELLIGENCE), Map.of(WISDOM, BASIC, INTELLIGENCE, BASIC)),
             hero("Gem", DRUID, skill(FIRST_AID), Map.of(WISDOM, BASIC, FIRST_AID, BASIC)),
             hero("Malcom", DRUID, skill(EAGLE_EYE), Map.of(WISDOM, BASIC, EAGLE_EYE, BASIC)),
-            hero("Melodia", DRUID, other("Spell: Fortune"), Map.of(WISDOM, BASIC, LUCK, BASIC)),
-            hero("Uland", DRUID, other("Spell: Cure"), Map.of(WISDOM, ADVANCED, BALLISTICS, BASIC)),
+            hero("Melodia", DRUID, spell("Fortune"), Map.of(WISDOM, BASIC, LUCK, BASIC)),
+            hero("Uland", DRUID, spell("Cure"), Map.of(WISDOM, ADVANCED, BALLISTICS, BASIC)),
             // Tower — Alchemist
             hero("Fafner", ALCHEMIST, creature(UnitCatalog.NAGA), Map.of(SCHOLAR, BASIC, RESISTANCE, BASIC)),
             hero("Iona", ALCHEMIST, creature(UnitCatalog.GENIE), Map.of(SCHOLAR, BASIC, INTELLIGENCE, BASIC)),
@@ -145,15 +153,15 @@ public final class HeroCatalog {
                     Map.of(MYSTICISM, BASIC, SCOUTING, BASIC)),
             hero("Rissa", ALCHEMIST, other("+1 mercury per day"), Map.of(MYSTICISM, BASIC, OFFENSE, BASIC)),
             hero("Thane", ALCHEMIST, creature(UnitCatalog.GENIE), Map.of(SCHOLAR, ADVANCED)),
-            hero("Torosar", ALCHEMIST, other("Ballista"), Map.of(MYSTICISM, BASIC, TACTICS, BASIC)),
+            hero("Torosar", ALCHEMIST, BALLISTA, Map.of(MYSTICISM, BASIC, TACTICS, BASIC)),
             // Tower — Wizard
-            hero("Aine", WIZARD, other("+350 gold per day"), Map.of(WISDOM, BASIC, SCHOLAR, BASIC)),
-            hero("Astral", WIZARD, other("Spell: Hypnotize"), Map.of(WISDOM, ADVANCED)),
-            hero("Cyra", WIZARD, other("Spell: Haste"), Map.of(WISDOM, BASIC, DIPLOMACY, BASIC)),
-            hero("Daremyth", WIZARD, other("Spell: Fortune"), Map.of(WISDOM, BASIC, INTELLIGENCE, BASIC)),
+            hero("Aine", WIZARD, GOLD, Map.of(WISDOM, BASIC, SCHOLAR, BASIC)),
+            hero("Astral", WIZARD, spell("Hypnotize"), Map.of(WISDOM, ADVANCED)),
+            hero("Cyra", WIZARD, HASTE, Map.of(WISDOM, BASIC, DIPLOMACY, BASIC)),
+            hero("Daremyth", WIZARD, spell("Fortune"), Map.of(WISDOM, BASIC, INTELLIGENCE, BASIC)),
             hero("Halon", WIZARD, skill(MYSTICISM), Map.of(WISDOM, BASIC, MYSTICISM, BASIC)),
             hero("Serena", WIZARD, skill(EAGLE_EYE), Map.of(WISDOM, BASIC, EAGLE_EYE, BASIC)),
-            hero("Solmyr", WIZARD, other("Spell: Chain Lightning"), Map.of(WISDOM, BASIC, SORCERY, BASIC)),
+            hero("Solmyr", WIZARD, spell("Chain Lightning"), Map.of(WISDOM, BASIC, SORCERY, BASIC)),
             hero("Theodorus", WIZARD, creature(UnitCatalog.MAGI), Map.of(WISDOM, BASIC, BALLISTICS, BASIC)),
             // Inferno — Demoniac
             hero("Calh", DEMONIAC, creature(UnitCatalog.GOG), Map.of(ARCHERY, BASIC, SCOUTING, BASIC)),
@@ -161,22 +169,22 @@ public final class HeroCatalog {
             hero("Ignatius", DEMONIAC, creature(UnitCatalog.IMP), Map.of(TACTICS, BASIC, RESISTANCE, BASIC)),
             hero("Marius", DEMONIAC, creature(UnitCatalog.DEMON), Map.of(ARMORER, ADVANCED)),
             NYMUS,
-            hero("Octavia", DEMONIAC, other("+350 gold per day"), Map.of(SCHOLAR, BASIC, OFFENSE, BASIC)),
-            hero("Pyre", DEMONIAC, other("Ballista"), Map.of(LOGISTICS, BASIC, ARTILLERY, BASIC)),
+            hero("Octavia", DEMONIAC, GOLD, Map.of(SCHOLAR, BASIC, OFFENSE, BASIC)),
+            hero("Pyre", DEMONIAC, BALLISTA, Map.of(LOGISTICS, BASIC, ARTILLERY, BASIC)),
             hero("Rashka", DEMONIAC, creature(UnitCatalog.EFREET), Map.of(SCHOLAR, BASIC, WISDOM, BASIC)),
             // Inferno — Heretic
-            hero("Ash", HERETIC, other("Spell: Bloodlust"), Map.of(WISDOM, BASIC, EAGLE_EYE, BASIC)),
+            hero("Ash", HERETIC, spell("Bloodlust"), Map.of(WISDOM, BASIC, EAGLE_EYE, BASIC)),
             hero("Axsis", HERETIC, skill(MYSTICISM), Map.of(WISDOM, BASIC, MYSTICISM, BASIC)),
             hero("Ayden", HERETIC, skill(INTELLIGENCE), Map.of(WISDOM, BASIC, INTELLIGENCE, BASIC)),
             hero("Calid", HERETIC, other("+1 sulfur per day"), Map.of(WISDOM, BASIC, LEARNING, BASIC)),
-            hero("Olema", HERETIC, other("Spell: Weakness"), Map.of(WISDOM, BASIC, BALLISTICS, BASIC)),
-            hero("Xarfax", HERETIC, other("Spell: Fireball"), Map.of(WISDOM, BASIC, LEADERSHIP, BASIC)),
-            hero("Xyron", HERETIC, other("Spell: Inferno"), Map.of(WISDOM, BASIC, SCHOLAR, BASIC)),
+            hero("Olema", HERETIC, WEAKNESS, Map.of(WISDOM, BASIC, BALLISTICS, BASIC)),
+            hero("Xarfax", HERETIC, spell("Fireball"), Map.of(WISDOM, BASIC, LEADERSHIP, BASIC)),
+            hero("Xyron", HERETIC, spell("Inferno"), Map.of(WISDOM, BASIC, SCHOLAR, BASIC)),
             hero("Zydar", HERETIC, skill(SORCERY), Map.of(WISDOM, BASIC, SORCERY, BASIC)),
             // Necropolis — Death Knight
             hero("Charna", DEATH_KNIGHT, creature(UnitCatalog.WIGHT),
                     Map.of(NECROMANCY, BASIC, TACTICS, BASIC)),
-            hero("Clavius", DEATH_KNIGHT, other("+350 gold per day"),
+            hero("Clavius", DEATH_KNIGHT, GOLD,
                     Map.of(NECROMANCY, BASIC, OFFENSE, BASIC)),
             hero("Galthran", DEATH_KNIGHT, creature(UnitCatalog.SKELETON),
                     Map.of(NECROMANCY, BASIC, ARMORER, BASIC)),
@@ -189,22 +197,22 @@ public final class HeroCatalog {
             hero("Vokial", DEATH_KNIGHT, creature(UnitCatalog.VAMPIRE),
                     Map.of(NECROMANCY, BASIC, ARTILLERY, BASIC)),
             // Necropolis — Necromancer
-            hero("Aislinn", NECROMANCER, other("Spell: Meteor Shower"),
+            hero("Aislinn", NECROMANCER, spell("Meteor Shower"),
                     Map.of(NECROMANCY, BASIC, WISDOM, BASIC)),
-            hero("Nagash", NECROMANCER, other("+350 gold per day"),
+            hero("Nagash", NECROMANCER, GOLD,
                     Map.of(NECROMANCY, BASIC, INTELLIGENCE, BASIC)),
             hero("Nimbus", NECROMANCER, skill(EAGLE_EYE), Map.of(NECROMANCY, BASIC, EAGLE_EYE, BASIC)),
             hero("Sandro", NECROMANCER, skill(SORCERY), Map.of(NECROMANCY, BASIC, SORCERY, BASIC)),
-            hero("Septienna", NECROMANCER, other("Spell: Death Ripple"),
+            hero("Septienna", NECROMANCER, spell("Death Ripple"),
                     Map.of(NECROMANCY, BASIC, SCHOLAR, BASIC)),
-            hero("Thant", NECROMANCER, other("Spell: Animate Dead"),
+            hero("Thant", NECROMANCER, spell("Animate Dead"),
                     Map.of(NECROMANCY, BASIC, MYSTICISM, BASIC)),
             hero("Vidomina", NECROMANCER, skill(NECROMANCY), Map.of(NECROMANCY, ADVANCED)),
-            hero("Xsi", NECROMANCER, other("Spell: Stone Skin"), Map.of(NECROMANCY, BASIC, LEARNING, BASIC)),
+            hero("Xsi", NECROMANCER, STONE_SKIN, Map.of(NECROMANCY, BASIC, LEARNING, BASIC)),
             // Dungeon — Overlord
             hero("Ajit", OVERLORD, creature(UnitCatalog.BEHOLDER),
                     Map.of(LEADERSHIP, BASIC, RESISTANCE, BASIC)),
-            hero("Arlach", OVERLORD, other("Ballista"), Map.of(OFFENSE, BASIC, ARTILLERY, BASIC)),
+            hero("Arlach", OVERLORD, BALLISTA, Map.of(OFFENSE, BASIC, ARTILLERY, BASIC)),
             hero("Dace", OVERLORD, creature(UnitCatalog.MINOTAUR), Map.of(TACTICS, BASIC, OFFENSE, BASIC)),
             DAMACON,
             hero("Gunnar", OVERLORD, skill(LOGISTICS), Map.of(TACTICS, BASIC, LOGISTICS, BASIC)),
@@ -215,12 +223,12 @@ public final class HeroCatalog {
             hero("Synca", OVERLORD, creature(UnitCatalog.MANTICORE),
                     Map.of(LEADERSHIP, BASIC, SCHOLAR, BASIC)),
             // Dungeon — Warlock
-            hero("Alamar", WARLOCK, other("Spell: Resurrection"), Map.of(WISDOM, BASIC, SCHOLAR, BASIC)),
-            hero("Darkstorn", WARLOCK, other("Spell: Stone Skin"), Map.of(WISDOM, BASIC, LEARNING, BASIC)),
-            hero("Deemer", WARLOCK, other("Spell: Meteor Shower"), Map.of(WISDOM, BASIC, SCOUTING, ADVANCED)),
+            hero("Alamar", WARLOCK, spell("Resurrection"), Map.of(WISDOM, BASIC, SCHOLAR, BASIC)),
+            hero("Darkstorn", WARLOCK, STONE_SKIN, Map.of(WISDOM, BASIC, LEARNING, BASIC)),
+            hero("Deemer", WARLOCK, spell("Meteor Shower"), Map.of(WISDOM, BASIC, SCOUTING, ADVANCED)),
             hero("Geon", WARLOCK, skill(EAGLE_EYE), Map.of(WISDOM, BASIC, EAGLE_EYE, BASIC)),
             hero("Jaegar", WARLOCK, skill(MYSTICISM), Map.of(WISDOM, BASIC, MYSTICISM, BASIC)),
-            hero("Jeddite", WARLOCK, other("Spell: Resurrection"), Map.of(WISDOM, ADVANCED)),
+            hero("Jeddite", WARLOCK, spell("Resurrection"), Map.of(WISDOM, ADVANCED)),
             hero("Malekith", WARLOCK, skill(SORCERY), Map.of(WISDOM, BASIC, SORCERY, BASIC)),
             hero("Sephinroth", WARLOCK, other("+1 crystal per day"),
                     Map.of(WISDOM, BASIC, INTELLIGENCE, BASIC)),
@@ -228,7 +236,7 @@ public final class HeroCatalog {
             CRAG_HACK,
             hero("Gretchin", BARBARIAN, creature(UnitCatalog.GOBLIN),
                     Map.of(OFFENSE, BASIC, PATHFINDING, BASIC)),
-            hero("Gurnisson", BARBARIAN, other("Ballista"), Map.of(OFFENSE, BASIC, ARTILLERY, BASIC)),
+            hero("Gurnisson", BARBARIAN, BALLISTA, Map.of(OFFENSE, BASIC, ARTILLERY, BASIC)),
             hero("Jabarkas", BARBARIAN, creature(UnitCatalog.ORC), Map.of(OFFENSE, BASIC, ARCHERY, BASIC)),
             hero("Krellion", BARBARIAN, creature(UnitCatalog.OGRE),
                     Map.of(OFFENSE, BASIC, RESISTANCE, BASIC)),
@@ -242,9 +250,9 @@ public final class HeroCatalog {
             hero("Gundula", BATTLE_MAGE, skill(OFFENSE), Map.of(WISDOM, BASIC, OFFENSE, BASIC)),
             hero("Oris", BATTLE_MAGE, skill(EAGLE_EYE), Map.of(WISDOM, BASIC, EAGLE_EYE, BASIC)),
             hero("Saurug", BATTLE_MAGE, other("+1 gem per day"), Map.of(WISDOM, BASIC, RESISTANCE, BASIC)),
-            hero("Terek", BATTLE_MAGE, other("Spell: Haste"), Map.of(WISDOM, BASIC, TACTICS, BASIC)),
+            hero("Terek", BATTLE_MAGE, HASTE, Map.of(WISDOM, BASIC, TACTICS, BASIC)),
             hero("Vey", BATTLE_MAGE, creature(UnitCatalog.OGRE), Map.of(WISDOM, BASIC, LEADERSHIP, BASIC)),
-            hero("Zubin", BATTLE_MAGE, other("Spell: Precision"), Map.of(WISDOM, BASIC, ARTILLERY, BASIC)),
+            hero("Zubin", BATTLE_MAGE, spell("Precision"), Map.of(WISDOM, BASIC, ARTILLERY, BASIC)),
             // Fortress — Beastmaster
             hero("Alkin", BEASTMASTER, creature(UnitCatalog.GORGON), Map.of(ARMORER, BASIC, OFFENSE, BASIC)),
             hero("Broghild", BEASTMASTER, creature(UnitCatalog.WYVERN),
@@ -253,7 +261,7 @@ public final class HeroCatalog {
                     Map.of(ARMORER, BASIC, RESISTANCE, BASIC)),
             hero("Drakon", BEASTMASTER, creature(UnitCatalog.GNOLL),
                     Map.of(ARMORER, BASIC, LEADERSHIP, BASIC)),
-            hero("Gerwulf", BEASTMASTER, other("Ballista"), Map.of(ARMORER, BASIC, ARTILLERY, BASIC)),
+            hero("Gerwulf", BEASTMASTER, BALLISTA, Map.of(ARMORER, BASIC, ARTILLERY, BASIC)),
             hero("Korbac", BEASTMASTER, creature(UnitCatalog.SERPENT_FLY),
                     Map.of(ARMORER, BASIC, PATHFINDING, BASIC)),
             TAZAR,
@@ -261,8 +269,8 @@ public final class HeroCatalog {
                     Map.of(ARMORER, BASIC, ARCHERY, BASIC)),
             // Fortress — Witch
             hero("Andra", WITCH, skill(INTELLIGENCE), Map.of(WISDOM, BASIC, INTELLIGENCE, BASIC)),
-            hero("Merist", WITCH, other("Spell: Stone Skin"), Map.of(WISDOM, BASIC, LEARNING, BASIC)),
-            hero("Mirlanda", WITCH, other("Spell: Weakness"), Map.of(WISDOM, ADVANCED)),
+            hero("Merist", WITCH, STONE_SKIN, Map.of(WISDOM, BASIC, LEARNING, BASIC)),
+            hero("Mirlanda", WITCH, WEAKNESS, Map.of(WISDOM, ADVANCED)),
             hero("Rosic", WITCH, skill(MYSTICISM), Map.of(WISDOM, BASIC, MYSTICISM, BASIC)),
             hero("Styg", WITCH, skill(SORCERY), Map.of(WISDOM, BASIC, SORCERY, BASIC)),
             hero("Tiva", WITCH, skill(EAGLE_EYE), Map.of(WISDOM, BASIC, EAGLE_EYE, BASIC)),
@@ -285,19 +293,19 @@ public final class HeroCatalog {
             hero("Thunar", PLANESWALKER, fixed(UnitCatalog.EARTH_ELEMENTAL, 2, 1, 5),
                     Map.of(TACTICS, BASIC, ESTATES, BASIC)),
             // Conflux — Elementalist
-            hero("Aenain", ELEMENTALIST, other("Spell: Disrupting Ray +2"),
+            hero("Aenain", ELEMENTALIST, spell("Disrupting Ray +2"),
                     Map.of(WISDOM, BASIC, AIR_MAGIC, BASIC)),
-            hero("Brissa", ELEMENTALIST, other("Spell: Haste"), Map.of(WISDOM, BASIC, AIR_MAGIC, BASIC)),
-            hero("Ciele", ELEMENTALIST, other("Spell: Magic Arrow +50%"),
+            hero("Brissa", ELEMENTALIST, HASTE, Map.of(WISDOM, BASIC, AIR_MAGIC, BASIC)),
+            hero("Ciele", ELEMENTALIST, spell("Magic Arrow +50%"),
                     Map.of(WISDOM, BASIC, WATER_MAGIC, BASIC)),
-            hero("Gelare", ELEMENTALIST, other("+350 gold per day"),
+            hero("Gelare", ELEMENTALIST, GOLD,
                     Map.of(WISDOM, BASIC, WATER_MAGIC, BASIC)),
-            hero("Grindan", ELEMENTALIST, other("+350 gold per day"),
+            hero("Grindan", ELEMENTALIST, GOLD,
                     Map.of(WISDOM, BASIC, EARTH_MAGIC, BASIC)),
-            hero("Inteus", ELEMENTALIST, other("Spell: Bloodlust"), Map.of(WISDOM, BASIC, FIRE_MAGIC, BASIC)),
-            hero("Labetha", ELEMENTALIST, other("Spell: Stone Skin +3"),
+            hero("Inteus", ELEMENTALIST, spell("Bloodlust"), Map.of(WISDOM, BASIC, FIRE_MAGIC, BASIC)),
+            hero("Labetha", ELEMENTALIST, spell("Stone Skin +3"),
                     Map.of(WISDOM, BASIC, EARTH_MAGIC, BASIC)),
-            hero("Luna", ELEMENTALIST, other("Spell: Fire Wall x2"),
+            hero("Luna", ELEMENTALIST, spell("Fire Wall x2"),
                     Map.of(WISDOM, BASIC, FIRE_MAGIC, BASIC)));
 
     /**
@@ -335,6 +343,10 @@ public final class HeroCatalog {
 
     private static HeroSpecialty other(String description) {
         return new HeroSpecialty.Other(description);
+    }
+
+    private static HeroSpecialty spell(String spell) {
+        return other("Spell: " + spell);
     }
 
     private static Map<Faction, Hero> defaults() {

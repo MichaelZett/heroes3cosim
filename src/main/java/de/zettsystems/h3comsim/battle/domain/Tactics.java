@@ -53,8 +53,8 @@ public final class Tactics {
 
     /**
      * Rückt die Nahkämpfer von {@code stacks} innerhalb der Zone vor. Ziel ist je Stack die
-     * vorderste passierbare, unbesetzte und sichere Zelle seiner Reihe, sofern sie weiter vorn
-     * liegt als der Stack schon steht.
+     * vorderste passierbare, unbesetzte Zelle seiner Reihe, sofern sie weiter vorn liegt als der
+     * Stack schon steht.
      *
      * @param all alle Stacks beider Seiten, für die Belegung
      */
@@ -63,23 +63,29 @@ public final class Tactics {
             return;
         }
         for (Stack stack : stacks) {
-            if (stack.unit().attackType() == AttackType.LONG_RANGE) {
-                continue;
-            }
-            int r = stack.position().r();
-            for (int depth = Math.min(columns, MAX_USEFUL_COLUMNS) - 1; depth >= 0; depth--) {
-                Hex target = new Hex(side == Side.ATTACKER
-                        ? field.leftmostQ(r) + depth
-                        : field.rightmostQ(r) - depth, r);
-                if (!isAhead(target, stack.position(), side)) {
-                    break;
-                }
-                if (field.isPassable(target) && isFree(target, all)) {
+            if (stack.unit().attackType() != AttackType.LONG_RANGE) {
+                Hex target = targetFor(stack, side, Math.min(columns, MAX_USEFUL_COLUMNS), field, all);
+                if (target != null) {
                     stack.moveTo(target);
-                    break;
                 }
             }
         }
+    }
+
+    /** Vorderste freie Zelle der Reihe innerhalb von {@code depth} Spalten vor dem Stack, sonst null. */
+    private static @Nullable Hex targetFor(Stack stack, Side side, int depth, Battlefield field,
+                                           List<Stack> all) {
+        int r = stack.position().r();
+        for (int d = depth - 1; d >= 0; d--) {
+            Hex target = new Hex(side == Side.ATTACKER ? field.leftmostQ(r) + d : field.rightmostQ(r) - d, r);
+            if (!isAhead(target, stack.position(), side)) {
+                return null;
+            }
+            if (field.isPassable(target) && isFree(target, all)) {
+                return target;
+            }
+        }
+        return null;
     }
 
     private static boolean isAhead(Hex target, Hex current, Side side) {
