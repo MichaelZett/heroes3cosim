@@ -181,6 +181,12 @@ public final class StrategicAutoSolver implements AutoSolver {
 
     @Override
     public Action decide(Stack active, Stack opponent, Battlefield battlefield) {
+        // Resurrection vor allem anderen: ein Arch Angel, der lieber Tank spielt, verschenkt
+        // seinen einzigen Wurf.
+        Stack resurrectionTarget = Resurrection.worthwhileTarget(active, currentSetup);
+        if (resurrectionTarget != null) {
+            return new Action.Resurrect(resurrectionTarget);
+        }
         // (A) Tank-Pattern: positionieren statt chargen, wenn eigene Schützen Schutz brauchen.
         // Aktiviert sich bei RANGED_DOMINANT (alle Schützen schutzwürdig) und bei BALANCED
         // mit Rand-Schützen — siehe RoundPlan.hasTankDuty / StrategicAutoSolver#buildPlan.

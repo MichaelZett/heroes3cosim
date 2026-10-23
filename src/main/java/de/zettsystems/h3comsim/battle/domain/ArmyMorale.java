@@ -23,7 +23,7 @@ import java.util.Set;
  * des Helden (+1/2/3, Manual S. 37) und {@link UnitSpeciality#GOOD_ARMY_MORALE} — Angel und
  * Arch Angel heben laut Manual S. 96 die Moral der gesamten Armee, nicht nur ihre eigene.
  * Von der Gegenseite kommt {@link UnitSpeciality#LOWERS_ENEMY_MORALE}: Bone und Ghost Dragon
- * senken laut Manual S. 102 die Moral der gegnerischen Armee um eins, ebenfalls einmal pro
+ * senken laut Manual S. 103 die Moral der gegnerischen Armee um eins, ebenfalls einmal pro
  * Armee und nicht je Drachen-Stack.
  *
  * <p>Bewusst <strong>nicht</strong> abgebildet: Artefakte, Gebäude, Abenteuer-Orte und Zauber.

@@ -220,8 +220,28 @@ public final class Battle {
                     moveAndMelee(active, destination, target, setup);
             case Action.Melee(Stack target) -> meleeAttack(active, target, 0, setup);
             case Action.Shoot(Stack target) -> shoot(active, target, setup);
+            case Action.Resurrect(Stack target) -> resurrect(active, target);
         }
         return true;
+    }
+
+    /**
+     * Arch Angel: Resurrection auf einen verbündeten Stack (Manual S. 87). Verbraucht die Aktion
+     * des Arch Angels. Ein Ziel, das die Regeln nicht erlauben, oder ein zweiter Versuch im
+     * selben Kampf fällt auf Defend zurück — Solver-Bug-Sicherheitsnetz wie bei {@code shoot}.
+     */
+    private void resurrect(Stack caster, Stack target) {
+        if (!caster.canResurrect() || !Resurrection.isValidTarget(caster, target)) {
+            emitDefend(caster);
+            return;
+        }
+        int before = target.getCount();
+        target.heal(Resurrection.healthFor(caster));
+        caster.markResurrectionUsed();
+        int restored = target.getCount() - before;
+        BattleLogger.logResurrection(caster.getName(), target.getName(), restored);
+        events.emit(new BattleEvent.Resurrection(caster.side(), caster.slot(),
+                target.side(), target.slot(), restored, snapshot(target)));
     }
 
     private void moveAndMelee(Stack active, Hex destination, Stack target, BattleSetup setup) {

@@ -17,6 +17,10 @@ public sealed interface Action {
     record Wait() implements Action {
     }
 
+    /** Arch Angel: Resurrection auf einen verbündeten Stack, einmal pro Kampf. */
+    record Resurrect(Stack target) implements Action {
+    }
+
     /**
      * H3-Defend: Stack bewegt sich nicht, bekommt +20 % Defense bis Rundenende (RoE-Manual
      * S. 47). Klassische Schützen-Tank-Strategie, wenn der Tank vor dem Schützen schon

@@ -1,8 +1,11 @@
 package de.zettsystems.h3comsim.battle.domain.events;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -172,6 +175,31 @@ class BattleEventSubtypesTest {
 
         assertThat(rebirth.restoredCount()).isEqualTo(1);
         assertThat(rebirth.actorAfter()).isSameAs(ATTACKER_SNAP);
+    }
+
+    @Test
+    void resurrection_carries_caster_target_and_snapshot() {
+        BattleEvent.Resurrection resurrection =
+                new BattleEvent.Resurrection(Side.ATTACKER, 3, Side.ATTACKER, 0, 4, ATTACKER_SNAP);
+
+        assertThat(resurrection.actorSlot()).isEqualTo(3);
+        assertThat(resurrection.targetSlot()).isZero();
+        assertThat(resurrection.restoredCount()).isEqualTo(4);
+        assertThat(resurrection.targetAfter()).isSameAs(ATTACKER_SNAP);
+    }
+
+    @Test
+    void every_subtype_is_registered_for_json_and_openapi() {
+        // Ein neuer Event-Typ, der nur als Record existiert, serialisiert ohne "type" und fehlt
+        // im OpenAPI-Schema — das Frontend könnte ihn nicht zuordnen.
+        List<Class<?>> permitted = List.of(BattleEvent.class.getPermittedSubclasses());
+        List<Class<?>> json = Arrays.stream(BattleEvent.class.getAnnotation(JsonSubTypes.class).value())
+                .<Class<?>>map(JsonSubTypes.Type::value)
+                .toList();
+        List<Class<?>> openApi = List.of(BattleEvent.class.getAnnotation(Schema.class).oneOf());
+
+        assertThat(json).containsExactlyInAnyOrderElementsOf(permitted);
+        assertThat(openApi).containsExactlyInAnyOrderElementsOf(permitted);
     }
 
     @Test

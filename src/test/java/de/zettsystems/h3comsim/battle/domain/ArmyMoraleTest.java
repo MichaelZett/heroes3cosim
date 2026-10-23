@@ -96,7 +96,7 @@ class ArmyMoraleTest {
 
     @Test
     void bone_and_ghost_dragons_lower_the_enemy_rating_by_one() {
-        // Manual S. 102: „lower the morale of enemy units by one when they appear on the
+        // Manual S. 103: „lower the morale of enemy units by one when they appear on the
         // battlefield". Ein-Stadt-Armee: +1, durch den Drachen gegenüber wieder 0.
         for (Unit dragon : List.of(UnitCatalog.BONE_DRAGON, UnitCatalog.GHOST_DRAGON)) {
             assertThat(ratingAgainst(List.of(dragon), UnitCatalog.PIKEMAN, UnitCatalog.MARKSMAN))

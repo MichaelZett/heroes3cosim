@@ -179,6 +179,15 @@ export type BattleEvent =
       actorAfter: StackSnapshot;
     }
   | {
+      type: 'Resurrection';
+      actor: Side;
+      actorSlot: number;
+      target: Side;
+      targetSlot: number;
+      restoredCount: number;
+      targetAfter: StackSnapshot;
+    }
+  | {
       type: 'BattleEnd';
       winner: Winner;
       attackerSurvivors: number;

@@ -98,6 +98,8 @@ export const en: Dictionary = {
     fireShield:
       '<shielded>{{shielded}}</shielded> reflects {{damage}} damage via fire shield onto <attacker>{{attacker}}</attacker>.',
     rebirth: '<actor>{{actor}}</actor> is reborn with {{count}} creatures.',
+    resurrection:
+      '<actor>{{actor}}</actor> resurrects {{count}} creatures of <target>{{target}}</target>.',
     battleEnd:
       'Battle over — winner: <winner>{{winner}}</winner> after {{turns}} turns. Survivors: {{attackerSurvivors}} vs. {{defenderSurvivors}}.',
     draw: 'Draw',

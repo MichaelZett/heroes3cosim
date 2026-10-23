@@ -30,6 +30,7 @@ public class Stack {
     private int diseasedCounter;
     private boolean aged;
     private boolean rebirthUsed;
+    private boolean resurrectionUsed;
     private boolean defending;
     private boolean waitedThisTurn;
     private @Nullable Hero commander;
@@ -351,6 +352,22 @@ public class Stack {
 
     public boolean isRebirthUsed() {
         return rebirthUsed;
+    }
+
+    /** Ob der Stack seine Resurrection noch wirken kann — einmal pro Kampf (Manual S. 87). */
+    public boolean canResurrect() {
+        return aliveCount > 0 && !resurrectionUsed && unit.hasSpeciality(UnitSpeciality.RESURRECTION);
+    }
+
+    public void markResurrectionUsed() {
+        resurrectionUsed = true;
+    }
+
+    /** Lebenspunkte, die dem Stack zur vollen Start-Stärke fehlen. */
+    public int missingHealth() {
+        int full = startCount * unit.health();
+        int current = aliveCount > 0 ? (aliveCount - 1) * unit.health() + topUnitCurrentHealth : 0;
+        return full - current;
     }
 
     private void tryRebirth() {

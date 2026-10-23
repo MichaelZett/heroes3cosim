@@ -113,6 +113,10 @@ public final class GreedyAutoSolver implements AutoSolver {
 
     @Override
     public Action decide(Stack active, Stack opponent, Battlefield battlefield) {
+        Stack resurrectionTarget = Resurrection.worthwhileTarget(active, currentSetup);
+        if (resurrectionTarget != null) {
+            return new Action.Resurrect(resurrectionTarget);
+        }
         Hex from = active.position();
         Hex to = opponent.position();
         int distance = from.distanceTo(to);

@@ -121,6 +121,10 @@ public final class BattleLogger {
                 shieldedName, reverseDamage, attackerName);
     }
 
+    static void logResurrection(String caster, String target, int restoredCount) {
+        LOG.debug("{} belebt {} Einheiten von {} wieder.", caster, restoredCount, target);
+    }
+
     static void logRebirth(String name, int restoredCount) {
         LOG.debug("Stack von {} wird durch Wiedergeburt mit {} Einheiten zurueckgebracht.",
                 name, restoredCount);
