@@ -60,6 +60,11 @@ public final class Battle {
                 setup.moraleOf(Side.ATTACKER), setup.moraleOf(Side.DEFENDER),
                 heroName(setup.attackerHero()), heroName(setup.defenderHero()),
                 setup.luckOf(Side.ATTACKER), setup.luckOf(Side.DEFENDER)));
+        for (Side side : Side.values()) {
+            if (setup.tacticsOf(side) > 0) {
+                events.emit(new BattleEvent.TacticsPhase(side, setup.tacticsOf(side)));
+            }
+        }
 
         int attackerStart = setup.getAttackerCount();
         int defenderStart = setup.getDefenderCount();

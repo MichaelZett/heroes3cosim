@@ -120,6 +120,13 @@ describe('HeroPicker', () => {
     expect(screen.getByText(/\+350 gold per day — ohne Kampfwirkung/)).toBeInTheDocument();
   });
 
+  it('shows the Tactics zone of the hero', () => {
+    const tyris = { ...TEST_HEROES[0], name: 'Tyris', skills: { TACTICS: 'BASIC' } as const };
+    render(<HeroPicker heroes={[tyris]} selectedName="Tyris" onChange={vi.fn()} />);
+
+    expect(screen.getByText(/ersten 3 Spalten/)).toBeInTheDocument();
+  });
+
   it('stays silent about morale when the hero has no Leadership', () => {
     render(<HeroPicker heroes={TEST_HEROES} selectedName="Crag Hack" onChange={vi.fn()} />);
 

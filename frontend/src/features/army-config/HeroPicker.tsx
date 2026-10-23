@@ -25,6 +25,9 @@ const PERCENT: Record<DamageSkill, Partial<Record<SkillLevel, number>>> = {
 /** Leadership und Luck, Manual S. 37: je +1/2/3 auf das Moral- bzw. Glücks-Rating der Armee. */
 const RATING_BONUS: Partial<Record<SkillLevel, number>> = { BASIC: 1, ADVANCED: 2, EXPERT: 3 };
 
+/** Tactics, Manual S. 42: Aufstellungszone in Spalten bei 1/2/3 Graden Vorsprung. */
+const TACTICS_COLUMNS: Partial<Record<SkillLevel, number>> = { BASIC: 3, ADVANCED: 5, EXPERT: 7 };
+
 /**
  * Der Katalog fuehrt 16 Helden je Fraktion; ohne Gruppen waere die Liste kaum zu ueberblicken.
  * Die Reihenfolge des Backends (Fraktion, martialische Klasse zuerst, Name) bleibt erhalten.
@@ -82,6 +85,7 @@ export default function HeroPicker({ heroes, selectedName, onChange }: Readonly<
     : '';
   const leadership = current ? RATING_BONUS[current.skills.LEADERSHIP ?? 'NONE'] : undefined;
   const luck = current ? RATING_BONUS[current.skills.LUCK ?? 'NONE'] : undefined;
+  const tactics = current ? TACTICS_COLUMNS[current.skills.TACTICS ?? 'NONE'] : undefined;
 
   return (
     <div className="rounded-md border border-slate-800 bg-slate-950 p-3">
@@ -117,6 +121,11 @@ export default function HeroPicker({ heroes, selectedName, onChange }: Readonly<
           {leadership !== undefined && (
             <p className="mt-1 text-xs text-amber-300/80">
               {t('army.heroSkillLEADERSHIP')}: {t('army.heroMorale', { value: `+${leadership}` })}
+            </p>
+          )}
+          {tactics !== undefined && (
+            <p className="mt-1 text-xs text-amber-300/80">
+              {t('army.heroSkillTACTICS')}: {t('army.heroTactics', { columns: tactics })}
             </p>
           )}
           {current.specialty && (

@@ -9,6 +9,7 @@ export const BUILD_SKILLS: SecondarySkill[] = [
   'ARMORER',
   'LEADERSHIP',
   'LUCK',
+  'TACTICS',
 ];
 
 /** Was der Held ausserhalb der Schlacht erreicht hat: Level, Punkte, Fertigkeiten, Boni. */

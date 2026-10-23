@@ -136,6 +136,10 @@ export const de = {
     twoShots: '<actor>{{actor}}</actor> schießt ein zweites Mal.',
     goodMorale: '<actor>{{actor}}</actor> hat gute Moral und greift erneut an.',
     badMorale: '<actor>{{actor}}</actor> hat schlechte Moral und verliert die Aktion.',
+    tacticsPhase_attacker:
+      '<actor>Angreifer</actor> stellt mit Tactics in den ersten {{columns}} Spalten auf.',
+    tacticsPhase_defender:
+      '<actor>Verteidiger</actor> stellt mit Tactics in den ersten {{columns}} Spalten auf.',
     luckyStrike: '<actor>{{actor}}</actor> hat Glück und richtet doppelten Schaden an.',
     deathStare:
       '<actor>{{actor}}</actor> tötet {{kills}} Einheit(en) von <target>{{target}}</target> mit Death Stare.',
@@ -187,6 +191,7 @@ export const de = {
     heroSkillARMORER: 'Rüstkunde',
     heroSkillLEADERSHIP: 'Führerschaft',
     heroSkillLUCK: 'Glück',
+    heroSkillTACTICS: 'Taktik',
     heroSkillEffective: '{{skills}} — wirkt im Kampf',
     heroMorale: '{{value}} Moral auf jede Einheit, die nicht untot oder elementar ist',
     heroSpecialty: 'Spezialität',
@@ -198,6 +203,7 @@ export const de = {
     heroSpecialtyOTHER: '{{description}}',
     heroSpecialtyInert: 'ohne Kampfwirkung',
     heroLevel: 'Level',
+    heroTactics: 'Aufstellung in den ersten {{columns}} Spalten, abzüglich der Tactics des Gegners',
     heroLuck: '{{value}} Glück für die ganze Armee',
     attackBonus: 'Angriff +',
     defenseBonus: 'Verteidigung +',

@@ -200,6 +200,15 @@ export function EventText({ event, names }: Readonly<EventTextProps>) {
           components={{ actor: sideSpan(event.actor) }}
         />
       );
+    case 'TacticsPhase':
+      return (
+        <Trans
+          i18nKey="events.tacticsPhase"
+          values={{ columns: event.columns }}
+          components={{ actor: sideSpan(event.actor) }}
+          context={event.actor === 'ATTACKER' ? 'attacker' : 'defender'}
+        />
+      );
     case 'LuckyStrike':
       return (
         <Trans

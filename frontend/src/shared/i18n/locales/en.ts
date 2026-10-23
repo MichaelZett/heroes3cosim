@@ -140,6 +140,10 @@ export const en: Dictionary = {
     twoShots: '<actor>{{actor}}</actor> shoots a second time.',
     goodMorale: '<actor>{{actor}}</actor> has good morale and attacks again.',
     badMorale: '<actor>{{actor}}</actor> has bad morale and loses the action.',
+    tacticsPhase_attacker:
+      '<actor>Attacker</actor> arranges troops with Tactics within the first {{columns}} columns.',
+    tacticsPhase_defender:
+      '<actor>Defender</actor> arranges troops with Tactics within the first {{columns}} columns.',
     luckyStrike: '<actor>{{actor}}</actor> is lucky and deals double damage.',
     deathStare:
       '<actor>{{actor}}</actor> kills {{kills}} of <target>{{target}}</target> with Death Stare.',
@@ -189,6 +193,7 @@ export const en: Dictionary = {
     heroSkillARMORER: 'Armorer',
     heroSkillLEADERSHIP: 'Leadership',
     heroSkillLUCK: 'Luck',
+    heroSkillTACTICS: 'Tactics',
     heroSkillEffective: '{{skills}} — effective in combat',
     heroMorale: '{{value}} morale on every creature that is neither undead nor elemental',
     heroSpecialty: 'Specialty',
@@ -200,6 +205,7 @@ export const en: Dictionary = {
     heroSpecialtyOTHER: '{{description}}',
     heroSpecialtyInert: 'no effect in combat',
     heroLevel: 'Level',
+    heroTactics: 'placement within the first {{columns}} columns, reduced by enemy Tactics',
     heroLuck: '{{value}} luck for the whole army',
     attackBonus: 'Attack +',
     defenseBonus: 'Defense +',

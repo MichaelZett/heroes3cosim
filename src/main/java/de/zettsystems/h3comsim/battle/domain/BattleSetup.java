@@ -26,6 +26,8 @@ public class BattleSetup {
     private final int defenderMorale;
     private final int attackerLuck;
     private final int defenderLuck;
+    private final int attackerTactics;
+    private final int defenderTactics;
 
     public BattleSetup(Unit attackerUnit, int attackerCount,
                        Unit defenderUnit, int defenderCount) {
@@ -62,7 +64,8 @@ public class BattleSetup {
 
     /**
      * Variante mit Helden und deren gesammelten Boni (Glück und Moral aus Artefakten, Gebäuden,
-     * Abenteuer-Orten). Ein Bonus ohne Helden bleibt wirkungslos.
+     * Abenteuer-Orten). Ein Bonus ohne Helden bleibt wirkungslos. Hat ein Held Tactics im
+     * Vorsprung, stellt er hier seine Nahkämpfer auf ({@link Tactics}).
      */
     public BattleSetup(List<Stack> attackerStacks, List<Stack> defenderStacks,
                        Battlefield battlefield,
@@ -92,6 +95,20 @@ public class BattleSetup {
         this.defenderLuck = ArmyLuck.ratingOf(defenderHero, defenderBonus, this.attackerStacks);
         this.attackerStacks.forEach(stack -> stack.assignArmyLuck(attackerLuck));
         this.defenderStacks.forEach(stack -> stack.assignArmyLuck(defenderLuck));
+        this.attackerTactics = Tactics.columns(attackerHero, defenderHero);
+        this.defenderTactics = Tactics.columns(defenderHero, attackerHero);
+        List<Stack> all = new ArrayList<>(this.attackerStacks);
+        all.addAll(this.defenderStacks);
+        Tactics.arrange(this.attackerStacks, Side.ATTACKER, attackerTactics, battlefield, all);
+        Tactics.arrange(this.defenderStacks, Side.DEFENDER, defenderTactics, battlefield, all);
+    }
+
+    /**
+     * Breite der Tactics-Zone dieser Seite in Hex-Spalten (Manual S. 42), 0 ohne
+     * Aufstellungsphase. Höchstens eine Seite hat eine.
+     */
+    public int tacticsOf(Side side) {
+        return side == Side.ATTACKER ? attackerTactics : defenderTactics;
     }
 
     /** Glücks-Rating der Armee (Manual S. 44), 0..3. Ohne Helden immer 0. */

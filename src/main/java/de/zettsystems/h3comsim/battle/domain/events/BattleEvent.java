@@ -22,6 +22,7 @@ import java.util.List;
         @JsonSubTypes.Type(value = BattleEvent.GoodMorale.class, name = "GoodMorale"),
         @JsonSubTypes.Type(value = BattleEvent.BadMorale.class, name = "BadMorale"),
         @JsonSubTypes.Type(value = BattleEvent.LuckyStrike.class, name = "LuckyStrike"),
+        @JsonSubTypes.Type(value = BattleEvent.TacticsPhase.class, name = "TacticsPhase"),
         @JsonSubTypes.Type(value = BattleEvent.MoveBack.class, name = "MoveBack"),
         @JsonSubTypes.Type(value = BattleEvent.DeathStare.class, name = "DeathStare"),
         @JsonSubTypes.Type(value = BattleEvent.Thunderbolts.class, name = "Thunderbolts"),
@@ -50,7 +51,7 @@ import java.util.List;
                 BattleEvent.Defend.class,
                 BattleEvent.Shoot.class, BattleEvent.Melee.class, BattleEvent.Retaliation.class,
                 BattleEvent.TwoBlows.class, BattleEvent.TwoShots.class, BattleEvent.GoodMorale.class,
-                BattleEvent.BadMorale.class, BattleEvent.LuckyStrike.class,
+                BattleEvent.BadMorale.class, BattleEvent.LuckyStrike.class, BattleEvent.TacticsPhase.class,
                 BattleEvent.MoveBack.class, BattleEvent.DeathStare.class, BattleEvent.Thunderbolts.class,
                 BattleEvent.Petrifying.class, BattleEvent.Cursing.class, BattleEvent.Poisoning.class,
                 BattleEvent.Diseasing.class, BattleEvent.Aging.class, BattleEvent.FireShield.class,
@@ -71,6 +72,7 @@ import java.util.List;
                 @DiscriminatorMapping(value = "GoodMorale", schema = BattleEvent.GoodMorale.class),
                 @DiscriminatorMapping(value = "BadMorale", schema = BattleEvent.BadMorale.class),
                 @DiscriminatorMapping(value = "LuckyStrike", schema = BattleEvent.LuckyStrike.class),
+                @DiscriminatorMapping(value = "TacticsPhase", schema = BattleEvent.TacticsPhase.class),
                 @DiscriminatorMapping(value = "MoveBack", schema = BattleEvent.MoveBack.class),
                 @DiscriminatorMapping(value = "DeathStare", schema = BattleEvent.DeathStare.class),
                 @DiscriminatorMapping(value = "Thunderbolts", schema = BattleEvent.Thunderbolts.class),
@@ -202,6 +204,13 @@ public sealed interface BattleEvent {
     record LuckyStrike(
             @Schema(description = "Stack mit dem Glückstreffer") Side actor,
             @Schema(description = "Slot des Stacks") int actorSlot) implements BattleEvent {
+    }
+
+    @Schema(name = "TacticsPhase",
+            description = "Tactics (Manual S. 42): diese Seite hat ihre Nahkämpfer vor Kampfbeginn innerhalb der ersten `columns` Hex-Spalten aufgestellt. Die Positionen in `BattleStart` sind bereits die aufgestellten.")
+    record TacticsPhase(
+            @Schema(description = "Aufstellende Seite") Side actor,
+            @Schema(description = "Breite der Zone in Hex-Spalten: 3, 5 oder 7", example = "5") int columns) implements BattleEvent {
     }
 
     @Schema(name = "BadMorale",

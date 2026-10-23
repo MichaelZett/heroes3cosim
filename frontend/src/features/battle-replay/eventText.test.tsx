@@ -108,6 +108,14 @@ describe('eventToNode', () => {
     expect(container.textContent).toContain('Helden: Sorsha gegen Crag Hack');
   });
 
+  it('renders the tactics phase with the zone width', () => {
+    const { container } = renderEvent({ type: 'TacticsPhase', actor: 'DEFENDER', columns: 5 });
+
+    expect(container.textContent).toContain(
+      'Verteidiger stellt mit Tactics in den ersten 5 Spalten auf',
+    );
+  });
+
   it('renders LuckyStrike as double damage', () => {
     const { container } = renderEvent({ type: 'LuckyStrike', actor: 'ATTACKER', actorSlot: 0 });
 

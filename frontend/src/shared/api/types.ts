@@ -139,6 +139,8 @@ export type BattleEvent =
   | { type: 'BadMorale'; actor: Side; actorSlot: number }
   /** Der unmittelbar folgende Treffer dieses Stacks richtet doppelten Grundschaden an. */
   | { type: 'LuckyStrike'; actor: Side; actorSlot: number }
+  /** Tactics: diese Seite hat vor Kampfbeginn in den ersten `columns` Spalten aufgestellt. */
+  | { type: 'TacticsPhase'; actor: Side; columns: number }
   | {
       type: 'MoveBack';
       actor: Side;
