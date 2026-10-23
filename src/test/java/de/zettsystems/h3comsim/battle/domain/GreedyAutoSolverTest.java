@@ -233,10 +233,6 @@ class GreedyAutoSolverTest {
     }
 
     /**
-     * Simuliert die späte Rundenphase: der Stack hat seine Verzögerung bereits verbraucht und
-     * muss jetzt handeln. {@code decide} fällt damit auf den Bewegungs-Pfad zurück.
-     */
-    /**
      * Ein Arch Angel könnte den Pikeman auf (14,5) in einem Zug erreichen. Neben dem Ziel stehen
      * zwei große Halberdier-Stacks, die das Landefeld noch in derselben Runde erreichen
      * (Speed 5 gegen 18) und zusammen mehr als die Hälfte seiner 250 HP ausrichten.
@@ -283,6 +279,10 @@ class GreedyAutoSolverTest {
                 .isInstanceOf(Action.MoveAndMelee.class);
     }
 
+    /**
+     * Simuliert die späte Rundenphase: der Stack hat seine Verzögerung bereits verbraucht und
+     * muss jetzt handeln. {@code decide} fällt damit auf den Bewegungs-Pfad zurück.
+     */
     private static Stack inLatePhase(Stack stack) {
         stack.markWaited();
         return stack;
