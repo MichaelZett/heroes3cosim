@@ -234,8 +234,9 @@ class GreedyAutoSolverTest {
 
     /**
      * Ein Arch Angel könnte den Pikeman auf (14,5) in einem Zug erreichen. Neben dem Ziel stehen
-     * zwei große Halberdier-Stacks, die das Landefeld noch in derselben Runde erreichen
-     * (Speed 5 gegen 18) und zusammen mehr als die Hälfte seiner 250 HP ausrichten.
+     * zwei Halberdier-Stacks, die das Landefeld noch in derselben Runde erreichen (Speed 5 gegen
+     * 18); zusammen mit dem Ziel selbst richten sie bei 40 Halberdiers je Stack mehr als die
+     * Hälfte seiner 250 HP aus.
      */
     private static List<Stack> loneChargeSetup(int halberdiers) {
         Stack angel = new Stack(UnitCatalog.ARCH_ANGEL, 1, new Hex(0, 5), Side.ATTACKER, 0);
@@ -253,14 +254,30 @@ class GreedyAutoSolverTest {
 
     @Test
     void a_lone_charge_into_the_enemy_army_is_postponed() {
-        // 2 × 40 Halberdiers à 2 Durchschnittsschaden = 160 ≥ 125 (halbe Engel-HP).
+        // 2 × 40 Halberdiers à 2 Durchschnittsschaden plus das Ziel (10 Pikemen à 2) = 180 ≥ 125
+        // (halbe Engel-HP).
         assertThat(decideCharge(new GreedyAutoSolver(), loneChargeSetup(40))).isInstanceOf(Action.Wait.class);
     }
 
     @Test
     void the_charge_goes_ahead_when_the_neighbours_are_too_weak_to_punish_it() {
-        // 2 × 10 Halberdiers = 40 < 125.
+        // 2 × 10 Halberdiers plus das Ziel = 60 < 125.
         assertThat(decideCharge(new GreedyAutoSolver(), loneChargeSetup(10))).isInstanceOf(Action.MoveAndMelee.class);
+    }
+
+    @Test
+    void the_target_itself_counts_because_it_still_gets_its_own_turn() {
+        // Ein Phoenix (Speed 21) gegen einen gleich schnellen Phoenix ohne weitere Gegner in
+        // Reichweite: Gegenschlag plus dessen eigener Zug. 2 Phoenix à 35 = 70 gegen halbe
+        // Eigen-HP von 1 Phoenix (100) — noch kein Warten; bei 3 Gegner-Phoenixen (105) schon.
+        Stack attacker = new Stack(UnitCatalog.PHOENIX, 1, new Hex(0, 5), Side.ATTACKER, 0);
+        Stack weak = new Stack(UnitCatalog.PHOENIX, 2, new Hex(14, 5), Side.DEFENDER, 0);
+        Stack strong = new Stack(UnitCatalog.PHOENIX, 3, new Hex(14, 5), Side.DEFENDER, 0);
+
+        assertThat(decideCharge(new GreedyAutoSolver(), List.of(attacker, weak)))
+                .isInstanceOf(Action.MoveAndMelee.class);
+        assertThat(decideCharge(new GreedyAutoSolver(), List.of(attacker, strong)))
+                .isInstanceOf(Action.Wait.class);
     }
 
     @Test
