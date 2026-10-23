@@ -12,7 +12,8 @@ import java.util.Map;
         Held aus dem H3-Catalog. Von den vier Primärwerten wirken derzeit nur `attack` und
         `defense` — sie werden auf jede Kreatur der geführten Armee addiert (Manual S. 33).
         `power` und `knowledge` steuern ausschließlich das Zaubern und bleiben ohne
-        Zaubersystem folgenlos; `skills` wird geführt, aber noch nicht ausgewertet.
+        Zaubersystem folgenlos. Von den `skills` wirken Offense, Archery, Armorer,
+        Leadership, Luck und Tactics, die übrigen werden nur geführt.
         """)
 public record HeroDto(
         @Schema(description = "Anzeigename — wird auch als Identifier in den Battle-Requests verwendet.",
@@ -37,6 +38,9 @@ public record HeroDto(
         @Schema(description = "Knowledge-Primärwert. Ohne Zaubersystem derzeit ohne Wirkung.", example = "1")
         int knowledge,
 
-        @Schema(description = "Startfertigkeiten mit Ausbaustufe. Derzeit ohne Wirkung im Kampf.")
-        Map<SecondarySkill, SkillLevel> skills) {
+        @Schema(description = "Startfertigkeiten mit Ausbaustufe. Offense, Archery, Armorer, Leadership, Luck und Tactics wirken im Kampf.")
+        Map<SecondarySkill, SkillLevel> skills,
+
+        @Schema(description = "Spezialfähigkeit des Helden")
+        HeroSpecialtyDto specialty) {
 }

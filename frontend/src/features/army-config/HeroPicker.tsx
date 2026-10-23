@@ -1,11 +1,12 @@
 import { useTranslation } from 'react-i18next';
-import type { HeroDto, SkillLevel } from '../../shared/api/types';
+import type { TFunction } from 'i18next';
+import type { Faction, HeroDto, HeroSpecialtyDto, SkillLevel } from '../../shared/api/types';
 
 /**
- * Die drei Fertigkeiten, die als Prozent auf den Schaden wirken. Scholar und Necromancy wirken
- * ausserhalb des Kampfes, Tactics hat kein Katalog-Held — sie hier zu zeigen waere ein
- * Versprechen, das die Simulation nicht einloest. Leadership wirkt zwar, aber nicht auf den
- * Schaden; es bekommt weiter unten eine eigene Zeile.
+ * Die drei Fertigkeiten, die als Prozent auf den Schaden wirken. Die meisten uebrigen wirken
+ * ausserhalb des Kampfes oder brauchen Zauber, Kriegsmaschinen oder eine freie Aufstellung — sie
+ * hier zu zeigen waere ein Versprechen, das die Simulation nicht einloest. Leadership und Luck
+ * wirken zwar, aber nicht als Prozent auf den Schaden; sie bekommen weiter unten eigene Zeilen.
  *
  * Der enge Typ haelt die Liste mit den i18n-Keys army.heroSkill* synchron: ein Skill ohne
  * passenden Key waere ein Compile-Fehler statt eines fehlenden Labels zur Laufzeit.
@@ -21,8 +22,38 @@ const PERCENT: Record<DamageSkill, Partial<Record<SkillLevel, number>>> = {
   ARMORER: { BASIC: 5, ADVANCED: 10, EXPERT: 15 },
 };
 
-/** Leadership, Manual S. 37: +1/2/3 auf das Moral-Rating der Armee. */
-const LEADERSHIP_MORALE: Partial<Record<SkillLevel, number>> = { BASIC: 1, ADVANCED: 2, EXPERT: 3 };
+/** Leadership und Luck, Manual S. 37: je +1/2/3 auf das Moral- bzw. Glücks-Rating der Armee. */
+const RATING_BONUS: Partial<Record<SkillLevel, number>> = { BASIC: 1, ADVANCED: 2, EXPERT: 3 };
+
+/** Tactics, Manual S. 42: Aufstellungszone in Spalten bei 1/2/3 Graden Vorsprung. */
+const TACTICS_COLUMNS: Partial<Record<SkillLevel, number>> = { BASIC: 3, ADVANCED: 5, EXPERT: 7 };
+
+/**
+ * Der Katalog fuehrt 16 Helden je Fraktion; ohne Gruppen waere die Liste kaum zu ueberblicken.
+ * Die Reihenfolge des Backends (Fraktion, martialische Klasse zuerst, Name) bleibt erhalten.
+ */
+function groupByFaction(heroes: HeroDto[]): [Faction, HeroDto[]][] {
+  const groups = new Map<Faction, HeroDto[]>();
+  for (const hero of heroes) {
+    const group = groups.get(hero.faction);
+    if (group) group.push(hero);
+    else groups.set(hero.faction, [hero]);
+  }
+  return [...groups.entries()];
+}
+
+/** Text der Spezialitaet; die Felder des DTO je nach Art. */
+function specialtyText(specialty: HeroSpecialtyDto, t: TFunction): string {
+  return t(`army.heroSpecialty${specialty.kind}`, {
+    unit: specialty.unitName ?? '',
+    tier: specialty.creatureTier,
+    skill: specialty.skill ? t(`secondarySkill.${specialty.skill}`) : '',
+    attack: specialty.attack,
+    defense: specialty.defense,
+    damage: specialty.damage,
+    description: specialty.description ?? '',
+  });
+}
 
 interface HeroPickerProps {
   heroes: HeroDto[];
@@ -31,9 +62,11 @@ interface HeroPickerProps {
 }
 
 /**
- * Auswahl des Helden, der diese Armee fuehrt.
+ * Auswahl des Helden, der diese Armee fuehrt. Jede Armee hat einen Helden: die leere Auswahl
+ * ueberlaesst ihn dem Backend, das den Standardhelden der Fraktion mit dem groessten Goldwert
+ * nimmt.
  *
- * Angezeigt werden Angriff und Verteidigung sowie die vier Fertigkeiten, die die Engine
+ * Angezeigt werden Angriff und Verteidigung sowie die fuenf Fertigkeiten, die die Engine
  * auswertet. Power und Knowledge bleiben aussen vor: sie steuern ausschliesslich das Zaubern
  * und haben ohne Zaubersystem keinen Effekt — sie hier zu zeigen waere ein Versprechen, das
  * die Simulation nicht einloest.
@@ -50,7 +83,9 @@ export default function HeroPicker({ heroes, selectedName, onChange }: Readonly<
         return [`${label} ${sign}${PERCENT[skill][level]}%`];
       }).join(', ')
     : '';
-  const leadership = current ? LEADERSHIP_MORALE[current.skills.LEADERSHIP ?? 'NONE'] : undefined;
+  const leadership = current ? RATING_BONUS[current.skills.LEADERSHIP ?? 'NONE'] : undefined;
+  const luck = current ? RATING_BONUS[current.skills.LUCK ?? 'NONE'] : undefined;
+  const tactics = current ? TACTICS_COLUMNS[current.skills.TACTICS ?? 'NONE'] : undefined;
 
   return (
     <div className="rounded-md border border-slate-800 bg-slate-950 p-3">
@@ -62,10 +97,14 @@ export default function HeroPicker({ heroes, selectedName, onChange }: Readonly<
           onChange={(e) => onChange(e.target.value === '' ? null : e.target.value)}
         >
           <option value="">{t('army.heroNone')}</option>
-          {heroes.map((hero) => (
-            <option key={hero.name} value={hero.name}>
-              {hero.name} ({t(`faction.${hero.faction}`)}) — {hero.attack}/{hero.defense}
-            </option>
+          {groupByFaction(heroes).map(([faction, group]) => (
+            <optgroup key={faction} label={t(`faction.${faction}`)}>
+              {group.map((hero) => (
+                <option key={hero.name} value={hero.name}>
+                  {hero.name} ({t(`heroClass.${hero.heroClass}`)}) — {hero.attack}/{hero.defense}
+                </option>
+              ))}
+            </optgroup>
           ))}
         </select>
       </label>
@@ -82,6 +121,24 @@ export default function HeroPicker({ heroes, selectedName, onChange }: Readonly<
           {leadership !== undefined && (
             <p className="mt-1 text-xs text-amber-300/80">
               {t('army.heroSkillLEADERSHIP')}: {t('army.heroMorale', { value: `+${leadership}` })}
+            </p>
+          )}
+          {tactics !== undefined && (
+            <p className="mt-1 text-xs text-amber-300/80">
+              {t('army.heroSkillTACTICS')}: {t('army.heroTactics', { columns: tactics })}
+            </p>
+          )}
+          {current.specialty && (
+            <p
+              className={`mt-1 text-xs ${current.specialty.effective ? 'text-amber-300/80' : 'text-slate-500'}`}
+            >
+              {t('army.heroSpecialty')}: {specialtyText(current.specialty, t)}
+              {!current.specialty.effective && ` — ${t('army.heroSpecialtyInert')}`}
+            </p>
+          )}
+          {luck !== undefined && (
+            <p className="mt-1 text-xs text-amber-300/80">
+              {t('army.heroSkillLUCK')}: {t('army.heroLuck', { value: `+${luck}` })}
             </p>
           )}
         </>

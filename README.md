@@ -33,24 +33,48 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   nur Gegner), Fire Breath (Green/Gold/Red/Black Dragon — Ziel + Stack
   dahinter), Magog-Fireball (Ziel + alle 1-Hex-Nachbarn, Manual S. 97),
   Lich Death Cloud (Ziel + alle 1-Hex-Nachbarn außer Untoten).
-- **Helden** — ein H3-Held je Fraktion (Crag Hack, Tazar, Sorsha, …),
-  Werte aus dem RoE-Manual. Sein Angriffs- und Verteidigungswert wird auf
-  jede Kreatur der geführten Armee addiert (Manual S. 33) und wirkt damit
-  durch die gesamte Schadensformel. Auswahl im Army-Konfigurator, das
-  Fraktions-Preset schlägt den passenden Helden vor. Dazu wirken vier
+- **Helden** — alle 144 Helden aus RoE und Armageddon's Blade (18
+  Klassen, je Fraktion 16) mit ihren Startfertigkeiten; die Primärwerte
+  hängen an der Klasse. Im Army-Battle führt jede Armee einen Helden:
+  ohne Auswahl den Standardhelden der Fraktion, die den größten Goldwert
+  der Armee stellt (Sorsha, Jenova, Neela, Nymus, Tamika, Damacon, Crag
+  Hack, Tazar, Fiur). Angriffs- und Verteidigungswert des Helden werden
+  auf jede Kreatur addiert (Manual S. 33). Dazu wirken sechs
   Sekundärfertigkeiten: Offense (+10/20/30 % Nahkampfschaden), Archery
-  (+10/25/50 % Fernkampf), Armorer (−5/10/15 % erlittener Schaden) und
-  Leadership (+1/2/3 Moral). Power, Knowledge und die übrigen
-  Fertigkeiten sind noch ohne Wirkung — sie brauchen das Zaubersystem.
+  (+10/25/50 % Fernkampf), Armorer (−5/10/15 % erlittener Schaden),
+  Leadership (+1/2/3 Moral), Luck (+1/2/3 Glück) und Tactics (siehe
+  unten). Je Armee einstellbar ist, was der Held unterwegs gesammelt hat:
+  Level (1..99), zusätzliche Attack-/Defense-Punkte, gelernte oder
+  verbesserte Fertigkeiten (höchstens acht) sowie Glück und Moral aus
+  Artefakten, Gebäuden und Abenteuer-Orten. Power, Knowledge und die
+  übrigen Fertigkeiten sind noch ohne Wirkung. Single Battle und
+  Einheiten-Matrix bleiben ohne Helden.
+- **Spezialfähigkeiten** der Helden in der SoD-Fassung: Kreatur-
+  Spezialisten geben ihren Kreaturen (Basis- und Ausbaustufe) +1 Speed und
+  +5 % Attack und Defense je angefangene Spanne von Kreaturstufe Leveln;
+  Fertigkeits-Spezialisten heben Offense, Archery oder Armorer um 5 % je
+  Level; die Planeswalker geben ihren Elementaren feste Boni auf Attack,
+  Defense und Schaden. Zauber-, Ressourcen- und Ballista-Spezialitäten
+  werden angezeigt, wirken aber nicht.
+- **Tactics** (Manual S. 42) — hat ein Held die Fertigkeit auf höherer
+  Stufe als der Gegner, stellt er vor Kampfbeginn in den ersten 3/5/7
+  Spalten auf (ein, zwei, drei Grade Vorsprung). Die Nahkämpfer rücken in
+  ihrer Reihe an die vorderste freie Zelle vor, höchstens fünf Spalten
+  tief; die Schützen bleiben am Rand.
 - **Moral** (Manual S. 43) — jede Armee hat ein Rating, das sich aus ihrer
   Zusammenstellung ergibt: +1, wenn alle Kreaturen aus derselben Stadt
   stammen (außer Necropolis), −1 für Untote unter Lebenden, −1 je
-  Stadt-Typ ab dem dritten, dazu Angel/Arch Angel und die Leadership des
-  Helden. Steht auf der Gegenseite ein Bone oder Ghost Dragon, sinkt das
+  Stadt-Typ ab dem dritten, dazu Angel/Arch Angel, die Leadership und die
+  gesammelte Moral des Helden. Steht auf der Gegenseite ein Bone oder Ghost Dragon, sinkt das
   Rating um 1 (Manual S. 103), egal wie viele Drachen es sind. Positive
   Moral gibt eine Chance auf eine zweite Aktion, negative eine Chance,
   die Aktion ganz zu verlieren (4.2 / 8.3 / 12.5 %). Untote
   und Elementare stehen außerhalb — ihre Moral ist immer 0.
+- **Glück** (Manual S. 44) — Armee-Rating 0..3 aus Luck-Fertigkeit und
+  gesammeltem Glück des Helden; Devils und Arch Devils auf der Gegenseite
+  ziehen einen Punkt ab (Manual S. 99). Wie in SoD wirkt Glück nur mit
+  Held und wird nie negativ. Ein Glückstreffer (4.2 / 8.3 / 12.5 %) gibt
+  +100 % auf den Grundschaden, nur gegen das angegriffene Ziel.
 - **Rundenablauf in zwei Phasen** (Manual S. 43): Stacks ziehen nach
   Speed absteigend; wer *Wait* wählt, verschiebt seine Aktion ans Ende
   der Runde und handelt dort in umgekehrter Reihenfolge — langsamste
@@ -258,13 +282,11 @@ Match-ups:
 - Keine Sprüche → Necropolis (Animate Dead), Tower (Magi-Casts),
   Conflux (Spell-Imm./Fire-Imm.), Black Dragon (Spell-Imm.) verlieren
   ihren H3-Hauptvorteil.
-- Von den Hero-Skills wirken Offense, Archery, Armorer und Leadership;
-  Necromancy, Tactics, Logistics und Sorcery nicht.
+- Von den Hero-Skills wirken Offense, Archery, Armorer, Leadership, Luck
+  und Tactics; Necromancy, Logistics und Sorcery nicht.
 - Im Single-Battle-Modus fehlen die Multi-Stack-AoE-Effekte (Cerberus,
   Fire-Breath, Magog Splash, Lich Death Cloud) — die werden erst im
   Army-vs-Army-Modus aktiv.
-- Pit Lord Raise Demons fehlt noch (braucht Corpse-Pool und neue
-  Action-Variante).
 
 Die Werte sind also als „unter spell-/hero-freien 1-vs-1-Bedingungen"
 zu lesen, nicht als universelle H3-Tier-Liste.
@@ -291,22 +313,16 @@ zu lesen, nicht als universelle H3-Tier-Liste.
   `FriendlyFireDiagnosisTest`). Diese Zahlen stammen noch aus der Zeit,
   in der der Cerberus wahllos zwei Nachbarn traf, eigene eingeschlossen,
   und der Magog nur zwei statt aller sechs Felder ums Ziel.
-- **Helden, nächste Stufe**: Luck (Doppelschaden mit 4.2 / 8.3 / 12.5 %)
-  und Tactics (Aufstellung vor Kampfbeginn) hängen beide an derselben
-  Vorbedingung — im Katalog steht je Fraktion nur ein Held, und keiner
-  von den neunen bringt eine der beiden Fertigkeiten mit. Erst ein
-  zweiter Held je Fraktion macht sie zu mehr als totem Code. Danach
-  Zauberei, die Power und Knowledge überhaupt erst zu Wirkung verhilft.
+- **Helden, nächste Stufe**: Zauberei, die Power und Knowledge überhaupt
+  erst zu Wirkung verhilft, und Kriegsmaschinen (Ballista, First Aid
+  Tent) samt Artillery und First Aid.
 - **Taktisches Warten ausbauen**: Nahkämpfer nutzen *Wait* bereits, wenn
   sie ihr Ziel diese Runde nicht erreichen — messbar stärker, aber der
   Gewinn kommt fast nur von Tower. Offen sind Schützen (warten, bis der
   eigene Tank die Splash-Zone geleert hat) und Flieger (warten, bis
   feststeht, wo der Gegner landet).
-- **Helden** mit Primärwerten, Sekundärfertigkeiten und Zauberbuch.
 - **Belagerung**: Mauern, Catapult, Wall-Penalty für Schützen — eigene
   Battlefield-Variante mit Wall-Hexes.
-- **Pit Lord Raise Demons** — Corpse-Pool plus neue
-  `Action.RaiseDemons`-Variante.
 
 ## Quellen
 

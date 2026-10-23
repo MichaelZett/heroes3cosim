@@ -8,6 +8,7 @@ import de.zettsystems.h3comsim.battle.domain.BattleSetup;
 import de.zettsystems.h3comsim.battle.domain.Battlefield;
 import de.zettsystems.h3comsim.battle.domain.Faction;
 import de.zettsystems.h3comsim.battle.domain.GreedyAutoSolver;
+import de.zettsystems.h3comsim.battle.domain.HeroCatalog;
 import de.zettsystems.h3comsim.battle.domain.Hex;
 import de.zettsystems.h3comsim.battle.domain.ObstacleGenerator;
 import de.zettsystems.h3comsim.battle.domain.Stack;
@@ -37,7 +38,8 @@ import java.util.function.Supplier;
  * Empirische Faction-vs-Faction-Matrix: rennt jede Wochenproduktions-Composition gegen jede,
  * über mehrere Seeds und mit getauschten Seiten. Läuft mit beiden Solvern (Greedy, Strategic),
  * schreibt einen Vergleichs-Report nach {@code build/reports/faction-matrix.md} und prüft nur,
- * dass kein Lauf crasht — die eigentliche Auswertung passiert beim Sichten des Reports.
+ * dass kein Lauf crasht — die eigentliche Auswertung passiert beim Sichten des Reports. Beide
+ * Armeen führt wie im Endpunkt der Standardheld ihrer Fraktion.
  *
  * <p>Cost pro Default-Run: 9 × 9 × {@value #SEEDS_PER_PAIR} × 2 × 2 Solver = 1620 Sims bei
  * SEEDS_PER_PAIR=5.
@@ -110,7 +112,9 @@ class FactionMatrixTest {
         List<Stack> attackerStacks = buildStacks(attacker, Side.ATTACKER);
         List<Stack> defenderStacks = buildStacks(defender, Side.DEFENDER);
         Battlefield bf = buildBattlefield(attackerStacks, defenderStacks, seed);
-        BattleSetup setup = new BattleSetup(attackerStacks, defenderStacks, bf);
+        // Wie im Army-Battle-Endpunkt: jede Armee führt der Standardheld ihrer Hauptfraktion.
+        BattleSetup setup = new BattleSetup(attackerStacks, defenderStacks, bf,
+                HeroCatalog.defaultForArmy(attackerStacks), HeroCatalog.defaultForArmy(defenderStacks));
         BattleResult result = new Battle(new Random(seed), solver).simulate(setup);
 
         acc.total.increment();

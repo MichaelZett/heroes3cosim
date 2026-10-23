@@ -26,8 +26,8 @@ import java.util.Set;
  * senken laut Manual S. 103 die Moral der gegnerischen Armee um eins, ebenfalls einmal pro
  * Armee und nicht je Drachen-Stack.
  *
- * <p>Bewusst <strong>nicht</strong> abgebildet: Artefakte, Gebäude, Abenteuer-Orte und Zauber.
- * Sie alle stehen außerhalb der Schlacht, die dieser Simulator kennt.
+ * <p>Artefakte, Gebäude und Abenteuer-Orte kennt der Simulator nicht einzeln; ihre Summe kommt
+ * als gesammelte Moral des Helden herein ({@link CollectedBonus}). Zauber fehlen ganz.
  *
  * <p>Die Kappung auf [-3, +3] passiert nicht hier, sondern erst in {@link Stack#getMorale()} —
  * dort kommt der individuelle Bonus der Kreatur dazu, und erst diese Summe ist der Wert, den
@@ -57,6 +57,15 @@ public final class ArmyMorale {
      *                     des Gegners senken
      */
     public static int ratingOf(List<Stack> stacks, @Nullable Hero hero, List<Stack> enemyStacks) {
+        return ratingOf(stacks, hero, CollectedBonus.NONE, enemyStacks);
+    }
+
+    /**
+     * Wie {@link #ratingOf(List, Hero, List)}, zusätzlich mit der gesammelten Moral des Helden.
+     * Ohne Helden bleibt sie wirkungslos, siehe {@link CollectedBonus}.
+     */
+    public static int ratingOf(List<Stack> stacks, @Nullable Hero hero, CollectedBonus bonus,
+                               List<Stack> enemyStacks) {
         Set<Faction> towns = EnumSet.noneOf(Faction.class);
         boolean undead = false;
         boolean living = false;
@@ -83,7 +92,7 @@ public final class ArmyMorale {
             rating++;
         }
         if (hero != null) {
-            rating += hero.leadershipMoraleBonus();
+            rating += hero.leadershipMoraleBonus() + bonus.morale();
         }
         boolean enemyLowersMorale = enemyStacks.stream()
                 .anyMatch(stack -> stack.unit().hasSpeciality(UnitSpeciality.LOWERS_ENEMY_MORALE));
@@ -104,7 +113,7 @@ public final class ArmyMorale {
 
     /**
      * Wahrscheinlichkeit in Promille, dass Moral oder Glück dieser Stärke auslösen
-     * (Manual S. 43/44): 4.2 %, 8.3 %, 12.5 % — ein Mal, zwei Mal, drei Mal ein Zwölftel.
+     * (Manual S. 43/44): 4.2 %, 8.3 %, 12.5 % — ein Mal, zwei Mal, drei Mal ein Vierundzwanzigstel.
      *
      * @param level Betrag der Moral, 1..3
      */

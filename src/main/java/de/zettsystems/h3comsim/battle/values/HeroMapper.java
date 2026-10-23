@@ -1,6 +1,7 @@
 package de.zettsystems.h3comsim.battle.values;
 
 import de.zettsystems.h3comsim.battle.domain.Hero;
+import de.zettsystems.h3comsim.battle.domain.HeroSpecialty;
 
 public final class HeroMapper {
 
@@ -16,6 +17,21 @@ public final class HeroMapper {
                 hero.defense(),
                 hero.power(),
                 hero.knowledge(),
-                hero.skills());
+                hero.skills(),
+                toDto(hero.specialty()));
+    }
+
+    static HeroSpecialtyDto toDto(HeroSpecialty specialty) {
+        boolean effective = specialty.effectiveInCombat();
+        return switch (specialty) {
+            case HeroSpecialty.Creature c -> new HeroSpecialtyDto(HeroSpecialtyDto.Kind.CREATURE,
+                    c.creature().name(), c.creature().tier(), null, 0, 0, 0, null, effective);
+            case HeroSpecialty.Skill s -> new HeroSpecialtyDto(HeroSpecialtyDto.Kind.SKILL,
+                    null, 0, s.skill(), 0, 0, 0, null, effective);
+            case HeroSpecialty.FixedCreature f -> new HeroSpecialtyDto(HeroSpecialtyDto.Kind.FIXED_CREATURE,
+                    f.creature().name(), f.creature().tier(), null, f.attack(), f.defense(), f.damage(), null, effective);
+            case HeroSpecialty.Other o -> new HeroSpecialtyDto(HeroSpecialtyDto.Kind.OTHER,
+                    null, 0, null, 0, 0, 0, o.description(), effective);
+        };
     }
 }

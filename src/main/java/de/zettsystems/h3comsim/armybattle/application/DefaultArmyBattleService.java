@@ -8,17 +8,19 @@ import de.zettsystems.h3comsim.battle.domain.Battle;
 import de.zettsystems.h3comsim.battle.domain.BattleResult;
 import de.zettsystems.h3comsim.battle.domain.BattleSetup;
 import de.zettsystems.h3comsim.battle.domain.Battlefield;
+import de.zettsystems.h3comsim.battle.domain.CollectedBonus;
 import de.zettsystems.h3comsim.battle.domain.Hero;
 import de.zettsystems.h3comsim.battle.domain.HeroCatalog;
 import de.zettsystems.h3comsim.battle.domain.Hex;
 import de.zettsystems.h3comsim.battle.domain.ObstacleGenerator;
+import de.zettsystems.h3comsim.battle.domain.SecondarySkill;
+import de.zettsystems.h3comsim.battle.domain.SkillLevel;
 import de.zettsystems.h3comsim.battle.domain.Stack;
 import de.zettsystems.h3comsim.battle.domain.StrategicAutoSolver;
 import de.zettsystems.h3comsim.battle.domain.Unit;
 import de.zettsystems.h3comsim.battle.domain.UnitCatalog;
 import de.zettsystems.h3comsim.battle.domain.events.ListEventCollector;
 import de.zettsystems.h3comsim.battle.domain.events.Side;
-import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -26,6 +28,8 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 
@@ -39,21 +43,39 @@ public class DefaultArmyBattleService implements ArmyBattleService {
 
         Battlefield battlefield = buildBattlefield(attackerStacks.size(), defenderStacks.size(), seed);
         BattleSetup setup = new BattleSetup(attackerStacks, defenderStacks, battlefield,
-                resolveHero(request.attacker()), resolveHero(request.defender()));
+                resolveHero(request.attacker(), attackerStacks), bonusOf(request.attacker()),
+                resolveHero(request.defender(), defenderStacks), bonusOf(request.defender()));
 
         ListEventCollector collector = new ListEventCollector();
         BattleResult result = new Battle(new Random(seed), new StrategicAutoSolver(), collector).simulate(setup);
         return new ArmyBattleSimulation(result, collector.events());
     }
 
-    private static @Nullable Hero resolveHero(ArmySpec army) {
+    /**
+     * Jede Armee hat einen Helden; ohne Auswahl den Standardhelden ihrer Hauptfraktion. Level
+     * und Aufbau aus dem Request gelten für beide Fälle.
+     */
+    private static Hero resolveHero(ArmySpec army, List<Stack> stacks) {
         String name = army.heroName();
-        if (name == null || name.isBlank()) {
-            return null;
+        Hero hero = name == null || name.isBlank()
+                ? HeroCatalog.defaultForArmy(stacks)
+                : HeroCatalog.byName(name)
+                        .orElseThrow(() -> new ResponseStatusException(
+                                HttpStatus.BAD_REQUEST, "Unknown hero: " + name));
+        Map<SecondarySkill, SkillLevel> learned = Objects.requireNonNullElse(army.skills(), Map.of());
+        try {
+            return hero.withLevel(Objects.requireNonNullElse(army.heroLevel(), 1))
+                    .withBuild(Objects.requireNonNullElse(army.attackBonus(), 0),
+                            Objects.requireNonNullElse(army.defenseBonus(), 0), learned);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
         }
-        return HeroCatalog.byName(name)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST, "Unknown hero: " + name));
+    }
+
+    private static CollectedBonus bonusOf(ArmySpec army) {
+        // Der kompakte Konstruktor von ArmySpec setzt fehlende Boni auf 0.
+        return new CollectedBonus(Objects.requireNonNullElse(army.luckBonus(), 0),
+                Objects.requireNonNullElse(army.moraleBonus(), 0));
     }
 
     private static List<Stack> buildStacks(ArmySpec army, Side side) {

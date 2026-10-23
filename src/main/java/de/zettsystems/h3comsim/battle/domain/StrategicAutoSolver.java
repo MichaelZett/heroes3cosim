@@ -597,7 +597,7 @@ public final class StrategicAutoSolver implements AutoSolver {
             return null;
         }
         Hex from = active.position();
-        int speed = active.unit().speed();
+        int speed = active.getSpeed();
         Stack best = null;
         int bestThreat = -1;
         for (Stack candidate : aliveEnemies) {
@@ -656,7 +656,7 @@ public final class StrategicAutoSolver implements AutoSolver {
         }
         // TELEPORT_NO_COST (Devil/Arch Devil): Speed-Schranke entfällt.
         if (!active.hasSpeciality(UnitSpeciality.TELEPORT_NO_COST)
-                && active.position().distanceTo(hex) > active.unit().speed()) {
+                && active.position().distanceTo(hex) > active.getSpeed()) {
             return false;
         }
         for (Stack other : setup.attackerStacks()) {
@@ -670,7 +670,7 @@ public final class StrategicAutoSolver implements AutoSolver {
             }
         }
         List<Hex> path = bf.findPath(active.position(), hex, active.unit().movement());
-        return !path.isEmpty() && path.size() <= active.unit().speed();
+        return !path.isEmpty() && path.size() <= active.getSpeed();
     }
 
     private static Hex adjacentTowards(Hex from, Hex to) {

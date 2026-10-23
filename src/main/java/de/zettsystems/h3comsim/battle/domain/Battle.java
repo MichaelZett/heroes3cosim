@@ -57,7 +57,14 @@ public final class Battle {
         List<StackSnapshot> initialStacks = setup.aliveStacks().stream().map(Battle::snapshot).toList();
         events.emit(new BattleEvent.BattleStart(bf.width(), bf.height(), obstacleCoords,
                 attackerSnap, defenderSnap, initialStacks,
-                setup.moraleOf(Side.ATTACKER), setup.moraleOf(Side.DEFENDER)));
+                setup.moraleOf(Side.ATTACKER), setup.moraleOf(Side.DEFENDER),
+                heroName(setup.attackerHero()), heroName(setup.defenderHero()),
+                setup.luckOf(Side.ATTACKER), setup.luckOf(Side.DEFENDER)));
+        for (Side side : Side.values()) {
+            if (setup.tacticsOf(side) > 0) {
+                events.emit(new BattleEvent.TacticsPhase(side, setup.tacticsOf(side)));
+            }
+        }
 
         int attackerStart = setup.getAttackerCount();
         int defenderStart = setup.getDefenderCount();
@@ -479,13 +486,13 @@ public final class Battle {
         Hero attackerHero = active.commander();
         if (attackerHero != null) {
             int bonus = attackType == AttackType.HAND_TO_HAND
-                    ? attackerHero.offenseBonusPercent()
-                    : attackerHero.archeryBonusPercent();
-            result = (result * (100 + bonus)) / 100;
+                    ? attackerHero.offenseBonusPerMille()
+                    : attackerHero.archeryBonusPerMille();
+            result = (result * (1000 + bonus)) / 1000;
         }
         Hero defenderHero = passive.commander();
         if (defenderHero != null) {
-            result = (result * (100 - defenderHero.armorerReductionPercent())) / 100;
+            result = (result * (1000 - defenderHero.armorerReductionPerMille())) / 1000;
         }
         return result;
     }
@@ -623,8 +630,14 @@ public final class Battle {
         }
         int effectiveDefense = passive.effectiveDefenseAgainst(active.getAttackerSpecialities());
         int boniMaliPercentage = active.calculateAttackBoniMaliPercentage(effectiveDefense);
+        int damagePercent = 100 + boniMaliPercentage;
+        if (active.isLucky(rng)) {
+            damagePercent = luckyDamagePercent(boniMaliPercentage);
+            BattleLogger.logLuckyStrike(active.getName());
+            events.emit(new BattleEvent.LuckyStrike(active.side(), active.slot()));
+        }
         int realDamage = applyHeroCombatSkills(active, passive, attackType,
-                (currentDamage * (100 + boniMaliPercentage)) / 100);
+                (currentDamage * damagePercent) / 100);
 
         BattleLogger.logAttack(active.getName(), passive.getName());
         boolean rebirthUsedBefore = passive.isRebirthUsed();
@@ -648,6 +661,22 @@ public final class Battle {
             BattleLogger.logLastUnitDead(passive.getName());
         }
         return realDamage;
+    }
+
+    /**
+     * Schaden in Prozent bei einem Glückstreffer. Das Manual sagt „double damage" (S. 44); in der
+     * SoD-Formel ist Glück ein Aufschlag von +100 % auf den Grundschaden, der sich mit dem
+     * Attack-Bonus addiert, während ein Defense-Überhang danach als Abschlag wirkt
+     * (heroes.thelazy.net, Damage). Mit Attack-Überhang wird aus +15 % also +115 %, mit
+     * Defense-Überhang aus 80 % genau das Doppelte, 160 %.
+     *
+     * <p>Gilt nur für das Hauptziel: Splash-Treffer würfeln ihren Schaden selbst und kennen
+     * kein Glück — in SoD trifft der Glückstreffer nur das angegriffene Ziel.
+     */
+    static int luckyDamagePercent(int boniMaliPercentage) {
+        return boniMaliPercentage >= 0
+                ? 200 + boniMaliPercentage
+                : 2 * (100 + boniMaliPercentage);
     }
 
     private void emitRebirthIfFired(Stack passive, boolean rebirthUsedBefore) {
@@ -746,6 +775,10 @@ public final class Battle {
             events.emit(new BattleEvent.Aging(active.side(), active.slot(),
                     target.side(), target.slot()));
         }
+    }
+
+    private static @Nullable String heroName(@Nullable Hero hero) {
+        return hero == null ? null : hero.name();
     }
 
     private static StackSnapshot snapshot(Stack stack) {

@@ -83,6 +83,12 @@ export type BattleEvent =
       /** Moral-Rating der Armee (Manual S. 43), -3..+3. */
       attackerMorale: number;
       defenderMorale: number;
+      /** Held der Armee; im Army-Battle immer gesetzt, im Single-Battle null. */
+      attackerHero?: string | null;
+      defenderHero?: string | null;
+      /** Glücks-Rating der Armee (Manual S. 44), 0..3; ohne Held 0. */
+      attackerLuck?: number;
+      defenderLuck?: number;
     }
   | {
       type: 'Move';
@@ -131,6 +137,10 @@ export type BattleEvent =
   | { type: 'TwoShots'; actor: Side; actorSlot: number }
   | { type: 'GoodMorale'; actor: Side; actorSlot: number }
   | { type: 'BadMorale'; actor: Side; actorSlot: number }
+  /** Der unmittelbar folgende Treffer dieses Stacks richtet doppelten Grundschaden an. */
+  | { type: 'LuckyStrike'; actor: Side; actorSlot: number }
+  /** Tactics: diese Seite hat vor Kampfbeginn in den ersten `columns` Spalten aufgestellt. */
+  | { type: 'TacticsPhase'; actor: Side; columns: number }
   | {
       type: 'MoveBack';
       actor: Side;
@@ -218,37 +228,77 @@ export interface StackSpec {
 
 export interface ArmySpec {
   stacks: StackSpec[];
-  /** Name aus /api/heroes. Null bedeutet: Armee kaempft fuehrerlos. */
+  /** Name aus /api/heroes. Null bedeutet: Standardheld der Fraktion mit dem groessten Goldwert. */
   heroName?: string | null;
+  /** Gesammeltes Glueck des Helden (Artefakte, Gebaeude, Orte), 0..3. */
+  luckBonus?: number;
+  /** Gesammelte Moral des Helden, -3..+3. */
+  moraleBonus?: number;
+  /** Level des Helden, 1..99; wirkt ueber die Spezialitaet. */
+  heroLevel?: number;
+  /** Zusaetzliche Attack-/Defense-Punkte des Helden, 0..99. */
+  attackBonus?: number;
+  defenseBonus?: number;
+  /** Gelernte oder verbesserte Fertigkeiten; Startfertigkeiten lassen sich nur heben. */
+  skills?: Partial<Record<SecondarySkill, SkillLevel>>;
 }
 
 export type HeroClass =
   | 'KNIGHT'
+  | 'CLERIC'
   | 'RANGER'
+  | 'DRUID'
   | 'ALCHEMIST'
+  | 'WIZARD'
   | 'DEMONIAC'
+  | 'HERETIC'
   | 'DEATH_KNIGHT'
+  | 'NECROMANCER'
   | 'OVERLORD'
+  | 'WARLOCK'
   | 'BARBARIAN'
+  | 'BATTLE_MAGE'
   | 'BEASTMASTER'
-  | 'PLANESWALKER';
+  | 'WITCH'
+  | 'PLANESWALKER'
+  | 'ELEMENTALIST';
 
 export type SecondarySkill =
-  | 'OFFENSE'
+  | 'AIR_MAGIC'
   | 'ARCHERY'
   | 'ARMORER'
-  | 'TACTICS'
+  | 'ARTILLERY'
+  | 'BALLISTICS'
+  | 'DIPLOMACY'
+  | 'EAGLE_EYE'
+  | 'EARTH_MAGIC'
+  | 'ESTATES'
+  | 'FIRE_MAGIC'
+  | 'FIRST_AID'
+  | 'INTELLIGENCE'
   | 'LEADERSHIP'
+  | 'LEARNING'
+  | 'LOGISTICS'
+  | 'LUCK'
+  | 'MYSTICISM'
+  | 'NAVIGATION'
   | 'NECROMANCY'
+  | 'OFFENSE'
+  | 'PATHFINDING'
+  | 'RESISTANCE'
   | 'SCHOLAR'
-  | 'MYSTICISM';
+  | 'SCOUTING'
+  | 'SORCERY'
+  | 'TACTICS'
+  | 'WATER_MAGIC'
+  | 'WISDOM';
 
 export type SkillLevel = 'NONE' | 'BASIC' | 'ADVANCED' | 'EXPERT';
 
 /**
  * Held aus /api/heroes. Von den Primaerwerten wirken derzeit nur attack und defense:
- * sie werden auf jede Kreatur der gefuehrten Armee addiert. power, knowledge und skills
- * werden gefuehrt, aber noch nicht ausgewertet.
+ * sie werden auf jede Kreatur der gefuehrten Armee addiert. Von den skills wirken Offense,
+ * Archery, Armorer und Leadership; power, knowledge und die uebrigen skills werden nur gefuehrt.
  */
 export interface HeroDto {
   name: string;
@@ -259,6 +309,20 @@ export interface HeroDto {
   power: number;
   knowledge: number;
   skills: Partial<Record<SecondarySkill, SkillLevel>>;
+  specialty: HeroSpecialtyDto;
+}
+
+/** Spezialfaehigkeit eines Helden; kind bestimmt, welche Felder belegt sind. */
+export interface HeroSpecialtyDto {
+  kind: 'CREATURE' | 'SKILL' | 'FIXED_CREATURE' | 'OTHER';
+  unitName?: string | null;
+  creatureTier: number;
+  skill?: SecondarySkill | null;
+  attack: number;
+  defense: number;
+  damage: number;
+  description?: string | null;
+  effective: boolean;
 }
 
 export interface ArmyBattleRequest {

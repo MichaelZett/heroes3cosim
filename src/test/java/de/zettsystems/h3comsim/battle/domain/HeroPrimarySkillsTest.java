@@ -84,18 +84,61 @@ class HeroPrimarySkillsTest {
     }
 
     @Test
-    void every_faction_has_exactly_one_hero() {
-        // Stufe 1 führt genau einen Helden je Fraktion — NEUTRAL hat keinen.
+    void catalog_holds_eight_heroes_per_class_and_two_classes_per_faction() {
+        // 16 RoE-Klassen plus die zwei Conflux-Klassen aus Armageddon's Blade, je acht Helden.
+        assertThat(HeroCatalog.all()).hasSize(HeroClass.values().length * 8);
+        for (HeroClass heroClass : HeroClass.values()) {
+            assertThat(HeroCatalog.all())
+                    .as("Helden der Klasse %s", heroClass)
+                    .filteredOn(hero -> hero.heroClass() == heroClass)
+                    .hasSize(8);
+        }
+        for (Faction faction : Faction.values()) {
+            assertThat(HeroCatalog.all())
+                    .as("Helden für %s", faction)
+                    .filteredOn(hero -> hero.faction() == faction)
+                    .hasSize(faction == Faction.NEUTRAL ? 0 : 16);
+        }
+        assertThat(HeroCatalog.all()).extracting(Hero::name).doesNotHaveDuplicates();
+    }
+
+    @Test
+    void primary_skills_come_from_the_hero_class() {
+        assertThat(HeroCatalog.all()).allSatisfy(hero -> {
+            HeroClass heroClass = hero.heroClass();
+            assertThat(List.of(hero.attack(), hero.defense(), hero.power(), hero.knowledge()))
+                    .as(hero.name())
+                    .containsExactly(heroClass.attack(), heroClass.defense(), heroClass.power(),
+                            heroClass.knowledge());
+        });
+    }
+
+    @Test
+    void every_town_faction_has_a_default_hero_of_its_own() {
         for (Faction faction : Faction.values()) {
             if (faction == Faction.NEUTRAL) {
-                assertThat(HeroCatalog.byFaction(faction)).isEmpty();
+                assertThat(HeroCatalog.defaultFor(faction)).isEmpty();
             } else {
-                assertThat(HeroCatalog.byFaction(faction))
-                        .as("Held für %s", faction)
-                        .isPresent();
+                assertThat(HeroCatalog.defaultFor(faction))
+                        .as("Standardheld für %s", faction)
+                        .get()
+                        .satisfies(hero -> assertThat(hero.faction()).isEqualTo(faction))
+                        .satisfies(hero -> assertThat(HeroCatalog.byName(hero.name())).contains(hero));
             }
         }
-        assertThat(HeroCatalog.all()).hasSize(Faction.values().length - 1);
+        assertThat(HeroCatalog.defaultFor(Faction.STRONGHOLD)).contains(HeroCatalog.CRAG_HACK);
+    }
+
+    @Test
+    void catalog_carries_the_manual_start_skills() {
+        // Stichproben über beide Handbücher, auch mit Fertigkeiten, die nicht wirken.
+        assertThat(HeroCatalog.byName("Melodia").orElseThrow().levelOf(SecondarySkill.LUCK))
+                .isEqualTo(SkillLevel.BASIC);
+        assertThat(HeroCatalog.byName("Fiona").orElseThrow().levelOf(SecondarySkill.SCOUTING))
+                .isEqualTo(SkillLevel.ADVANCED);
+        assertThat(HeroCatalog.byName("Luna").orElseThrow().levelOf(SecondarySkill.FIRE_MAGIC))
+                .isEqualTo(SkillLevel.BASIC);
+        assertThat(HeroCatalog.byName("Brissa").orElseThrow().attack()).isZero();
     }
 
     @Test
@@ -119,5 +162,20 @@ class HeroPrimarySkillsTest {
         // Advanced Offense wäre +20 % Nahkampfschaden — der Attack-Wert allein erklärt den
         // gesamten Unterschied, es kommt noch kein Fertigkeits-Aufschlag dazu.
         assertThat(led.getAttack()).isEqualTo(UnitCatalog.PIKEMAN.attack() + 4);
+    }
+
+    @Test
+    void a_build_adds_primary_points_and_raises_or_adds_skills_but_never_lowers_them() {
+        Hero built = HeroCatalog.SORSHA.withBuild(3, 1,
+                java.util.Map.of(SecondarySkill.OFFENSE, SkillLevel.EXPERT,
+                        SecondarySkill.LEADERSHIP, SkillLevel.NONE,
+                        SecondarySkill.LUCK, SkillLevel.ADVANCED));
+
+        assertThat(built.attack()).isEqualTo(5);
+        assertThat(built.defense()).isEqualTo(3);
+        assertThat(built.levelOf(SecondarySkill.OFFENSE)).isEqualTo(SkillLevel.EXPERT);
+        assertThat(built.levelOf(SecondarySkill.LEADERSHIP)).isEqualTo(SkillLevel.BASIC);
+        assertThat(built.levelOf(SecondarySkill.LUCK)).isEqualTo(SkillLevel.ADVANCED);
+        assertThat(built.specialty()).isEqualTo(HeroCatalog.SORSHA.specialty());
     }
 }

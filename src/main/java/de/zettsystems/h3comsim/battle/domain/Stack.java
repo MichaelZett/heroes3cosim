@@ -37,6 +37,7 @@ public class Stack {
     private boolean waitedThisTurn;
     private @Nullable Hero commander;
     private int armyMorale;
+    private int armyLuck;
 
     /** Convenience constructor — defaults the side to {@link Side#ATTACKER}. */
     public Stack(Unit unit, int count, Hex position) {
@@ -102,17 +103,19 @@ public class Stack {
         return unit.name();
     }
 
+    /** Speed der Kreatur plus +1 durch einen Kreatur-Spezialisten ({@link HeroSpecialty}). */
     public int getSpeed() {
-        return unit.speed();
+        return unit.speed() + (commander == null ? 0 : commander.specialty().speedBonus(unit));
     }
 
     public int getAttack() {
-        return unit.attack() - (diseased ? 2 : 0) + (commander == null ? 0 : commander.attack());
+        return unit.attack() - (diseased ? 2 : 0)
+                + (commander == null ? 0 : commander.attack() + commander.specialtyAttackBonus(unit));
     }
 
     public int getDefense() {
         int base = unit.defense() - (diseased ? 2 : 0)
-                + (commander == null ? 0 : commander.defense());
+                + (commander == null ? 0 : commander.defense() + commander.specialtyDefenseBonus(unit));
         if (defending) {
             // H3-Defend laut RoE-Manual S. 47: +20 % auf die Defense-Rating bis Rundenende.
             // Stackt nicht mit anderen Defense-Boni — gehört hierhin, damit alle Damage-
@@ -147,6 +150,24 @@ public class Stack {
     /** Moral-Rating der Armee, zu der dieser Stack gehoert — gesetzt von {@link BattleSetup}. */
     void assignArmyMorale(int rating) {
         this.armyMorale = rating;
+    }
+
+    /** Glücks-Rating der Armee, bereits gekappt — gesetzt von {@link BattleSetup}. */
+    void assignArmyLuck(int rating) {
+        this.armyLuck = rating;
+    }
+
+    /** Glück dieses Stacks, 0..3. Keine Kreatur im Katalog hat eigenes Glück. */
+    public int getLuck() {
+        return armyLuck;
+    }
+
+    /**
+     * Glückstreffer, Manual S. 44: Chance auf doppelten Schaden — 4.2 / 8.3 / 12.5 %. Zieht nur
+     * bei positivem Glück einen Zufallswert; ohne Glück bleibt der Zufallsstrom unangetastet.
+     */
+    public boolean isLucky(RandomGenerator rng) {
+        return armyLuck > 0 && rng.nextInt(1000) < ArmyMorale.triggerChancePerMille(armyLuck);
     }
 
     /**
@@ -187,7 +208,10 @@ public class Stack {
     }
 
     public int calculateCurrentDamage(AttackType usedAttackType, int hexesMoved, RandomGenerator rng) {
-        int baseValue = cursed ? unit.minDamage() : rng.nextInt(unit.minDamage(), unit.maxDamage() + 1);
+        // Planeswalker-Spezialität: fester Aufschlag auf Minimal- und Maximalschaden je Kreatur.
+        int bonus = commander == null ? 0 : commander.specialty().damageBonus(unit);
+        int baseValue = cursed ? unit.minDamage() + bonus
+                : rng.nextInt(unit.minDamage() + bonus, unit.maxDamage() + bonus + 1);
         if (unit.hasPenality(usedAttackType)) {
             baseValue = (int) Math.round(0.5 * baseValue);
             LOG.info("Stack von {} hat Nachteil, halbiert also den Schaden.", getName());

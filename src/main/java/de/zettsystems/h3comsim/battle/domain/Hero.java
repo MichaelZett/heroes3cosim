@@ -1,5 +1,6 @@
 package de.zettsystems.h3comsim.battle.domain;
 
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -17,11 +18,15 @@ import java.util.Objects;
  *       sie reine Daten — sie werden geführt und ausgeliefert, aber nirgends gelesen.</li>
  * </ul>
  *
- * <p>Das Level fehlt bewusst: Fortschritt gehört auf die Abenteuerkarte, die es hier nicht
- * gibt. Der Katalog führt die Startwerte, mit denen ein Held rekrutiert wird.
+ * <p>Der Katalog führt die Startwerte, mit denen ein Held rekrutiert wird, auf Level 1. Das
+ * Level wirkt nur über die Spezialität ({@link HeroSpecialty}); was ein Held beim Aufstieg an
+ * Primärwerten und Fertigkeiten dazugewinnt, ist Zufall auf der Abenteuerkarte und wird nicht
+ * nachgewürfelt.
  *
- * @param skills Startfertigkeiten mit ihrer Ausbaustufe. Welche davon wirken, steht bei
- *               {@link SecondarySkill}.
+ * @param skills    Startfertigkeiten mit ihrer Ausbaustufe. Welche davon wirken, steht bei
+ *                  {@link SecondarySkill}.
+ * @param specialty Spezialfähigkeit („Unique Ability")
+ * @param level     Heldenlevel, ab 1
  */
 public record Hero(
         String name,
@@ -31,18 +36,67 @@ public record Hero(
         int defense,
         int power,
         int knowledge,
-        Map<SecondarySkill, SkillLevel> skills
+        Map<SecondarySkill, SkillLevel> skills,
+        HeroSpecialty specialty,
+        int level
 ) {
     public Hero {
         Objects.requireNonNull(name, "name");
         Objects.requireNonNull(heroClass, "heroClass");
         Objects.requireNonNull(faction, "faction");
         Objects.requireNonNull(skills, "skills");
+        Objects.requireNonNull(specialty, "specialty");
+        if (level < 1) {
+            throw new IllegalArgumentException("level must be at least 1, was " + level);
+        }
         requireNonNegative(attack, "attack");
         requireNonNegative(defense, "defense");
         requireNonNegative(power, "power");
         requireNonNegative(knowledge, "knowledge");
         skills = Map.copyOf(skills);
+    }
+
+    /** Held ohne Spezialität auf Level 1 — für Tests, die eine Wirkung isolieren. */
+    public Hero(String name, HeroClass heroClass, Faction faction, int attack, int defense,
+                int power, int knowledge, Map<SecondarySkill, SkillLevel> skills) {
+        this(name, heroClass, faction, attack, defense, power, knowledge, skills,
+                HeroSpecialty.Other.NONE, 1);
+    }
+
+    /** Derselbe Held auf einem anderen Level. */
+    public Hero withLevel(int newLevel) {
+        return new Hero(name, heroClass, faction, attack, defense, power, knowledge, skills,
+                specialty, newLevel);
+    }
+
+    /** Höchstens acht Sekundärfertigkeiten je Held (Manual S. 35). */
+    public static final int MAX_SKILLS = 8;
+
+    /**
+     * Derselbe Held mit dem, was er unterwegs gesammelt hat: zusätzliche Attack- und
+     * Defense-Punkte (Level-Aufstiege, Artefakte) und weitere oder verbesserte Fertigkeiten.
+     * Fertigkeiten lassen sich nur hinzufügen oder heben, nie senken — eine einmal gelernte
+     * Fertigkeit verliert ein Held in H3 nicht.
+     *
+     * @throws IllegalArgumentException wenn der Held danach mehr als {@value #MAX_SKILLS}
+     *                                  Fertigkeiten hätte
+     */
+    public Hero withBuild(int attackBonus, int defenseBonus, Map<SecondarySkill, SkillLevel> learned) {
+        requireNonNegative(attackBonus, "attackBonus");
+        requireNonNegative(defenseBonus, "defenseBonus");
+        Map<SecondarySkill, SkillLevel> merged = new EnumMap<>(SecondarySkill.class);
+        merged.putAll(skills);
+        learned.forEach((skill, lvl) -> {
+            if (lvl != SkillLevel.NONE) {
+                merged.merge(skill, lvl, (a, b) -> a.compareTo(b) >= 0 ? a : b);
+            }
+        });
+        if (merged.size() > MAX_SKILLS) {
+            throw new IllegalArgumentException("a hero knows at most " + MAX_SKILLS
+                    + " secondary skills, would have " + merged.size());
+        }
+        return new Hero(name, heroClass, faction, attack + attackBonus, defense + defenseBonus,
+                power, knowledge, merged, specialty, level);
     }
 
     private static void requireNonNegative(int value, String field) {
@@ -83,6 +137,34 @@ public record Hero(
     }
 
     /**
+     * Offense in Promille, mit Spezialität (+5 % je Level auf den Effekt, siehe
+     * {@link HeroSpecialty.Skill}). Crag Hack auf Level 1 mit Advanced Offense: 210 ‰.
+     */
+    public int offenseBonusPerMille() {
+        return offenseBonusPercent() * specialty.skillFactorPerMille(SecondarySkill.OFFENSE, level) / 100;
+    }
+
+    /** Archery in Promille, mit Spezialität. */
+    public int archeryBonusPerMille() {
+        return archeryBonusPercent() * specialty.skillFactorPerMille(SecondarySkill.ARCHERY, level) / 100;
+    }
+
+    /** Armorer in Promille, mit Spezialität. */
+    public int armorerReductionPerMille() {
+        return armorerReductionPercent() * specialty.skillFactorPerMille(SecondarySkill.ARMORER, level) / 100;
+    }
+
+    /** Attack-Aufschlag der Spezialität für diese Kreatur. */
+    public int specialtyAttackBonus(Unit unit) {
+        return specialty.attackBonus(unit, level);
+    }
+
+    /** Defense-Aufschlag der Spezialität für diese Kreatur. */
+    public int specialtyDefenseBonus(Unit unit) {
+        return specialty.defenseBonus(unit, level);
+    }
+
+    /**
      * Armorer, Manual S. 35: „Reduces the amount of damage received by the hero's troops in
      * combat" — 5/10/15 %. Gilt für jeden eingehenden Schaden, egal ob Nah- oder Fernkampf.
      */
@@ -106,6 +188,19 @@ public record Hero(
      */
     public int leadershipMoraleBonus() {
         return switch (levelOf(SecondarySkill.LEADERSHIP)) {
+            case NONE -> 0;
+            case BASIC -> 1;
+            case ADVANCED -> 2;
+            case EXPERT -> 3;
+        };
+    }
+
+    /**
+     * Luck, Manual S. 37: „The hero's troops gain a bonus to their luck rating" — +1/2/3, geht in
+     * das Armee-Glück ein ({@link ArmyLuck}).
+     */
+    public int luckBonus() {
+        return switch (levelOf(SecondarySkill.LUCK)) {
             case NONE -> 0;
             case BASIC -> 1;
             case ADVANCED -> 2;
