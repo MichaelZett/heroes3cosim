@@ -27,6 +27,8 @@ interface HeroBonusPickerProps {
   /** Power und Knowledge des gewaehlten Helden ohne Aufbau; ohne Auswahl 0. */
   basePower?: number;
   baseKnowledge?: number;
+  /** Startzauber des Helden: immer im Buch, auch ueber dem Wisdom-Gate. */
+  startSpells?: Spell[];
   onChange: (patch: Partial<HeroBuild>) => void;
 }
 
@@ -85,6 +87,7 @@ export default function HeroBonusPicker({
   startSkills,
   basePower = 0,
   baseKnowledge = 0,
+  startSpells = [],
   onChange,
 }: Readonly<HeroBonusPickerProps>) {
   const { t } = useTranslation();
@@ -232,20 +235,27 @@ export default function HeroBonusPicker({
             >
               {t('army.spellLevel', { level })}
             </span>
-            {HERO_SPELLS.filter(([, l]) => l === level).map(([spell]) => (
-              <label
-                key={spell}
-                className={`flex items-center gap-1 text-sm ${level > maxLevel ? 'text-slate-600' : 'text-slate-200'}`}
-              >
-                <input
-                  type="checkbox"
-                  disabled={level > maxLevel}
-                  checked={value.spells.includes(spell)}
-                  onChange={(e) => toggleSpell(spell, e.target.checked)}
-                />
-                {t(`spell.${spell}`)}
-              </label>
-            ))}
+            {HERO_SPELLS.filter(([, l]) => l === level).map(([spell]) => {
+              const start = startSpells.includes(spell);
+              const locked = start || level > maxLevel;
+              return (
+                <label
+                  key={spell}
+                  className={`flex items-center gap-1 text-sm ${level > maxLevel && !start ? 'text-slate-600' : 'text-slate-200'}`}
+                >
+                  <input
+                    type="checkbox"
+                    disabled={locked}
+                    checked={start || value.spells.includes(spell)}
+                    onChange={(e) => toggleSpell(spell, e.target.checked)}
+                  />
+                  {t(`spell.${spell}`)}
+                  {start && (
+                    <span className="text-xs text-amber-300/80">{t('army.startSpell')}</span>
+                  )}
+                </label>
+              );
+            })}
           </div>
         ))}
       </fieldset>

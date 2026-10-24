@@ -7,8 +7,8 @@ import java.util.Objects;
  *
  * @param level      Ausbaustufe, mit der er gewirkt wurde — sie bestimmt die Stärke
  * @param roundsLeft verbleibende Runden; „1 Round/Power" im Manual, bei Kreaturen fest
- * @param amount     aufgelaufene Wirkung bei Zaubern, die sich stapeln (Disrupting Ray: Summe
- *                   der Defense-Abzüge), sonst 0
+ * @param amount     Disrupting Ray: Summe der Defense-Abzüge; sonst die Zusatzpunkte aus der
+ *                   Spezialität des Zaubernden ({@link HeroSpecialty#spellEffectBonus}), meist 0
  */
 public record ActiveSpell(Spell spell, SkillLevel level, int roundsLeft, int amount) {
     public ActiveSpell {

@@ -54,10 +54,16 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   +5 % Attack und Defense je angefangene Spanne von Kreaturstufe Leveln;
   Fertigkeits-Spezialisten heben Offense, Archery oder Armorer um 5 % je
   Level; die Planeswalker geben ihren Elementaren feste Boni auf Attack,
-  Defense und Schaden; Ballista-Spezialisten heben deren Attack, Spezialisten
-  für Schadenszauber geben +3 % Schaden je volle Spanne von Zielstufe
-  Leveln (Ciele fest +50 % auf Magic Arrow). Die übrigen Zauber- und die
-  Ressourcen-Spezialitäten werden angezeigt, wirken aber nicht.
+  Defense und Schaden; Ballista-Spezialisten heben deren Attack.
+  Zauber-Spezialisten beginnen mit ihrem Zauber, auch über dem Wisdom-Gate:
+  Schadenszauber, Cure, Animate Dead und Resurrection wirken um 3 % ×
+  Level / Stufe des Ziels stärker (Ciele fest +50 % auf Magic Arrow);
+  Haste, Prayer, Weakness, Precision, Stone Skin und Bloodlust geben +3/2/1
+  Punkte für Kreaturen der Stufe 1–2/3–4/5–6, Slayer +4 bis +1 für Stufe
+  1–4, Disrupting Ray +2, Fortune immer +3 Glück, Bless zusätzlich 3 % ×
+  Level / Stufe Schaden (SoD-Werte von heroes.thelazy.net). Hypnotize,
+  Fire Wall und die Ressourcen-Spezialitäten werden angezeigt, wirken aber
+  nicht.
 - **Heldenzauber** (Manual S. 33–39, Spell Reference S. 64–79) — ein Held
   mit Zauberbuch wirkt einmal pro Runde einen Zauber, sobald einer seiner
   Stacks am Zug ist, ohne dass der Stack seine Aktion verliert. Mana: 10
@@ -75,12 +81,18 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Curse, Haste, Slow, Prayer, Blind, Disrupting Ray, Forgetfulness …),
   Cure, Animate Dead und Resurrection. Golems nehmen halben bzw. ein
   Viertel Schaden, Elementare doppelten oder keinen von den Zaubern ihrer
-  Gegen-Elemente; Anti-Magic sperrt die unteren Stufen. Welchen Zauber
-  der Held wählt, entscheidet eine Heuristik: erwartete vernichtete
-  Kosten bei Schaden, geschätzter Anteil am Wert des Stacks bei Wirkungen.
-  Schutz vor Schulen, Anti-Magic und Dispel wählt sie nicht. Die
-  Mana-Kosten folgen dem RoE-Manual, ohne die Rabatte der Schul-
-  Fertigkeiten aus späteren Fassungen.
+  Gegen-Elemente; Anti-Magic sperrt die unteren Stufen. Dispel hebt alle
+  Zauber auf, auf Basic nur auf eigenen Stacks, auf Advanced auf jedem,
+  auf Expert auf allen. Welchen Zauber der Held wählt, entscheidet eine
+  Heuristik: erwartete vernichtete Kosten bei Schaden, geschätzter Anteil
+  am Wert des Stacks bei Wirkungen, bei Schutz vor einer Schule und
+  Anti-Magic der Schaden, den der gegnerische Held mit seinen Zaubern
+  anrichten könnte. Bei knappem Mana zählt, wie oft sich ein Zauber in
+  den restlichen Runden noch bezahlen lässt — zweimal Magic Arrow schlägt
+  dann einmal Lightning Bolt. Die Mana-Kosten folgen dem RoE-Manual, ohne
+  die Rabatte der Schul-Fertigkeiten aus späteren Fassungen; Magi und
+  Arch Magi senken die Kosten der eigenen Zauber um 2, Pegasi heben die
+  des Gegners um 2.
 - **Kreatur-Zauber** (Werte aus der Spell Reference des Manuals) —
   Zauber liegen mit Stufe und Rundenzahl auf dem Stack und laufen am
   Rundenende ab. Ogre Magi wirken Bloodlust, Master Genies einen
@@ -366,10 +378,9 @@ zu lesen, nicht als universelle H3-Tier-Liste.
   `FriendlyFireDiagnosisTest`). Diese Zahlen stammen noch aus der Zeit,
   in der der Cerberus wahllos zwei Nachbarn traf, eigene eingeschlossen,
   und der Magog nur zwei statt aller sechs Felder ums Ziel.
-- **Helden, nächste Stufe**: Startzauber der Magier-Helden, Zauber im
-  Matrix-Modus, eine Zauberwahl, die Mana über den Kampf einteilt und die
-  gegnerischen Zauber kennt (Schutz vor Schulen, Dispel). Bei den
-  Kriegsmaschinen offen: angreifbare Maschinen auf dem Feld.
+- **Helden, nächste Stufe**: Summon Elementals (wichtig für Conflux),
+  Magic Mirror, Zauber auf ganz gefallene Stacks, Zauber im Matrix-Modus.
+  Bei den Kriegsmaschinen offen: angreifbare Maschinen auf dem Feld.
 - **Taktisches Warten ausbauen**: Nahkämpfer nutzen *Wait* bereits, wenn
   sie ihr Ziel diese Runde nicht erreichen — messbar stärker, aber der
   Gewinn kommt fast nur von Tower. Offen sind Schützen (warten, bis der

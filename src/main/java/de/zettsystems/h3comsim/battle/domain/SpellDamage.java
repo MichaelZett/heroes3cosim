@@ -50,7 +50,7 @@ final class SpellDamage {
         }
         long damage = baseDamage;
         damage = damage * (100 + caster.sorceryPercent()) / 100;
-        damage = damage * (100 + caster.specialty().spellDamagePercent(spell, caster.level(), target.unit())) / 100;
+        damage = damage * (100 + caster.specialty().spellEffectPercent(spell, caster.level(), target.unit())) / 100;
         damage = damage * target.spellDamagePercent(spell.school()) / 100;
         if (target.hasSpeciality(UnitSpeciality.SPELL_DAMAGE_HALVED)) {
             damage = damage / 2;

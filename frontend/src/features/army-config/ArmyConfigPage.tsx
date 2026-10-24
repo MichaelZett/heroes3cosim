@@ -235,6 +235,7 @@ function SideColumn(props: Readonly<SideColumnProps>) {
         startSkills={selectedHero?.skills ?? {}}
         basePower={selectedHero?.power ?? 0}
         baseKnowledge={selectedHero?.knowledge ?? 0}
+        startSpells={selectedHero?.spells ?? []}
         onChange={props.onBuildChange}
       />
       <div className="space-y-1.5">

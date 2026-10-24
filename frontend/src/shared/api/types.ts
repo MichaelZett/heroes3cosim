@@ -422,11 +422,13 @@ export interface HeroDto {
   knowledge: number;
   skills: Partial<Record<SecondarySkill, SkillLevel>>;
   specialty: HeroSpecialtyDto;
+  /** Startzauber; ein Zauber-Spezialist beginnt mit seinem Zauber. */
+  spells?: Spell[];
 }
 
 /** Spezialfaehigkeit eines Helden; kind bestimmt, welche Felder belegt sind. */
 export interface HeroSpecialtyDto {
-  kind: 'CREATURE' | 'SKILL' | 'FIXED_CREATURE' | 'BALLISTA' | 'SPELL' | 'OTHER';
+  kind: 'CREATURE' | 'SKILL' | 'FIXED_CREATURE' | 'BALLISTA' | 'SPELL' | 'SPELL_UNIQUE' | 'OTHER';
   unitName?: string | null;
   creatureTier: number;
   skill?: SecondarySkill | null;

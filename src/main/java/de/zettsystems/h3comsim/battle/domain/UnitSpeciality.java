@@ -108,11 +108,14 @@ public enum UnitSpeciality {
     DISPELS_BENEFICIAL(AFTER_ATTACK),
     /** Dragon Fly (SoD, heroes.thelazy.net): Weakness auf Advanced nach jedem Angriff. */
     CASTS_WEAKNESS(AFTER_ATTACK),
+    /** Magi und Arch Magi (Manual S. 114): Zauber des eigenen Helden kosten 2 Mana weniger. */
+    SPELL_COST_REDUCTION(SPECIAL),
+    /** Pegasi und Silver Pegasi (Manual S. 106): Zauber des gegnerischen Helden kosten 2 Mana mehr. */
+    SPELL_COST_INCREASE(SPECIAL),
 
     // Not yet evaluated by the engine — defined for unit catalog tagging only.
     GOOD_ARMY_MORALE(SPECIAL),
-    SPELL_COST_REDUCTION(SPECIAL),
-    /** Stone Golem (Manual S. 113): halber Schaden durch Zauber — erst mit Schadenszaubern. */
+    /** Stone Golem (Manual S. 113): halber Schaden durch Zauber. */
     SPELL_DAMAGE_HALVED(DEFENSE),
     /** Iron Golem (Manual S. 113): ein Viertel des Zauberschadens. */
     SPELL_DAMAGE_QUARTERED(DEFENSE),

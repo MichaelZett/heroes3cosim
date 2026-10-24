@@ -279,7 +279,10 @@ export const de = {
     heroSpecialtyOTHER: '{{description}}',
     heroSpecialtyInert: 'ohne Kampfwirkung',
     heroMagic: 'Power {{power}} (Spell Power), Knowledge {{knowledge}} (je 10 Mana)',
-    heroSpecialtySPELL: '{{spell}}: Schaden +3 % je volle (Stufe des Ziels) Level',
+    heroSpecialtySPELL: '{{spell}}: Wirkung +3 % × Level / Stufe des Ziels',
+    heroSpecialtySPELL_UNIQUE:
+      '{{spell}}: verstärkte Wirkung, meist umso mehr, je schwächer das Ziel',
+    startSpell: '(Start)',
     heroSpecialtySPELLFixed: '{{spell}}: Schaden +{{percent}} %',
     powerBonus: 'Power +',
     knowledgeBonus: 'Knowledge +',

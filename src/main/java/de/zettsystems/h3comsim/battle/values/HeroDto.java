@@ -4,16 +4,16 @@ import de.zettsystems.h3comsim.battle.domain.Faction;
 import de.zettsystems.h3comsim.battle.domain.HeroClass;
 import de.zettsystems.h3comsim.battle.domain.SecondarySkill;
 import de.zettsystems.h3comsim.battle.domain.SkillLevel;
+import de.zettsystems.h3comsim.battle.domain.Spell;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.util.List;
 import java.util.Map;
 
 @Schema(description = """
-        Held aus dem H3-Catalog. Von den vier Primärwerten wirken derzeit nur `attack` und
-        `defense` — sie werden auf jede Kreatur der geführten Armee addiert (Manual S. 33).
-        `power` und `knowledge` steuern ausschließlich das Zaubern und bleiben ohne
-        Zaubersystem folgenlos. Von den `skills` wirken Offense, Archery, Armorer,
-        Leadership, Luck, Tactics, Artillery und First Aid, die übrigen werden nur geführt.
+        Held aus dem H3-Catalog. `attack` und `defense` werden auf jede Kreatur der geführten
+        Armee addiert (Manual S. 33), `power` und `knowledge` bestimmen Spell Power und Mana
+        seiner Zauber. Zauber-Spezialisten bringen ihren Zauber in `spells` mit.
         """)
 public record HeroDto(
         @Schema(description = "Anzeigename — wird auch als Identifier in den Battle-Requests verwendet.",
@@ -32,15 +32,18 @@ public record HeroDto(
         @Schema(description = "Defense-Primärwert. Wird auf jede eigene Kreatur addiert.", example = "0")
         int defense,
 
-        @Schema(description = "Power-Primärwert. Ohne Zaubersystem derzeit ohne Wirkung.", example = "1")
+        @Schema(description = "Power-Primärwert: Spell Power seiner Zauber.", example = "1")
         int power,
 
-        @Schema(description = "Knowledge-Primärwert. Ohne Zaubersystem derzeit ohne Wirkung.", example = "1")
+        @Schema(description = "Knowledge-Primärwert: 10 Mana je Punkt.", example = "1")
         int knowledge,
 
-        @Schema(description = "Startfertigkeiten mit Ausbaustufe. Offense, Archery, Armorer, Leadership, Luck, Tactics, Artillery und First Aid wirken im Kampf.")
+        @Schema(description = "Startfertigkeiten mit Ausbaustufe. Kampfwirksam sind alle außer den Abenteuer-Fertigkeiten, Necromancy, Mysticism, Eagle Eye und Ballistics.")
         Map<SecondarySkill, SkillLevel> skills,
 
         @Schema(description = "Spezialfähigkeit des Helden")
-        HeroSpecialtyDto specialty) {
+        HeroSpecialtyDto specialty,
+
+        @Schema(description = "Startzauber: ein Zauber-Spezialist beginnt mit seinem Zauber, auch über dem Wisdom-Gate.")
+        List<Spell> spells) {
 }

@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -41,7 +42,8 @@ import java.util.Set;
  * <p>Spiegel-Duell: dieselbe Armee (eine Wochenproduktion) auf beiden Seiten, beide geführt vom
  * Standardhelden ihrer Fraktion; eine Seite hat zusätzlich ein Zauberbuch, je nach Stufe auch
  * Power, Knowledge und Magie-Fertigkeiten. Gemessen wird die Win-Rate der zaubernden Seite und
- * welche Zauber die Heuristik wählt.
+ * welche Zauber die Heuristik wählt. In der letzten Stufe zaubern beide Seiten mit demselben
+ * Erstbuch; nur eine kennt dazu Schutz vor Luft, Dispel und Anti-Magic.
  *
  * <p>Aktivieren: {@code .\gradlew.bat test --tests "*SpellImpactTest" "-Ph3.harness=spell-impact"}.
  * Report unter {@code build/reports/spell-impact.md}.
@@ -55,27 +57,43 @@ class SpellImpactTest {
             Spell.HASTE, Spell.SHIELD, Spell.STONE_SKIN, Spell.CURSE, Spell.SLOW, Spell.PRECISION,
             Spell.WEAKNESS, Spell.LIGHTNING_BOLT, Spell.CURE);
 
-    /** Zauberbuch und Aufbau der zaubernden Seite. */
+    private static final Set<Spell> GUARDED_BOOK = guarded();
+
+    private static Set<Spell> guarded() {
+        Set<Spell> book = EnumSet.copyOf(FIRST_BOOK);
+        book.addAll(List.of(Spell.PROTECTION_FROM_AIR, Spell.DISPEL, Spell.ANTI_MAGIC));
+        return book;
+    }
+
+    /**
+     * Zauberbuch und Aufbau der zaubernden Seite, bei {@link #GUARD_VS_BOOK} auch die Zauber des
+     * Gegners: beide zaubern, nur eine Seite kennt Schutz vor Luft, Dispel und Anti-Magic.
+     */
     private enum Kit {
-        MAGIC_ARROW(Set.of(Spell.MAGIC_ARROW), 0, 0, Map.of()),
-        FIRST_BOOK(SpellImpactTest.FIRST_BOOK, 0, 0, Map.of()),
-        FIRST_BOOK_PLUS_5(SpellImpactTest.FIRST_BOOK, 5, 5, Map.of()),
+        MAGIC_ARROW(Set.of(Spell.MAGIC_ARROW), 0, 0, Map.of(), Set.of()),
+        FIRST_BOOK(SpellImpactTest.FIRST_BOOK, 0, 0, Map.of(), Set.of()),
+        FIRST_BOOK_PLUS_5(SpellImpactTest.FIRST_BOOK, 5, 5, Map.of(), Set.of()),
         MASTER(Set.of(Spell.SLOW, Spell.HASTE, Spell.BLESS, Spell.STONE_SKIN, Spell.PRAYER,
                 Spell.CHAIN_LIGHTNING, Spell.METEOR_SHOWER, Spell.FIREBALL, Spell.RESURRECTION,
                 Spell.ANIMATE_DEAD), 5, 5,
                 Map.of(SecondarySkill.WISDOM, SkillLevel.ADVANCED, SecondarySkill.AIR_MAGIC, SkillLevel.EXPERT,
-                        SecondarySkill.EARTH_MAGIC, SkillLevel.EXPERT));
+                        SecondarySkill.EARTH_MAGIC, SkillLevel.EXPERT), Set.of()),
+        GUARD_VS_BOOK(GUARDED_BOOK, 5, 5, Map.of(SecondarySkill.WISDOM, SkillLevel.BASIC),
+                SpellImpactTest.FIRST_BOOK);
 
         private final Set<Spell> spells;
         private final int power;
         private final int knowledge;
         private final Map<SecondarySkill, SkillLevel> skills;
+        private final Set<Spell> opponentSpells;
 
-        Kit(Set<Spell> spells, int power, int knowledge, Map<SecondarySkill, SkillLevel> skills) {
+        Kit(Set<Spell> spells, int power, int knowledge, Map<SecondarySkill, SkillLevel> skills,
+            Set<Spell> opponentSpells) {
             this.spells = spells;
             this.power = power;
             this.knowledge = knowledge;
             this.skills = skills;
+            this.opponentSpells = opponentSpells;
         }
     }
 
@@ -125,13 +143,15 @@ class SpellImpactTest {
         List<Stack> defenderStacks = buildStacks(presets.get(faction).stacks(), Side.DEFENDER);
         Hero hero = HeroCatalog.defaultFor(faction).orElseThrow();
         Hero caster = hero.withBuild(0, 0, kit.power, kit.knowledge, kit.skills).withSpellbook(kit.spells);
+        Hero opponent = kit.opponentSpells.isEmpty() ? hero
+                : hero.withBuild(0, 0, kit.power, kit.knowledge, Map.of()).withSpellbook(kit.opponentSpells);
         BattleSetup setup = new BattleSetup(attackerStacks, defenderStacks,
                 buildBattlefield(attackerStacks, defenderStacks, seed),
-                casterIsAttacker ? caster : hero,
-                casterIsAttacker ? hero : caster);
+                casterIsAttacker ? caster : opponent,
+                casterIsAttacker ? opponent : caster);
 
         BattleResult result = new Battle(new Random(seed), new StrategicAutoSolver(), event -> {
-            if (event instanceof BattleEvent.HeroSpell cast) {
+            if (event instanceof BattleEvent.HeroSpell cast && (cast.actor() == Side.ATTACKER) == casterIsAttacker) {
                 perFaction.casts.merge(cast.spell(), 1, Integer::sum);
                 overall.casts.merge(cast.spell(), 1, Integer::sum);
             }

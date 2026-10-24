@@ -43,6 +43,11 @@ function groupByFaction(heroes: HeroDto[]): [Faction, HeroDto[]][] {
 
 /** Text der Spezialitaet; die Felder des DTO je nach Art. */
 function specialtyText(specialty: HeroSpecialtyDto, t: TFunction): string {
+  if (specialty.kind === 'SPELL_UNIQUE') {
+    return t('army.heroSpecialtySPELL_UNIQUE', {
+      spell: specialty.description ? t(`spell.${specialty.description as Spell}`) : '',
+    });
+  }
   if (specialty.kind === 'SPELL') {
     return t(specialty.attack > 0 ? 'army.heroSpecialtySPELLFixed' : 'army.heroSpecialtySPELL', {
       spell: specialty.description ? t(`spell.${specialty.description as Spell}`) : '',

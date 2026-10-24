@@ -133,7 +133,7 @@ public class Stack {
      */
     public int getSpeed() {
         int speed = unit.speed() + (commander == null ? 0 : commander.specialty().speedBonus(unit))
-                + spellValue(Spell.HASTE, 3, 5, 5) + spellValue(Spell.PRAYER, 2, 4, 4);
+                + spellPoints(Spell.HASTE, 3, 5, 5) + spellPoints(Spell.PRAYER, 2, 4, 4);
         ActiveSpell slow = spells.get(Spell.SLOW);
         // Slow (Manual S. 68): auf 25 % (Basic) bzw. 50 % der normalen Geschwindigkeit.
         return slow == null ? speed : Math.max(1, speed * slow.byLevel(25, 50, 50) / 100);
@@ -147,7 +147,7 @@ public class Stack {
     public int getAttack() {
         int attack = unit.attack() - (diseased ? 2 : 0)
                 + (commander == null ? 0 : commander.attack() + commander.specialtyAttackBonus(unit))
-                - spellValue(Spell.WEAKNESS, 3, 6, 6) + spellValue(Spell.PRAYER, 2, 4, 4);
+                - spellPoints(Spell.WEAKNESS, 3, 6, 6) + spellPoints(Spell.PRAYER, 2, 4, 4);
         ActiveSpell frenzy = spells.get(Spell.FRENZY);
         if (frenzy != null) {
             attack += baseDefense() * frenzy.byLevel(100, 150, 200) / 100;
@@ -162,13 +162,13 @@ public class Stack {
     public int attackAgainst(Stack target, AttackType attackType) {
         int attack = getAttack();
         if (attackType == AttackType.HAND_TO_HAND) {
-            attack += spellValue(Spell.BLOODLUST, 3, 6, 6);
+            attack += spellPoints(Spell.BLOODLUST, 3, 6, 6);
         } else {
-            attack += spellValue(Spell.PRECISION, 3, 6, 6);
+            attack += spellPoints(Spell.PRECISION, 3, 6, 6);
         }
         ActiveSpell slayer = spells.get(Spell.SLAYER);
         if (slayer != null && isSlayerTarget(target.unit(), slayer.level())) {
-            attack += 8;
+            attack += 8 + slayer.amount();
         }
         return attack;
     }
@@ -202,7 +202,7 @@ public class Stack {
             return 0;
         }
         ActiveSpell ray = spells.get(Spell.DISRUPTING_RAY);
-        int base = baseDefense() + spellValue(Spell.STONE_SKIN, 3, 6, 6) + spellValue(Spell.PRAYER, 2, 4, 4)
+        int base = baseDefense() + spellPoints(Spell.STONE_SKIN, 3, 6, 6) + spellPoints(Spell.PRAYER, 2, 4, 4)
                 - (ray == null ? 0 : ray.amount());
         base = Math.max(0, base);
         if (defending) {
@@ -248,7 +248,10 @@ public class Stack {
 
     /** Glück dieses Stacks, 0..3. Keine Kreatur im Katalog hat eigenes Glück. */
     public int getLuck() {
-        return Math.clamp(armyLuck + spellValue(Spell.FORTUNE, 1, 2, 2) - spellValue(Spell.MISFORTUNE, 1, 2, 2),
+        ActiveSpell fortune = spells.get(Spell.FORTUNE);
+        // Ein Fortune-Spezialist gibt immer +3 (amount), sonst +1/2.
+        int fortuneLuck = fortune == null ? 0 : Math.max(fortune.byLevel(1, 2, 2), fortune.amount());
+        return Math.clamp(armyLuck + fortuneLuck - spellValue(Spell.MISFORTUNE, 1, 2, 2),
                 ArmyLuck.MIN, ArmyLuck.MAX);
     }
 
@@ -310,8 +313,10 @@ public class Stack {
         } else if (cursed || curseSpell != null) {
             baseValue = unit.minDamage() + bonus;
         } else if (bless != null) {
-            // Bless (Manual S. 76): maximaler Schaden, ab Advanced +1.
+            // Bless (Manual S. 76): maximaler Schaden, ab Advanced +1; ein Bless-Spezialist legt
+            // amount Prozent darauf.
             baseValue = unit.maxDamage() + bonus + bless.byLevel(0, 1, 1);
+            baseValue = baseValue * (100 + bless.amount()) / 100;
         } else {
             baseValue = rng.nextInt(unit.minDamage() + bonus, unit.maxDamage() + bonus + 1);
         }
@@ -517,6 +522,14 @@ public class Stack {
      * Disrupting Ray stapelt sich und hält den ganzen Kampf.
      */
     public void applySpell(Spell spell, SkillLevel level, int rounds) {
+        applySpell(spell, level, rounds, 0);
+    }
+
+    /**
+     * Wie {@link #applySpell(Spell, SkillLevel, int)}, mit Zusatzpunkten aus der Spezialität des
+     * Zaubernden ({@link HeroSpecialty#spellEffectBonus}).
+     */
+    public void applySpell(Spell spell, SkillLevel level, int rounds, int bonus) {
         Spell opposite = OPPOSITES.get(spell);
         if (opposite != null) {
             spells.remove(opposite);
@@ -524,11 +537,11 @@ public class Stack {
         if (spell == Spell.DISRUPTING_RAY) {
             ActiveSpell previous = spells.get(spell);
             int amount = (previous == null ? 0 : previous.amount())
-                    + new ActiveSpell(spell, level, rounds).byLevel(3, 4, 5);
+                    + new ActiveSpell(spell, level, rounds).byLevel(3, 4, 5) + bonus;
             spells.put(spell, new ActiveSpell(spell, level, Integer.MAX_VALUE, amount));
             return;
         }
-        spells.put(spell, new ActiveSpell(spell, level, rounds));
+        spells.put(spell, new ActiveSpell(spell, level, rounds, bonus));
     }
 
     /** Anteil des Zauberschadens einer Schule nach Protection from … (−30/50 %), in Prozent. */
@@ -585,6 +598,12 @@ public class Stack {
         if (spellCastsLeft > 0) {
             spellCastsLeft--;
         }
+    }
+
+    /** Wie {@link #spellValue}, dazu die Zusatzpunkte der Spezialität des Zaubernden. */
+    private int spellPoints(Spell spell, int basic, int advanced, int expert) {
+        ActiveSpell active = spells.get(spell);
+        return active == null ? 0 : active.byLevel(basic, advanced, expert) + active.amount();
     }
 
     /** Wert eines liegenden Zaubers je Stufe, 0 ohne den Zauber. */
