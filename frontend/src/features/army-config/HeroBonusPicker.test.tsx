@@ -2,8 +2,17 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import HeroBonusPicker from './HeroBonusPicker';
+import type { HeroBuild } from './heroBuild';
 
-const BUILD = { level: 1, attack: 0, defense: 0, skills: {}, luck: 0, morale: 0 };
+const BUILD: HeroBuild = {
+  level: 1,
+  attack: 0,
+  defense: 0,
+  skills: {},
+  luck: 0,
+  morale: 0,
+  warMachines: [],
+};
 
 describe('HeroBonusPicker', () => {
   it('offers luck 0..+3 only, because SoD knows no negative luck', () => {
@@ -61,5 +70,22 @@ describe('HeroBonusPicker', () => {
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Archery' }), 'EXPERT');
 
     expect(onChange).toHaveBeenCalledWith({ skills: { LUCK: 'BASIC', ARCHERY: 'EXPERT' } });
+  });
+
+  it('toggles war machines', async () => {
+    const onChange = vi.fn();
+    render(
+      <HeroBonusPicker
+        value={{ ...BUILD, warMachines: ['AMMO_CART'] }}
+        startSkills={{}}
+        onChange={onChange}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Ballista' }));
+    expect(onChange).toHaveBeenCalledWith({ warMachines: ['AMMO_CART', 'BALLISTA'] });
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Munitionswagen' }));
+    expect(onChange).toHaveBeenCalledWith({ warMachines: [] });
   });
 });

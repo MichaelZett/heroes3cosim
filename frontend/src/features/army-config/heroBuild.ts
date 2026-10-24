@@ -1,4 +1,4 @@
-import type { SecondarySkill, SkillLevel } from '../../shared/api/types';
+import type { SecondarySkill, SkillLevel, WarMachine } from '../../shared/api/types';
 
 export const MAX_HERO_LEVEL = 99;
 
@@ -10,7 +10,12 @@ export const BUILD_SKILLS: SecondarySkill[] = [
   'LEADERSHIP',
   'LUCK',
   'TACTICS',
+  'ARTILLERY',
+  'FIRST_AID',
 ];
+
+/** Kriegsmaschinen, die ein Held mitfuehren kann (ohne Katapult, das nur bei Belagerung zaehlt). */
+export const WAR_MACHINES: WarMachine[] = ['BALLISTA', 'AMMO_CART', 'FIRST_AID_TENT'];
 
 /** Was der Held ausserhalb der Schlacht erreicht hat: Level, Punkte, Fertigkeiten, Boni. */
 export interface HeroBuild {
@@ -20,6 +25,7 @@ export interface HeroBuild {
   skills: Partial<Record<SecondarySkill, SkillLevel>>;
   luck: number;
   morale: number;
+  warMachines: WarMachine[];
 }
 
 export const DEFAULT_BUILD: HeroBuild = {
@@ -29,4 +35,5 @@ export const DEFAULT_BUILD: HeroBuild = {
   skills: {},
   luck: 0,
   morale: 0,
+  warMachines: [],
 };

@@ -44,6 +44,17 @@ class ArmyBattleControllerIT {
     }
 
     @Test
+    void war_machines_reach_the_battle() throws Exception {
+        mockMvc().perform(post("/api/army-battles/simulate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request(", \"warMachines\": [\"BALLISTA\", \"AMMO_CART\"]")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.events[0].attackerWarMachines.length()").value(2))
+                .andExpect(jsonPath("$.events[0].defenderWarMachines.length()").value(0))
+                .andExpect(jsonPath("$.events[?(@.type == 'BallistaShot')]").isNotEmpty());
+    }
+
+    @Test
     void a_luck_bonus_above_three_is_rejected() throws Exception {
         mockMvc().perform(post("/api/army-battles/simulate")
                         .contentType(MediaType.APPLICATION_JSON)

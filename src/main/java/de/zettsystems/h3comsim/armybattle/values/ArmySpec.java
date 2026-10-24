@@ -2,6 +2,7 @@ package de.zettsystems.h3comsim.armybattle.values;
 
 import de.zettsystems.h3comsim.battle.domain.SecondarySkill;
 import de.zettsystems.h3comsim.battle.domain.SkillLevel;
+import de.zettsystems.h3comsim.battle.domain.WarMachine;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -13,6 +14,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Schema(description = "Armee einer Seite: 1..7 Stacks. Reihenfolge in der Liste entspricht dem Slot-Index 0..6.")
@@ -61,7 +63,13 @@ public record ArmySpec(
                 Gelernte oder verbesserte Sekundärfertigkeiten, zusätzlich zu den Startfertigkeiten.
                 Eine Startfertigkeit lässt sich nur heben, nicht senken; insgesamt höchstens acht.
                 """, example = "{\"OFFENSE\": \"EXPERT\"}", nullable = true)
-        @Nullable Map<SecondarySkill, SkillLevel> skills) {
+        @Nullable Map<SecondarySkill, SkillLevel> skills,
+
+        @Schema(description = """
+                Kriegsmaschinen des Helden: Ballista, Munitionswagen, Sanitätszelt (je höchstens
+                eine). Sie stehen nicht auf dem Feld und lassen sich nicht angreifen.
+                """, example = "[\"BALLISTA\", \"FIRST_AID_TENT\"]", nullable = true)
+        @Nullable Set<WarMachine> warMachines) {
 
     /** Obergrenze des Simulators, kein Spielwert — Kreatur-Boni wachsen linear weiter. */
     public static final int MAX_HERO_LEVEL = 99;
@@ -77,6 +85,9 @@ public record ArmySpec(
         skills = skills == null ? Map.of() : skills.entrySet().stream()
                 .filter(e -> e.getKey() != null && e.getValue() != null)
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+        warMachines = warMachines == null ? Set.of() : warMachines.stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     /** Armee mit Helden, ohne gesammelte Boni. */
@@ -87,7 +98,7 @@ public record ArmySpec(
     /** Armee mit Helden, gesammeltem Glück/Moral und Level, ohne weiteren Aufbau. */
     public ArmySpec(List<StackSpec> stacks, @Nullable String heroName, int luckBonus,
                     int moraleBonus, int heroLevel) {
-        this(stacks, heroName, luckBonus, moraleBonus, heroLevel, 0, 0, Map.of());
+        this(stacks, heroName, luckBonus, moraleBonus, heroLevel, 0, 0, Map.of(), Set.of());
     }
 
     /** Armee mit dem Standardhelden ihrer Hauptfraktion. */

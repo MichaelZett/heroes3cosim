@@ -44,7 +44,9 @@ public class DefaultArmyBattleService implements ArmyBattleService {
         Battlefield battlefield = buildBattlefield(attackerStacks.size(), defenderStacks.size(), seed);
         BattleSetup setup = new BattleSetup(attackerStacks, defenderStacks, battlefield,
                 resolveHero(request.attacker(), attackerStacks), bonusOf(request.attacker()),
-                resolveHero(request.defender(), defenderStacks), bonusOf(request.defender()));
+                resolveHero(request.defender(), defenderStacks), bonusOf(request.defender()))
+                .equip(Side.ATTACKER, Objects.requireNonNullElse(request.attacker().warMachines(), Set.of()))
+                .equip(Side.DEFENDER, Objects.requireNonNullElse(request.defender().warMachines(), Set.of()));
 
         ListEventCollector collector = new ListEventCollector();
         BattleResult result = new Battle(new Random(seed), new StrategicAutoSolver(), collector).simulate(setup);

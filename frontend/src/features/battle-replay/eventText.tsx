@@ -1,5 +1,6 @@
 import { Trans, useTranslation } from 'react-i18next';
-import type { BattleEvent, Side } from '../../shared/api/types';
+import type { TFunction } from 'i18next';
+import type { BattleEvent, Side, WarMachine } from '../../shared/api/types';
 
 export interface SideNames {
   /** Default-Name der Attacker-Seite (Single-Battle: Stack-Name). */
@@ -39,6 +40,10 @@ interface EventTextProps {
   names: SideNames;
 }
 
+function machineList(machines: WarMachine[] | undefined, t: TFunction): string {
+  return machines?.length ? machines.map((m) => t(`warMachine.${m}`)).join(', ') : '—';
+}
+
 export function EventText({ event, names }: Readonly<EventTextProps>) {
   const { t } = useTranslation();
   switch (event.type) {
@@ -69,6 +74,19 @@ export function EventText({ event, names }: Readonly<EventTextProps>) {
                 values={{
                   attackerHero: event.attackerHero ?? '—',
                   defenderHero: event.defenderHero ?? '—',
+                }}
+                components={{ actor: sideSpan('ATTACKER'), target: sideSpan('DEFENDER') }}
+              />
+            </>
+          )}
+          {Boolean(event.attackerWarMachines?.length || event.defenderWarMachines?.length) && (
+            <>
+              {' '}
+              <Trans
+                i18nKey="events.battleStartWarMachines"
+                values={{
+                  attacker: machineList(event.attackerWarMachines, t),
+                  defender: machineList(event.defenderWarMachines, t),
                 }}
                 components={{ actor: sideSpan('ATTACKER'), target: sideSpan('DEFENDER') }}
               />
@@ -198,6 +216,34 @@ export function EventText({ event, names }: Readonly<EventTextProps>) {
           i18nKey="events.goodMorale"
           values={{ actor: sideName(event.actor, event.actorSlot ?? 0, names) }}
           components={{ actor: sideSpan(event.actor) }}
+        />
+      );
+    case 'BallistaShot':
+      return (
+        <Trans
+          i18nKey="events.ballistaShot"
+          values={{
+            target: sideName(event.target, event.targetSlot, names),
+            damage: event.damage,
+            killed: event.killed,
+            extra: [
+              event.doubled ? t('events.ballistaDoubled') : '',
+              event.lucky ? t('events.ballistaLucky') : '',
+            ]
+              .filter(Boolean)
+              .join(', '),
+          }}
+          components={{ actor: sideSpan(event.actor), target: sideSpan(event.target) }}
+          context={event.actor === 'ATTACKER' ? 'attacker' : 'defender'}
+        />
+      );
+    case 'FirstAid':
+      return (
+        <Trans
+          i18nKey="events.firstAid"
+          values={{ target: sideName(event.actor, event.targetSlot, names), healed: event.healed }}
+          components={{ actor: sideSpan(event.actor), target: sideSpan(event.actor) }}
+          context={event.actor === 'ATTACKER' ? 'attacker' : 'defender'}
         />
       );
     case 'TacticsPhase':

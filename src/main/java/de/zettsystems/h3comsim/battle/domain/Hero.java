@@ -154,6 +154,41 @@ public record Hero(
         return armorerReductionPercent() * specialty.skillFactorPerMille(SecondarySkill.ARMORER, level) / 100;
     }
 
+    /** Ballista-Schüsse je Runde: zwei ab Advanced Artillery (SoD), sonst einer. */
+    public int ballistaShots() {
+        return levelOf(SecondarySkill.ARTILLERY).compareTo(SkillLevel.ADVANCED) >= 0 ? 2 : 1;
+    }
+
+    /** Artillery: Chance in Prozent, dass ein Ballista-Schuss doppelten Grundschaden macht. */
+    public int artilleryDoubleDamagePercent() {
+        return switch (levelOf(SecondarySkill.ARTILLERY)) {
+            case NONE -> 0;
+            case BASIC -> 50;
+            case ADVANCED -> 75;
+            case EXPERT -> 100;
+        };
+    }
+
+    /**
+     * Obergrenze der Heilung des Sanitätszelts (Manual S. 117 und S. 37): 25 ohne First Aid,
+     * 50/75/100 mit der Fertigkeit; ein First-Aid-Spezialist hebt das um 5 % je Level.
+     */
+    public int firstAidMaxHeal() {
+        int base = switch (levelOf(SecondarySkill.FIRST_AID)) {
+            case NONE -> 25;
+            case BASIC -> 50;
+            case ADVANCED -> 75;
+            case EXPERT -> 100;
+        };
+        return levelOf(SecondarySkill.FIRST_AID) == SkillLevel.NONE ? base
+                : base * specialty.skillFactorPerMille(SecondarySkill.FIRST_AID, level) / 1000;
+    }
+
+    /** Attack der Ballista dieses Helden: 10 plus Ballista-Spezialität. */
+    public int ballistaAttack() {
+        return WarMachine.BALLISTA.attack() + specialty.ballistaAttackBonus(level);
+    }
+
     /** Attack-Aufschlag der Spezialität für diese Kreatur. */
     public int specialtyAttackBonus(Unit unit) {
         return specialty.attackBonus(unit, level);

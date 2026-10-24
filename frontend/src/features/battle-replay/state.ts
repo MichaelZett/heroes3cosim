@@ -95,6 +95,8 @@ function applyEvent(stacks: Map<string, SideState>, event: BattleEvent): void {
       return;
     case 'Resurrection':
     case 'RaiseDemons':
+    case 'BallistaShot':
+    case 'FirstAid':
       snapshotInto(stacks, event.targetAfter);
       return;
     default:

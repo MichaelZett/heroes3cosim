@@ -82,6 +82,11 @@ export const de = {
     WATER_MAGIC: 'Water Magic',
     WISDOM: 'Wisdom',
   },
+  warMachine: {
+    BALLISTA: 'Ballista',
+    AMMO_CART: 'Munitionswagen',
+    FIRST_AID_TENT: 'Sanitätszelt',
+  },
   config: {
     title: 'Heroes 3 Combat Simulator',
     subtitle: 'Wähle zwei Truppen, lege optional einen Seed fest und starte den Kampf.',
@@ -140,6 +145,18 @@ export const de = {
       '<actor>Angreifer</actor> stellt mit Tactics in den ersten {{columns}} Spalten auf.',
     tacticsPhase_defender:
       '<actor>Verteidiger</actor> stellt mit Tactics in den ersten {{columns}} Spalten auf.',
+    ballistaShot_attacker:
+      'Ballista des <actor>Angreifers</actor> trifft <target>{{target}}</target>: {{damage}} Schaden, {{killed}} getötet. {{extra}}',
+    ballistaShot_defender:
+      'Ballista des <actor>Verteidigers</actor> trifft <target>{{target}}</target>: {{damage}} Schaden, {{killed}} getötet. {{extra}}',
+    ballistaDoubled: 'doppelter Schaden durch Artillery',
+    ballistaLucky: 'Glückstreffer',
+    firstAid_attacker:
+      'Sanitätszelt des <actor>Angreifers</actor> heilt <target>{{target}}</target> um {{healed}} Lebenspunkte.',
+    firstAid_defender:
+      'Sanitätszelt des <actor>Verteidigers</actor> heilt <target>{{target}}</target> um {{healed}} Lebenspunkte.',
+    battleStartWarMachines:
+      'Kriegsmaschinen: <actor>Angreifer {{attacker}}</actor>, <target>Verteidiger {{defender}}</target>.',
     luckyStrike: '<actor>{{actor}}</actor> hat Glück und richtet doppelten Schaden an.',
     deathStare:
       '<actor>{{actor}}</actor> tötet {{kills}} Einheit(en) von <target>{{target}}</target> mit Death Stare.',
@@ -200,6 +217,7 @@ export const de = {
     heroSpecialtySKILL: '{{skill}}: Effekt +5 % je Level',
     heroSpecialtyFIXED_CREATURE:
       '{{unit}} (auch Ausbaustufe): +{{attack}} Angriff, +{{defense}} Verteidigung, +{{damage}} Schaden',
+    heroSpecialtyBALLISTA: 'Ballista: Angriff +5 % je angefangene 5 Level',
     heroSpecialtyOTHER: '{{description}}',
     heroSpecialtyInert: 'ohne Kampfwirkung',
     heroLevel: 'Level',
@@ -211,6 +229,7 @@ export const de = {
     skillLevelBASIC: 'Basic',
     skillLevelADVANCED: 'Advanced',
     skillLevelEXPERT: 'Expert',
+    warMachines: 'Kriegsmaschinen',
     luckBonus: 'Gesammeltes Glück',
     moraleBonus: 'Gesammelte Moral',
     bonusHint:

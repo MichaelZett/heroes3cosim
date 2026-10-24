@@ -8,7 +8,8 @@ import org.jspecify.annotations.Nullable;
         Spezialfähigkeit eines Helden. `CREATURE`: +1 Speed und +5 % Attack/Defense je
         angefangene Spanne von (Stufe der Kreatur) Leveln, für Basis- und Ausbaustufe.
         `SKILL`: Effekt der Fertigkeit × (1 + 0,05 × Level). `FIXED_CREATURE`: feste Boni der
-        Planeswalker. `OTHER`: ohne Kampfwirkung.
+        Planeswalker. `BALLISTA`: Attack der Ballista +5 % je angefangene fünf Level.
+        `OTHER`: ohne Kampfwirkung.
         """)
 public record HeroSpecialtyDto(
         @Schema(description = "Art der Spezialität", example = "CREATURE") Kind kind,
@@ -25,5 +26,5 @@ public record HeroSpecialtyDto(
         @Nullable String description,
         @Schema(description = "Wirkt die Spezialität im Kampf?", example = "true") boolean effective) {
 
-    public enum Kind { CREATURE, SKILL, FIXED_CREATURE, OTHER }
+    public enum Kind { CREATURE, SKILL, FIXED_CREATURE, BALLISTA, OTHER }
 }

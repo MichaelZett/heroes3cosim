@@ -30,6 +30,8 @@ public final class HeroMapper {
                     null, 0, s.skill(), 0, 0, 0, null, effective);
             case HeroSpecialty.FixedCreature f -> new HeroSpecialtyDto(HeroSpecialtyDto.Kind.FIXED_CREATURE,
                     f.creature().name(), f.creature().tier(), null, f.attack(), f.defense(), f.damage(), null, effective);
+            case HeroSpecialty.Ballista b -> new HeroSpecialtyDto(HeroSpecialtyDto.Kind.BALLISTA,
+                    null, 0, null, 0, 0, 0, null, effective);
             case HeroSpecialty.Other o -> new HeroSpecialtyDto(HeroSpecialtyDto.Kind.OTHER,
                     null, 0, null, 0, 0, 0, o.description(), effective);
         };

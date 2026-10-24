@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import type { SecondarySkill, SkillLevel } from '../../shared/api/types';
-import { BUILD_SKILLS, MAX_HERO_LEVEL, type HeroBuild } from './heroBuild';
+import { BUILD_SKILLS, MAX_HERO_LEVEL, WAR_MACHINES, type HeroBuild } from './heroBuild';
 
 const LUCK_VALUES = [0, 1, 2, 3];
 const MORALE_VALUES = [-3, -2, -1, 0, 1, 2, 3];
@@ -139,6 +139,27 @@ export default function HeroBonusPicker({
           );
         })}
       </div>
+      <fieldset className="mt-3">
+        <legend className="text-sm text-slate-400">{t('army.warMachines')}</legend>
+        <div className="mt-1 flex flex-wrap gap-4">
+          {WAR_MACHINES.map((machine) => (
+            <label key={machine} className="flex items-center gap-2 text-sm text-slate-200">
+              <input
+                type="checkbox"
+                checked={value.warMachines.includes(machine)}
+                onChange={(e) =>
+                  onChange({
+                    warMachines: e.target.checked
+                      ? [...value.warMachines, machine]
+                      : value.warMachines.filter((m) => m !== machine),
+                  })
+                }
+              />
+              {t(`warMachine.${machine}`)}
+            </label>
+          ))}
+        </div>
+      </fieldset>
       <p className="mt-2 text-xs text-slate-500">{t('army.bonusHint')}</p>
     </div>
   );
