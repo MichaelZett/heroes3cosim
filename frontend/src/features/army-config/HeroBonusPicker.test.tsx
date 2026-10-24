@@ -139,4 +139,20 @@ describe('HeroBonusPicker', () => {
 
     expect(onChange).toHaveBeenCalledWith({ spells: ['MAGIC_ARROW'] });
   });
+
+  it('keeps the starting spell of a specialist in the book, even above the Wisdom gate', () => {
+    render(
+      <HeroBonusPicker
+        value={BUILD}
+        startSkills={{}}
+        startSpells={['RESURRECTION']}
+        onChange={vi.fn()}
+      />,
+    );
+
+    const resurrection = screen.getByRole('checkbox', { name: /Resurrection/ });
+    expect(resurrection).toBeChecked();
+    expect(resurrection).toBeDisabled();
+    expect(screen.getByRole('checkbox', { name: 'Prayer' })).toBeDisabled();
+  });
 });

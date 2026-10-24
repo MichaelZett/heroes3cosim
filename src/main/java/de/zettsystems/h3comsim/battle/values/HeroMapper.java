@@ -3,6 +3,8 @@ package de.zettsystems.h3comsim.battle.values;
 import de.zettsystems.h3comsim.battle.domain.Hero;
 import de.zettsystems.h3comsim.battle.domain.HeroSpecialty;
 
+import java.util.List;
+
 public final class HeroMapper {
 
     private HeroMapper() {
@@ -18,7 +20,8 @@ public final class HeroMapper {
                 hero.power(),
                 hero.knowledge(),
                 hero.skills(),
-                toDto(hero.specialty()));
+                toDto(hero.specialty()),
+                List.copyOf(hero.spells()));
     }
 
     static HeroSpecialtyDto toDto(HeroSpecialty specialty) {
@@ -32,8 +35,10 @@ public final class HeroMapper {
                     f.creature().name(), f.creature().tier(), null, f.attack(), f.defense(), f.damage(), null, effective);
             case HeroSpecialty.Ballista b -> new HeroSpecialtyDto(HeroSpecialtyDto.Kind.BALLISTA,
                     null, 0, null, 0, 0, 0, null, effective);
-            case HeroSpecialty.SpellDamage d -> new HeroSpecialtyDto(HeroSpecialtyDto.Kind.SPELL,
+            case HeroSpecialty.CommonSpell d -> new HeroSpecialtyDto(HeroSpecialtyDto.Kind.SPELL,
                     null, 0, null, d.fixedPercent(), 0, 0, d.spell().name(), effective);
+            case HeroSpecialty.UniqueSpell u -> new HeroSpecialtyDto(HeroSpecialtyDto.Kind.SPELL_UNIQUE,
+                    null, 0, null, 0, 0, 0, u.spell().name(), effective);
             case HeroSpecialty.Other o -> new HeroSpecialtyDto(HeroSpecialtyDto.Kind.OTHER,
                     null, 0, null, 0, 0, 0, o.description(), effective);
         };

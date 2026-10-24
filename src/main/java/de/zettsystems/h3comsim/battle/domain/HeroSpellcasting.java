@@ -26,7 +26,15 @@ import java.util.function.Predicate;
  * Zauber zählt als Anteil am Wert des Stacks: {@link #gainPercent} schätzt, um wie viel Prozent
  * er den Stack je Runde stärkt oder schwächt, {@link #ROUND_SHARE} ist der Anteil seines Werts,
  * den ein Stack je Runde im Kampf umsetzt, und die Dauer zählt bis zu {@link #EXPECTED_ROUNDS}
- * Runden. Schutzzauber gegen Schulen, Anti-Magic und Dispel wählt die Heuristik nicht.
+ * Runden. Schutz vor einer Schule und Anti-Magic zählen den Schaden, den der gegnerische Held
+ * dem Stack mit seinen Zaubern und seinem Mana höchstens zufügen kann, gewichtet mit dem Anteil
+ * des Stacks am eigenen Armeewert; Dispel zählt die aufgehobenen Wirkungen.
+ *
+ * <p>Mana: Jeder Wert wird mit der Zahl der Würfe multipliziert, die das Mana in den restlichen
+ * Runden (bis {@link #EXPECTED_BATTLE_ROUNDS}) für diesen Zauber hergibt. Bei knappem Mana gewinnt
+ * so zweimal Bless gegen einmal Lightning Bolt, bei reichlich Mana zählt nur der Wert. Magi und
+ * Arch Magi senken die Kosten der eigenen Zauber um 2, Pegasi und Silver Pegasi heben die des
+ * Gegners um 2 (Manual, Tower und Rampart), mindestens 1.
  */
 final class HeroSpellcasting {
 
@@ -34,6 +42,9 @@ final class HeroSpellcasting {
     static final double ROUND_SHARE = 0.2;
     /** Runden, die eine Wirkung höchstens zählt; ein Kampf ist selten länger entschieden. */
     static final int EXPECTED_ROUNDS = 4;
+    /** Runden, für die ein Held sein Mana einteilt. */
+    static final int EXPECTED_BATTLE_ROUNDS = 5;
+    private static final int COST_MODIFIER = 2;
 
     private HeroSpellcasting() {
     }
@@ -46,22 +57,32 @@ final class HeroSpellcasting {
     record Cast(Spell spell, SkillLevel level, @Nullable Stack target, List<Stack> affected) {
     }
 
+    /** Wie {@link #decide(Hero, Side, int, BattleSetup, int)} in der ersten Runde. */
+    static @Nullable Cast decide(@Nullable Hero hero, Side side, int mana, BattleSetup setup) {
+        return decide(hero, side, mana, setup, 0);
+    }
+
     /**
      * Der beste bezahlbare Zauber für diese Seite, oder {@code null}, wenn keiner etwas bringt.
      * Ohne Helden, ohne Zauberbuch oder ohne Mana immer {@code null}.
+     *
+     * @param round Runde ab 0; bestimmt, für wie viele Runden das Mana noch reichen soll
      */
-    static @Nullable Cast decide(@Nullable Hero hero, Side side, int mana, BattleSetup setup) {
+    static @Nullable Cast decide(@Nullable Hero hero, Side side, int mana, BattleSetup setup, int round) {
         if (hero == null || hero.spells().isEmpty()) {
             return null;
         }
+        int roundsLeft = Math.max(1, EXPECTED_BATTLE_ROUNDS - round);
         Cast best = null;
         double bestValue = 0;
         for (Spell spell : hero.spells()) {
-            if (spell.cost() > mana) {
+            int cost = cost(spell, side, setup);
+            if (cost > mana) {
                 continue;
             }
+            int casts = Math.min(roundsLeft, mana / cost);
             for (Cast cast : candidates(hero, side, spell, setup)) {
-                double value = value(hero, side, cast, setup);
+                double value = value(hero, side, cast, setup) * casts;
                 if (value > bestValue) {
                     best = cast;
                     bestValue = value;
@@ -69,6 +90,22 @@ final class HeroSpellcasting {
             }
         }
         return best;
+    }
+
+    /** Mana-Kosten für diese Seite: Magi im eigenen Heer −2, Pegasi beim Gegner +2, mindestens 1. */
+    static int cost(Spell spell, Side side, BattleSetup setup) {
+        int cost = spell.cost();
+        if (anyAlive(setup.stacksOf(side), UnitSpeciality.SPELL_COST_REDUCTION)) {
+            cost -= COST_MODIFIER;
+        }
+        if (anyAlive(setup.stacksOf(other(side)), UnitSpeciality.SPELL_COST_INCREASE)) {
+            cost += COST_MODIFIER;
+        }
+        return Math.max(1, cost);
+    }
+
+    private static boolean anyAlive(List<Stack> stacks, UnitSpeciality speciality) {
+        return stacks.stream().anyMatch(s -> s.isAlive() && s.hasSpeciality(speciality));
     }
 
     /** Alle sinnvollen Ziele eines Zaubers. */
@@ -88,6 +125,15 @@ final class HeroSpellcasting {
             }
             case CHAIN_LIGHTNING -> enemies.forEach(e ->
                     casts.add(new Cast(spell, level, e, chain(e, level == SkillLevel.BASIC ? 4 : 5, setup))));
+            case DISPEL -> {
+                // Basic nur auf eigene Stacks, Advanced auf jeden, Expert auf alle (Manual S. 76).
+                if (level == SkillLevel.EXPERT) {
+                    casts.add(new Cast(spell, level, null, setup.aliveStacks()));
+                } else {
+                    List<Stack> targets = level == SkillLevel.BASIC ? own : setup.aliveStacks();
+                    targets.forEach(t -> casts.add(new Cast(spell, level, t, List.of(t))));
+                }
+            }
             case DEATH_RIPPLE, DESTROY_UNDEAD, ARMAGEDDON -> {
                 List<Stack> hit = setup.aliveStacks().stream()
                         .filter(s -> spell == Spell.ARMAGEDDON
@@ -169,6 +215,12 @@ final class HeroSpellcasting {
         return cast.spell() == Spell.CHAIN_LIGHTNING ? base >> index : base;
     }
 
+    /** Heilung des Helden auf dieses Ziel, mit dem Aufschlag seiner Spezialität. */
+    static int healing(Hero hero, Spell spell, SkillLevel level, Stack target) {
+        return healing(spell, level, hero.spellPower())
+                * (100 + hero.specialty().spellEffectPercent(spell, hero.level(), target.unit())) / 100;
+    }
+
     /** Heilung von Cure, Animate Dead und Resurrection (Manual S. 64 ff.). */
     static int healing(Spell spell, SkillLevel level, int power) {
         return switch (spell) {
@@ -185,15 +237,18 @@ final class HeroSpellcasting {
         double total = 0;
         for (int i = 0; i < cast.affected().size(); i++) {
             Stack s = cast.affected().get(i);
-            double chance = successChance(spell, s, setup);
+            double chance = successChance(spell, s, side, setup);
             if (chance == 0) {
                 continue;
             }
+            if (spell == Spell.DISPEL) {
+                total += chance * dispelValue(s, side, setup);
+                continue;
+            }
             double value = switch (spell.kind()) {
-                case DAMAGE -> Math.min(SpellDamage.toTarget(spell, baseDamage(cast, hero.spellPower(), i), hero, s),
-                        totalHealth(s)) * costPerHealth(s);
-                case INSTANT -> instantValue(spell, cast.level(), hero.spellPower(), s);
-                case EFFECT -> effectValue(spell, cast.level(), hero.spellPower(), s, setup);
+                case DAMAGE -> damageValue(hero, spell, baseDamage(cast, hero.spellPower(), i), s);
+                case INSTANT -> instantValue(hero, spell, cast.level(), s);
+                case EFFECT -> effectValue(hero, spell, cast.level(), s, setup);
             };
             total += (s.side() == side ? -1 : 1) * (spell.beneficial() ? -1 : 1) * chance * value;
         }
@@ -208,14 +263,39 @@ final class HeroSpellcasting {
         return spell.beneficial() ? 1 : (100 - SpellResistance.resistancePercent(target, setup)) / 100.0;
     }
 
-    private static double instantValue(Spell spell, SkillLevel level, int power, Stack s) {
-        int amount = healing(spell, level, power);
+    /** Wie {@link #successChance(Spell, Stack, BattleSetup)}; Dispel auf eigene Stacks würfelt nicht. */
+    static double successChance(Spell spell, Stack target, Side casterSide, BattleSetup setup) {
+        if (spell == Spell.DISPEL && target.side() == casterSide) {
+            return SpellResistance.isImmune(target, spell) ? 0 : 1;
+        }
+        return successChance(spell, target, setup);
+    }
+
+    private static double damageValue(Hero caster, Spell spell, int baseDamage, Stack s) {
+        return Math.min(SpellDamage.toTarget(spell, baseDamage, caster, s), totalHealth(s)) * costPerHealth(s);
+    }
+
+    /**
+     * Dispel hebt alle Zauber auf: auf einem eigenen Stack zählen die negativen als Gewinn und die
+     * nützlichen als Verlust, auf einem gegnerischen umgekehrt.
+     */
+    private static double dispelValue(Stack s, Side casterSide, BattleSetup setup) {
+        double net = 0;
+        for (ActiveSpell active : s.activeSpells()) {
+            double v = lastingValue(active, s, setup);
+            net += active.spell().beneficial() ? v : -v;
+        }
+        return s.side() == casterSide ? -net : net;
+    }
+
+    private static double instantValue(Hero hero, Spell spell, SkillLevel level, Stack s) {
+        int amount = healing(hero, spell, level, s);
         return switch (spell) {
             case CURE -> {
                 double negatives = 0;
                 for (ActiveSpell active : s.activeSpells()) {
                     if (!active.spell().beneficial()) {
-                        negatives += lastingValue(active.spell(), active.level(), active.roundsLeft(), s);
+                        negatives += lastingValue(active, s, null);
                     }
                 }
                 yield Math.min(amount, s.topMissingHealth()) * costPerHealth(s) + negatives;
@@ -228,18 +308,91 @@ final class HeroSpellcasting {
         };
     }
 
-    private static double effectValue(Spell spell, SkillLevel level, int power, Stack s, BattleSetup setup) {
+    private static double effectValue(Hero hero, Spell spell, SkillLevel level, Stack s, BattleSetup setup) {
         if (spell != Spell.DISRUPTING_RAY && s.hasSpell(spell)) {
             return 0;
         }
-        double gain = gainPercent(spell, level, s, setup);
-        int rounds = spell == Spell.DISRUPTING_RAY ? EXPECTED_ROUNDS : power;
-        return gain <= 0 ? 0 : gain / 100 * ROUND_SHARE * stackValue(s) * Math.min(rounds, EXPECTED_ROUNDS);
+        int power = hero.spellPower();
+        int rounds = Math.min(spell == Spell.DISRUPTING_RAY ? EXPECTED_ROUNDS : power, EXPECTED_ROUNDS);
+        if (spell == Spell.ANTI_MAGIC || protectedSchool(spell) != null) {
+            return protectionValue(spell, level, s, setup) * rounds;
+        }
+        int bonus = hero.specialty().spellEffectBonus(spell, hero.level(), s.unit());
+        double gain = gainPercent(spell, level, bonus, s, setup);
+        return gain <= 0 ? 0 : gain / 100 * ROUND_SHARE * stackValue(s) * rounds;
     }
 
-    private static double lastingValue(Spell spell, SkillLevel level, int roundsLeft, Stack s) {
-        return gainPercent(spell, level, s, null) / 100 * ROUND_SHARE * stackValue(s)
-                * Math.min(roundsLeft, EXPECTED_ROUNDS);
+    /** Wert eines liegenden Zaubers für seine restlichen Runden. */
+    private static double lastingValue(ActiveSpell active, Stack s, @Nullable BattleSetup setup) {
+        Spell spell = active.spell();
+        int bonus = spell == Spell.DISRUPTING_RAY ? active.amount() - active.byLevel(3, 4, 5) : active.amount();
+        return Math.max(0, gainPercent(spell, active.level(), bonus, s, setup)) / 100 * ROUND_SHARE
+                * stackValue(s) * Math.min(active.roundsLeft(), EXPECTED_ROUNDS);
+    }
+
+    private static @Nullable MagicSchool protectedSchool(Spell spell) {
+        return switch (spell) {
+            case PROTECTION_FROM_AIR -> MagicSchool.AIR;
+            case PROTECTION_FROM_EARTH -> MagicSchool.EARTH;
+            case PROTECTION_FROM_FIRE -> MagicSchool.FIRE;
+            case PROTECTION_FROM_WATER -> MagicSchool.WATER;
+            default -> null;
+        };
+    }
+
+    /**
+     * Was Schutz vor einer Schule oder Anti-Magic je Runde abwendet: der schlimmste Zauber, den der
+     * gegnerische Held bezahlen kann, gewichtet mit dem Anteil des Stacks am eigenen Armeewert —
+     * so wahrscheinlich trifft es gerade ihn.
+     */
+    private static double protectionValue(Spell spell, SkillLevel level, Stack s, BattleSetup setup) {
+        MagicSchool school = protectedSchool(spell);
+        double averted;
+        if (school != null) {
+            int percent = SpellDamage.byLevel(level, 30, 50, 50);
+            averted = threat(s, e -> e.kind() == Spell.Kind.DAMAGE && e.school() == school, setup) * percent / 100;
+        } else {
+            int maxLevel = SpellDamage.byLevel(level, 3, 4, 5);
+            averted = threat(s, e -> e.level() <= maxLevel, setup);
+        }
+        return averted * ownShare(s, setup);
+    }
+
+    /**
+     * Der größte Schaden in Gold, den der gegnerische Held diesem Stack mit einem der erfassten
+     * feindlichen Zauber zufügen kann, solange sein Mana reicht; 0 ohne gegnerischen Helden.
+     */
+    static double threat(Stack s, Predicate<Spell> which, BattleSetup setup) {
+        Side enemy = other(s.side());
+        Hero foe = setup.heroOf(enemy);
+        if (foe == null) {
+            return 0;
+        }
+        int mana = setup.manaOf(enemy);
+        double worst = 0;
+        for (Spell spell : foe.spells()) {
+            if (spell.beneficial() || !which.test(spell) || cost(spell, enemy, setup) > mana) {
+                continue;
+            }
+            SkillLevel level = foe.castLevel(spell);
+            double harm = switch (spell.kind()) {
+                case DAMAGE -> damageValue(foe, spell, SpellDamage.base(spell, level, foe.spellPower()), s);
+                case EFFECT -> Math.max(0, gainPercent(spell, level,
+                        foe.specialty().spellEffectBonus(spell, foe.level(), s.unit()), s, setup))
+                        / 100 * ROUND_SHARE * stackValue(s);
+                case INSTANT -> 0;
+            };
+            worst = Math.max(worst, harm * successChance(spell, s, setup));
+        }
+        return worst;
+    }
+
+    private static double ownShare(Stack s, BattleSetup setup) {
+        double all = 0;
+        for (Stack ally : setup.stacksOf(s.side())) {
+            all += ally.isAlive() ? stackValue(ally) : 0;
+        }
+        return all == 0 ? 0 : stackValue(s) / all;
     }
 
     /**
@@ -248,21 +401,32 @@ final class HeroSpellcasting {
      * Punkt Attack, 2,5 % je Punkt Defense (Manual S. 33). 0, wo der Zauber nichts bewirkt.
      */
     static double gainPercent(Spell spell, SkillLevel level, Stack s, @Nullable BattleSetup setup) {
+        return gainPercent(spell, level, 0, s, setup);
+    }
+
+    /**
+     * Wie {@link #gainPercent(Spell, SkillLevel, Stack, BattleSetup)}, mit den Zusatzpunkten einer
+     * Spezialität ({@link HeroSpecialty#spellEffectBonus}).
+     */
+    static double gainPercent(Spell spell, SkillLevel level, int bonus, Stack s, @Nullable BattleSetup setup) {
         Unit unit = s.unit();
         boolean shooter = s.canShoot();
         double spread = unit.minDamage() < unit.maxDamage()
                 ? 100.0 * (unit.maxDamage() - unit.minDamage()) / (unit.maxDamage() + unit.minDamage()) : 0;
+        int attackPoints = SpellDamage.byLevel(level, 3, 6, 6) + bonus;
         return switch (spell) {
-            case BLESS, CURSE -> spread;
-            case BLOODLUST -> shooter ? 0 : SpellDamage.byLevel(level, 15, 30, 30);
-            case PRECISION -> shooter ? SpellDamage.byLevel(level, 15, 30, 30) : 0;
-            case WEAKNESS, SHIELD -> SpellDamage.byLevel(level, 15, 30, 30);
-            case HASTE -> SpellDamage.byLevel(level, 15, 25, 25);
-            case STONE_SKIN -> SpellDamage.byLevel(level, 75, 150, 150) / 10.0;
+            case BLESS -> spread + bonus;
+            case CURSE -> spread;
+            case BLOODLUST -> shooter ? 0 : 5.0 * attackPoints;
+            case PRECISION -> shooter ? 5.0 * attackPoints : 0;
+            case WEAKNESS -> 5.0 * attackPoints;
+            case SHIELD -> SpellDamage.byLevel(level, 15, 30, 30);
+            case HASTE -> 5.0 * (SpellDamage.byLevel(level, 3, 5, 5) + bonus);
+            case STONE_SKIN -> 2.5 * attackPoints;
             case AIR_SHIELD -> SpellDamage.byLevel(level, 25, 50, 50) * shooterShare(s, setup);
-            case PRAYER -> SpellDamage.byLevel(level, 20, 40, 40);
-            case FORTUNE -> s.getLuck() < ArmyLuck.MAX ? SpellDamage.byLevel(level, 4, 8, 8) : 0;
-            case MISFORTUNE -> s.getLuck() > ArmyLuck.MIN ? SpellDamage.byLevel(level, 4, 8, 8) : 0;
+            case PRAYER -> 10.0 * (SpellDamage.byLevel(level, 2, 4, 4) + bonus);
+            case FORTUNE -> 4.0 * Math.min(ArmyLuck.MAX - s.getLuck(), Math.max(SpellDamage.byLevel(level, 1, 2, 2), bonus));
+            case MISFORTUNE -> 4.0 * Math.min(s.getLuck() - ArmyLuck.MIN, SpellDamage.byLevel(level, 1, 2, 2));
             case MIRTH -> !unit.hasFixedZeroMorale() && s.getMorale() < ArmyMorale.MAX
                     ? SpellDamage.byLevel(level, 4, 8, 8) : 0;
             case SORROW -> !unit.hasFixedZeroMorale() && s.getMorale() > ArmyMorale.MIN
@@ -270,10 +434,10 @@ final class HeroSpellcasting {
             case COUNTERSTRIKE -> s.hasSpeciality(UnitSpeciality.COUNTERSTRIKE_UNLIMITED) || shooter
                     ? 0 : SpellDamage.byLevel(level, 10, 20, 20);
             case FIRE_SHIELD -> shooter ? 0 : 10;
-            case SLAYER -> 40 * slayerShare(s, level, setup);
+            case SLAYER -> 5.0 * (8 + bonus) * slayerShare(s, level, setup);
             case SLOW -> shooter ? 5 : SpellDamage.byLevel(level, 30, 50, 50);
             case BLIND -> s.isAbleToAct() ? 70 : 0;
-            case DISRUPTING_RAY -> SpellDamage.byLevel(level, 15, 20, 25);
+            case DISRUPTING_RAY -> 5.0 * (SpellDamage.byLevel(level, 3, 4, 5) + bonus);
             case FORGETFULNESS -> shooter ? SpellDamage.byLevel(level, 50, 80, 80) : 0;
             default -> 0;
         };

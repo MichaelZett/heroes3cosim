@@ -31,6 +31,8 @@ public final class Battle {
     private final RandomGenerator rng;
     /** Das laufende Setup, für Effekte tief in der Schadensrechnung (Magieresistenz der Nachbarn). */
     private @Nullable BattleSetup currentSetup;
+    /** Laufende Runde ab 0, für die Mana-Einteilung der Helden. */
+    private int round;
     /** Dauer der Zauber, die Unicorns und Dragon Flies beim Angriff auslösen (heroes.thelazy.net). */
     private static final int PROC_ROUNDS = 3;
     private final AutoSolver autoSolver;
@@ -82,6 +84,7 @@ public final class Battle {
         int stalledRounds = 0;
         TurnOrder order = new TurnOrder();
         while (setup.bothAlive() && turn < TURN_CAP && stalledRounds < NO_PROGRESS_LIMIT) {
+            round = turn;
             doTurn(setup, order);
             turn++;
             int aCount = setup.getAttackerCount();
@@ -154,13 +157,13 @@ public final class Battle {
         if (hero == null || heroesCast.contains(side)) {
             return;
         }
-        HeroSpellcasting.Cast cast = HeroSpellcasting.decide(hero, side, setup.manaOf(side), setup);
+        HeroSpellcasting.Cast cast = HeroSpellcasting.decide(hero, side, setup.manaOf(side), setup, round);
         if (cast == null) {
             return;
         }
         heroesCast.add(side);
         Spell spell = cast.spell();
-        setup.spendMana(side, spell.cost());
+        setup.spendMana(side, HeroSpellcasting.cost(spell, side, setup));
         events.emit(new BattleEvent.HeroSpell(side, spell, cast.level(), setup.manaOf(side)));
         for (int i = 0; i < cast.affected().size(); i++) {
             Stack target = cast.affected().get(i);
@@ -174,7 +177,11 @@ public final class Battle {
     private void applyHeroSpell(BattleSetup setup, Side side, Hero hero, HeroSpellcasting.Cast cast, int index,
                                 Stack target) {
         Spell spell = cast.spell();
-        boolean works = SpellResistance.takesEffect(spell, target, setup, rng);
+        // Dispel auf eigene Stacks ist kein feindlicher Zauber und würfelt nicht gegen Resistenz.
+        boolean friendlyDispel = spell == Spell.DISPEL && target.side() == side;
+        boolean works = friendlyDispel
+                ? !SpellResistance.isImmune(target, spell)
+                : SpellResistance.takesEffect(spell, target, setup, rng);
         int damage = 0;
         int killed = 0;
         int healed = 0;
@@ -189,22 +196,27 @@ public final class Battle {
                     killed = Math.max(0, countBefore - target.getCount());
                     emitRebirthIfFired(target, rebirthUsedBefore);
                 }
-                case INSTANT -> healed = applyInstantSpell(spell, cast.level(), power, target);
-                case EFFECT -> target.applySpell(spell, cast.level(), power);
+                case INSTANT -> healed = applyInstantSpell(spell,
+                        HeroSpellcasting.healing(hero, spell, cast.level(), target), target);
+                case EFFECT -> target.applySpell(spell, cast.level(), power,
+                        hero.specialty().spellEffectBonus(spell, hero.level(), target.unit()));
             }
         }
         events.emit(new BattleEvent.SpellHit(side, spell, target.side(), target.slot(), damage, killed, healed, !works, snapshot(target)));
     }
 
-    /** Cure, Animate Dead und Resurrection; liefert die geheilten Lebenspunkte. */
-    private static int applyInstantSpell(Spell spell, SkillLevel level, int power, Stack target) {
-        int amount = HeroSpellcasting.healing(spell, level, power);
+    /** Cure, Animate Dead, Resurrection und Dispel; liefert die geheilten Lebenspunkte. */
+    private static int applyInstantSpell(Spell spell, int amount, Stack target) {
         return switch (spell) {
             case CURE -> {
                 target.removeSpells(s -> !s.beneficial());
                 yield target.healTop(amount);
             }
             case ANIMATE_DEAD, RESURRECTION -> target.heal(amount);
+            case DISPEL -> {
+                target.removeSpells(s -> true);
+                yield 0;
+            }
             default -> 0;
         };
     }

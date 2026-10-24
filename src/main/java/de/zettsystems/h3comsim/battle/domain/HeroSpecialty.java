@@ -1,10 +1,11 @@
 package de.zettsystems.h3comsim.battle.domain;
 
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Spezialfähigkeit eines Helden (Manual, <em>Individual Heroes</em>: „Unique Ability"). Jeder
- * Held hat genau eine. Im Kampf wirken drei Arten, alle übrigen werden nur geführt.
+ * Held hat genau eine. Bis auf {@link Other} wirken alle Arten im Kampf.
  *
  * <ul>
  *   <li>{@link Creature} — Kreatur-Spezialist. Das Manual formuliert es als „increases the Attack
@@ -18,11 +19,19 @@ import java.util.Objects;
  *       Defense und Schaden ihrer Elementare, unabhängig vom Level.</li>
  *   <li>{@link Ballista} — „increases the Attack and Defense skill of any Ballista under his
  *       command"; SoD: +5 % je angefangene fünf Level (Ballista ist Stufe 5).</li>
- *   <li>{@link SpellDamage} — Spezialist für einen Schadenszauber: SoD +3 % Schaden je volle
- *       Spanne von (Stufe der Zielkreatur) Heldenleveln (heroes.thelazy.net, z. B. Solmyr), bei
- *       Ciele fest +50 % auf Magic Arrow (AB-Manual).</li>
- *   <li>{@link Other} — übrige Zauber-Spezialitäten und Ressourcen, ohne Wirkung.</li>
+ *   <li>{@link CommonSpell} — „common spell specialty" (heroes.thelazy.net, <em>Hero
+ *       specialty</em>): der Effekt des Zaubers × (1 + 0,03 × Heldenlevel / Stufe des Ziels),
+ *       für Schadenszauber und Cure, Animate Dead, Resurrection; bei Ciele fest +50 % auf Magic
+ *       Arrow.</li>
+ *   <li>{@link UniqueSpell} — „unique spell specialty": feste Zusatzpunkte je Stufe des Ziels
+ *       (Haste, Prayer, Weakness, Precision, Stone Skin, Bloodlust, Slayer), +2 auf Disrupting
+ *       Ray, Fortune immer +3 Glück, Bless zusätzlich 3 % × Level / Stufe Schaden.</li>
+ *   <li>{@link Other} — übrige Zauber-Spezialitäten (Hypnotize, Fire Wall) und Ressourcen, ohne
+ *       Wirkung.</li>
  * </ul>
+ *
+ * <p>Wer sich auf einen Zauber spezialisiert, beginnt mit ihm im Zauberbuch („All heroes who
+ * specialize in a spell start with it"), siehe {@link #startingSpells()}.
  *
  * <p>Eine Spezialität gilt für Basis- und Ausbaustufe der Kreatur; erkannt wird sie an Fraktion
  * und Stufe, die beide teilen.
@@ -53,9 +62,22 @@ public sealed interface HeroSpecialty {
         return 0;
     }
 
-    /** Aufschlag in Prozent auf den Schaden dieses Zaubers gegen diese Kreatur. */
-    default int spellDamagePercent(Spell spell, int heroLevel, Unit target) {
+    /** Aufschlag in Prozent auf Schaden oder Heilung dieses Zaubers für diese Kreatur. */
+    default int spellEffectPercent(Spell spell, int heroLevel, Unit target) {
         return 0;
+    }
+
+    /**
+     * Zusatzpunkte auf einen liegenden Zauber für diese Kreatur (bei Bless: Prozent Schaden, bei
+     * Fortune: das Glück, das der Zauber mindestens gibt).
+     */
+    default int spellEffectBonus(Spell spell, int heroLevel, Unit target) {
+        return 0;
+    }
+
+    /** Zauber, mit denen ein Held dieser Spezialität beginnt. */
+    default Set<Spell> startingSpells() {
+        return Set.of();
     }
 
     /** Faktor in Promille auf den Effekt der Fertigkeit; 1000 = unverändert. */
@@ -145,12 +167,13 @@ public sealed interface HeroSpecialty {
     }
 
     /**
-     * Schadenszauber-Spezialist. Die Rundung steht nicht im Wiki; gezählt werden volle Spannen.
+     * Gewöhnliche Zauber-Spezialität (SoD): Effekt × (1 + 0,03 × Level / Stufe des Ziels), also
+     * {@code 3 × Level / Stufe} Prozent, abgerundet.
      *
      * @param fixedPercent fester Aufschlag statt der Level-Formel (Ciele), sonst 0
      */
-    record SpellDamage(Spell spell, int fixedPercent) implements HeroSpecialty {
-        public SpellDamage {
+    record CommonSpell(Spell spell, int fixedPercent) implements HeroSpecialty {
+        public CommonSpell {
             Objects.requireNonNull(spell, "spell");
         }
 
@@ -160,11 +183,51 @@ public sealed interface HeroSpecialty {
         }
 
         @Override
-        public int spellDamagePercent(Spell cast, int heroLevel, Unit target) {
+        public int spellEffectPercent(Spell cast, int heroLevel, Unit target) {
             if (cast != spell) {
                 return 0;
             }
-            return fixedPercent > 0 ? fixedPercent : 3 * (heroLevel / target.tier());
+            return fixedPercent > 0 ? fixedPercent : 3 * heroLevel / target.tier();
+        }
+
+        @Override
+        public Set<Spell> startingSpells() {
+            return Set.of(spell);
+        }
+    }
+
+    /** Besondere Zauber-Spezialität (SoD-Werte von heroes.thelazy.net, unabhängig vom Level außer Bless). */
+    record UniqueSpell(Spell spell) implements HeroSpecialty {
+        public UniqueSpell {
+            Objects.requireNonNull(spell, "spell");
+        }
+
+        @Override
+        public boolean effectiveInCombat() {
+            return true;
+        }
+
+        @Override
+        public int spellEffectBonus(Spell cast, int heroLevel, Unit target) {
+            if (cast != spell) {
+                return 0;
+            }
+            int tier = target.tier();
+            return switch (spell) {
+                // +3 für Stufe 1–2, +2 für 3–4, +1 für 5–6.
+                case HASTE, PRAYER, WEAKNESS, PRECISION, STONE_SKIN, BLOODLUST -> tier <= 6 ? 3 - (tier - 1) / 2 : 0;
+                // +4 für Stufe 1 bis +1 für Stufe 4.
+                case SLAYER -> Math.max(0, 5 - tier);
+                case DISRUPTING_RAY -> 2;
+                case FORTUNE -> 3;
+                case BLESS -> 3 * heroLevel / tier;
+                default -> 0;
+            };
+        }
+
+        @Override
+        public Set<Spell> startingSpells() {
+            return Set.of(spell);
         }
     }
 

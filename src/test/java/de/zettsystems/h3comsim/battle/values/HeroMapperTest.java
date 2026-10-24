@@ -3,6 +3,7 @@ package de.zettsystems.h3comsim.battle.values;
 import de.zettsystems.h3comsim.battle.domain.HeroCatalog;
 import de.zettsystems.h3comsim.battle.domain.SecondarySkill;
 import de.zettsystems.h3comsim.battle.domain.SkillLevel;
+import de.zettsystems.h3comsim.battle.domain.Spell;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,5 +36,19 @@ class HeroMapperTest {
         assertThat(HeroMapper.toDto(HeroCatalog.JENOVA).specialty())
                 .isEqualTo(new HeroSpecialtyDto(HeroSpecialtyDto.Kind.OTHER,
                         null, 0, null, 0, 0, 0, "+350 gold per day", false));
+    }
+
+    @Test
+    void maps_spell_specialties_and_starting_spells() {
+        HeroDto ciele = HeroMapper.toDto(HeroCatalog.byName("Ciele").orElseThrow());
+        assertThat(ciele.specialty()).isEqualTo(new HeroSpecialtyDto(HeroSpecialtyDto.Kind.SPELL,
+                null, 0, null, 50, 0, 0, "MAGIC_ARROW", true));
+        assertThat(ciele.spells()).containsExactly(Spell.MAGIC_ARROW);
+
+        HeroDto adela = HeroMapper.toDto(HeroCatalog.byName("Adela").orElseThrow());
+        assertThat(adela.specialty()).isEqualTo(new HeroSpecialtyDto(HeroSpecialtyDto.Kind.SPELL_UNIQUE,
+                null, 0, null, 0, 0, 0, "BLESS", true));
+        assertThat(adela.spells()).containsExactly(Spell.BLESS);
+        assertThat(HeroMapper.toDto(HeroCatalog.SORSHA).spells()).isEmpty();
     }
 }

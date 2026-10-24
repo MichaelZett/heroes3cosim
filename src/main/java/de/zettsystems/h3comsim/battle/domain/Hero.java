@@ -83,19 +83,23 @@ public record Hero(
     }
 
     /**
-     * Derselbe Held mit diesem Zauberbuch.
+     * Derselbe Held mit diesen Zaubern zusätzlich zu denen, die er schon kennt. Seinen Startzauber
+     * behält ein Spezialist auch über dem Wisdom-Gate.
      *
-     * @throws IllegalArgumentException wenn er einen der Zauber nicht lernen kann ({@link #canLearn})
+     * @throws IllegalArgumentException wenn er einen neuen Zauber nicht lernen kann ({@link #canLearn})
      */
     public Hero withSpellbook(Set<Spell> book) {
+        Set<Spell> merged = EnumSet.noneOf(Spell.class);
+        merged.addAll(spells);
         for (Spell spell : book) {
-            if (!canLearn(spell)) {
+            if (!spells.contains(spell) && !canLearn(spell)) {
                 throw new IllegalArgumentException(name + " cannot learn " + spell
                         + " (level " + spell.level() + ", Wisdom " + levelOf(SecondarySkill.WISDOM) + ")");
             }
+            merged.add(spell);
         }
         return new Hero(name, heroClass, faction, attack, defense, power, knowledge, skills,
-                specialty, level, book);
+                specialty, level, merged);
     }
 
     /** Höchstens acht Sekundärfertigkeiten je Held (Manual S. 35). */

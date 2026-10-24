@@ -93,12 +93,12 @@ class HeroSpellTest {
     @Test
     void specialist_adds_three_percent_per_creature_level_span() {
         Hero solmyr = new Hero("Solmyr", HeroClass.WIZARD, Faction.TOWER, 0, 0, 1, 1, Map.of(),
-                new HeroSpecialty.SpellDamage(Spell.CHAIN_LIGHTNING, 0), 10);
-        // Level 10 gegen Stufe 1: 3 % × 10 = +30 %; gegen Stufe 7: 3 % × 1.
+                new HeroSpecialty.CommonSpell(Spell.CHAIN_LIGHTNING, 0), 10);
+        // Level 10 gegen Stufe 1: 3 % × 10 / 1 = +30 %; gegen Stufe 7: 30 / 7, abgerundet +4 %.
         assertThat(SpellDamage.toTarget(Spell.CHAIN_LIGHTNING, 100, solmyr,
                 stack(UnitCatalog.PIKEMAN, 1, 0, 0, Side.DEFENDER, 0))).isEqualTo(130);
         assertThat(SpellDamage.toTarget(Spell.CHAIN_LIGHTNING, 100, solmyr,
-                stack(UnitCatalog.ANGEL, 1, 0, 0, Side.DEFENDER, 0))).isEqualTo(103);
+                stack(UnitCatalog.ANGEL, 1, 0, 0, Side.DEFENDER, 0))).isEqualTo(104);
     }
 
     @Test

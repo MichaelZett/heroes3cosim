@@ -69,6 +69,7 @@ import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.RAISE_DEMONS;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.REBIRTH;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.REGENERATION;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.RESURRECTION;
+import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.SPELL_COST_INCREASE;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.SPELL_COST_REDUCTION;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.SPELL_DAMAGE_HALVED;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.SPELL_DAMAGE_QUARTERED;
@@ -149,7 +150,7 @@ public final class UnitCatalog {
     public static final Unit LICH = basic("Lich", new Stats(13, 10, 30, 6), ranged(11, 13, 12), GROUND, NECROPOLIS, 5, 550, DEATH_CLOUD);
     public static final Unit LIZARDMAN = basic("Lizardman", new Stats(5, 6, 12, 4), ranged(1, 3, 12), GROUND, FORTRESS, 2, 110);
     public static final Unit LIZARD_WARRIOR = upgrade("Lizard Warrior", new Stats(5, 7, 12, 5), ranged(2, 3, 24), GROUND, FORTRESS, 2, 130);
-    public static final Unit MAGI = basic("Magi", new Stats(11, 8, 25, 5), ranged(7, 9, 24), GROUND, TOWER, 4, 350, NO_HAND_TO_HAND_PENALTY, NO_OBSTACLE_PENALTY);
+    public static final Unit MAGI = basic("Magi", new Stats(11, 8, 25, 5), ranged(7, 9, 24), GROUND, TOWER, 4, 350, NO_HAND_TO_HAND_PENALTY, NO_OBSTACLE_PENALTY, SPELL_COST_REDUCTION);
     public static final Unit MAGIC_ELEMENTAL = upgrade("Magic Elemental", new Stats(15, 13, 80, 9), melee(15, 25), GROUND, CONFLUX, 6, 800, IMMUNE_TO_SPELLS, ELEMENTAL_RACE);
     public static final Unit MAGMA_ELEMENTAL = upgrade("Magma Elemental", new Stats(11, 11, 40, 6), melee(6, 10), GROUND, CONFLUX, 5, 500, ELEMENTAL_RACE);
     public static final Unit MAGOG = upgrade("Magog", new Stats(7, 4, 13, 6), ranged(2, 4, 24), GROUND, INFERNO, 2, 175, SPLASH_SHOT);
@@ -171,7 +172,7 @@ public final class UnitCatalog {
     public static final Unit ORC = basic("Orc", new Stats(8, 4, 15, 4), ranged(2, 5, 12), GROUND, STRONGHOLD, 3, 150);
     public static final Unit ORC_CHIEFTAIN = upgrade("Orc Chieftain", new Stats(8, 4, 20, 5), ranged(2, 5, 24), GROUND, STRONGHOLD, 3, 165);
     public static final Unit PEASANT = basic("Peasant", new Stats(1, 1, 1, 3), melee(1, 1), GROUND, NEUTRAL, 1, 10);
-    public static final Unit PEGASUS = basic("Pegasus", new Stats(9, 8, 30, 8), melee(5, 9), FLYING, RAMPART, 4, 250);
+    public static final Unit PEGASUS = basic("Pegasus", new Stats(9, 8, 30, 8), melee(5, 9), FLYING, RAMPART, 4, 250, SPELL_COST_INCREASE);
     public static final Unit PHOENIX = upgrade("Phoenix", new Stats(21, 18, 200, 21), melee(30, 40), FLYING, CONFLUX, 7, 2000, REBIRTH, IMMUNE_TO_FIRE_SPELLS);
     public static final Unit PIKEMAN = basic("Pikeman", new Stats(4, 5, 10, 4), melee(1, 3), GROUND, CASTLE, 1, 60);
     public static final Unit PIT_LORD = upgrade("Pit Lord", new Stats(13, 13, 45, 7), melee(13, 17), GROUND, INFERNO, 5, 700, RAISE_DEMONS);
@@ -184,7 +185,7 @@ public final class UnitCatalog {
     public static final Unit ROYAL_GRIFFIN = upgrade("Royal Griffin", new Stats(9, 9, 25, 9), melee(3, 6), FLYING, CASTLE, 3, 240, COUNTERSTRIKE_UNLIMITED);
     public static final Unit SCORPICORE = upgrade("Scorpicore", new Stats(16, 14, 80, 11), melee(14, 20), FLYING, DUNGEON, 6, 1050, PETRYFYING);
     public static final Unit SERPENT_FLY = basic("Serpent Fly", new Stats(6, 8, 20, 9), melee(2, 5), FLYING, FORTRESS, 3, 220, DISPELS_BENEFICIAL);
-    public static final Unit SILVER_PEGASUS = upgrade("Silver Pegasus", new Stats(9, 10, 30, 12), melee(5, 9), FLYING, RAMPART, 4, 275);
+    public static final Unit SILVER_PEGASUS = upgrade("Silver Pegasus", new Stats(9, 10, 30, 12), melee(5, 9), FLYING, RAMPART, 4, 275, SPELL_COST_INCREASE);
     public static final Unit SKELETON = basic("Skeleton", new Stats(5, 4, 6, 4), melee(1, 3), GROUND, NECROPOLIS, 1, 60);
     public static final Unit SKELETON_WARRIOR = upgrade("Skeleton Warrior", new Stats(6, 6, 6, 5), melee(1, 3), GROUND, NECROPOLIS, 1, 70);
     public static final Unit SPRITE = upgrade("Sprite", new Stats(2, 2, 3, 9), melee(1, 3), FLYING, CONFLUX, 1, 30, NO_RETALIATION);

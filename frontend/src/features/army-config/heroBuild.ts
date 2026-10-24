@@ -22,17 +22,17 @@ export const BUILD_SKILLS: SecondarySkill[] = [
   'WATER_MAGIC',
 ];
 
-/**
- * Zauber, die ein Held im Simulator wirkt, mit ihrer Stufe (Manual, Spell Reference). Schutz vor
- * Schulen, Anti-Magic und Dispel fehlen: die Zauberwahl haette fuer sie keinen Anlass.
- */
+/** Zauber, die ein Held im Simulator wirken kann, mit ihrer Stufe (Manual, Spell Reference). */
 export const HERO_SPELLS: [Spell, number][] = [
   ['MAGIC_ARROW', 1],
   ['BLESS', 1],
   ['BLOODLUST', 1],
   ['CURE', 1],
   ['CURSE', 1],
+  ['DISPEL', 1],
   ['HASTE', 1],
+  ['PROTECTION_FROM_FIRE', 1],
+  ['PROTECTION_FROM_WATER', 1],
   ['SHIELD', 1],
   ['SLOW', 1],
   ['STONE_SKIN', 1],
@@ -43,15 +43,18 @@ export const HERO_SPELLS: [Spell, number][] = [
   ['ICE_BOLT', 2],
   ['LIGHTNING_BOLT', 2],
   ['PRECISION', 2],
+  ['PROTECTION_FROM_AIR', 2],
   ['WEAKNESS', 2],
   ['AIR_SHIELD', 3],
   ['ANIMATE_DEAD', 3],
+  ['ANTI_MAGIC', 3],
   ['DESTROY_UNDEAD', 3],
   ['FIREBALL', 3],
   ['FORGETFULNESS', 3],
   ['FROST_RING', 3],
   ['MIRTH', 3],
   ['MISFORTUNE', 3],
+  ['PROTECTION_FROM_EARTH', 3],
   ['ARMAGEDDON', 4],
   ['CHAIN_LIGHTNING', 4],
   ['COUNTERSTRIKE', 4],
