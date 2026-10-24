@@ -17,7 +17,8 @@ import java.util.function.Predicate;
  * das Zielfeld und seine Nachbarn, Inferno alles im Umkreis von zwei Feldern, Frost Ring nur die
  * Nachbarn; Chain Lightning springt zum jeweils nächsten Stack und trifft vier (Basic) bzw. fünf
  * Stacks mit jeweils halbem Schaden; Death Ripple trifft alle außer Untoten, Destroy Undead alle
- * Untoten, Armageddon alle. Flächenzauber unterscheiden nicht nach Freund und Feind. Auf Expert
+ * Untoten, Armageddon alle. Resurrection und Animate Dead holen auch ganz gefallene Stacks zurück,
+ * wenn ihr Feld frei ist. Flächenzauber unterscheiden nicht nach Freund und Feind. Auf Expert
  * wirken die Massenzauber ({@link Spell#massAtExpert()}) auf alle Stacks der Zielseite.
  *
  * <p>Die Wahl ist eine Solver-Heuristik: Jeder bezahlbare Zauber wird auf jedes sinnvolle Ziel
@@ -133,6 +134,11 @@ final class HeroSpellcasting {
                     casts.add(new Cast(spell, level, null, List.of()));
                 }
             }
+            case RESURRECTION, ANIMATE_DEAD -> {
+                List<Stack> targets = new ArrayList<>(own);
+                setup.stacksOf(side).stream().filter(setup::hasFreeCorpse).forEach(targets::add);
+                targets.forEach(t -> casts.add(new Cast(spell, level, t, List.of(t))));
+            }
             case DISPEL -> {
                 // Basic nur auf eigene Stacks, Advanced auf jeden, Expert auf alle (Manual S. 76).
                 if (level == SkillLevel.EXPERT) {
@@ -221,6 +227,22 @@ final class HeroSpellcasting {
     static int baseDamage(Cast cast, int power, int index) {
         int base = SpellDamage.base(cast.spell(), cast.level(), power);
         return cast.spell() == Spell.CHAIN_LIGHTNING ? base >> index : base;
+    }
+
+    /** Holen Gefallene zurück, auch ganz gefallene Stacks. */
+    static boolean revives(Spell spell) {
+        return spell == Spell.RESURRECTION || spell == Spell.ANIMATE_DEAD;
+    }
+
+    /**
+     * Lebenspunkte, die {@code amount} dem Stack zurückgibt: höchstens, was ihm fehlt; ein ganz
+     * gefallener Stack braucht mindestens eine ganze Kreatur ({@link Stack#heal}).
+     */
+    private static int restorable(Stack s, int amount) {
+        if (!s.isAlive() && amount < s.unit().health()) {
+            return 0;
+        }
+        return Math.min(amount, s.missingHealth());
     }
 
     /** Heilung des Helden auf dieses Ziel, mit dem Aufschlag seiner Spezialität. */
@@ -368,10 +390,8 @@ final class HeroSpellcasting {
                 }
                 yield Math.min(amount, s.topMissingHealth()) * costPerHealth(s) + negatives;
             }
-            case ANIMATE_DEAD -> s.unit().isUndead()
-                    ? Math.min(amount, s.missingHealth()) * costPerHealth(s) : 0;
-            case RESURRECTION -> s.unit().isResurrectable()
-                    ? Math.min(amount, s.missingHealth()) * costPerHealth(s) : 0;
+            case ANIMATE_DEAD -> s.unit().isUndead() ? restorable(s, amount) * costPerHealth(s) : 0;
+            case RESURRECTION -> s.unit().isResurrectable() ? restorable(s, amount) * costPerHealth(s) : 0;
             default -> 0;
         };
     }

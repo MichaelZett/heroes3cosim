@@ -119,8 +119,39 @@ class ResurrectionTest {
         Stack foe = enemy();
         foe.loseTopCreatures(5);
 
-        assertThat(Resurrection.isValidTarget(angels, angels)).isFalse();
-        assertThat(Resurrection.isValidTarget(angels, foe)).isFalse();
+        BattleSetup setup = new BattleSetup(List.of(angels), List.of(foe), Battlefield.STANDARD);
+
+        assertThat(Resurrection.isValidTarget(angels, angels, setup)).isFalse();
+        assertThat(Resurrection.isValidTarget(angels, foe, setup)).isFalse();
+    }
+
+    @Test
+    void a_fallen_stack_rises_fresh_when_its_field_is_free() {
+        Stack angel = ally(UnitCatalog.ARCH_ANGEL, 2, 0);
+        Stack pikemen = new Stack(UnitCatalog.PIKEMAN, 30, new Hex(1, 3), Side.ATTACKER, 1);
+        pikemen.applySpell(Spell.SLOW, SkillLevel.ADVANCED, 10);
+        pikemen.takeDamage(10_000, java.util.Set.of());
+        BattleSetup setup = new BattleSetup(List.of(angel, pikemen), List.of(enemy()), Battlefield.STANDARD);
+        assertThat(Resurrection.isValidTarget(angel, pikemen, setup)).isTrue();
+
+        ListEventCollector collector = run(setup, angel, pikemen);
+
+        assertThat(resurrections(collector)).singleElement()
+                .satisfies(r -> assertThat(r.restoredCount()).isEqualTo(20));
+        assertThat(pikemen.getCount()).as("200 HP für Pikemen zu 10 HP").isEqualTo(20);
+        assertThat(pikemen.hasSpell(Spell.SLOW)).as("zurück ohne Zauber").isFalse();
+    }
+
+    @Test
+    void a_fallen_stack_under_another_stack_stays_dead() {
+        Stack angel = ally(UnitCatalog.ARCH_ANGEL, 2, 0);
+        Stack pikemen = new Stack(UnitCatalog.PIKEMAN, 30, new Hex(1, 3), Side.ATTACKER, 1);
+        pikemen.takeDamage(10_000, java.util.Set.of());
+        Stack standing = new Stack(UnitCatalog.SWORDSMAN, 5, pikemen.position(), Side.ATTACKER, 2);
+        BattleSetup setup = new BattleSetup(List.of(angel, pikemen, standing), List.of(enemy()),
+                Battlefield.STANDARD);
+
+        assertThat(Resurrection.isValidTarget(angel, pikemen, setup)).isFalse();
     }
 
     @Test

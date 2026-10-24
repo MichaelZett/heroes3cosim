@@ -25,7 +25,8 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Twice/Unlimited (Griffin), Regeneration (Wight), Fire Shield (Efreet
   Sultan), Rebirth (Phoenix), No Hand-to-Hand Penalty, Moral-Senkung
   (Bone/Ghost Dragon), Resurrection (Arch Angel: einmal pro Kampf 100 HP
-  je Arch Angel für einen verbündeten Stack), Dämonen-Beschwörung (Pit
+  je Arch Angel für einen verbündeten Stack, auch einen ganz gefallenen,
+  wenn sein Feld frei ist), Dämonen-Beschwörung (Pit
   Lord: einmal pro Kampf aus einem ganz gefallenen verbündeten Stack,
   50 HP je Pit Lord).
 - **Multi-Stack-Fähigkeiten** für die Army-Battles: Cerberus
@@ -79,7 +80,9 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Ripple, Destroy Undead und Armageddon treffen ganze Gruppen; Flächen
   treffen auch eigene Stacks. Dazu Stärkungen und Schwächungen (Bless,
   Curse, Haste, Slow, Prayer, Blind, Disrupting Ray, Forgetfulness …),
-  Cure, Animate Dead und Resurrection. Golems nehmen halben bzw. ein
+  Cure, Animate Dead und Resurrection — die beiden letzten holen auch ganz
+  gefallene Stacks zurück, wenn ihr Feld frei ist, frisch und ohne
+  Zauber. Golems nehmen halben bzw. ein
   Viertel Schaden, Elementare doppelten oder keinen von den Zaubern ihrer
   Gegen-Elemente; Anti-Magic sperrt die unteren Stufen. Dispel hebt alle
   Zauber auf, auf Basic nur auf eigenen Stacks, auf Advanced auf jedem,
@@ -388,8 +391,7 @@ zu lesen, nicht als universelle H3-Tier-Liste.
   `FriendlyFireDiagnosisTest`). Diese Zahlen stammen noch aus der Zeit,
   in der der Cerberus wahllos zwei Nachbarn traf, eigene eingeschlossen,
   und der Magog nur zwei statt aller sechs Felder ums Ziel.
-- **Helden, nächste Stufe**: Zauber auf ganz gefallene Stacks, Zauber im
-  Matrix-Modus.
+- **Helden, nächste Stufe**: Zauber im Matrix-Modus.
   Bei den Kriegsmaschinen offen: angreifbare Maschinen auf dem Feld.
 - **Taktisches Warten ausbauen**: Nahkämpfer nutzen *Wait* bereits, wenn
   sie ihr Ziel diese Runde nicht erreichen — messbar stärker, aber der
