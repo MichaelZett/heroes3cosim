@@ -4,8 +4,13 @@ import de.zettsystems.h3comsim.battle.domain.events.Side;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.random.RandomGenerator;
 
 @Slf4j
@@ -39,6 +44,10 @@ public class Stack {
     private int armyMorale;
     private int armyLuck;
     private boolean unlimitedAmmo;
+    private final Map<Spell, ActiveSpell> spells = new EnumMap<>(Spell.class);
+    private int spellCastsLeft;
+    /** Attack in Prozent — unter 100 nur beim Gegenschlag eines eben geweckten Blinden. */
+    private int attackPercent = 100;
 
     /** Convenience constructor — defaults the side to {@link Side#ATTACKER}. */
     public Stack(Unit unit, int count, Hex position) {
@@ -64,6 +73,7 @@ public class Stack {
         this.aliveCount = count;
         this.topUnitCurrentHealth = unit.health();
         this.shotsRemaining = unit.shots();
+        this.spellCastsLeft = CreatureSpellcasting.castsFor(unit);
     }
 
     public Unit unit() {
@@ -109,19 +119,75 @@ public class Stack {
         return unit.name();
     }
 
-    /** Speed der Kreatur plus +1 durch einen Kreatur-Spezialisten ({@link HeroSpecialty}). */
+    /**
+     * Speed der Kreatur plus +1 durch einen Kreatur-Spezialisten ({@link HeroSpecialty}) und
+     * Haste (+3/5) bzw. Prayer (+2/4).
+     */
     public int getSpeed() {
-        return unit.speed() + (commander == null ? 0 : commander.specialty().speedBonus(unit));
+        return unit.speed() + (commander == null ? 0 : commander.specialty().speedBonus(unit))
+                + spellValue(Spell.HASTE, 3, 5, 5) + spellValue(Spell.PRAYER, 2, 4, 4);
     }
 
+    /**
+     * Attack-Rating ohne die Zauber, die nur je Angriffsart oder Ziel greifen: Grundwert,
+     * Krankheit, Held und Spezialität, Weakness (−3/6), Prayer (+2/4) und Frenzy (+100/150/200 %
+     * der Defense, Manual S. 75).
+     */
     public int getAttack() {
-        return unit.attack() - (diseased ? 2 : 0)
-                + (commander == null ? 0 : commander.attack() + commander.specialtyAttackBonus(unit));
+        int attack = unit.attack() - (diseased ? 2 : 0)
+                + (commander == null ? 0 : commander.attack() + commander.specialtyAttackBonus(unit))
+                - spellValue(Spell.WEAKNESS, 3, 6, 6) + spellValue(Spell.PRAYER, 2, 4, 4);
+        ActiveSpell frenzy = spells.get(Spell.FRENZY);
+        if (frenzy != null) {
+            attack += baseDefense() * frenzy.byLevel(100, 150, 200) / 100;
+        }
+        return attack * attackPercent / 100;
     }
 
-    public int getDefense() {
-        int base = unit.defense() - (diseased ? 2 : 0)
+    /**
+     * Attack-Rating für einen konkreten Angriff: dazu Bloodlust (+3/6 im Nahkampf), Precision
+     * (+3/6 im Fernkampf) und Slayer (+8 gegen die genannten Kreaturen).
+     */
+    public int attackAgainst(Stack target, AttackType attackType) {
+        int attack = getAttack();
+        if (attackType == AttackType.HAND_TO_HAND) {
+            attack += spellValue(Spell.BLOODLUST, 3, 6, 6);
+        } else {
+            attack += spellValue(Spell.PRECISION, 3, 6, 6);
+        }
+        ActiveSpell slayer = spells.get(Spell.SLAYER);
+        if (slayer != null && isSlayerTarget(target.unit(), slayer.level())) {
+            attack += 8;
+        }
+        return attack;
+    }
+
+    /**
+     * Slayer (Manual S. 75): Basic gegen Behemoths, Dragons und Hydras, Advanced zusätzlich
+     * gegen Devils und Angels, Expert auch gegen Titans. Erkannt an Stufe 7 und Namen bzw. an den
+     * Rassen-Markern — der Dragon Fly ist kein Drache.
+     */
+    static boolean isSlayerTarget(Unit unit, SkillLevel level) {
+        String name = unit.name();
+        boolean big = unit.tier() == 7
+                && (name.contains("Dragon") || name.contains("Behemoth") || name.contains("Hydra"));
+        boolean advanced = level.compareTo(SkillLevel.ADVANCED) >= 0
+                && (unit.hasSpeciality(UnitSpeciality.DEVIL_RACE) || unit.hasSpeciality(UnitSpeciality.ANGEL_RACE));
+        boolean expert = level == SkillLevel.EXPERT && unit.hasSpeciality(UnitSpeciality.TITAN_RACE);
+        return big || advanced || expert;
+    }
+
+    private int baseDefense() {
+        return unit.defense() - (diseased ? 2 : 0)
                 + (commander == null ? 0 : commander.defense() + commander.specialtyDefenseBonus(unit));
+    }
+
+    /** Defense-Rating mit Stone Skin (+3/6) und Prayer (+2/4); Frenzy setzt sie auf 0. */
+    public int getDefense() {
+        if (spells.containsKey(Spell.FRENZY)) {
+            return 0;
+        }
+        int base = baseDefense() + spellValue(Spell.STONE_SKIN, 3, 6, 6) + spellValue(Spell.PRAYER, 2, 4, 4);
         if (defending) {
             // H3-Defend laut RoE-Manual S. 47: +20 % auf die Defense-Rating bis Rundenende.
             // Stackt nicht mit anderen Defense-Boni — gehört hierhin, damit alle Damage-
@@ -165,7 +231,7 @@ public class Stack {
 
     /** Glück dieses Stacks, 0..3. Keine Kreatur im Katalog hat eigenes Glück. */
     public int getLuck() {
-        return armyLuck;
+        return Math.clamp(armyLuck + spellValue(Spell.FORTUNE, 1, 2, 2), ArmyLuck.MIN, ArmyLuck.MAX);
     }
 
     /**
@@ -173,7 +239,8 @@ public class Stack {
      * bei positivem Glück einen Zufallswert; ohne Glück bleibt der Zufallsstrom unangetastet.
      */
     public boolean isLucky(RandomGenerator rng) {
-        return armyLuck > 0 && rng.nextInt(1000) < ArmyMorale.triggerChancePerMille(armyLuck);
+        int luck = getLuck();
+        return luck > 0 && rng.nextInt(1000) < ArmyMorale.triggerChancePerMille(luck);
     }
 
     /**
@@ -216,8 +283,16 @@ public class Stack {
     public int calculateCurrentDamage(AttackType usedAttackType, int hexesMoved, RandomGenerator rng) {
         // Planeswalker-Spezialität: fester Aufschlag auf Minimal- und Maximalschaden je Kreatur.
         int bonus = commander == null ? 0 : commander.specialty().damageBonus(unit);
-        int baseValue = cursed ? unit.minDamage() + bonus
-                : rng.nextInt(unit.minDamage() + bonus, unit.maxDamage() + bonus + 1);
+        ActiveSpell bless = spells.get(Spell.BLESS);
+        int baseValue;
+        if (cursed) {
+            baseValue = unit.minDamage() + bonus;
+        } else if (bless != null) {
+            // Bless (Manual S. 76): maximaler Schaden, ab Advanced +1.
+            baseValue = unit.maxDamage() + bonus + bless.byLevel(0, 1, 1);
+        } else {
+            baseValue = rng.nextInt(unit.minDamage() + bonus, unit.maxDamage() + bonus + 1);
+        }
         if (unit.hasPenality(usedAttackType)) {
             baseValue = (int) Math.round(0.5 * baseValue);
             LOG.info("Stack von {} hat Nachteil, halbiert also den Schaden.", getName());
@@ -238,6 +313,21 @@ public class Stack {
 
     public int calculateAttackBoniMaliPercentage(int defense) {
         return boniMaliPercentage(getAttack(), defense);
+    }
+
+    /** Wie {@link #calculateAttackBoniMaliPercentage(int)}, mit den Zaubern für diesen Angriff. */
+    public int calculateAttackBoniMaliPercentage(Stack target, AttackType attackType, int defense) {
+        return boniMaliPercentage(attackAgainst(target, attackType), defense);
+    }
+
+    /**
+     * Anteil des Schadens, den der Stack nach Shield (−15/30 % im Nahkampf) und Air Shield
+     * (−25/50 % im Fernkampf) tatsächlich nimmt, in Prozent.
+     */
+    public int incomingDamagePercent(AttackType attackType) {
+        return attackType == AttackType.HAND_TO_HAND
+                ? 100 - spellValue(Spell.SHIELD, 15, 30, 30)
+                : 100 - spellValue(Spell.AIR_SHIELD, 25, 50, 50);
     }
 
     static int boniMaliPercentage(int attack, int defense) {
@@ -287,10 +377,8 @@ public class Stack {
         if (unit.hasSpeciality(UnitSpeciality.COUNTERSTRIKE_UNLIMITED)) {
             return Integer.MAX_VALUE;
         }
-        if (unit.hasSpeciality(UnitSpeciality.COUNTERSTRIKE_TWICE)) {
-            return 2;
-        }
-        return 1;
+        int base = unit.hasSpeciality(UnitSpeciality.COUNTERSTRIKE_TWICE) ? 2 : 1;
+        return base + spellValue(Spell.COUNTERSTRIKE, 1, 2, 2);
     }
 
     /**
@@ -305,7 +393,7 @@ public class Stack {
         if (unit.hasFixedZeroMorale()) {
             return 0;
         }
-        return ArmyMorale.clamp(armyMorale + unit.morale());
+        return ArmyMorale.clamp(armyMorale + unit.morale() + spellValue(Spell.MIRTH, 1, 2, 2));
     }
 
     /**
@@ -396,11 +484,70 @@ public class Stack {
         return used;
     }
 
-    public int fireShieldDamageFor(int incomingDamage) {
-        if (!unit.hasSpeciality(UnitSpeciality.FIRE_SHIELD)) {
-            return 0;
+    /** Legt einen Zauber auf den Stack; ein schon liegender desselben Namens wird ersetzt. */
+    public void applySpell(Spell spell, SkillLevel level, int rounds) {
+        spells.put(spell, new ActiveSpell(spell, level, rounds));
+    }
+
+    public boolean hasSpell(Spell spell) {
+        return spells.containsKey(spell);
+    }
+
+    public @Nullable ActiveSpell activeSpell(Spell spell) {
+        return spells.get(spell);
+    }
+
+    public Collection<ActiveSpell> activeSpells() {
+        return Collections.unmodifiableCollection(spells.values());
+    }
+
+    /** Entfernt die passenden Zauber und liefert, wie viele es waren. */
+    public int removeSpells(Predicate<Spell> which) {
+        int before = spells.size();
+        spells.keySet().removeIf(which);
+        return before - spells.size();
+    }
+
+    /**
+     * Blind endet, sobald der Stack angegriffen wird (Manual S. 73). Der Angriff, der ihn weckt,
+     * wird mit 50 % (Basic), 25 % (Advanced) oder gar nicht (Expert) des Attack-Ratings
+     * beantwortet.
+     *
+     * @return Attack in Prozent für den Gegenschlag auf diesen Angriff; 100 ohne Blind
+     */
+    public int wakeFromBlind() {
+        ActiveSpell blind = spells.remove(Spell.BLIND);
+        return blind == null ? 100 : blind.byLevel(50, 25, 0);
+    }
+
+    void setAttackPercent(int percent) {
+        this.attackPercent = percent;
+    }
+
+    public int spellCastsLeft() {
+        return spellCastsLeft;
+    }
+
+    void useSpellCast() {
+        if (spellCastsLeft > 0) {
+            spellCastsLeft--;
         }
-        return (int) Math.round(incomingDamage * 0.2);
+    }
+
+    /** Wert eines liegenden Zaubers je Stufe, 0 ohne den Zauber. */
+    private int spellValue(Spell spell, int basic, int advanced, int expert) {
+        ActiveSpell active = spells.get(spell);
+        return active == null ? 0 : active.byLevel(basic, advanced, expert);
+    }
+
+    /**
+     * Rückschaden eines Feuerschilds: 20 % beim Efreet Sultan, der Zauber Fire Shield gibt
+     * 20/25/30 % (Manual S. 74). Beides zusammen zählt nicht doppelt, es gilt der höhere Wert.
+     */
+    public int fireShieldDamageFor(int incomingDamage) {
+        int percent = Math.max(unit.hasSpeciality(UnitSpeciality.FIRE_SHIELD) ? 20 : 0,
+                spellValue(Spell.FIRE_SHIELD, 20, 25, 30));
+        return percent == 0 ? 0 : (int) Math.round(incomingDamage * percent / 100.0);
     }
 
     public boolean isRebirthUsed() {
@@ -452,6 +599,8 @@ public class Stack {
         diseasedCounter = 0;
         aged = false;
         retaliationsThisTurn = 0;
+        spells.clear();
+        spellCastsLeft = CreatureSpellcasting.castsFor(newUnit);
     }
 
     /** Kreaturen, mit denen der Stack in den Kampf ging (nach einer Auferstehung: die neue Zahl). */
@@ -518,6 +667,8 @@ public class Stack {
         // Defend gilt nur für die laufende Runde — nächste Runde gibt's wieder Base-Defense.
         defending = false;
         waitedThisTurn = false;
+        spells.replaceAll((spell, active) -> active.tick());
+        spells.values().removeIf(active -> active.roundsLeft() <= 0);
         if (petrifiedCounter > 0 && --petrifiedCounter == 0) {
             unpetrify();
         }
@@ -546,6 +697,10 @@ public class Stack {
         }
         if (petrified) {
             LOG.info("Stack von {} ist versteinert und macht nichts.", getName());
+            return false;
+        }
+        if (spells.containsKey(Spell.BLIND)) {
+            LOG.info("Stack von {} ist geblendet und macht nichts.", getName());
             return false;
         }
         return true;

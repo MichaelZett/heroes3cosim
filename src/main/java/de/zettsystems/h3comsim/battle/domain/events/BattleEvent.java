@@ -2,6 +2,7 @@ package de.zettsystems.h3comsim.battle.domain.events;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import de.zettsystems.h3comsim.battle.domain.Spell;
 import de.zettsystems.h3comsim.battle.domain.WarMachine;
 import io.swagger.v3.oas.annotations.media.DiscriminatorMapping;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -26,6 +27,8 @@ import java.util.List;
         @JsonSubTypes.Type(value = BattleEvent.TacticsPhase.class, name = "TacticsPhase"),
         @JsonSubTypes.Type(value = BattleEvent.BallistaShot.class, name = "BallistaShot"),
         @JsonSubTypes.Type(value = BattleEvent.FirstAid.class, name = "FirstAid"),
+        @JsonSubTypes.Type(value = BattleEvent.SpellCast.class, name = "SpellCast"),
+        @JsonSubTypes.Type(value = BattleEvent.Dispel.class, name = "Dispel"),
         @JsonSubTypes.Type(value = BattleEvent.MoveBack.class, name = "MoveBack"),
         @JsonSubTypes.Type(value = BattleEvent.DeathStare.class, name = "DeathStare"),
         @JsonSubTypes.Type(value = BattleEvent.Thunderbolts.class, name = "Thunderbolts"),
@@ -56,6 +59,7 @@ import java.util.List;
                 BattleEvent.TwoBlows.class, BattleEvent.TwoShots.class, BattleEvent.GoodMorale.class,
                 BattleEvent.BadMorale.class, BattleEvent.LuckyStrike.class, BattleEvent.TacticsPhase.class,
                 BattleEvent.BallistaShot.class, BattleEvent.FirstAid.class,
+                BattleEvent.SpellCast.class, BattleEvent.Dispel.class,
                 BattleEvent.MoveBack.class, BattleEvent.DeathStare.class, BattleEvent.Thunderbolts.class,
                 BattleEvent.Petrifying.class, BattleEvent.Cursing.class, BattleEvent.Poisoning.class,
                 BattleEvent.Diseasing.class, BattleEvent.Aging.class, BattleEvent.FireShield.class,
@@ -79,6 +83,8 @@ import java.util.List;
                 @DiscriminatorMapping(value = "TacticsPhase", schema = BattleEvent.TacticsPhase.class),
                 @DiscriminatorMapping(value = "BallistaShot", schema = BattleEvent.BallistaShot.class),
                 @DiscriminatorMapping(value = "FirstAid", schema = BattleEvent.FirstAid.class),
+                @DiscriminatorMapping(value = "SpellCast", schema = BattleEvent.SpellCast.class),
+                @DiscriminatorMapping(value = "Dispel", schema = BattleEvent.Dispel.class),
                 @DiscriminatorMapping(value = "MoveBack", schema = BattleEvent.MoveBack.class),
                 @DiscriminatorMapping(value = "DeathStare", schema = BattleEvent.DeathStare.class),
                 @DiscriminatorMapping(value = "Thunderbolts", schema = BattleEvent.Thunderbolts.class),
@@ -243,6 +249,29 @@ public sealed interface BattleEvent {
             @Schema(description = "Slot des geheilten Stacks") int targetSlot,
             @Schema(description = "Geheilte Lebenspunkte") int healed,
             @Schema(description = "Stack nach der Heilung") StackSnapshot targetAfter) implements BattleEvent {
+    }
+
+    @Schema(name = "SpellCast",
+            description = "Eine Kreatur wirkt einen Zauber: Ogre Magi und Master Genie als Aktion, Unicorn (Blind) und Dragon Fly (Weakness) beim Angriff. `resisted` = das Ziel hat den Zauber abgewehrt.")
+    record SpellCast(
+            @Schema(description = "Seite des Zaubernden") Side actor,
+            @Schema(description = "Slot des Zaubernden") int actorSlot,
+            @Schema(description = "Zauber") Spell spell,
+            @Schema(description = "Seite des Ziels") Side target,
+            @Schema(description = "Slot des Ziels") int targetSlot,
+            @Schema(description = "Abgewehrt durch Magieresistenz") boolean resisted,
+            @Schema(description = "Ziel danach") StackSnapshot targetAfter) implements BattleEvent {
+    }
+
+    @Schema(name = "Dispel",
+            description = "Serpent oder Dragon Fly hebt beim Angriff die nützlichen Zauber des Ziels auf.")
+    record Dispel(
+            @Schema(description = "Seite des Angreifers") Side actor,
+            @Schema(description = "Slot des Angreifers") int actorSlot,
+            @Schema(description = "Seite des Ziels") Side target,
+            @Schema(description = "Slot des Ziels") int targetSlot,
+            @Schema(description = "Anzahl aufgehobener Zauber") int removed,
+            @Schema(description = "Ziel danach") StackSnapshot targetAfter) implements BattleEvent {
     }
 
     @Schema(name = "BadMorale",

@@ -189,6 +189,10 @@ public final class StrategicAutoSolver implements AutoSolver {
         if (corpse != null) {
             return new Action.RaiseDemons(corpse);
         }
+        Action cast = CreatureSpellcasting.decide(active, opponent, currentSetup);
+        if (cast != null) {
+            return cast;
+        }
         // (A) Tank-Pattern: positionieren statt chargen, wenn eigene Schützen Schutz brauchen.
         // Aktiviert sich bei RANGED_DOMINANT (alle Schützen schutzwürdig) und bei BALANCED
         // mit Rand-Schützen — siehe RoundPlan.hasTankDuty / StrategicAutoSolver#buildPlan.

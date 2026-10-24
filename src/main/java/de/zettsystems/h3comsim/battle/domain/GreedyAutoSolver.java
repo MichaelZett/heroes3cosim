@@ -135,6 +135,10 @@ public final class GreedyAutoSolver implements AutoSolver {
         if (corpse != null) {
             return new Action.RaiseDemons(corpse);
         }
+        Action cast = CreatureSpellcasting.decide(active, opponent, currentSetup);
+        if (cast != null) {
+            return cast;
+        }
         Hex from = active.position();
         Hex to = opponent.position();
         int distance = from.distanceTo(to);

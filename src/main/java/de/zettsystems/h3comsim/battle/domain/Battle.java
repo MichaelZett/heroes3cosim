@@ -28,6 +28,10 @@ public final class Battle {
     private static final int NO_PROGRESS_LIMIT = 20;
 
     private final RandomGenerator rng;
+    /** Das laufende Setup, für Effekte tief in der Schadensrechnung (Magieresistenz der Nachbarn). */
+    private @Nullable BattleSetup currentSetup;
+    /** Dauer der Zauber, die Unicorns und Dragon Flies beim Angriff auslösen (heroes.thelazy.net). */
+    private static final int PROC_ROUNDS = 3;
     private final AutoSolver autoSolver;
     private final EventCollector events;
 
@@ -46,6 +50,7 @@ public final class Battle {
     }
 
     public BattleResult simulate(BattleSetup setup) {
+        this.currentSetup = setup;
         BattleLogger.logStartOfCombat(setup.getAttackerName(), setup.getAttackerCount(),
                 setup.getDefenderName(), setup.getDefenderCount());
         Battlefield bf = setup.battlefield();
@@ -339,8 +344,56 @@ public final class Battle {
             case Action.Shoot(Stack target) -> shoot(active, target, setup);
             case Action.Resurrect(Stack target) -> resurrect(active, target);
             case Action.RaiseDemons(Stack corpse) -> raiseDemons(active, corpse, setup);
+            case Action.CastSpell(Spell spell, Stack target) -> castSpell(active, spell, target, setup);
+            case Action.CastRandomSpell() -> castRandomSpell(active, setup);
         }
+        // Frenzy hält „until target troop's next action" (Manual S. 75).
+        active.removeSpells(spell -> spell == Spell.FRENZY);
         return true;
+    }
+
+    /**
+     * Ogre Magi: Bloodlust auf einen verbündeten Stack (Advanced, 6 Runden). Ein ungültiger
+     * Auftrag fällt auf Defend zurück, wie bei {@link #resurrect}.
+     */
+    private void castSpell(Stack caster, Spell spell, Stack target, BattleSetup setup) {
+        boolean allowed = caster.spellCastsLeft() > 0
+                && caster.hasSpeciality(UnitSpeciality.CASTS_BLOODLUST) && spell == Spell.BLOODLUST
+                && CreatureSpellcasting.usefulTargets(caster, spell, setup).contains(target);
+        if (!allowed) {
+            emitDefend(caster);
+            return;
+        }
+        applyCreatureSpell(caster, new CreatureSpellcasting.Cast(spell, target));
+    }
+
+    /** Master Genie: Zauber und Ziel per Zufall unter den sinnvollen (CreatureSpellcasting). */
+    private void castRandomSpell(Stack caster, BattleSetup setup) {
+        CreatureSpellcasting.Cast cast = caster.spellCastsLeft() > 0
+                && caster.hasSpeciality(UnitSpeciality.CASTS_RANDOM_BENEFICIAL)
+                ? CreatureSpellcasting.randomCast(caster, setup, rng) : null;
+        if (cast == null) {
+            emitDefend(caster);
+            return;
+        }
+        applyCreatureSpell(caster, cast);
+    }
+
+    private void applyCreatureSpell(Stack caster, CreatureSpellcasting.Cast cast) {
+        Stack target = cast.target();
+        Spell spell = cast.spell();
+        caster.useSpellCast();
+        if (spell == Spell.CURE) {
+            // Cure (Manual S. 76): hebt negative Zauber auf und heilt (Power × 5) + 20 auf Advanced.
+            target.removeSpells(s -> !s.beneficial());
+            target.healTop(CreatureSpellcasting.SPELL_POWER * 5 + 20);
+        } else {
+            int rounds = spell == Spell.FRENZY ? Integer.MAX_VALUE : CreatureSpellcasting.SPELL_POWER;
+            target.applySpell(spell, CreatureSpellcasting.CAST_LEVEL, rounds);
+        }
+        BattleLogger.logSpell(caster.getName(), spell, target.getName());
+        events.emit(new BattleEvent.SpellCast(caster.side(), caster.slot(), spell,
+                target.side(), target.slot(), false, snapshot(target)));
     }
 
     /**
@@ -470,6 +523,7 @@ public final class Battle {
 
     private void meleeAttack(Stack active, Stack passive, int hexesMoved, BattleSetup setup) {
         int countBeforeFirst = passive.getCount();
+        int retaliationPercent = passive.wakeFromBlind();
         int dealt = dealDamage(active, passive, AttackType.HAND_TO_HAND, hexesMoved, 0, false);
         events.emit(new BattleEvent.Melee(active.side(), active.slot(),
                 passive.side(), passive.slot(), hexesMoved,
@@ -477,7 +531,7 @@ public final class Battle {
         applyFireShield(active, passive, dealt);
         applyMeleeSplash(active, passive, setup);
         applyLifeDrain(active, dealt);
-        triggerRetaliation(active, passive);
+        triggerRetaliation(active, passive, retaliationPercent);
         if (active.hasSpeciality(UnitSpeciality.TWO_BLOWS) && passive.isAlive() && active.isAlive()) {
             BattleLogger.logTwoBlows(active.getName());
             events.emit(new BattleEvent.TwoBlows(active.side(), active.slot()));
@@ -489,7 +543,7 @@ public final class Battle {
                     dealtSecond, countBeforeSecond - passive.getCount(), snapshot(passive)));
             applyFireShield(active, passive, dealtSecond);
             applyLifeDrain(active, dealtSecond);
-            triggerRetaliation(active, passive);
+            triggerRetaliation(active, passive, 100);
         }
     }
 
@@ -559,14 +613,16 @@ public final class Battle {
     }
 
     private void applySplashHit(Stack active, Stack secondary, AttackType attackType) {
+        secondary.wakeFromBlind();
         int currentDamage = active.calculateCurrentDamage(attackType, 0, rng);
         int effectiveDefense = secondary.effectiveDefenseAgainst(active.getAttackerSpecialities());
-        int boniMaliPercentage = active.calculateAttackBoniMaliPercentage(effectiveDefense);
+        int boniMaliPercentage = active.calculateAttackBoniMaliPercentage(secondary, attackType, effectiveDefense);
         // Splash-Treffer sind normale Angriffe und bekommen dieselben Helden-Modifikatoren
         // wie das Hauptziel — sonst würde ein Cerberus mit Offense-Held nur beim Primary
         // profitieren und bei den Kollateralen nicht.
         int realDamage = applyHeroCombatSkills(active, secondary, attackType,
-                (currentDamage * (100 + boniMaliPercentage)) / 100);
+                (currentDamage * (100 + boniMaliPercentage)) / 100)
+                * secondary.incomingDamagePercent(attackType) / 100;
         int countBefore = secondary.getCount();
         BattleLogger.logAttack(active.getName(), secondary.getName());
         secondary.takeDamage(realDamage, active.getAttackerSpecialities());
@@ -623,7 +679,14 @@ public final class Battle {
                 active.side(), active.slot(), reverse, snapshot(active)));
     }
 
-    private void triggerRetaliation(Stack active, Stack passive) {
+    /**
+     * @param attackPercent Attack des Zurückschlagenden in Prozent — unter 100 nur, wenn der Angriff
+     *                      ihn eben aus Blind geweckt hat (0 = gar kein Gegenschlag)
+     */
+    private void triggerRetaliation(Stack active, Stack passive, int attackPercent) {
+        if (attackPercent == 0) {
+            return;
+        }
         if (active.hasSpeciality(UnitSpeciality.NO_RETALIATION)) {
             BattleLogger.logImmuneToRetaliation(active.getName());
             return;
@@ -638,7 +701,9 @@ public final class Battle {
         passive.recordRetaliation();
         int countBefore = active.getCount();
         // Retaliation kehrt aktiv/passiv bewusst um — passive schlaegt zurueck.
+        passive.setAttackPercent(attackPercent);
         int dealt = dealDamage(/* active= */ passive, /* passive= */ active, AttackType.HAND_TO_HAND, 0, 0, false);
+        passive.setAttackPercent(100);
         events.emit(new BattleEvent.Retaliation(passive.side(), passive.slot(),
                 active.side(), active.slot(),
                 dealt, countBefore - active.getCount(), snapshot(active)));
@@ -650,6 +715,7 @@ public final class Battle {
         boolean obstacleInLine = PathFinder.hasObstacleInLine(battlefield, active.position(), passive.position());
         BattleLogger.logShoot(active.getName(), passive.getName(), distance);
         int countBefore = passive.getCount();
+        passive.wakeFromBlind();
         int dealt = dealDamage(active, passive, AttackType.LONG_RANGE, 0, distance, obstacleInLine);
         events.emit(new BattleEvent.Shoot(active.side(), active.slot(),
                 passive.side(), passive.slot(), distance,
@@ -741,7 +807,7 @@ public final class Battle {
             }
         }
         int effectiveDefense = passive.effectiveDefenseAgainst(active.getAttackerSpecialities());
-        int boniMaliPercentage = active.calculateAttackBoniMaliPercentage(effectiveDefense);
+        int boniMaliPercentage = active.calculateAttackBoniMaliPercentage(passive, attackType, effectiveDefense);
         int damagePercent = 100 + boniMaliPercentage;
         if (active.isLucky(rng)) {
             damagePercent = luckyDamagePercent(boniMaliPercentage);
@@ -749,7 +815,8 @@ public final class Battle {
             events.emit(new BattleEvent.LuckyStrike(active.side(), active.slot()));
         }
         int realDamage = applyHeroCombatSkills(active, passive, attackType,
-                (currentDamage * damagePercent) / 100);
+                (currentDamage * damagePercent) / 100)
+                * passive.incomingDamagePercent(attackType) / 100;
 
         BattleLogger.logAttack(active.getName(), passive.getName());
         boolean rebirthUsedBefore = passive.isRebirthUsed();
@@ -764,6 +831,7 @@ public final class Battle {
             doPoisoning(active, passive);
             doDiseasing(active, passive);
             doAging(active, passive);
+            doCreatureSpellProcs(active, passive);
             if (passive.isAlive()) {
                 BattleLogger.logRemainingHealth(passive.getName(), passive.getCurrentHealth());
             } else {
@@ -847,6 +915,48 @@ public final class Battle {
             events.emit(new BattleEvent.Thunderbolts(active.side(), active.slot(),
                     target.side(), target.slot(), damage, snapshot(target)));
         }
+    }
+
+    /**
+     * Zauber, die ein Angriff auslöst: Unicorns blenden mit 20 % Chance (Basic, 3 Runden), Serpent
+     * und Dragon Flies heben die nützlichen Zauber des Ziels auf (Advanced, nicht abzuwehren),
+     * Dragon Flies wirken danach Weakness (Advanced, 3 Runden) — heroes.thelazy.net. Gegen ein
+     * immunes Ziel wird gar nicht erst gewürfelt.
+     */
+    private void doCreatureSpellProcs(Stack active, Stack target) {
+        BattleSetup setup = currentSetup;
+        if (setup == null) {
+            return;
+        }
+        if (active.hasSpeciality(UnitSpeciality.BLINDING)
+                && !SpellResistance.isImmune(target.unit(), Spell.BLIND) && rng.nextInt(100) < 20) {
+            boolean takes = SpellResistance.takesEffect(Spell.BLIND, target, setup, rng);
+            if (takes) {
+                target.applySpell(Spell.BLIND, SkillLevel.BASIC, PROC_ROUNDS);
+            }
+            emitProc(active, Spell.BLIND, target, !takes);
+        }
+        if (active.hasSpeciality(UnitSpeciality.DISPELS_BENEFICIAL)) {
+            int removed = target.removeSpells(Spell::beneficial);
+            if (removed > 0) {
+                events.emit(new BattleEvent.Dispel(active.side(), active.slot(),
+                        target.side(), target.slot(), removed, snapshot(target)));
+            }
+        }
+        if (active.hasSpeciality(UnitSpeciality.CASTS_WEAKNESS)
+                && !SpellResistance.isImmune(target.unit(), Spell.WEAKNESS)) {
+            boolean takes = SpellResistance.takesEffect(Spell.WEAKNESS, target, setup, rng);
+            if (takes) {
+                target.applySpell(Spell.WEAKNESS, SkillLevel.ADVANCED, PROC_ROUNDS);
+            }
+            emitProc(active, Spell.WEAKNESS, target, !takes);
+        }
+    }
+
+    private void emitProc(Stack active, Spell spell, Stack target, boolean resisted) {
+        BattleLogger.logSpell(active.getName(), spell, target.getName());
+        events.emit(new BattleEvent.SpellCast(active.side(), active.slot(), spell,
+                target.side(), target.slot(), resisted, snapshot(target)));
     }
 
     private void doPetrifying(Stack active, Stack target) {

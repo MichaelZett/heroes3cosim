@@ -1,0 +1,93 @@
+package de.zettsystems.h3comsim.battle.domain;
+
+import java.util.random.RandomGenerator;
+
+/**
+ * Ob ein Zauber auf einem Stack wirkt: erst Immunitäten, dann bei feindlichen Zaubern die
+ * Magieresistenz.
+ *
+ * <p>Immunitäten (gegen nützliche wie feindliche Zauber):
+ * <ul>
+ *   <li>Black Dragon und Magic Elemental gegen alle Zauber, Gold Dragon gegen Stufe 1–4, Red
+ *       Dragon gegen Stufe 1–3 (Manual S. 91 und 107, AB-Manual).</li>
+ *   <li>Efreet, Efreet Sultan, Fire und Energy Elemental, Firebird und Phoenix gegen die Schule
+ *       des Feuers (Manual S. 98, AB-Manual).</li>
+ *   <li>Gegen Gedankenzauber: Giants und Titans (Manual S. 115), Elementare (AB-Manual), dazu
+ *       nach SoD-Regel Untote und nicht lebende Kreaturen (Golems, Gargoyles).</li>
+ *   <li>Troglodytes gegen Blind (Manual S. 89).</li>
+ * </ul>
+ *
+ * <p>Magieresistenz gilt nur gegen feindliche Zauber: Dwarves 20 %, Battle Dwarves 40 %
+ * (Manual S. 105), dazu die Aura eines benachbarten Unicorns (+20 %, nicht für das Unicorn
+ * selbst, mehrere Auren zählen einmal). Zwei Quellen verrechnen sich als zwei unabhängige
+ * Chancen. Ohne Resistenz wird nicht gewürfelt.
+ */
+final class SpellResistance {
+
+    private static final int AURA_PERCENT = 20;
+
+    private SpellResistance() {
+    }
+
+    static boolean isImmune(Unit unit, Spell spell) {
+        if (unit.hasSpeciality(UnitSpeciality.IMMUNE_TO_SPELLS)) {
+            return true;
+        }
+        if (unit.hasSpeciality(UnitSpeciality.IMMUNE_TO_SPELLS_BELOW_5) && spell.level() < 5) {
+            return true;
+        }
+        if (unit.hasSpeciality(UnitSpeciality.IMMUNE_TO_SPELLS_BELOW_4) && spell.level() < 4) {
+            return true;
+        }
+        if (spell == Spell.BLIND && unit.hasSpeciality(UnitSpeciality.IMMUNE_TO_BLIND)) {
+            return true;
+        }
+        if (spell.school() == MagicSchool.FIRE && unit.hasSpeciality(UnitSpeciality.IMMUNE_TO_FIRE_SPELLS)) {
+            return true;
+        }
+        return spell.mind() && isImmuneToMind(unit);
+    }
+
+    static boolean isImmuneToMind(Unit unit) {
+        return unit.isUndead()
+                || unit.hasSpeciality(UnitSpeciality.NON_LIVING)
+                || unit.hasSpeciality(UnitSpeciality.ELEMENTAL_RACE)
+                || unit.hasSpeciality(UnitSpeciality.IMMUNE_TO_MIND_SPELLS);
+    }
+
+    /** Chance in Prozent, einen feindlichen Zauber abzuwehren. */
+    static int resistancePercent(Stack target, BattleSetup setup) {
+        int own = target.hasSpeciality(UnitSpeciality.MAGIC_RESISTANCE_40) ? 40
+                : target.hasSpeciality(UnitSpeciality.MAGIC_RESISTANCE_20) ? 20 : 0;
+        int aura = hasAuraNeighbour(target, setup) ? AURA_PERCENT : 0;
+        return 100 - (100 - own) * (100 - aura) / 100;
+    }
+
+    // ally != target: die Aura wirkt nicht auf das Unicorn selbst (Identitätsvergleich).
+    @SuppressWarnings("ReferenceEquality")
+    private static boolean hasAuraNeighbour(Stack target, BattleSetup setup) {
+        for (Stack ally : setup.stacksOf(target.side())) {
+            if (ally != target && ally.isAlive()
+                    && ally.hasSpeciality(UnitSpeciality.MAGIC_RESISTANCE_AURA)
+                    && ally.position().distanceTo(target.position()) == 1) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Wirkt der Zauber? Immunität schließt ihn aus; ein feindlicher Zauber kann zusätzlich an der
+     * Resistenz scheitern.
+     */
+    static boolean takesEffect(Spell spell, Stack target, BattleSetup setup, RandomGenerator rng) {
+        if (isImmune(target.unit(), spell)) {
+            return false;
+        }
+        if (spell.beneficial()) {
+            return true;
+        }
+        int resistance = resistancePercent(target, setup);
+        return resistance == 0 || rng.nextInt(100) >= resistance;
+    }
+}
