@@ -12,6 +12,7 @@ import java.util.Random;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /** Summon Elementals und Magic Mirror (Manual S. 66 ff.). */
 class SummonAndMirrorTest {
@@ -216,6 +217,15 @@ class SummonAndMirrorTest {
         assertThat(goblins.isAlive()).isFalse();
         assertThat(result.winner()).isEqualTo(de.zettsystems.h3comsim.battle.domain.events.Winner.DRAW);
         assertThat(result.attackerSurvivors()).isZero();
+    }
+
+    @Test
+    void reinforcing_adds_fresh_creatures_and_rejects_nothing() {
+        Stack elementals = stack(UnitCatalog.EARTH_ELEMENTAL, 4, 0, 5, Side.ATTACKER, 7);
+        elementals.reinforce(3);
+        assertThat(elementals.getCount()).isEqualTo(7);
+        assertThat(elementals.startCount()).isEqualTo(7);
+        assertThatThrownBy(() -> elementals.reinforce(0)).isInstanceOf(IllegalArgumentException.class);
     }
 
     /** Jeder Prozentwurf (nextInt(100)) trifft; alles andere wie Random. */
