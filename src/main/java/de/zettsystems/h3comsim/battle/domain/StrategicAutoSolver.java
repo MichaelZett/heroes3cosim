@@ -179,15 +179,11 @@ public final class StrategicAutoSolver implements AutoSolver {
 
     @Override
     public Action decide(Stack active, Stack opponent, Battlefield battlefield) {
-        // Resurrection vor allem anderen: ein Arch Angel, der lieber Tank spielt, verschenkt
+        // Sonderaktionen vor allem anderen: ein Arch Angel, der lieber Tank spielt, verschenkt
         // seinen einzigen Wurf.
-        Stack resurrectionTarget = Resurrection.worthwhileTarget(active, currentSetup);
-        if (resurrectionTarget != null) {
-            return new Action.Resurrect(resurrectionTarget);
-        }
-        Stack corpse = DemonRaising.worthwhileCorpse(active, currentSetup);
-        if (corpse != null) {
-            return new Action.RaiseDemons(corpse);
+        Action special = GreedyAutoSolver.specialAction(active, opponent, currentSetup);
+        if (special != null) {
+            return special;
         }
         // (A) Tank-Pattern: positionieren statt chargen, wenn eigene Schützen Schutz brauchen.
         // Aktiviert sich bei RANGED_DOMINANT (alle Schützen schutzwürdig) und bei BALANCED

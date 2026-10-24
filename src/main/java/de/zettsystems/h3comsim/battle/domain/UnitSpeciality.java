@@ -78,17 +78,44 @@ public enum UnitSpeciality {
      *  Armee. */
     LOWERS_ENEMY_LUCK(SPECIAL),
 
-    // Not yet evaluated by the engine — defined for unit catalog tagging only.
-    // Most of these need the spell/hero system before they can be evaluated.
+    // Zauber (siehe SpellResistance und CreatureSpellcasting).
+    /** Troglodytes (Manual S. 89): „immune to blinding effects". */
     IMMUNE_TO_BLIND(DEFENSE),
-    GOOD_ARMY_MORALE(SPECIAL),
-    SPELL_COST_REDUCTION(SPECIAL),
+    /** Black Dragon, Magic Elemental: gegen alle Zauber immun. */
     IMMUNE_TO_SPELLS(SPECIAL),
     /** Red Dragon (Manual S. 107): „immune to spells below the fourth level". */
     IMMUNE_TO_SPELLS_BELOW_4(SPECIAL),
     /** Gold Dragon (Manual S. 107): „only affected by spells of level five". */
     IMMUNE_TO_SPELLS_BELOW_5(SPECIAL),
+    /** Efreet, Fire/Energy Elemental, Firebird, Phoenix: immun gegen die Schule des Feuers. */
+    IMMUNE_TO_FIRE_SPELLS(SPECIAL),
+    /** Giants und Titans (Manual S. 115): „immune to spells affecting the mind". Untote,
+     *  Elementare und nicht lebende Kreaturen sind es ohne eigenen Marker. */
+    IMMUNE_TO_MIND_SPELLS(SPECIAL),
+    /** Dwarf (Manual S. 105): 20 % Chance, einen feindlichen Zauber abzuwehren. */
+    MAGIC_RESISTANCE_20(DEFENSE),
+    /** Battle Dwarf (Manual S. 105): 40 %. */
+    MAGIC_RESISTANCE_40(DEFENSE),
+    /** Unicorns (Manual S. 106): benachbarte Verbündete wehren feindliche Zauber zu 20 % ab. */
+    MAGIC_RESISTANCE_AURA(SPECIAL),
+    /** Ogre Magi (Manual S. 110): Bloodlust auf Verbündete, dreimal pro Kampf. */
     CASTS_BLOODLUST(SPECIAL),
+    /** Master Genie (Manual S. 114): zufälliger nützlicher Zauber, dreimal pro Kampf. */
+    CASTS_RANDOM_BENEFICIAL(SPECIAL),
+    /** Unicorns (Manual S. 106): 20 % Chance, das Ziel des Angriffs zu blenden. */
+    BLINDING(AFTER_ATTACK),
+    /** Serpent und Dragon Fly (Manual S. 93): heben nützliche Zauber des Ziels auf. */
+    DISPELS_BENEFICIAL(AFTER_ATTACK),
+    /** Dragon Fly (SoD, heroes.thelazy.net): Weakness auf Advanced nach jedem Angriff. */
+    CASTS_WEAKNESS(AFTER_ATTACK),
+
+    // Not yet evaluated by the engine — defined for unit catalog tagging only.
+    GOOD_ARMY_MORALE(SPECIAL),
+    SPELL_COST_REDUCTION(SPECIAL),
+    /** Stone Golem (Manual S. 113): halber Schaden durch Zauber — erst mit Schadenszaubern. */
+    SPELL_DAMAGE_HALVED(DEFENSE),
+    /** Iron Golem (Manual S. 113): ein Viertel des Zauberschadens. */
+    SPELL_DAMAGE_QUARTERED(DEFENSE),
     ATTACKS_WALLS(SPECIAL),
 
     // Multi-Stack-Fähigkeiten (greifen erst, wenn mehr als ein Gegner-Stack auf dem Feld steht).

@@ -21,6 +21,14 @@ public sealed interface Action {
     record RaiseDemons(Stack corpse) implements Action {
     }
 
+    /** Ogre Magi: wirkt einen Zauber auf einen verbündeten Stack ({@link CreatureSpellcasting}). */
+    record CastSpell(Spell spell, Stack target) implements Action {
+    }
+
+    /** Master Genie: wirkt einen zufälligen nützlichen Zauber; Zauber und Ziel wählt der Kampf. */
+    record CastRandomSpell() implements Action {
+    }
+
     /** Arch Angel: Resurrection auf einen verbündeten Stack, einmal pro Kampf. */
     record Resurrect(Stack target) implements Action {
     }

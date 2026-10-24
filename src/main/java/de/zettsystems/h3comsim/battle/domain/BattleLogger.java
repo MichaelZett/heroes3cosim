@@ -21,6 +21,10 @@ public final class BattleLogger {
         LOG.debug("Stack von {} hat Glueck und richtet doppelten Schaden an.", name);
     }
 
+    static void logSpell(String caster, Spell spell, String target) {
+        LOG.debug("{} wirkt {} auf {}.", caster, spell, target);
+    }
+
     static void logDeath(String name) {
         LOG.debug("Stack von {} ist gestorben.", name);
     }
