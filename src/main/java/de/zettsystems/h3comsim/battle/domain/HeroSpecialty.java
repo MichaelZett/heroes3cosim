@@ -16,8 +16,10 @@ import java.util.Objects;
  *       Armorer; ohne die Fertigkeit selbst bringt die Spezialität nichts.</li>
  *   <li>{@link FixedCreature} — die Planeswalker aus Armageddon's Blade: feste Boni auf Attack,
  *       Defense und Schaden ihrer Elementare, unabhängig vom Level.</li>
- *   <li>{@link Other} — Zauber, Ressourcen, Ballista. Ohne Zaubersystem, Abenteuerkarte und
- *       Kriegsmaschinen ohne Wirkung.</li>
+ *   <li>{@link Ballista} — „increases the Attack and Defense skill of any Ballista under his
+ *       command"; SoD: +5 % je angefangene fünf Level (Ballista ist Stufe 5).</li>
+ *   <li>{@link Other} — Zauber und Ressourcen. Ohne Zaubersystem und Abenteuerkarte ohne
+ *       Wirkung.</li>
  * </ul>
  *
  * <p>Eine Spezialität gilt für Basis- und Ausbaustufe der Kreatur; erkannt wird sie an Fraktion
@@ -41,6 +43,11 @@ public sealed interface HeroSpecialty {
     }
 
     default int damageBonus(Unit unit) {
+        return 0;
+    }
+
+    /** Attack-Aufschlag für die Ballista dieses Helden. */
+    default int ballistaAttackBonus(int heroLevel) {
         return 0;
     }
 
@@ -85,10 +92,12 @@ public sealed interface HeroSpecialty {
             return sameCreature(creature, unit) ? 1 : 0;
         }
 
-        private static int percentOf(int base, int heroLevel, int tier) {
-            int steps = Math.ceilDiv(heroLevel, tier);
-            return Math.ceilDiv(base * steps * 5, 100);
-        }
+    }
+
+    /** +5 % des Grundwerts je angefangene Spanne von {@code tier} Leveln, aufgerundet. */
+    static int percentOf(int base, int heroLevel, int tier) {
+        int steps = Math.ceilDiv(heroLevel, tier);
+        return Math.ceilDiv(base * steps * 5, 100);
     }
 
     /** Fertigkeits-Spezialist: +5 % je Level auf den Effekt der Fertigkeit. */
@@ -100,12 +109,31 @@ public sealed interface HeroSpecialty {
         @Override
         public boolean effectiveInCombat() {
             return skill == SecondarySkill.OFFENSE || skill == SecondarySkill.ARCHERY
-                    || skill == SecondarySkill.ARMORER;
+                    || skill == SecondarySkill.ARMORER || skill == SecondarySkill.FIRST_AID;
         }
 
         @Override
         public int skillFactorPerMille(SecondarySkill other, int heroLevel) {
             return other == skill ? 1000 + 50 * heroLevel : 1000;
+        }
+    }
+
+    /**
+     * Ballista-Spezialist (SoD, heroes.thelazy.net, z. B. Torosar): Attack und Defense der
+     * Ballista +5 % je angefangene fünf Level. Weil die Ballista hier nicht angegriffen wird,
+     * wirkt nur der Attack-Teil.
+     */
+    record Ballista() implements HeroSpecialty {
+        private static final int BALLISTA_LEVEL = 5;
+
+        @Override
+        public boolean effectiveInCombat() {
+            return true;
+        }
+
+        @Override
+        public int ballistaAttackBonus(int heroLevel) {
+            return percentOf(WarMachine.BALLISTA.attack(), heroLevel, BALLISTA_LEVEL);
         }
     }
 

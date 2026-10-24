@@ -28,7 +28,7 @@ class BattleEventSubtypesTest {
         List<HexCoord> mutable = new ArrayList<>(List.of(new HexCoord(7, 5)));
         BattleEvent.BattleStart event =
                 new BattleEvent.BattleStart(15, 11, mutable, ATTACKER_SNAP, DEFENDER_SNAP,
-                        List.of(ATTACKER_SNAP, DEFENDER_SNAP), 1, -2, "Crag Hack", null, 2, 0);
+                        List.of(ATTACKER_SNAP, DEFENDER_SNAP), 1, -2, "Crag Hack", null, 2, 0, List.of(), List.of());
 
         mutable.add(new HexCoord(99, 99));
 

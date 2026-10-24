@@ -38,6 +38,7 @@ public class Stack {
     private @Nullable Hero commander;
     private int armyMorale;
     private int armyLuck;
+    private boolean unlimitedAmmo;
 
     /** Convenience constructor — defaults the side to {@link Side#ATTACKER}. */
     public Stack(Unit unit, int count, Hex position) {
@@ -90,9 +91,14 @@ public class Stack {
     }
 
     public void useShot() {
-        if (shotsRemaining > 0) {
+        if (shotsRemaining > 0 && !unlimitedAmmo) {
             shotsRemaining--;
         }
+    }
+
+    /** Munitionswagen der eigenen Armee: Schüsse gehen nicht mehr aus. */
+    void grantUnlimitedAmmo() {
+        this.unlimitedAmmo = true;
     }
 
     public boolean canShoot() {
@@ -231,11 +237,32 @@ public class Stack {
     }
 
     public int calculateAttackBoniMaliPercentage(int defense) {
+        return boniMaliPercentage(getAttack(), defense);
+    }
+
+    static int boniMaliPercentage(int attack, int defense) {
         // RoE-Manual S. 43: +5 % pro Attack-Punkt Differenz, gedeckelt bei +400 %
         // (80 Punkte); −2 % pro Defense-Punkt Differenz, min. 30 % Damage (= −70 %, also
         // 35 Punkte). Ohne Cap explodiert Damage bei extremen Tier-Lücken.
-        int diff = getAttack() - defense;
+        int diff = attack - defense;
         return diff >= 0 ? Math.min(diff * 5, 400) : Math.max(diff * 2, -70);
+    }
+
+    /** Lebenspunkte, die der obersten Kreatur fehlen. */
+    public int topMissingHealth() {
+        return aliveCount > 0 ? unit.health() - topUnitCurrentHealth : 0;
+    }
+
+    /**
+     * Heilt die oberste Kreatur, höchstens bis zu ihren vollen Lebenspunkten (First Aid Tent,
+     * Manual S. 117). Tote kommen nicht zurück.
+     *
+     * @return tatsächlich geheilte Lebenspunkte
+     */
+    public int healTop(int amount) {
+        int healed = Math.min(amount, topMissingHealth());
+        topUnitCurrentHealth += healed;
+        return healed;
     }
 
     public int effectiveDefenseAgainst(Set<UnitSpeciality> attackerSpecialities) {

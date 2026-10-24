@@ -86,6 +86,11 @@ export const en: Dictionary = {
     WATER_MAGIC: 'Water Magic',
     WISDOM: 'Wisdom',
   },
+  warMachine: {
+    BALLISTA: 'Ballista',
+    AMMO_CART: 'Ammo cart',
+    FIRST_AID_TENT: 'First aid tent',
+  },
   config: {
     title: 'Heroes 3 Combat Simulator',
     subtitle: 'Pick two armies, optionally set a seed, and start the battle.',
@@ -144,6 +149,18 @@ export const en: Dictionary = {
       '<actor>Attacker</actor> arranges troops with Tactics within the first {{columns}} columns.',
     tacticsPhase_defender:
       '<actor>Defender</actor> arranges troops with Tactics within the first {{columns}} columns.',
+    ballistaShot_attacker:
+      "The <actor>attacker</actor>'s ballista hits <target>{{target}}</target>: {{damage}} damage, {{killed}} killed. {{extra}}",
+    ballistaShot_defender:
+      "The <actor>defender</actor>'s ballista hits <target>{{target}}</target>: {{damage}} damage, {{killed}} killed. {{extra}}",
+    ballistaDoubled: 'double damage from Artillery',
+    ballistaLucky: 'lucky strike',
+    firstAid_attacker:
+      "The <actor>attacker</actor>'s first aid tent heals <target>{{target}}</target> by {{healed}} hit points.",
+    firstAid_defender:
+      "The <actor>defender</actor>'s first aid tent heals <target>{{target}}</target> by {{healed}} hit points.",
+    battleStartWarMachines:
+      'War machines: <actor>attacker {{attacker}}</actor>, <target>defender {{defender}}</target>.',
     luckyStrike: '<actor>{{actor}}</actor> is lucky and deals double damage.',
     deathStare:
       '<actor>{{actor}}</actor> kills {{kills}} of <target>{{target}}</target> with Death Stare.',
@@ -202,6 +219,7 @@ export const en: Dictionary = {
     heroSpecialtySKILL: '{{skill}}: effect +5% per level',
     heroSpecialtyFIXED_CREATURE:
       '{{unit}} (and upgrade): +{{attack}} attack, +{{defense}} defense, +{{damage}} damage',
+    heroSpecialtyBALLISTA: 'Ballista: attack +5% per started 5 levels',
     heroSpecialtyOTHER: '{{description}}',
     heroSpecialtyInert: 'no effect in combat',
     heroLevel: 'Level',
@@ -213,6 +231,7 @@ export const en: Dictionary = {
     skillLevelBASIC: 'Basic',
     skillLevelADVANCED: 'Advanced',
     skillLevelEXPERT: 'Expert',
+    warMachines: 'War machines',
     luckBonus: 'Collected luck',
     moraleBonus: 'Collected morale',
     bonusHint:

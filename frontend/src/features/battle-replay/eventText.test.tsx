@@ -116,6 +116,53 @@ describe('eventToNode', () => {
     );
   });
 
+  it('renders a ballista shot with its extras', () => {
+    const { container } = renderEvent({
+      type: 'BallistaShot',
+      actor: 'ATTACKER',
+      target: 'DEFENDER',
+      targetSlot: 0,
+      damage: 22,
+      killed: 2,
+      lucky: false,
+      doubled: true,
+      targetAfter: {
+        side: 'DEFENDER',
+        slot: 0,
+        unitName: 'Goblin',
+        count: 6,
+        topHp: 5,
+        q: 14,
+        r: 5,
+      },
+    });
+
+    expect(container.textContent).toContain('Ballista des Angreifers trifft Goblin: 22 Schaden');
+    expect(container.textContent).toContain('doppelter Schaden durch Artillery');
+  });
+
+  it('renders the first aid tent with the healed points', () => {
+    const { container } = renderEvent({
+      type: 'FirstAid',
+      actor: 'DEFENDER',
+      targetSlot: 0,
+      healed: 17,
+      targetAfter: {
+        side: 'DEFENDER',
+        slot: 0,
+        unitName: 'Goblin',
+        count: 8,
+        topHp: 5,
+        q: 14,
+        r: 5,
+      },
+    });
+
+    expect(container.textContent).toContain(
+      'Sanitätszelt des Verteidigers heilt Goblin um 17 Lebenspunkte',
+    );
+  });
+
   it('renders LuckyStrike as double damage', () => {
     const { container } = renderEvent({ type: 'LuckyStrike', actor: 'ATTACKER', actorSlot: 0 });
 

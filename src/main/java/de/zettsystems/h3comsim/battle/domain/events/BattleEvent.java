@@ -2,6 +2,7 @@ package de.zettsystems.h3comsim.battle.domain.events;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import de.zettsystems.h3comsim.battle.domain.WarMachine;
 import io.swagger.v3.oas.annotations.media.DiscriminatorMapping;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.jspecify.annotations.Nullable;
@@ -23,6 +24,8 @@ import java.util.List;
         @JsonSubTypes.Type(value = BattleEvent.BadMorale.class, name = "BadMorale"),
         @JsonSubTypes.Type(value = BattleEvent.LuckyStrike.class, name = "LuckyStrike"),
         @JsonSubTypes.Type(value = BattleEvent.TacticsPhase.class, name = "TacticsPhase"),
+        @JsonSubTypes.Type(value = BattleEvent.BallistaShot.class, name = "BallistaShot"),
+        @JsonSubTypes.Type(value = BattleEvent.FirstAid.class, name = "FirstAid"),
         @JsonSubTypes.Type(value = BattleEvent.MoveBack.class, name = "MoveBack"),
         @JsonSubTypes.Type(value = BattleEvent.DeathStare.class, name = "DeathStare"),
         @JsonSubTypes.Type(value = BattleEvent.Thunderbolts.class, name = "Thunderbolts"),
@@ -52,6 +55,7 @@ import java.util.List;
                 BattleEvent.Shoot.class, BattleEvent.Melee.class, BattleEvent.Retaliation.class,
                 BattleEvent.TwoBlows.class, BattleEvent.TwoShots.class, BattleEvent.GoodMorale.class,
                 BattleEvent.BadMorale.class, BattleEvent.LuckyStrike.class, BattleEvent.TacticsPhase.class,
+                BattleEvent.BallistaShot.class, BattleEvent.FirstAid.class,
                 BattleEvent.MoveBack.class, BattleEvent.DeathStare.class, BattleEvent.Thunderbolts.class,
                 BattleEvent.Petrifying.class, BattleEvent.Cursing.class, BattleEvent.Poisoning.class,
                 BattleEvent.Diseasing.class, BattleEvent.Aging.class, BattleEvent.FireShield.class,
@@ -73,6 +77,8 @@ import java.util.List;
                 @DiscriminatorMapping(value = "BadMorale", schema = BattleEvent.BadMorale.class),
                 @DiscriminatorMapping(value = "LuckyStrike", schema = BattleEvent.LuckyStrike.class),
                 @DiscriminatorMapping(value = "TacticsPhase", schema = BattleEvent.TacticsPhase.class),
+                @DiscriminatorMapping(value = "BallistaShot", schema = BattleEvent.BallistaShot.class),
+                @DiscriminatorMapping(value = "FirstAid", schema = BattleEvent.FirstAid.class),
                 @DiscriminatorMapping(value = "MoveBack", schema = BattleEvent.MoveBack.class),
                 @DiscriminatorMapping(value = "DeathStare", schema = BattleEvent.DeathStare.class),
                 @DiscriminatorMapping(value = "Thunderbolts", schema = BattleEvent.Thunderbolts.class),
@@ -103,10 +109,14 @@ public sealed interface BattleEvent {
             @Schema(description = "Held der Angreifer-Armee. Im Army-Battle immer gesetzt (ohne Auswahl der Standardheld), im Single-Battle null.", example = "Crag Hack", nullable = true) @Nullable String attackerHero,
             @Schema(description = "Held der Verteidiger-Armee, analog zu `attackerHero`.", example = "Tazar", nullable = true) @Nullable String defenderHero,
             @Schema(description = "Glücks-Rating der Angreifer-Armee (Manual S. 44), 0..3: Luck-Fertigkeit des Helden plus gesammeltes Glück, minus eins gegen Devils. Ohne Helden 0.", example = "1") int attackerLuck,
-            @Schema(description = "Glücks-Rating der Verteidiger-Armee, analog zu `attackerLuck`.", example = "0") int defenderLuck) implements BattleEvent {
+            @Schema(description = "Glücks-Rating der Verteidiger-Armee, analog zu `attackerLuck`.", example = "0") int defenderLuck,
+            @Schema(description = "Kriegsmaschinen des Angreifers") List<WarMachine> attackerWarMachines,
+            @Schema(description = "Kriegsmaschinen des Verteidigers") List<WarMachine> defenderWarMachines) implements BattleEvent {
         public BattleStart {
             obstacles = List.copyOf(obstacles);
             stacks = List.copyOf(stacks);
+            attackerWarMachines = List.copyOf(attackerWarMachines);
+            defenderWarMachines = List.copyOf(defenderWarMachines);
         }
     }
 
@@ -211,6 +221,28 @@ public sealed interface BattleEvent {
     record TacticsPhase(
             @Schema(description = "Aufstellende Seite") Side actor,
             @Schema(description = "Breite der Zone in Hex-Spalten: 3, 5 oder 7", example = "5") int columns) implements BattleEvent {
+    }
+
+    @Schema(name = "BallistaShot",
+            description = "Schuss der Ballista einer Seite am Rundenende (Manual S. 117). `lucky` = Glückstreffer, `doubled` = doppelter Grundschaden durch Artillery.")
+    record BallistaShot(
+            @Schema(description = "Seite der Ballista") Side actor,
+            @Schema(description = "Getroffene Seite") Side target,
+            @Schema(description = "Slot des getroffenen Stacks") int targetSlot,
+            @Schema(description = "Verursachter Schaden") int damage,
+            @Schema(description = "Getötete Kreaturen") int killed,
+            @Schema(description = "Glückstreffer") boolean lucky,
+            @Schema(description = "Doppelter Grundschaden durch Artillery") boolean doubled,
+            @Schema(description = "Ziel nach dem Treffer") StackSnapshot targetAfter) implements BattleEvent {
+    }
+
+    @Schema(name = "FirstAid",
+            description = "Das Sanitätszelt einer Seite heilt am Rundenende die oberste Kreatur eines eigenen Stacks (Manual S. 117).")
+    record FirstAid(
+            @Schema(description = "Seite des Zelts") Side actor,
+            @Schema(description = "Slot des geheilten Stacks") int targetSlot,
+            @Schema(description = "Geheilte Lebenspunkte") int healed,
+            @Schema(description = "Stack nach der Heilung") StackSnapshot targetAfter) implements BattleEvent {
     }
 
     @Schema(name = "BadMorale",

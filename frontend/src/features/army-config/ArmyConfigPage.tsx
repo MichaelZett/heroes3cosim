@@ -258,6 +258,7 @@ function buildSpec(stored: Partial<HeroBuild> | undefined) {
     skills: build.skills,
     luckBonus: build.luck,
     moraleBonus: build.morale,
+    warMachines: build.warMachines,
   };
 }
 

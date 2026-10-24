@@ -56,6 +56,16 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Level; die Planeswalker geben ihren Elementaren feste Boni auf Attack,
   Defense und Schaden. Zauber-, Ressourcen- und Ballista-Spezialitäten
   werden angezeigt, wirken aber nicht.
+- **Kriegsmaschinen** (Manual S. 117) — je Armee wählbar: Die Ballista
+  schießt am Rundenende auf den lohnendsten Gegner, Grundschaden (2–3) ×
+  (Attack des Helden + 1) mit eigenem Attack 10; Artillery gibt ab
+  Advanced einen zweiten Schuss und 50/75/100 % Chance auf doppelten
+  Grundschaden, Ballista-Spezialisten heben ihren Attack. Das Sanitätszelt
+  heilt am Rundenende die oberste Kreatur des am stärksten verwundeten
+  Stacks um 1–25 Lebenspunkte, mit First Aid bis 50/75/100. Der
+  Munitionswagen gibt den Schützen unbegrenzt Schüsse. Die Maschinen
+  stehen nicht auf dem Feld und lassen sich nicht angreifen; das Katapult
+  fehlt, weil es nur bei Belagerungen zählt.
 - **Tactics** (Manual S. 42) — hat ein Held die Fertigkeit auf höherer
   Stufe als der Gegner, stellt er vor Kampfbeginn in den ersten 3/5/7
   Spalten auf (ein, zwei, drei Grade Vorsprung). Die Nahkämpfer rücken in
@@ -282,8 +292,9 @@ Match-ups:
 - Keine Sprüche → Necropolis (Animate Dead), Tower (Magi-Casts),
   Conflux (Spell-Imm./Fire-Imm.), Black Dragon (Spell-Imm.) verlieren
   ihren H3-Hauptvorteil.
-- Von den Hero-Skills wirken Offense, Archery, Armorer, Leadership, Luck
-  und Tactics; Necromancy, Logistics und Sorcery nicht.
+- Von den Hero-Skills wirken Offense, Archery, Armorer, Leadership, Luck,
+  Tactics, Artillery und First Aid; Necromancy, Logistics und Sorcery
+  nicht.
 - Im Single-Battle-Modus fehlen die Multi-Stack-AoE-Effekte (Cerberus,
   Fire-Breath, Magog Splash, Lich Death Cloud) — die werden erst im
   Army-vs-Army-Modus aktiv.
@@ -314,8 +325,8 @@ zu lesen, nicht als universelle H3-Tier-Liste.
   in der der Cerberus wahllos zwei Nachbarn traf, eigene eingeschlossen,
   und der Magog nur zwei statt aller sechs Felder ums Ziel.
 - **Helden, nächste Stufe**: Zauberei, die Power und Knowledge überhaupt
-  erst zu Wirkung verhilft, und Kriegsmaschinen (Ballista, First Aid
-  Tent) samt Artillery und First Aid.
+  erst zu Wirkung verhilft. Bei den Kriegsmaschinen offen: angreifbare
+  Maschinen auf dem Feld.
 - **Taktisches Warten ausbauen**: Nahkämpfer nutzen *Wait* bereits, wenn
   sie ihr Ziel diese Runde nicht erreichen — messbar stärker, aber der
   Gewinn kommt fast nur von Tower. Offen sind Schützen (warten, bis der

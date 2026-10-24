@@ -4,8 +4,13 @@ import de.zettsystems.h3comsim.battle.domain.events.Side;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Konfiguration einer Schlacht — bis zu 7 Stacks pro Seite. Single-Battle nutzt die
@@ -28,6 +33,7 @@ public class BattleSetup {
     private final int defenderLuck;
     private final int attackerTactics;
     private final int defenderTactics;
+    private final Map<Side, Set<WarMachine>> warMachines = new EnumMap<>(Side.class);
 
     public BattleSetup(Unit attackerUnit, int attackerCount,
                        Unit defenderUnit, int defenderCount) {
@@ -101,6 +107,26 @@ public class BattleSetup {
         all.addAll(this.defenderStacks);
         Tactics.arrange(this.attackerStacks, Side.ATTACKER, attackerTactics, battlefield, all);
         Tactics.arrange(this.defenderStacks, Side.DEFENDER, defenderTactics, battlefield, all);
+    }
+
+    /**
+     * Rüstet eine Seite mit Kriegsmaschinen aus ({@link WarMachine}). Vor {@code simulate}
+     * aufzurufen; ein Munitionswagen gibt den Stacks der Seite sofort unbegrenzte Schüsse.
+     *
+     * @return dieses Setup, zum Verketten
+     */
+    public BattleSetup equip(Side side, Set<WarMachine> machines) {
+        Set<WarMachine> copy = machines.isEmpty() ? EnumSet.noneOf(WarMachine.class) : EnumSet.copyOf(machines);
+        warMachines.put(side, copy);
+        if (copy.contains(WarMachine.AMMO_CART)) {
+            stacksOf(side).forEach(Stack::grantUnlimitedAmmo);
+        }
+        return this;
+    }
+
+    /** Kriegsmaschinen dieser Seite, leer ohne {@link #equip}. */
+    public Set<WarMachine> warMachinesOf(Side side) {
+        return Collections.unmodifiableSet(warMachines.getOrDefault(side, EnumSet.noneOf(WarMachine.class)));
     }
 
     /**

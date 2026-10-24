@@ -89,6 +89,9 @@ export type BattleEvent =
       /** Glücks-Rating der Armee (Manual S. 44), 0..3; ohne Held 0. */
       attackerLuck?: number;
       defenderLuck?: number;
+      /** Kriegsmaschinen beider Seiten. */
+      attackerWarMachines?: WarMachine[];
+      defenderWarMachines?: WarMachine[];
     }
   | {
       type: 'Move';
@@ -139,6 +142,26 @@ export type BattleEvent =
   | { type: 'BadMorale'; actor: Side; actorSlot: number }
   /** Der unmittelbar folgende Treffer dieses Stacks richtet doppelten Grundschaden an. */
   | { type: 'LuckyStrike'; actor: Side; actorSlot: number }
+  /** Schuss der Ballista am Rundenende; doubled = Artillery, lucky = Glueckstreffer. */
+  | {
+      type: 'BallistaShot';
+      actor: Side;
+      target: Side;
+      targetSlot: number;
+      damage: number;
+      killed: number;
+      lucky: boolean;
+      doubled: boolean;
+      targetAfter: StackSnapshot;
+    }
+  /** Das Sanitaetszelt heilt die oberste Kreatur eines eigenen Stacks. */
+  | {
+      type: 'FirstAid';
+      actor: Side;
+      targetSlot: number;
+      healed: number;
+      targetAfter: StackSnapshot;
+    }
   /** Tactics: diese Seite hat vor Kampfbeginn in den ersten `columns` Spalten aufgestellt. */
   | { type: 'TacticsPhase'; actor: Side; columns: number }
   | {
@@ -241,7 +264,11 @@ export interface ArmySpec {
   defenseBonus?: number;
   /** Gelernte oder verbesserte Fertigkeiten; Startfertigkeiten lassen sich nur heben. */
   skills?: Partial<Record<SecondarySkill, SkillLevel>>;
+  /** Kriegsmaschinen des Helden. */
+  warMachines?: WarMachine[];
 }
+
+export type WarMachine = 'BALLISTA' | 'AMMO_CART' | 'FIRST_AID_TENT';
 
 export type HeroClass =
   | 'KNIGHT'
@@ -314,7 +341,7 @@ export interface HeroDto {
 
 /** Spezialfaehigkeit eines Helden; kind bestimmt, welche Felder belegt sind. */
 export interface HeroSpecialtyDto {
-  kind: 'CREATURE' | 'SKILL' | 'FIXED_CREATURE' | 'OTHER';
+  kind: 'CREATURE' | 'SKILL' | 'FIXED_CREATURE' | 'BALLISTA' | 'OTHER';
   unitName?: string | null;
   creatureTier: number;
   skill?: SecondarySkill | null;

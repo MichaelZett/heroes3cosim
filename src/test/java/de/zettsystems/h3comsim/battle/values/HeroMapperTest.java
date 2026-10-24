@@ -22,13 +22,16 @@ class HeroMapperTest {
     }
 
     @Test
-    void maps_skill_fixed_and_other_specialties() {
+    void maps_skill_fixed_ballista_and_other_specialties() {
         assertThat(HeroMapper.toDto(HeroCatalog.TAZAR).specialty())
                 .isEqualTo(new HeroSpecialtyDto(HeroSpecialtyDto.Kind.SKILL,
                         null, 0, SecondarySkill.ARMORER, 0, 0, 0, null, true));
         assertThat(HeroMapper.toDto(HeroCatalog.FIUR).specialty())
                 .isEqualTo(new HeroSpecialtyDto(HeroSpecialtyDto.Kind.FIXED_CREATURE,
                         "Fire Elemental", 4, null, 1, 2, 2, null, true));
+        assertThat(HeroMapper.toDto(HeroCatalog.byName("Torosar").orElseThrow()).specialty())
+                .isEqualTo(new HeroSpecialtyDto(HeroSpecialtyDto.Kind.BALLISTA,
+                        null, 0, null, 0, 0, 0, null, true));
         assertThat(HeroMapper.toDto(HeroCatalog.JENOVA).specialty())
                 .isEqualTo(new HeroSpecialtyDto(HeroSpecialtyDto.Kind.OTHER,
                         null, 0, null, 0, 0, 0, "+350 gold per day", false));

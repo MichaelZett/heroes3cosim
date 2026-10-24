@@ -77,10 +77,10 @@ import static de.zettsystems.h3comsim.battle.domain.SkillLevel.BASIC;
  */
 public final class HeroCatalog {
 
-    // Mehrfach vergebene Spezialitäten ohne Kampfwirkung. Vor den Helden, weil statische Felder
+    // Mehrfach vergebene Spezialitäten. Vor den Helden, weil statische Felder
     // in Reihenfolge initialisiert werden.
     private static final HeroSpecialty GOLD = other("+350 gold per day");
-    private static final HeroSpecialty BALLISTA = other("Ballista");
+    private static final HeroSpecialty BALLISTA = new HeroSpecialty.Ballista();
     private static final HeroSpecialty HASTE = spell("Haste");
     private static final HeroSpecialty WEAKNESS = spell("Weakness");
     private static final HeroSpecialty STONE_SKIN = spell("Stone Skin");

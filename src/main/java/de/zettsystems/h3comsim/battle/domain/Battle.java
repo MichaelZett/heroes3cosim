@@ -59,7 +59,8 @@ public final class Battle {
                 attackerSnap, defenderSnap, initialStacks,
                 setup.moraleOf(Side.ATTACKER), setup.moraleOf(Side.DEFENDER),
                 heroName(setup.attackerHero()), heroName(setup.defenderHero()),
-                setup.luckOf(Side.ATTACKER), setup.luckOf(Side.DEFENDER)));
+                setup.luckOf(Side.ATTACKER), setup.luckOf(Side.DEFENDER),
+                List.copyOf(setup.warMachinesOf(Side.ATTACKER)), List.copyOf(setup.warMachinesOf(Side.DEFENDER))));
         for (Side side : Side.values()) {
             if (setup.tacticsOf(side) > 0) {
                 events.emit(new BattleEvent.TacticsPhase(side, setup.tacticsOf(side)));
@@ -129,7 +130,118 @@ public final class Battle {
             BattleLogger.logShortDelimiter();
         }
         runLatePhase(waiting, setup, order);
+        warMachinesAct(setup);
         roundStacks.forEach(Stack::endTurn);
+    }
+
+    /**
+     * Kriegsmaschinen am Rundenende: erst die Ballisten (Angreifer, dann Verteidiger), zuletzt die
+     * Sanitätszelte — „First Aid Tents act last at the combat round" (heroes.thelazy.net). Ohne
+     * Maschinen zieht diese Methode keinen Zufallswert.
+     */
+    private void warMachinesAct(BattleSetup setup) {
+        for (Side side : Side.values()) {
+            if (setup.warMachinesOf(side).contains(WarMachine.BALLISTA)) {
+                fireBallista(setup, side);
+            }
+        }
+        for (Side side : Side.values()) {
+            if (setup.bothAlive() && setup.warMachinesOf(side).contains(WarMachine.FIRST_AID_TENT)) {
+                tendWounded(setup, side);
+            }
+        }
+    }
+
+    private void fireBallista(BattleSetup setup, Side side) {
+        Hero hero = setup.heroOf(side);
+        int shots = hero == null ? 1 : hero.ballistaShots();
+        for (int i = 0; i < shots && setup.bothAlive(); i++) {
+            Stack target = ballistaTarget(setup, side, hero);
+            if (target != null) {
+                ballistaShot(setup, side, hero, target);
+            }
+        }
+    }
+
+    /**
+     * Ziel der Ballista: der gegnerische Stack, bei dem der erwartete Schaden den meisten Goldwert
+     * vernichtet (Schaden, höchstens die Lebenspunkte des Stacks, mal Kosten je Lebenspunkt). So
+     * zielt sie wie ein Spieler mit Artillery auf das wertvollste erreichbare Fleisch — ohne die
+     * Fertigkeit wählt im Spiel der Computer, und der zielt ebenso auf den größten Schaden.
+     */
+    private static @Nullable Stack ballistaTarget(BattleSetup setup, Side side, @Nullable Hero hero) {
+        int heroAttack = hero == null ? 0 : hero.attack();
+        int attack = hero == null ? WarMachine.BALLISTA.attack() : hero.ballistaAttack();
+        Stack best = null;
+        double bestValue = -1;
+        for (Stack enemy : setup.stacksOf(side == Side.ATTACKER ? Side.DEFENDER : Side.ATTACKER)) {
+            if (!enemy.isAlive()) {
+                continue;
+            }
+            double damage = 2.5 * (heroAttack + 1)
+                    * (100 + Stack.boniMaliPercentage(attack, enemy.getDefense())) / 100.0;
+            int totalHealth = (enemy.getCount() - 1) * enemy.unit().health() + enemy.getCurrentHealth();
+            double value = Math.min(damage, totalHealth) * enemy.unit().cost() / enemy.unit().health();
+            if (value > bestValue) {
+                best = enemy;
+                bestValue = value;
+            }
+        }
+        return best;
+    }
+
+    /**
+     * Ein Ballista-Schuss (Manual S. 117): Grundschaden (2–3) × (Attack des Helden + 1), dann die
+     * normale Formel mit Attack 10 (plus Ballista-Spezialität) gegen die Defense des Ziels. Glück
+     * wirkt (heroes.thelazy.net), Artillery gibt mit 50/75/100 % Chance weitere +100 % auf den
+     * Grundschaden; Archery des Helden und Armorer des Gegners greifen wie bei Schützen.
+     */
+    private void ballistaShot(BattleSetup setup, Side side, @Nullable Hero hero, Stack target) {
+        int heroAttack = hero == null ? 0 : hero.attack();
+        int base = rng.nextInt(2, 4) * (heroAttack + 1);
+        int attack = hero == null ? WarMachine.BALLISTA.attack() : hero.ballistaAttack();
+        int luck = setup.luckOf(side);
+        boolean lucky = luck > 0 && rng.nextInt(1000) < ArmyMorale.triggerChancePerMille(luck);
+        int chance = hero == null ? 0 : hero.artilleryDoubleDamagePercent();
+        boolean doubled = chance >= 100 || (chance > 0 && rng.nextInt(100) < chance);
+        int percent = bonusDamagePercent(Stack.boniMaliPercentage(attack, target.getDefense()),
+                (lucky ? 1 : 0) + (doubled ? 1 : 0));
+        int damage = base * percent / 100;
+        if (hero != null) {
+            damage = damage * (1000 + hero.archeryBonusPerMille()) / 1000;
+        }
+        Hero targetHero = target.commander();
+        if (targetHero != null) {
+            damage = damage * (1000 - targetHero.armorerReductionPerMille()) / 1000;
+        }
+        int countBefore = target.getCount();
+        boolean rebirthUsedBefore = target.isRebirthUsed();
+        target.takeDamage(damage, Set.of());
+        emitRebirthIfFired(target, rebirthUsedBefore);
+        events.emit(new BattleEvent.BallistaShot(side, target.side(), target.slot(), damage,
+                Math.max(0, countBefore - target.getCount()), lucky, doubled, snapshot(target)));
+    }
+
+    /**
+     * Sanitätszelt: heilt die oberste Kreatur des eigenen Stacks, dem dort am meisten fehlt, um
+     * 1 bis zur Obergrenze ({@link Hero#firstAidMaxHeal()}, ohne Helden 25). Ist niemand
+     * verwundet, bleibt das Zelt untätig und zieht keinen Zufallswert.
+     */
+    private void tendWounded(BattleSetup setup, Side side) {
+        Stack patient = null;
+        for (Stack stack : setup.stacksOf(side)) {
+            if (stack.isAlive() && stack.topMissingHealth() > 0
+                    && (patient == null || stack.topMissingHealth() > patient.topMissingHealth())) {
+                patient = stack;
+            }
+        }
+        if (patient == null) {
+            return;
+        }
+        Hero hero = setup.heroOf(side);
+        int max = hero == null ? 25 : hero.firstAidMaxHeal();
+        int healed = patient.healTop(rng.nextInt(1, max + 1));
+        events.emit(new BattleEvent.FirstAid(side, patient.slot(), healed, snapshot(patient)));
     }
 
     /**
@@ -674,9 +786,14 @@ public final class Battle {
      * kein Glück — in SoD trifft der Glückstreffer nur das angegriffene Ziel.
      */
     static int luckyDamagePercent(int boniMaliPercentage) {
+        return bonusDamagePercent(boniMaliPercentage, 1);
+    }
+
+    /** Wie {@link #luckyDamagePercent}, mit {@code shares} Aufschlägen von je +100 % Grundschaden. */
+    static int bonusDamagePercent(int boniMaliPercentage, int shares) {
         return boniMaliPercentage >= 0
-                ? 200 + boniMaliPercentage
-                : 2 * (100 + boniMaliPercentage);
+                ? 100 + boniMaliPercentage + 100 * shares
+                : (100 + boniMaliPercentage) * (1 + shares);
     }
 
     private void emitRebirthIfFired(Stack passive, boolean rebirthUsedBefore) {
