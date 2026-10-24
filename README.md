@@ -56,6 +56,12 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Fertigkeits-Spezialisten heben Offense, Archery oder Armorer um 5 % je
   Level; die Planeswalker geben ihren Elementaren feste Boni auf Attack,
   Defense und Schaden; Ballista-Spezialisten heben deren Attack.
+  Helden der magischen Klassen beginnen mit Stufe 1 der Magiergilde ihrer
+  Fraktion: den fünf wahrscheinlichsten Kampfzaubern der Stufe 1 nach den
+  Gilden-Wahrscheinlichkeiten von heroes.thelazy.net (im Spiel zufällig;
+  Necropolis etwa ohne Bless, mit Curse). Gegen denselben Helden ohne
+  Zauber gewinnt das Buch im Spiegel-Duell 0.810 (Tower und Castle 1.000,
+  Conflux 0.475). Die Standardhelden sind Kämpfer und zaubern nicht.
   Zauber-Spezialisten beginnen mit ihrem Zauber, auch über dem Wisdom-Gate:
   Schadenszauber, Cure, Animate Dead und Resurrection wirken um 3 % ×
   Level / Stufe des Ziels stärker (Ciele fest +50 % auf Magic Arrow);

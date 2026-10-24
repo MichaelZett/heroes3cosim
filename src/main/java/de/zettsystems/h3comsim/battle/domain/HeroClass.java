@@ -11,8 +11,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
  * Heroes</em>). Helden derselben Klasse unterscheiden sich ausschließlich über Startfertigkeiten
  * und Spezialfähigkeit.
  *
- * <p>Power und Knowledge steuern nur das Zaubern, das es hier nicht gibt — ein Held einer
- * magischen Klasse wirkt im Kampf daher fast nur über seine niedrigen Attack-/Defense-Werte.
+ * <p>Power und Knowledge steuern das Zaubern. Helden der magischen Klassen beginnen mit den
+ * Stufe-1-Zaubern der Magiergilde ihrer Fraktion ({@link MageGuild}).
  */
 @Schema(description = "Heldenklasse. Zwei je Fraktion; bestimmt die Primärwerte.", enumAsRef = true)
 public enum HeroClass {
@@ -67,5 +67,13 @@ public enum HeroClass {
 
     public int knowledge() {
         return knowledge;
+    }
+
+    /** Die magische der beiden Klassen einer Fraktion. */
+    public boolean magic() {
+        return switch (this) {
+            case CLERIC, DRUID, WIZARD, HERETIC, NECROMANCER, WARLOCK, BATTLE_MAGE, WITCH, ELEMENTALIST -> true;
+            default -> false;
+        };
     }
 }

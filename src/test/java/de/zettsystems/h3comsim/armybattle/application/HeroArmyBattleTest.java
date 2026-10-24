@@ -122,9 +122,9 @@ class HeroArmyBattleTest {
 
     @Test
     void the_spellbook_reaches_the_battle_and_spends_mana() {
-        // Solmyr mit Magic Arrow, dazu 2 Power und 3 Knowledge.
+        // Crag Hack (Barbar, ohne Startzauber) mit Magic Arrow, dazu 2 Power und 3 Knowledge.
         List<StackSpec> army = List.of(new StackSpec("Pikeman", 30));
-        ArmySpec mage = new ArmySpec(army, "Solmyr", 0, 0, 1, 0, 0, 2, 3, Map.of(), Set.of(),
+        ArmySpec mage = new ArmySpec(army, "Crag Hack", 0, 0, 1, 0, 0, 2, 3, Map.of(), Set.of(),
                 Set.of(Spell.MAGIC_ARROW));
         ArmyBattleSimulation simulation = service.simulate(
                 new ArmyBattleRequest(mage, new ArmySpec(army, null), SEED), SEED);
