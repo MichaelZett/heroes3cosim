@@ -43,6 +43,11 @@ import java.util.Set;
  * die Ballista mit Expert Artillery, das Sanitätszelt mit Expert First Aid und alle drei
  * Maschinen zusammen. Der Munitionswagen zählt nur, wo Schützen ihre Schüsse aufbrauchen.
  *
+ * <p>Zusätzlich läuft jede Ausrüstung mit vierfacher Armee (vier Wochenproduktionen). Die
+ * Maschinen wirken mit festen Werten, ihr Anteil schrumpft mit der Armee — beim Sanitätszelt
+ * deutlich: bei einer Woche holt es rund ein Viertel der Lebenspunkte zurück, bei vier Wochen
+ * rund ein Zehntel. Das Spiegel-Duell entscheidet schon kleine Dauervorteile fast immer.
+ *
  * <p>Aktivieren: {@code .\gradlew.bat test --tests "*WarMachineImpactTest" "-Ph3.harness=war-machine-impact"}.
  * Report unter {@code build/reports/war-machine-impact.md}.
  */
@@ -69,6 +74,8 @@ class WarMachineImpactTest {
 
     private static final List<Kit> LEVELS = List.of(Kit.values());
 
+    private static final int FOUR_WEEKS = 4;
+
     private static final List<Faction> FACTIONS_IN_ORDER = List.of(
             Faction.CASTLE, Faction.RAMPART, Faction.TOWER, Faction.INFERNO,
             Faction.NECROPOLIS, Faction.DUNGEON, Faction.STRONGHOLD, Faction.FORTRESS,
@@ -92,15 +99,29 @@ class WarMachineImpactTest {
                 perFaction.put(f, tally);
                 for (int s = 0; s < SEEDS_PER_PAIR; s++) {
                     long seed = (long) f.ordinal() * 9929L + level.ordinal() * 113L + s;
-                    duel(presetByFaction, f, level, seed, true, tally, overall);
-                    duel(presetByFaction, f, level, seed, false, tally, overall);
+                    duel(presetByFaction, f, level, 1, seed, true, tally, overall);
+                    duel(presetByFaction, f, level, 1, seed, false, tally, overall);
                 }
             }
             byLevel.put(level, perFaction);
             overallByLevel.put(level, overall);
         }
 
-        String report = render(byLevel, overallByLevel);
+        Map<Kit, Tally> fourWeeks = new EnumMap<>(Kit.class);
+        for (Kit level : LEVELS) {
+            Tally overall = new Tally();
+            for (Faction f : FACTIONS_IN_ORDER) {
+                Tally tally = new Tally();
+                for (int s = 0; s < SEEDS_PER_PAIR; s++) {
+                    long seed = (long) f.ordinal() * 9929L + level.ordinal() * 113L + s;
+                    duel(presetByFaction, f, level, FOUR_WEEKS, seed, true, tally, overall);
+                    duel(presetByFaction, f, level, FOUR_WEEKS, seed, false, tally, overall);
+                }
+            }
+            fourWeeks.put(level, overall);
+        }
+
+        String report = render(byLevel, overallByLevel, fourWeeks);
         Path reportsDir = Path.of("build", "reports");
         Files.createDirectories(reportsDir);
         Path out = reportsDir.resolve("war-machine-impact.md");
@@ -109,10 +130,10 @@ class WarMachineImpactTest {
         IO.println(report);
     }
 
-    private static void duel(Map<Faction, FactionPresetDto> presets, Faction faction, Kit kit,
+    private static void duel(Map<Faction, FactionPresetDto> presets, Faction faction, Kit kit, int weeks,
                              long seed, boolean heroLeadsAttacker, Tally perFaction, Tally overall) {
-        List<Stack> attackerStacks = buildStacks(presets.get(faction).stacks(), Side.ATTACKER);
-        List<Stack> defenderStacks = buildStacks(presets.get(faction).stacks(), Side.DEFENDER);
+        List<Stack> attackerStacks = buildStacks(presets.get(faction).stacks(), Side.ATTACKER, weeks);
+        List<Stack> defenderStacks = buildStacks(presets.get(faction).stacks(), Side.DEFENDER, weeks);
         Hero hero = HeroCatalog.defaultFor(faction).orElseThrow();
         Hero equipped = hero.withBuild(0, 0, kit.skills);
         BattleSetup setup = new BattleSetup(attackerStacks, defenderStacks,
@@ -129,6 +150,9 @@ class WarMachineImpactTest {
 
     private static void tally(Tally tally, BattleResult result, Side heroSide) {
         tally.battles++;
+        if (result.attackerSurvivors() > 0 && result.defenderSurvivors() > 0) {
+            tally.undecided++;
+        }
         Winner winner = result.winner();
         if (winner == Winner.DRAW) {
             tally.draws++;
@@ -139,7 +163,7 @@ class WarMachineImpactTest {
         }
     }
 
-    private static List<Stack> buildStacks(List<StackSpec> specs, Side side) {
+    private static List<Stack> buildStacks(List<StackSpec> specs, Side side, int weeks) {
         List<Unit> units = new ArrayList<>(specs.size());
         for (StackSpec spec : specs) {
             units.add(UnitCatalog.byName(spec.unitName()).orElseThrow());
@@ -147,7 +171,7 @@ class WarMachineImpactTest {
         List<Hex> positions = SpawnLayout.assignPositions(side, units);
         List<Stack> stacks = new ArrayList<>(specs.size());
         for (int slot = 0; slot < specs.size(); slot++) {
-            stacks.add(new Stack(units.get(slot), specs.get(slot).count(),
+            stacks.add(new Stack(units.get(slot), specs.get(slot).count() * weeks,
                     positions.get(slot), side, slot));
         }
         return stacks;
@@ -161,7 +185,7 @@ class WarMachineImpactTest {
     }
 
     private static String render(Map<Kit, Map<Faction, Tally>> byLevel,
-                                 Map<Kit, Tally> overallByLevel) {
+                                 Map<Kit, Tally> overallByLevel, Map<Kit, Tally> fourWeeks) {
         StringBuilder sb = new StringBuilder(4096);
         sb.append("# Wirkung von Kriegsmaschinen\n\n");
         sb.append("Spiegel-Duell: dieselbe Armee auf beiden Seiten, beide geführt vom ")
@@ -177,6 +201,19 @@ class WarMachineImpactTest {
         for (Kit level : LEVELS) {
             sb.append("| ").append(level.name());
             row(sb, overallByLevel.get(level));
+        }
+
+        sb.append("\n## Gesamt je Ausrüstung, vier Wochenproduktionen\n\n");
+        sb.append("Alle Stacks mit vierfacher Anzahl. `Ohne Sieger` = Kampf endete am Runden- oder ")
+                .append("Patt-Limit und wurde über die verbleibenden Lebenspunkte entschieden.\n\n");
+        sb.append("| Ausrüstung | Battles | Siege | Niederlagen | Draws | Win-Rate | Sigma | Ohne Sieger |\n");
+        sb.append("|--|--|--|--|--|--|--|--|\n");
+        for (Kit level : LEVELS) {
+            Tally t = fourWeeks.get(level);
+            sb.append("| ").append(level.name());
+            row(sb, t);
+            sb.setLength(sb.length() - 1);
+            sb.append(" ").append(t.undecided).append(" |\n");
         }
 
         for (Kit level : LEVELS) {
@@ -222,5 +259,6 @@ class WarMachineImpactTest {
         private int wins;
         private int losses;
         private int draws;
+        private int undecided;
     }
 }
