@@ -174,6 +174,50 @@ class SummonAndMirrorTest {
         });
     }
 
+    @Test
+    void the_elemental_kind_follows_the_situation() {
+        Hero summoner = mage(3, 10, EXPERT_WISDOM, Spell.SUMMON_AIR_ELEMENTAL, Spell.SUMMON_EARTH_ELEMENTAL,
+                Spell.SUMMON_FIRE_ELEMENTAL, Spell.SUMMON_WATER_ELEMENTAL);
+        Stack pikemen = stack(UnitCatalog.PIKEMAN, 20, 0, 0, Side.ATTACKER, 0);
+
+        // Ohne gegnerische Zauber: Earth, das wertvollste — auch gegen ferne Schützen.
+        Stack archers = stack(UnitCatalog.ARCHER, 30, 14, 5, Side.DEFENDER, 0);
+        BattleSetup shooters = new BattleSetup(List.of(pikemen), List.of(archers), Battlefield.STANDARD, summoner, null);
+        assertThat(chosen(summoner, shooters)).isEqualTo(Spell.SUMMON_EARTH_ELEMENTAL);
+
+        // Ein starker Meteor Shower des Gegners trifft Earth doppelt, Air gar nicht.
+        Hero meteor = mage(10, 5, Map.of(SecondarySkill.WISDOM, SkillLevel.ADVANCED), Spell.METEOR_SHOWER);
+        Stack far = stack(UnitCatalog.GOBLIN, 30, 14, 5, Side.DEFENDER, 0);
+        BattleSetup stormy = new BattleSetup(List.of(pikemen), List.of(far), Battlefield.STANDARD, summoner, meteor);
+        assertThat(chosen(summoner, stormy)).isNotEqualTo(Spell.SUMMON_EARTH_ELEMENTAL);
+
+        // Ein starker Ice Bolt des Gegners: Fire nimmt doppelten Schaden, Water keinen.
+        Hero frost = mage(10, 5, Map.of(), Spell.ICE_BOLT);
+        BattleSetup icy = new BattleSetup(List.of(pikemen), List.of(far), Battlefield.STANDARD, summoner, frost);
+        assertThat(chosen(summoner, icy)).isEqualTo(Spell.SUMMON_WATER_ELEMENTAL);
+    }
+
+    private static Spell chosen(Hero summoner, BattleSetup setup) {
+        HeroSpellcasting.Cast cast = HeroSpellcasting.decide(summoner, Side.ATTACKER, 100, setup);
+        assertThat(cast).isNotNull();
+        return cast.spell();
+    }
+
+    @Test
+    void only_summoned_elementals_left_means_both_sides_lose() {
+        Stack pikemen = stack(UnitCatalog.PIKEMAN, 5, 0, 5, Side.ATTACKER, 0);
+        Stack goblins = stack(UnitCatalog.GOBLIN, 3, 14, 5, Side.DEFENDER, 0);
+        BattleSetup setup = new BattleSetup(List.of(pikemen), List.of(goblins), Battlefield.STANDARD);
+        setup.addSummoned(new Stack(UnitCatalog.EARTH_ELEMENTAL, 50, new Hex(0, 3), Side.ATTACKER, 1));
+        pikemen.takeDamage(10_000, Set.of());
+
+        BattleResult result = new Battle(new Random(2)).simulate(setup);
+
+        assertThat(goblins.isAlive()).isFalse();
+        assertThat(result.winner()).isEqualTo(de.zettsystems.h3comsim.battle.domain.events.Winner.DRAW);
+        assertThat(result.attackerSurvivors()).isZero();
+    }
+
     /** Jeder Prozentwurf (nextInt(100)) trifft; alles andere wie Random. */
     private static final class AlwaysTrigger extends Random {
         @Serial

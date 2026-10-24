@@ -29,8 +29,8 @@ import java.util.function.Predicate;
  * Runden. Schutz vor einer Schule und Anti-Magic zählen den Schaden, den der gegnerische Held
  * dem Stack mit seinen Zaubern und seinem Mana höchstens zufügen kann, gewichtet mit dem Anteil
  * des Stacks am eigenen Armeewert, Magic Mirror ebenso für die Zauber auf ein einzelnes Ziel;
- * Dispel zählt die aufgehobenen Wirkungen. Eine Beschwörung zählt den Goldwert der Elementare
- * wie einen Stack, der vier Runden mitkämpft.
+ * Dispel zählt die aufgehobenen Wirkungen. Eine Beschwörung zählt den Goldwert der Elementare,
+ * abzüglich dessen, was der gegnerische Held ihnen nehmen kann ({@link #summonValue}).
  *
  * <p>Mana: Jeder Wert wird mit der Zahl der Würfe multipliziert, die das Mana in den restlichen
  * Runden (bis {@link #EXPECTED_BATTLE_ROUNDS}) für diesen Zauber hergibt. Bei knappem Mana gewinnt
@@ -250,6 +250,26 @@ final class HeroSpellcasting {
         };
     }
 
+    /**
+     * Was eine Beschwörung bringt: der Goldwert der Elementare, je Runde mit {@link #ROUND_SHARE}
+     * umgesetzt, abzüglich dessen, was der gegnerische Held ihnen mit seinem schlimmsten Zauber
+     * nimmt. So fallen Elementare aus, die gegen seine Zauber empfindlich sind (Fire gegen Ice
+     * Bolt, Air gegen Lightning Bolt), und immune gewinnen. Das Tempo zählt nicht: eine Fassung,
+     * die schnelle Elementare gegen Schützen bevorzugte, verlor gegen „immer Earth" 0.386
+     * (−4.77 σ, {@code SpellImpactTest}).
+     */
+    static double summonValue(Spell spell, SkillLevel level, Hero hero, Side side, BattleSetup setup) {
+        Hex hex = setup.freeHexFor(side);
+        if (hex == null) {
+            return 0;
+        }
+        Stack probe = new Stack(summonedUnit(spell), summonCount(level, hero.spellPower()), hex, side,
+                setup.nextSlot(side));
+        double value = stackValue(probe);
+        double harmShare = value == 0 ? 0 : Math.min(1, threat(probe, s -> true, setup) / value);
+        return value * ROUND_SHARE * EXPECTED_ROUNDS * (1 - harmShare);
+    }
+
     /** Power × 2/3/4 Elementare (Manual S. 66 ff.). */
     static int summonCount(SkillLevel level, int power) {
         return power * SpellDamage.byLevel(level, 2, 3, 4);
@@ -275,9 +295,7 @@ final class HeroSpellcasting {
     static double value(Hero hero, Side side, Cast cast, BattleSetup setup) {
         Spell spell = cast.spell();
         if (spell.kind() == Spell.Kind.SUMMON) {
-            // Ein neuer Stack setzt je Runde seinen Anteil um, wie ein liegender Zauber.
-            return summonCount(cast.level(), hero.spellPower()) * summonedUnit(spell).cost()
-                    * ROUND_SHARE * EXPECTED_ROUNDS;
+            return summonValue(spell, cast.level(), hero, side, setup);
         }
         double total = 0;
         for (int i = 0; i < cast.affected().size(); i++) {

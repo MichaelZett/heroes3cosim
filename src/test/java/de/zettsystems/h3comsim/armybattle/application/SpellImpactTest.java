@@ -44,8 +44,8 @@ import java.util.Set;
  * Power, Knowledge und Magie-Fertigkeiten. Gemessen wird die Win-Rate der zaubernden Seite und
  * welche Zauber die Heuristik wählt. In der letzten Stufe zaubern beide Seiten mit demselben
  * Erstbuch; nur eine kennt dazu Schutz vor Luft, Dispel und Anti-Magic. Dazu ein Beschwörer
- * (alle vier Elementare, Expert Wisdom) und dasselbe Erstbuch auf beiden Seiten, eine mit Magic
- * Mirror.
+ * (alle vier Elementare, Expert Wisdom), dasselbe Erstbuch auf beiden Seiten, eine mit Magic
+ * Mirror, und die Wahl der Elementar-Art nach Lage gegen einen Gegner, der immer Earth ruft.
  *
  * <p>Aktivieren: {@code .\gradlew.bat test --tests "*SpellImpactTest" "-Ph3.harness=spell-impact"}.
  * Report unter {@code build/reports/spell-impact.md}.
@@ -69,8 +69,8 @@ class SpellImpactTest {
     }
 
     /**
-     * Zauberbuch und Aufbau der zaubernden Seite, bei {@link #GUARD_VS_BOOK} und
-     * {@link #MIRROR_VS_BOOK} auch die Zauber des Gegners.
+     * Zauberbuch und Aufbau der zaubernden Seite; wo {@code opponentSpells} gesetzt ist, zaubert
+     * auch der Gegner, mit demselben Aufbau.
      */
     private enum Kit {
         MAGIC_ARROW(Set.of(Spell.MAGIC_ARROW), 0, 0, Map.of(), Set.of()),
@@ -86,7 +86,10 @@ class SpellImpactTest {
         SUMMONER(Set.of(Spell.SUMMON_AIR_ELEMENTAL, Spell.SUMMON_EARTH_ELEMENTAL, Spell.SUMMON_FIRE_ELEMENTAL,
                 Spell.SUMMON_WATER_ELEMENTAL), 5, 5, Map.of(SecondarySkill.WISDOM, SkillLevel.EXPERT), Set.of()),
         MIRROR_VS_BOOK(MIRRORED_BOOK, 5, 5, Map.of(SecondarySkill.WISDOM, SkillLevel.EXPERT),
-                SpellImpactTest.FIRST_BOOK);
+                SpellImpactTest.FIRST_BOOK),
+        SUMMON_CHOICE_VS_EARTH(Set.of(Spell.SUMMON_AIR_ELEMENTAL, Spell.SUMMON_EARTH_ELEMENTAL,
+                Spell.SUMMON_FIRE_ELEMENTAL, Spell.SUMMON_WATER_ELEMENTAL), 5, 5,
+                Map.of(SecondarySkill.WISDOM, SkillLevel.EXPERT), Set.of(Spell.SUMMON_EARTH_ELEMENTAL));
 
         private final Set<Spell> spells;
         private final int power;
@@ -151,7 +154,7 @@ class SpellImpactTest {
         Hero hero = HeroCatalog.defaultFor(faction).orElseThrow();
         Hero caster = hero.withBuild(0, 0, kit.power, kit.knowledge, kit.skills).withSpellbook(kit.spells);
         Hero opponent = kit.opponentSpells.isEmpty() ? hero
-                : hero.withBuild(0, 0, kit.power, kit.knowledge, Map.of()).withSpellbook(kit.opponentSpells);
+                : hero.withBuild(0, 0, kit.power, kit.knowledge, kit.skills).withSpellbook(kit.opponentSpells);
         BattleSetup setup = new BattleSetup(attackerStacks, defenderStacks,
                 buildBattlefield(attackerStacks, defenderStacks, seed),
                 casterIsAttacker ? caster : opponent,

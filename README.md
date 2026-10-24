@@ -88,7 +88,12 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   um. Summon Elementals ruft Power × 2/3/4 Elementare als neuen Stack an
   den eigenen Rand (eine Art je Kampf, dieselbe Art erneut verstärkt ihn);
   er handelt ab der nächsten Runde und zählt am Ende nicht als
-  Überlebender. Welchen Zauber der Held wählt, entscheidet eine
+  Überlebender. Bleiben einer Seite nur Beschworene, verliert sie — haben
+  beide nur noch Beschworene oder gar nichts, verlieren beide. Die Art
+  wählt der Held nach Goldwert abzüglich dessen, was der gegnerische Held
+  ihr mit seinen Zaubern nehmen kann: meist Earth, gegen Meteor Shower Air,
+  gegen Ice Bolt Water. Schnelle Elementare zu bevorzugen, verlor in der
+  Messung gegen „immer Earth" deutlich. Welchen Zauber der Held wählt, entscheidet eine
   Heuristik: erwartete vernichtete Kosten bei Schaden, geschätzter Anteil
   am Wert des Stacks bei Wirkungen, bei Schutz vor einer Schule und
   Anti-Magic der Schaden, den der gegnerische Held mit seinen Zaubern
@@ -384,7 +389,7 @@ zu lesen, nicht als universelle H3-Tier-Liste.
   in der der Cerberus wahllos zwei Nachbarn traf, eigene eingeschlossen,
   und der Magog nur zwei statt aller sechs Felder ums Ziel.
 - **Helden, nächste Stufe**: Zauber auf ganz gefallene Stacks, Zauber im
-  Matrix-Modus, eine Wahl der Elementar-Art nach Lage statt nach Kosten.
+  Matrix-Modus.
   Bei den Kriegsmaschinen offen: angreifbare Maschinen auf dem Feld.
 - **Taktisches Warten ausbauen**: Nahkämpfer nutzen *Wait* bereits, wenn
   sie ihr Ziel diese Runde nicht erreichen — messbar stärker, aber der

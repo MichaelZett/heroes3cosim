@@ -244,6 +244,14 @@ public class BattleSetup {
         return null;
     }
 
+    /**
+     * Hat die Seite noch eigene, nicht beschworene Truppen? „If you killed all enemies but lost all
+     * your army besides the summoned elementals, both sides lose the battle" (heroes.thelazy.net).
+     */
+    public boolean hasOwnTroops(Side side) {
+        return side(side).stream().anyMatch(st -> st.isAlive() && !st.isSummoned());
+    }
+
     /** Überlebende Kreaturen ohne Beschworene — sie verschwinden nach dem Kampf. */
     public int survivorsOf(Side side) {
         return side(side).stream().filter(st -> !st.isSummoned()).mapToInt(Stack::getCount).sum();

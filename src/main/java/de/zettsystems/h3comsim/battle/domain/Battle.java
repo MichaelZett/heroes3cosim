@@ -1154,8 +1154,9 @@ public final class Battle {
     }
 
     private static Winner determineWinner(BattleSetup setup) {
-        boolean attackerAlive = setup.isAttackerAlive();
-        boolean defenderAlive = setup.isDefenderAlive();
+        // Wer nur noch Beschworene hat, verliert: sie verschwinden nach dem Kampf.
+        boolean attackerAlive = setup.hasOwnTroops(Side.ATTACKER);
+        boolean defenderAlive = setup.hasOwnTroops(Side.DEFENDER);
         if (attackerAlive && !defenderAlive) {
             BattleLogger.logDeath(setup.getDefenderName());
             return Winner.ATTACKER;
