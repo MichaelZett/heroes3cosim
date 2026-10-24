@@ -154,6 +154,27 @@ export type BattleEvent =
       doubled: boolean;
       targetAfter: StackSnapshot;
     }
+  /** Eine Kreatur wirkt einen Zauber; resisted = vom Ziel abgewehrt. */
+  | {
+      type: 'SpellCast';
+      actor: Side;
+      actorSlot: number;
+      spell: Spell;
+      target: Side;
+      targetSlot: number;
+      resisted: boolean;
+      targetAfter: StackSnapshot;
+    }
+  /** Serpent oder Dragon Fly hebt die nuetzlichen Zauber des Ziels auf. */
+  | {
+      type: 'Dispel';
+      actor: Side;
+      actorSlot: number;
+      target: Side;
+      targetSlot: number;
+      removed: number;
+      targetAfter: StackSnapshot;
+    }
   /** Das Sanitaetszelt heilt die oberste Kreatur eines eigenen Stacks. */
   | {
       type: 'FirstAid';
@@ -267,6 +288,26 @@ export interface ArmySpec {
   /** Kriegsmaschinen des Helden. */
   warMachines?: WarMachine[];
 }
+
+export type Spell =
+  | 'BLESS'
+  | 'BLOODLUST'
+  | 'CURE'
+  | 'DISPEL'
+  | 'HASTE'
+  | 'SHIELD'
+  | 'STONE_SKIN'
+  | 'BLIND'
+  | 'FORTUNE'
+  | 'PRECISION'
+  | 'WEAKNESS'
+  | 'AIR_SHIELD'
+  | 'MIRTH'
+  | 'COUNTERSTRIKE'
+  | 'FIRE_SHIELD'
+  | 'FRENZY'
+  | 'PRAYER'
+  | 'SLAYER';
 
 export type WarMachine = 'BALLISTA' | 'AMMO_CART' | 'FIRST_AID_TENT';
 

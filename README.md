@@ -56,6 +56,23 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Level; die Planeswalker geben ihren Elementaren feste Boni auf Attack,
   Defense und Schaden. Zauber-, Ressourcen- und Ballista-Spezialitäten
   werden angezeigt, wirken aber nicht.
+- **Kreatur-Zauber** (Werte aus der Spell Reference des Manuals) —
+  Zauber liegen mit Stufe und Rundenzahl auf dem Stack und laufen am
+  Rundenende ab. Ogre Magi wirken Bloodlust, Master Genies einen
+  zufälligen nützlichen Zauber (Bless, Bloodlust, Cure, Haste, Shield,
+  Stone Skin, Fortune, Precision, Air Shield, Mirth, Counterstrike, Fire
+  Shield, Frenzy, Prayer, Slayer), beide dreimal pro Kampf auf Advanced
+  mit Spell Power 6, und zwar wenn sie in diesem Zug nicht angreifen
+  können. Unicorns blenden mit 20 % Chance (Blind bis zum nächsten
+  Angriff, der Gegenschlag darauf mit halbem Attack), Serpent und Dragon
+  Flies heben nützliche Zauber des Ziels auf, Dragon Flies wirken dazu
+  Weakness.
+- **Immunität und Magieresistenz** — Black Dragon und Magic Elemental
+  gegen alle Zauber, Gold und Red Dragon gegen die unteren Stufen,
+  Efreet, Fire/Energy Elemental, Firebird und Phoenix gegen Feuer, Untote,
+  Elementare, Golems, Gargoyles, Giants und Titans gegen Gedankenzauber,
+  Troglodytes gegen Blind. Dwarves wehren feindliche Zauber zu 20/40 % ab,
+  die Aura eines Unicorns gibt Nachbarn 20 %.
 - **Kriegsmaschinen** (Manual S. 117) — je Armee wählbar: Die Ballista
   schießt am Rundenende auf den lohnendsten Gegner, Grundschaden (2–3) ×
   (Attack des Helden + 1) mit eigenem Attack 10; Artillery gibt ab
@@ -289,7 +306,7 @@ Match-ups:
 
 **Modell-Grenzen, die diese Zahlen verzerren**:
 
-- Keine Sprüche → Necropolis (Animate Dead), Tower (Magi-Casts),
+- Keine Heldenzauber → Necropolis (Animate Dead), Tower (Magi-Casts),
   Conflux (Spell-Imm./Fire-Imm.), Black Dragon (Spell-Imm.) verlieren
   ihren H3-Hauptvorteil.
 - Von den Hero-Skills wirken Offense, Archery, Armorer, Leadership, Luck,

@@ -91,6 +91,26 @@ export const en: Dictionary = {
     AMMO_CART: 'Ammo cart',
     FIRST_AID_TENT: 'First aid tent',
   },
+  spell: {
+    BLESS: 'Bless',
+    BLOODLUST: 'Bloodlust',
+    CURE: 'Cure',
+    DISPEL: 'Dispel',
+    HASTE: 'Haste',
+    SHIELD: 'Shield',
+    STONE_SKIN: 'Stone Skin',
+    BLIND: 'Blind',
+    FORTUNE: 'Fortune',
+    PRECISION: 'Precision',
+    WEAKNESS: 'Weakness',
+    AIR_SHIELD: 'Air Shield',
+    MIRTH: 'Mirth',
+    COUNTERSTRIKE: 'Counterstrike',
+    FIRE_SHIELD: 'Fire Shield',
+    FRENZY: 'Frenzy',
+    PRAYER: 'Prayer',
+    SLAYER: 'Slayer',
+  },
   config: {
     title: 'Heroes 3 Combat Simulator',
     subtitle: 'Pick two armies, optionally set a seed, and start the battle.',
@@ -161,6 +181,10 @@ export const en: Dictionary = {
       "The <actor>defender</actor>'s first aid tent heals <target>{{target}}</target> by {{healed}} hit points.",
     battleStartWarMachines:
       'War machines: <actor>attacker {{attacker}}</actor>, <target>defender {{defender}}</target>.',
+    spellCast: '<actor>{{actor}}</actor> casts {{spell}} on <target>{{target}}</target>.',
+    spellResisted:
+      '<actor>{{actor}}</actor> casts {{spell}} on <target>{{target}}</target> — resisted.',
+    dispel: '<actor>{{actor}}</actor> dispels {{count}} spell(s) from <target>{{target}}</target>.',
     luckyStrike: '<actor>{{actor}}</actor> is lucky and deals double damage.',
     deathStare:
       '<actor>{{actor}}</actor> kills {{kills}} of <target>{{target}}</target> with Death Stare.',

@@ -218,6 +218,30 @@ export function EventText({ event, names }: Readonly<EventTextProps>) {
           components={{ actor: sideSpan(event.actor) }}
         />
       );
+    case 'SpellCast':
+      return (
+        <Trans
+          i18nKey={event.resisted ? 'events.spellResisted' : 'events.spellCast'}
+          values={{
+            actor: sideName(event.actor, event.actorSlot, names),
+            spell: t(`spell.${event.spell}`),
+            target: sideName(event.target, event.targetSlot, names),
+          }}
+          components={{ actor: sideSpan(event.actor), target: sideSpan(event.target) }}
+        />
+      );
+    case 'Dispel':
+      return (
+        <Trans
+          i18nKey="events.dispel"
+          values={{
+            actor: sideName(event.actor, event.actorSlot, names),
+            target: sideName(event.target, event.targetSlot, names),
+            count: event.removed,
+          }}
+          components={{ actor: sideSpan(event.actor), target: sideSpan(event.target) }}
+        />
+      );
     case 'BallistaShot':
       return (
         <Trans

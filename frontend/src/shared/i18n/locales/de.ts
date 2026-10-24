@@ -87,6 +87,26 @@ export const de = {
     AMMO_CART: 'Munitionswagen',
     FIRST_AID_TENT: 'Sanitätszelt',
   },
+  spell: {
+    BLESS: 'Bless',
+    BLOODLUST: 'Bloodlust',
+    CURE: 'Cure',
+    DISPEL: 'Dispel',
+    HASTE: 'Haste',
+    SHIELD: 'Shield',
+    STONE_SKIN: 'Stone Skin',
+    BLIND: 'Blind',
+    FORTUNE: 'Fortune',
+    PRECISION: 'Precision',
+    WEAKNESS: 'Weakness',
+    AIR_SHIELD: 'Air Shield',
+    MIRTH: 'Mirth',
+    COUNTERSTRIKE: 'Counterstrike',
+    FIRE_SHIELD: 'Fire Shield',
+    FRENZY: 'Frenzy',
+    PRAYER: 'Prayer',
+    SLAYER: 'Slayer',
+  },
   config: {
     title: 'Heroes 3 Combat Simulator',
     subtitle: 'Wähle zwei Truppen, lege optional einen Seed fest und starte den Kampf.',
@@ -157,6 +177,10 @@ export const de = {
       'Sanitätszelt des <actor>Verteidigers</actor> heilt <target>{{target}}</target> um {{healed}} Lebenspunkte.',
     battleStartWarMachines:
       'Kriegsmaschinen: <actor>Angreifer {{attacker}}</actor>, <target>Verteidiger {{defender}}</target>.',
+    spellCast: '<actor>{{actor}}</actor> wirkt {{spell}} auf <target>{{target}}</target>.',
+    spellResisted:
+      '<actor>{{actor}}</actor> wirkt {{spell}} auf <target>{{target}}</target> — abgewehrt.',
+    dispel: '<actor>{{actor}}</actor> hebt {{count}} Zauber von <target>{{target}}</target> auf.',
     luckyStrike: '<actor>{{actor}}</actor> hat Glück und richtet doppelten Schaden an.',
     deathStare:
       '<actor>{{actor}}</actor> tötet {{kills}} Einheit(en) von <target>{{target}}</target> mit Death Stare.',

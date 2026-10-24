@@ -163,6 +163,40 @@ describe('eventToNode', () => {
     );
   });
 
+  it('renders a creature spell and marks a resisted one', () => {
+    const snap = {
+      side: 'DEFENDER',
+      slot: 0,
+      unitName: 'Goblin',
+      count: 8,
+      topHp: 5,
+      q: 14,
+      r: 5,
+    } as const;
+    const cast = renderEvent({
+      type: 'SpellCast',
+      actor: 'ATTACKER',
+      actorSlot: 0,
+      spell: 'BLIND',
+      target: 'DEFENDER',
+      targetSlot: 0,
+      resisted: true,
+      targetAfter: snap,
+    });
+    expect(cast.container.textContent).toContain('Pikeman wirkt Blind auf Goblin — abgewehrt');
+
+    const dispel = renderEvent({
+      type: 'Dispel',
+      actor: 'ATTACKER',
+      actorSlot: 0,
+      target: 'DEFENDER',
+      targetSlot: 0,
+      removed: 2,
+      targetAfter: snap,
+    });
+    expect(dispel.container.textContent).toContain('hebt 2 Zauber von Goblin auf');
+  });
+
   it('renders LuckyStrike as double damage', () => {
     const { container } = renderEvent({ type: 'LuckyStrike', actor: 'ATTACKER', actorSlot: 0 });
 
