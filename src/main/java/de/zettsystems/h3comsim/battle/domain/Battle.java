@@ -10,6 +10,7 @@ import de.zettsystems.h3comsim.battle.domain.events.Winner;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.random.RandomGenerator;
@@ -123,20 +124,89 @@ public final class Battle {
         List<Stack> roundStacks = setup.aliveStacks();
         List<Stack> pending = new ArrayList<>(roundStacks);
         List<Stack> waiting = new ArrayList<>();
+        Set<Side> heroesCast = EnumSet.noneOf(Side.class);
         while (!pending.isEmpty()) {
             Stack activeStack = order.next(pending, true);
             if (activeStack.isAbleToAct() && setup.bothAlive()) {
                 order.acted(activeStack);
-                actWithMorale(activeStack, setup);
+                heroCasts(setup, activeStack.side(), heroesCast);
+                if (activeStack.isAbleToAct() && setup.bothAlive()) {
+                    actWithMorale(activeStack, setup);
+                }
                 if (activeStack.hasWaitedThisTurn()) {
                     waiting.add(activeStack);
                 }
             }
             BattleLogger.logShortDelimiter();
         }
-        runLatePhase(waiting, setup, order);
+        runLatePhase(waiting, setup, order, heroesCast);
         warMachinesAct(setup);
         roundStacks.forEach(Stack::endTurn);
+    }
+
+    /**
+     * Der Held zaubert, wenn einer seiner Stacks am Zug ist — einmal pro Runde (Manual S. 45), ohne
+     * dem Stack die Aktion zu nehmen. Findet die Heuristik nichts Lohnendes, versucht er es beim
+     * nächsten eigenen Stack erneut. Ohne Zauberbuch zieht das keinen Zufallswert.
+     */
+    private void heroCasts(BattleSetup setup, Side side, Set<Side> heroesCast) {
+        Hero hero = setup.heroOf(side);
+        if (hero == null || heroesCast.contains(side)) {
+            return;
+        }
+        HeroSpellcasting.Cast cast = HeroSpellcasting.decide(hero, side, setup.manaOf(side), setup);
+        if (cast == null) {
+            return;
+        }
+        heroesCast.add(side);
+        Spell spell = cast.spell();
+        setup.spendMana(side, spell.cost());
+        events.emit(new BattleEvent.HeroSpell(side, spell, cast.level(), setup.manaOf(side)));
+        for (int i = 0; i < cast.affected().size(); i++) {
+            Stack target = cast.affected().get(i);
+            if (target.isAlive()) {
+                BattleLogger.logSpell(hero.name(), spell, target.getName());
+                applyHeroSpell(setup, side, hero, cast, i, target);
+            }
+        }
+    }
+
+    private void applyHeroSpell(BattleSetup setup, Side side, Hero hero, HeroSpellcasting.Cast cast, int index,
+                                Stack target) {
+        Spell spell = cast.spell();
+        boolean works = SpellResistance.takesEffect(spell, target, setup, rng);
+        int damage = 0;
+        int killed = 0;
+        int healed = 0;
+        if (works) {
+            int power = hero.spellPower();
+            switch (spell.kind()) {
+                case DAMAGE -> {
+                    damage = SpellDamage.toTarget(spell, HeroSpellcasting.baseDamage(cast, power, index), hero, target);
+                    int countBefore = target.getCount();
+                    boolean rebirthUsedBefore = target.isRebirthUsed();
+                    target.takeDamage(damage, Set.of());
+                    killed = Math.max(0, countBefore - target.getCount());
+                    emitRebirthIfFired(target, rebirthUsedBefore);
+                }
+                case INSTANT -> healed = applyInstantSpell(spell, cast.level(), power, target);
+                case EFFECT -> target.applySpell(spell, cast.level(), power);
+            }
+        }
+        events.emit(new BattleEvent.SpellHit(side, spell, target.side(), target.slot(), damage, killed, healed, !works, snapshot(target)));
+    }
+
+    /** Cure, Animate Dead und Resurrection; liefert die geheilten Lebenspunkte. */
+    private static int applyInstantSpell(Spell spell, SkillLevel level, int power, Stack target) {
+        int amount = HeroSpellcasting.healing(spell, level, power);
+        return switch (spell) {
+            case CURE -> {
+                target.removeSpells(s -> !s.beneficial());
+                yield target.healTop(amount);
+            }
+            case ANIMATE_DEAD, RESURRECTION -> target.heal(amount);
+            default -> 0;
+        };
     }
 
     /**
@@ -254,13 +324,16 @@ public final class Battle {
      * dazu nichts — belegt ist dort nur die Phasen-Trennung selbst (S. 43); die Reihenfolge ist
      * H3-Spielverhalten. Die Gleichstandsregel gilt hier genauso.
      */
-    private void runLatePhase(List<Stack> waiting, BattleSetup setup, TurnOrder order) {
+    private void runLatePhase(List<Stack> waiting, BattleSetup setup, TurnOrder order, Set<Side> heroesCast) {
         List<Stack> pending = new ArrayList<>(waiting);
         while (!pending.isEmpty()) {
             Stack activeStack = order.next(pending, false);
             if (activeStack.isAbleToAct() && setup.bothAlive()) {
                 order.acted(activeStack);
-                actWithMorale(activeStack, setup);
+                heroCasts(setup, activeStack.side(), heroesCast);
+                if (activeStack.isAbleToAct() && setup.bothAlive()) {
+                    actWithMorale(activeStack, setup);
+                }
             }
             BattleLogger.logShortDelimiter();
         }
@@ -929,7 +1002,7 @@ public final class Battle {
             return;
         }
         if (active.hasSpeciality(UnitSpeciality.BLINDING)
-                && !SpellResistance.isImmune(target.unit(), Spell.BLIND) && rng.nextInt(100) < 20) {
+                && !SpellResistance.isImmune(target, Spell.BLIND) && rng.nextInt(100) < 20) {
             boolean takes = SpellResistance.takesEffect(Spell.BLIND, target, setup, rng);
             if (takes) {
                 target.applySpell(Spell.BLIND, SkillLevel.BASIC, PROC_ROUNDS);
@@ -944,7 +1017,7 @@ public final class Battle {
             }
         }
         if (active.hasSpeciality(UnitSpeciality.CASTS_WEAKNESS)
-                && !SpellResistance.isImmune(target.unit(), Spell.WEAKNESS)) {
+                && !SpellResistance.isImmune(target, Spell.WEAKNESS)) {
             boolean takes = SpellResistance.takesEffect(Spell.WEAKNESS, target, setup, rng);
             if (takes) {
                 target.applySpell(Spell.WEAKNESS, SkillLevel.ADVANCED, PROC_ROUNDS);

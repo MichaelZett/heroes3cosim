@@ -44,6 +44,20 @@ function machineList(machines: WarMachine[] | undefined, t: TFunction): string {
   return machines?.length ? machines.map((m) => t(`warMachine.${m}`)).join(', ') : '—';
 }
 
+/** Text eines Zauber-Treffers: abgewehrt, Schaden, Heilung oder liegende Wirkung. */
+function spellHitKey(
+  event: BattleEvent & { type: 'SpellHit' },
+):
+  | 'events.spellHitResisted'
+  | 'events.spellHitDamage'
+  | 'events.spellHitHealed'
+  | 'events.spellHitEffect' {
+  if (event.resisted) return 'events.spellHitResisted';
+  if (event.damage > 0) return 'events.spellHitDamage';
+  if (event.healed > 0) return 'events.spellHitHealed';
+  return 'events.spellHitEffect';
+}
+
 export function EventText({ event, names }: Readonly<EventTextProps>) {
   const { t } = useTranslation();
   switch (event.type) {
@@ -228,6 +242,33 @@ export function EventText({ event, names }: Readonly<EventTextProps>) {
             target: sideName(event.target, event.targetSlot, names),
           }}
           components={{ actor: sideSpan(event.actor), target: sideSpan(event.target) }}
+        />
+      );
+    case 'HeroSpell':
+      return (
+        <Trans
+          i18nKey="events.heroSpell"
+          values={{
+            spell: t(`spell.${event.spell}`),
+            level: t(`army.skillLevel${event.level}`),
+            mana: event.manaLeft,
+          }}
+          components={{ actor: sideSpan(event.actor) }}
+          context={event.actor === 'ATTACKER' ? 'attacker' : 'defender'}
+        />
+      );
+    case 'SpellHit':
+      return (
+        <Trans
+          i18nKey={spellHitKey(event)}
+          values={{
+            spell: t(`spell.${event.spell}`),
+            target: sideName(event.target, event.targetSlot, names),
+            damage: event.damage,
+            killed: event.killed,
+            healed: event.healed,
+          }}
+          components={{ target: sideSpan(event.target) }}
         />
       );
     case 'Dispel':

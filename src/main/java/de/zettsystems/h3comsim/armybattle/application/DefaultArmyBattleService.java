@@ -68,7 +68,10 @@ public class DefaultArmyBattleService implements ArmyBattleService {
         try {
             return hero.withLevel(Objects.requireNonNullElse(army.heroLevel(), 1))
                     .withBuild(Objects.requireNonNullElse(army.attackBonus(), 0),
-                            Objects.requireNonNullElse(army.defenseBonus(), 0), learned);
+                            Objects.requireNonNullElse(army.defenseBonus(), 0),
+                            Objects.requireNonNullElse(army.powerBonus(), 0),
+                            Objects.requireNonNullElse(army.knowledgeBonus(), 0), learned)
+                    .withSpellbook(Objects.requireNonNullElse(army.spells(), Set.of()));
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
         }

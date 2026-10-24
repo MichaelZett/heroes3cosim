@@ -46,6 +46,11 @@ public class Stack {
     private boolean unlimitedAmmo;
     private final Map<Spell, ActiveSpell> spells = new EnumMap<>(Spell.class);
     private int spellCastsLeft;
+    private static final Map<Spell, Spell> OPPOSITES = Map.of(
+            Spell.BLESS, Spell.CURSE, Spell.CURSE, Spell.BLESS,
+            Spell.HASTE, Spell.SLOW, Spell.SLOW, Spell.HASTE,
+            Spell.FORTUNE, Spell.MISFORTUNE, Spell.MISFORTUNE, Spell.FORTUNE,
+            Spell.MIRTH, Spell.SORROW, Spell.SORROW, Spell.MIRTH);
     /** Attack in Prozent — unter 100 nur beim Gegenschlag eines eben geweckten Blinden. */
     private int attackPercent = 100;
 
@@ -111,8 +116,11 @@ public class Stack {
         this.unlimitedAmmo = true;
     }
 
+    /** Ab Advanced Forgetfulness kann der Stack gar nicht mehr schießen (Manual S. 78). */
     public boolean canShoot() {
-        return unit.attackType() == AttackType.LONG_RANGE && shotsRemaining > 0;
+        ActiveSpell forgetful = spells.get(Spell.FORGETFULNESS);
+        return unit.attackType() == AttackType.LONG_RANGE && shotsRemaining > 0
+                && (forgetful == null || forgetful.level() == SkillLevel.BASIC);
     }
 
     public String getName() {
@@ -124,8 +132,11 @@ public class Stack {
      * Haste (+3/5) bzw. Prayer (+2/4).
      */
     public int getSpeed() {
-        return unit.speed() + (commander == null ? 0 : commander.specialty().speedBonus(unit))
+        int speed = unit.speed() + (commander == null ? 0 : commander.specialty().speedBonus(unit))
                 + spellValue(Spell.HASTE, 3, 5, 5) + spellValue(Spell.PRAYER, 2, 4, 4);
+        ActiveSpell slow = spells.get(Spell.SLOW);
+        // Slow (Manual S. 68): auf 25 % (Basic) bzw. 50 % der normalen Geschwindigkeit.
+        return slow == null ? speed : Math.max(1, speed * slow.byLevel(25, 50, 50) / 100);
     }
 
     /**
@@ -182,12 +193,18 @@ public class Stack {
                 + (commander == null ? 0 : commander.defense() + commander.specialtyDefenseBonus(unit));
     }
 
-    /** Defense-Rating mit Stone Skin (+3/6) und Prayer (+2/4); Frenzy setzt sie auf 0. */
+    /**
+     * Defense-Rating mit Stone Skin (+3/6), Prayer (+2/4) und Disrupting Ray (−3/4/5 je Wurf,
+     * stapelbar, Manual S. 65); Frenzy setzt sie auf 0.
+     */
     public int getDefense() {
         if (spells.containsKey(Spell.FRENZY)) {
             return 0;
         }
-        int base = baseDefense() + spellValue(Spell.STONE_SKIN, 3, 6, 6) + spellValue(Spell.PRAYER, 2, 4, 4);
+        ActiveSpell ray = spells.get(Spell.DISRUPTING_RAY);
+        int base = baseDefense() + spellValue(Spell.STONE_SKIN, 3, 6, 6) + spellValue(Spell.PRAYER, 2, 4, 4)
+                - (ray == null ? 0 : ray.amount());
+        base = Math.max(0, base);
         if (defending) {
             // H3-Defend laut RoE-Manual S. 47: +20 % auf die Defense-Rating bis Rundenende.
             // Stackt nicht mit anderen Defense-Boni — gehört hierhin, damit alle Damage-
@@ -231,7 +248,8 @@ public class Stack {
 
     /** Glück dieses Stacks, 0..3. Keine Kreatur im Katalog hat eigenes Glück. */
     public int getLuck() {
-        return Math.clamp(armyLuck + spellValue(Spell.FORTUNE, 1, 2, 2), ArmyLuck.MIN, ArmyLuck.MAX);
+        return Math.clamp(armyLuck + spellValue(Spell.FORTUNE, 1, 2, 2) - spellValue(Spell.MISFORTUNE, 1, 2, 2),
+                ArmyLuck.MIN, ArmyLuck.MAX);
     }
 
     /**
@@ -284,14 +302,22 @@ public class Stack {
         // Planeswalker-Spezialität: fester Aufschlag auf Minimal- und Maximalschaden je Kreatur.
         int bonus = commander == null ? 0 : commander.specialty().damageBonus(unit);
         ActiveSpell bless = spells.get(Spell.BLESS);
+        ActiveSpell curseSpell = spells.get(Spell.CURSE);
         int baseValue;
-        if (cursed) {
+        if (curseSpell != null && curseSpell.level() != SkillLevel.BASIC) {
+            // Curse ab Advanced (Manual S. 72): 80 % des Mindestschadens minus 1.
+            baseValue = Math.max(1, (unit.minDamage() + bonus) * 80 / 100 - 1);
+        } else if (cursed || curseSpell != null) {
             baseValue = unit.minDamage() + bonus;
         } else if (bless != null) {
             // Bless (Manual S. 76): maximaler Schaden, ab Advanced +1.
             baseValue = unit.maxDamage() + bonus + bless.byLevel(0, 1, 1);
         } else {
             baseValue = rng.nextInt(unit.minDamage() + bonus, unit.maxDamage() + bonus + 1);
+        }
+        if (usedAttackType == AttackType.LONG_RANGE && spells.containsKey(Spell.FORGETFULNESS)) {
+            // Forgetfulness auf Basic (Manual S. 78): die Hälfte der Kreaturen vergisst zu schießen.
+            baseValue = baseValue / 2;
         }
         if (unit.hasPenality(usedAttackType)) {
             baseValue = (int) Math.round(0.5 * baseValue);
@@ -393,7 +419,8 @@ public class Stack {
         if (unit.hasFixedZeroMorale()) {
             return 0;
         }
-        return ArmyMorale.clamp(armyMorale + unit.morale() + spellValue(Spell.MIRTH, 1, 2, 2));
+        return ArmyMorale.clamp(armyMorale + unit.morale() + spellValue(Spell.MIRTH, 1, 2, 2)
+                - spellValue(Spell.SORROW, 1, 2, 2));
     }
 
     /**
@@ -484,9 +511,35 @@ public class Stack {
         return used;
     }
 
-    /** Legt einen Zauber auf den Stack; ein schon liegender desselben Namens wird ersetzt. */
+    /**
+     * Legt einen Zauber auf den Stack; ein schon liegender desselben Namens wird ersetzt, sein
+     * Gegenstück aufgehoben (Bless/Curse, Haste/Slow, Fortune/Misfortune, Mirth/Sorrow).
+     * Disrupting Ray stapelt sich und hält den ganzen Kampf.
+     */
     public void applySpell(Spell spell, SkillLevel level, int rounds) {
+        Spell opposite = OPPOSITES.get(spell);
+        if (opposite != null) {
+            spells.remove(opposite);
+        }
+        if (spell == Spell.DISRUPTING_RAY) {
+            ActiveSpell previous = spells.get(spell);
+            int amount = (previous == null ? 0 : previous.amount())
+                    + new ActiveSpell(spell, level, rounds).byLevel(3, 4, 5);
+            spells.put(spell, new ActiveSpell(spell, level, Integer.MAX_VALUE, amount));
+            return;
+        }
         spells.put(spell, new ActiveSpell(spell, level, rounds));
+    }
+
+    /** Anteil des Zauberschadens einer Schule nach Protection from … (−30/50 %), in Prozent. */
+    public int spellDamagePercent(MagicSchool school) {
+        Spell protection = switch (school) {
+            case AIR -> Spell.PROTECTION_FROM_AIR;
+            case EARTH -> Spell.PROTECTION_FROM_EARTH;
+            case FIRE -> Spell.PROTECTION_FROM_FIRE;
+            case WATER -> Spell.PROTECTION_FROM_WATER;
+        };
+        return 100 - spellValue(protection, 30, 50, 50);
     }
 
     public boolean hasSpell(Spell spell) {

@@ -7,11 +7,17 @@ import java.util.Objects;
  *
  * @param level      Ausbaustufe, mit der er gewirkt wurde — sie bestimmt die Stärke
  * @param roundsLeft verbleibende Runden; „1 Round/Power" im Manual, bei Kreaturen fest
+ * @param amount     aufgelaufene Wirkung bei Zaubern, die sich stapeln (Disrupting Ray: Summe
+ *                   der Defense-Abzüge), sonst 0
  */
-public record ActiveSpell(Spell spell, SkillLevel level, int roundsLeft) {
+public record ActiveSpell(Spell spell, SkillLevel level, int roundsLeft, int amount) {
     public ActiveSpell {
         Objects.requireNonNull(spell, "spell");
         Objects.requireNonNull(level, "level");
+    }
+
+    public ActiveSpell(Spell spell, SkillLevel level, int roundsLeft) {
+        this(spell, level, roundsLeft, 0);
     }
 
     /** Wert je Ausbaustufe, wie ihn das Manual für Basic, Advanced und Expert nennt. */
@@ -24,6 +30,6 @@ public record ActiveSpell(Spell spell, SkillLevel level, int roundsLeft) {
     }
 
     ActiveSpell tick() {
-        return new ActiveSpell(spell, level, roundsLeft - 1);
+        return new ActiveSpell(spell, level, roundsLeft - 1, amount);
     }
 }

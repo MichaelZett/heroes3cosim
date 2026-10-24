@@ -1,12 +1,11 @@
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import type { Faction, HeroDto, HeroSpecialtyDto, SkillLevel } from '../../shared/api/types';
+import type { Faction, HeroDto, HeroSpecialtyDto, SkillLevel, Spell } from '../../shared/api/types';
 
 /**
- * Die drei Fertigkeiten, die als Prozent auf den Schaden wirken. Die meisten uebrigen wirken
- * ausserhalb des Kampfes oder brauchen Zauber, Kriegsmaschinen oder eine freie Aufstellung — sie
- * hier zu zeigen waere ein Versprechen, das die Simulation nicht einloest. Leadership und Luck
- * wirken zwar, aber nicht als Prozent auf den Schaden; sie bekommen weiter unten eigene Zeilen.
+ * Die drei Fertigkeiten, die als Prozent auf den Schaden der Kreaturen wirken. Leadership, Luck
+ * und Tactics bekommen weiter unten eigene Zeilen; die Magie-Fertigkeiten zeigt der Aufbau beim
+ * Zauberbuch.
  *
  * Der enge Typ haelt die Liste mit den i18n-Keys army.heroSkill* synchron: ein Skill ohne
  * passenden Key waere ein Compile-Fehler statt eines fehlenden Labels zur Laufzeit.
@@ -44,6 +43,12 @@ function groupByFaction(heroes: HeroDto[]): [Faction, HeroDto[]][] {
 
 /** Text der Spezialitaet; die Felder des DTO je nach Art. */
 function specialtyText(specialty: HeroSpecialtyDto, t: TFunction): string {
+  if (specialty.kind === 'SPELL') {
+    return t(specialty.attack > 0 ? 'army.heroSpecialtySPELLFixed' : 'army.heroSpecialtySPELL', {
+      spell: specialty.description ? t(`spell.${specialty.description as Spell}`) : '',
+      percent: specialty.attack,
+    });
+  }
   return t(`army.heroSpecialty${specialty.kind}`, {
     unit: specialty.unitName ?? '',
     tier: specialty.creatureTier,
@@ -66,10 +71,8 @@ interface HeroPickerProps {
  * ueberlaesst ihn dem Backend, das den Standardhelden der Fraktion mit dem groessten Goldwert
  * nimmt.
  *
- * Angezeigt werden Angriff und Verteidigung sowie die fuenf Fertigkeiten, die die Engine
- * auswertet. Power und Knowledge bleiben aussen vor: sie steuern ausschliesslich das Zaubern
- * und haben ohne Zaubersystem keinen Effekt — sie hier zu zeigen waere ein Versprechen, das
- * die Simulation nicht einloest.
+ * Angezeigt werden Angriff und Verteidigung, Power und Knowledge fuer die Zauber sowie die
+ * Fertigkeiten, die auf die Kreaturen wirken.
  */
 export default function HeroPicker({ heroes, selectedName, onChange }: Readonly<HeroPickerProps>) {
   const { t } = useTranslation();
@@ -112,6 +115,9 @@ export default function HeroPicker({ heroes, selectedName, onChange }: Readonly<
         <>
           <p className="mt-2 text-xs text-amber-300/80">
             {t('army.heroEffect', { attack: current.attack, defense: current.defense })}
+          </p>
+          <p className="mt-1 text-xs text-amber-300/80">
+            {t('army.heroMagic', { power: current.power, knowledge: current.knowledge })}
           </p>
           {skillText && (
             <p className="mt-1 text-xs text-amber-300/80">
