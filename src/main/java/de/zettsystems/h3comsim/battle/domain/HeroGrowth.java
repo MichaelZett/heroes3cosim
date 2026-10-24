@@ -170,14 +170,7 @@ public final class HeroGrowth {
         private void levelUpSkill(int level, RandomGenerator rng) {
             List<SecondarySkill> upgradable = new ArrayList<>();
             List<SecondarySkill> learnable = new ArrayList<>();
-            for (SecondarySkill skill : SecondarySkill.values()) {
-                SkillLevel current = skills.get(skill);
-                if (current == SkillLevel.BASIC || current == SkillLevel.ADVANCED) {
-                    upgradable.add(skill);
-                } else if (current == null && skills.size() < Hero.MAX_SKILLS && skillWeight(heroClass, skill) > 0) {
-                    learnable.add(skill);
-                }
-            }
+            sortSkills(upgradable, learnable);
             if (upgradable.isEmpty() && learnable.isEmpty()) {
                 return;
             }
@@ -188,16 +181,33 @@ public final class HeroGrowth {
             boolean schoolDue = level - lastSchoolOffer >= schoolEvery;
             SecondarySkill left = offer(leftPool, wisdomDue, schoolDue, rng);
             rightPool.remove(left);
-            SecondarySkill right = rightPool.isEmpty() ? null : offer(rightPool, wisdomDue, schoolDue, rng);
-            if (left == SecondarySkill.WISDOM || right == SecondarySkill.WISDOM) {
-                lastWisdomOffer = level;
-            }
-            if (SCHOOLS.contains(left) || (right != null && SCHOOLS.contains(right))) {
-                lastSchoolOffer = level;
-            }
+            noteOffers(level, rightPool.isEmpty()
+                    ? List.of(left) : List.of(left, offer(rightPool, wisdomDue, schoolDue, rng)));
             // Helden über Level 1 nehmen immer das linke Angebot.
             skills.merge(left, SkillLevel.BASIC, (old, basic) -> old == SkillLevel.BASIC
                     ? SkillLevel.ADVANCED : SkillLevel.EXPERT);
+        }
+
+        /** Teilt die Fertigkeiten in verbesserbare und neu lernbare. */
+        private void sortSkills(List<SecondarySkill> upgradable, List<SecondarySkill> learnable) {
+            for (SecondarySkill skill : SecondarySkill.values()) {
+                SkillLevel current = skills.get(skill);
+                if (current == SkillLevel.BASIC || current == SkillLevel.ADVANCED) {
+                    upgradable.add(skill);
+                } else if (current == null && skills.size() < Hero.MAX_SKILLS && skillWeight(heroClass, skill) > 0) {
+                    learnable.add(skill);
+                }
+            }
+        }
+
+        /** Merkt sich, wann zuletzt Wisdom und eine Magieschule angeboten wurden. */
+        private void noteOffers(int level, List<SecondarySkill> offered) {
+            if (offered.contains(SecondarySkill.WISDOM)) {
+                lastWisdomOffer = level;
+            }
+            if (offered.stream().anyMatch(SCHOOLS::contains)) {
+                lastSchoolOffer = level;
+            }
         }
 
         private SecondarySkill offer(List<SecondarySkill> pool, boolean wisdomDue, boolean schoolDue,
@@ -219,21 +229,21 @@ public final class HeroGrowth {
             int weight = skillWeight(heroClass, skill);
             return weight == 0 && skills.containsKey(skill) ? 1 : weight;
         }
-    }
 
-    /** Index nach Gewichten. */
-    private static int pick(RandomGenerator rng, int... weights) {
-        int total = 0;
-        for (int w : weights) {
-            total += w;
-        }
-        int roll = rng.nextInt(total);
-        for (int i = 0; i < weights.length; i++) {
-            roll -= weights[i];
-            if (roll < 0) {
-                return i;
+        /** Index nach Gewichten. */
+        private static int pick(RandomGenerator rng, int... weights) {
+            int total = 0;
+            for (int w : weights) {
+                total += w;
             }
+            int roll = rng.nextInt(total);
+            for (int i = 0; i < weights.length; i++) {
+                roll -= weights[i];
+                if (roll < 0) {
+                    return i;
+                }
+            }
+            throw new IllegalStateException("no weight left");
         }
-        throw new IllegalStateException("no weight left");
     }
 }

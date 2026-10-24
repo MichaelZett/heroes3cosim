@@ -142,7 +142,8 @@ public enum Spell {
 
     /** Alle Schulen, zu denen der Zauber gehört. */
     public Set<MagicSchool> schools() {
-        return this == MAGIC_ARROW || this == VISIONS ? Set.of(MagicSchool.values()) : Set.of(school);
+        boolean allSchools = this == MAGIC_ARROW || this == VISIONS;
+        return allSchools ? Set.of(MagicSchool.values()) : Set.of(school);
     }
 
     public int level() {
