@@ -311,6 +311,8 @@ export interface ArmySpec {
   knowledgeBonus?: number;
   /** Zauberbuch: ohne Wisdom bis Stufe 2, mit Basic/Advanced/Expert bis 3/4/5. */
   spells?: Spell[];
+  /** Zufaelliger Aufstieg bis heroLevel nach den Regeln des Spiels. */
+  randomGrowth?: boolean;
 }
 
 export type Spell =
@@ -361,7 +363,28 @@ export type Spell =
   | 'SUMMON_AIR_ELEMENTAL'
   | 'SUMMON_EARTH_ELEMENTAL'
   | 'SUMMON_FIRE_ELEMENTAL'
-  | 'SUMMON_WATER_ELEMENTAL';
+  | 'SUMMON_WATER_ELEMENTAL'
+  | 'BERSERK'
+  | 'CLONE'
+  | 'DIMENSION_DOOR'
+  | 'DISGUISE'
+  | 'EARTHQUAKE'
+  | 'FIRE_WALL'
+  | 'FLY'
+  | 'FORCE_FIELD'
+  | 'HYPNOTIZE'
+  | 'LAND_MINE'
+  | 'QUICKSAND'
+  | 'REMOVE_OBSTACLE'
+  | 'SACRIFICE'
+  | 'SCUTTLE_BOAT'
+  | 'SUMMON_BOAT'
+  | 'TELEPORT'
+  | 'TOWN_PORTAL'
+  | 'VIEW_AIR'
+  | 'VIEW_EARTH'
+  | 'VISIONS'
+  | 'WATER_WALK';
 
 export type WarMachine = 'BALLISTA' | 'AMMO_CART' | 'FIRST_AID_TENT';
 
@@ -431,7 +454,9 @@ export interface HeroDto {
   knowledge: number;
   skills: Partial<Record<SecondarySkill, SkillLevel>>;
   specialty: HeroSpecialtyDto;
-  /** Startzauber; ein Zauber-Spezialist beginnt mit seinem Zauber. */
+  /** Level des Helden; im Katalog 1. */
+  level?: number;
+  /** Startzauber bzw. Zauberbuch des Helden. */
   spells?: Spell[];
 }
 
@@ -457,6 +482,9 @@ export interface ArmyBattleRequest {
 export interface ArmyBattleSimulation {
   result: BattleResult;
   events: BattleEvent[];
+  /** Die Helden, wie sie gekaempft haben (nach Aufbau und Aufstieg). */
+  attackerHero?: HeroDto;
+  defenderHero?: HeroDto;
 }
 
 export interface FactionPresetDto {

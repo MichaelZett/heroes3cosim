@@ -143,6 +143,18 @@ class HeroSpellTest {
     }
 
     @Test
+    void adventure_spells_are_never_cast_and_never_feared() {
+        Stack own = stack(UnitCatalog.PIKEMAN, 10, 0, 5, Side.ATTACKER, 0);
+        Stack enemy = stack(UnitCatalog.PIKEMAN, 10, 14, 5, Side.DEFENDER, 0);
+        Hero traveller = mage(5, 5, Map.of(), Spell.VIEW_AIR, Spell.DISGUISE);
+        BattleSetup setup = new BattleSetup(List.of(own), List.of(enemy), Battlefield.STANDARD, null, traveller);
+
+        assertThat(HeroSpellcasting.candidates(traveller, Side.DEFENDER, Spell.DISGUISE, setup)).isEmpty();
+        assertThat(HeroSpellcasting.decide(traveller, Side.DEFENDER, 50, setup)).isNull();
+        assertThat(HeroSpellcasting.threat(own, spell -> true, setup)).isZero();
+    }
+
+    @Test
     void prayer_goes_on_the_most_valuable_stack_and_is_not_recast() {
         Stack pikemen = stack(UnitCatalog.PIKEMAN, 10, 0, 5, Side.ATTACKER, 0);
         Stack champions = stack(UnitCatalog.CHAMPION, 10, 0, 3, Side.ATTACKER, 1);

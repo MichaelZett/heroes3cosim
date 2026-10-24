@@ -10,6 +10,8 @@ import PlaybackControls from '../battle-replay/PlaybackControls';
 import LanguageSwitcher from '../../shared/ui/LanguageSwitcher';
 import type { SideNames } from '../battle-replay/eventText';
 import { useSimulateArmyBattle } from '../../shared/api/hooks';
+import type { HeroDto } from '../../shared/api/types';
+import HeroSummary from './HeroSummary';
 
 export default function ArmyBattlePage() {
   const navigate = useNavigate();
@@ -95,8 +97,8 @@ export default function ArmyBattlePage() {
       <section className="rounded-lg border border-slate-800 bg-slate-900 p-4">
         <HexGrid state={state} transitionMs={speedMs} />
         <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
-          <ArmySummary side="ATTACKER" state={state} color="amber" />
-          <ArmySummary side="DEFENDER" state={state} color="blue" />
+          <ArmySummary side="ATTACKER" state={state} color="amber" hero={simulation.attackerHero} />
+          <ArmySummary side="DEFENDER" state={state} color="blue" hero={simulation.defenderHero} />
         </div>
       </section>
 
@@ -112,9 +114,10 @@ interface ArmySummaryProps {
   side: 'ATTACKER' | 'DEFENDER';
   state: import('../battle-replay/state').BattleState;
   color: 'amber' | 'blue';
+  hero?: HeroDto;
 }
 
-function ArmySummary({ side, state, color }: Readonly<ArmySummaryProps>) {
+function ArmySummary({ side, state, color, hero }: Readonly<ArmySummaryProps>) {
   const { t } = useTranslation();
   const stacks = [...state.stacks.values()].filter((s) => s.side === side);
   const headerText = color === 'amber' ? 'text-amber-300' : 'text-blue-300';
@@ -127,6 +130,7 @@ function ArmySummary({ side, state, color }: Readonly<ArmySummaryProps>) {
           {side === 'ATTACKER' ? t('army.attacker') : t('army.defender')}
         </span>
       </div>
+      {hero && <HeroSummary hero={hero} />}
       <ul className="mt-2 space-y-0.5 text-xs text-slate-300">
         {stacks.map((s) => {
           const ratio = s.startCount === 0 ? 0 : Math.max(0, Math.min(1, s.count / s.startCount));

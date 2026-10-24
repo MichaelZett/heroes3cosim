@@ -11,6 +11,7 @@ import de.zettsystems.h3comsim.battle.domain.Battlefield;
 import de.zettsystems.h3comsim.battle.domain.CollectedBonus;
 import de.zettsystems.h3comsim.battle.domain.Hero;
 import de.zettsystems.h3comsim.battle.domain.HeroCatalog;
+import de.zettsystems.h3comsim.battle.domain.HeroGrowth;
 import de.zettsystems.h3comsim.battle.domain.Hex;
 import de.zettsystems.h3comsim.battle.domain.ObstacleGenerator;
 import de.zettsystems.h3comsim.battle.domain.SecondarySkill;
@@ -21,6 +22,7 @@ import de.zettsystems.h3comsim.battle.domain.Unit;
 import de.zettsystems.h3comsim.battle.domain.UnitCatalog;
 import de.zettsystems.h3comsim.battle.domain.events.ListEventCollector;
 import de.zettsystems.h3comsim.battle.domain.events.Side;
+import de.zettsystems.h3comsim.battle.values.HeroMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -42,22 +44,31 @@ public class DefaultArmyBattleService implements ArmyBattleService {
         List<Stack> defenderStacks = buildStacks(request.defender(), Side.DEFENDER);
 
         Battlefield battlefield = buildBattlefield(attackerStacks.size(), defenderStacks.size(), seed);
+        Hero attackerHero = resolveHero(request.attacker(), attackerStacks, growthRandom(seed, Side.ATTACKER));
+        Hero defenderHero = resolveHero(request.defender(), defenderStacks, growthRandom(seed, Side.DEFENDER));
         BattleSetup setup = new BattleSetup(attackerStacks, defenderStacks, battlefield,
-                resolveHero(request.attacker(), attackerStacks), bonusOf(request.attacker()),
-                resolveHero(request.defender(), defenderStacks), bonusOf(request.defender()))
+                attackerHero, bonusOf(request.attacker()),
+                defenderHero, bonusOf(request.defender()))
                 .equip(Side.ATTACKER, Objects.requireNonNullElse(request.attacker().warMachines(), Set.of()))
                 .equip(Side.DEFENDER, Objects.requireNonNullElse(request.defender().warMachines(), Set.of()));
 
         ListEventCollector collector = new ListEventCollector();
         BattleResult result = new Battle(new Random(seed), new StrategicAutoSolver(), collector).simulate(setup);
-        return new ArmyBattleSimulation(result, collector.events());
+        return new ArmyBattleSimulation(result, collector.events(),
+                HeroMapper.toDto(attackerHero), HeroMapper.toDto(defenderHero));
+    }
+
+    /** Eigener Zufallsstrom je Seite für den Aufstieg, damit die Schlacht selbst ungestört bleibt. */
+    private static Random growthRandom(long seed, Side side) {
+        return new Random(seed * 31 + (side == Side.ATTACKER ? 1 : 2));
     }
 
     /**
      * Jede Armee hat einen Helden; ohne Auswahl den Standardhelden ihrer Hauptfraktion. Level
-     * und Aufbau aus dem Request gelten für beide Fälle.
+     * und Aufbau aus dem Request gelten für beide Fälle; mit {@code randomGrowth} steigt der Held
+     * zuerst nach den Regeln zufällig auf ({@link HeroGrowth}).
      */
-    private static Hero resolveHero(ArmySpec army, List<Stack> stacks) {
+    private static Hero resolveHero(ArmySpec army, List<Stack> stacks, Random growth) {
         String name = army.heroName();
         Hero hero = name == null || name.isBlank()
                 ? HeroCatalog.defaultForArmy(stacks)
@@ -66,7 +77,11 @@ public class DefaultArmyBattleService implements ArmyBattleService {
                                 HttpStatus.BAD_REQUEST, "Unknown hero: " + name));
         Map<SecondarySkill, SkillLevel> learned = Objects.requireNonNullElse(army.skills(), Map.of());
         try {
-            return hero.withLevel(Objects.requireNonNullElse(army.heroLevel(), 1))
+            int level = Objects.requireNonNullElse(army.heroLevel(), 1);
+            Hero leveled = Boolean.TRUE.equals(army.randomGrowth())
+                    ? HeroGrowth.grow(hero, level, growth)
+                    : hero.withLevel(level);
+            return leveled
                     .withBuild(Objects.requireNonNullElse(army.attackBonus(), 0),
                             Objects.requireNonNullElse(army.defenseBonus(), 0),
                             Objects.requireNonNullElse(army.powerBonus(), 0),

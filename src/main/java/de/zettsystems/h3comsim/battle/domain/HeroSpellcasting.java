@@ -117,6 +117,9 @@ final class HeroSpellcasting {
         List<Stack> own = alive(setup.stacksOf(side));
         List<Stack> enemies = alive(setup.stacksOf(other(side)));
         List<Cast> casts = new ArrayList<>();
+        if (spell.kind() == Spell.Kind.OTHER) {
+            return casts;
+        }
         switch (spell) {
             case FIREBALL, METEOR_SHOWER, INFERNO, FROST_RING -> {
                 for (Hex center : centers(setup)) {
@@ -340,7 +343,7 @@ final class HeroSpellcasting {
             case DAMAGE -> damageValue(hero, spell, baseDamage(cast, hero.spellPower(), index), s);
             case INSTANT -> instantValue(hero, spell, cast.level(), s);
             case EFFECT -> effectValue(hero, spell, cast.level(), s, setup);
-            case SUMMON -> 0;
+            case SUMMON, OTHER -> 0;
         };
         return (s.side() == side ? -1 : 1) * (spell.beneficial() ? -1 : 1) * value;
     }
@@ -472,7 +475,7 @@ final class HeroSpellcasting {
                 case EFFECT -> Math.max(0, gainPercent(spell, level,
                         foe.specialty().spellEffectBonus(spell, foe.level(), s.unit()), s, setup))
                         / 100 * ROUND_SHARE * stackValue(s);
-                case INSTANT, SUMMON -> 0;
+                case INSTANT, SUMMON, OTHER -> 0;
             };
             worst = Math.max(worst, harm * successChance(spell, s, setup));
         }

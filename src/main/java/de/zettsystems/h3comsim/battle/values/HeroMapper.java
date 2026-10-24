@@ -21,6 +21,7 @@ public final class HeroMapper {
                 hero.knowledge(),
                 hero.skills(),
                 toDto(hero.specialty()),
+                hero.level(),
                 List.copyOf(hero.spells()));
     }
 

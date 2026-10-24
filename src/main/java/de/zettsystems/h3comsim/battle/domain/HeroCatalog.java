@@ -1,9 +1,11 @@
 package de.zettsystems.h3comsim.battle.domain;
 
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static de.zettsystems.h3comsim.battle.domain.HeroClass.ALCHEMIST;
@@ -61,7 +63,8 @@ import static de.zettsystems.h3comsim.battle.domain.SkillLevel.BASIC;
  * Primärwerte hängen an der Klasse ({@link HeroClass}), je Held stehen hier Name,
  * Spezialfähigkeit ({@link HeroSpecialty}) und Startfertigkeiten. Zauber-Spezialisten beginnen
  * mit ihrem Zauber; ohne Wirkung bleiben nur Hypnotize und Fire Wall, die der Simulator nicht
- * kennt. Bei Ajit nennt das Manual
+ * kennt. Helden der magischen Klassen kennen dazu die Stufe 1 der Magiergilde ihrer Fraktion
+ * ({@link MageGuild}). Bei Ajit nennt das Manual
  * „after the 1st level" für Beholder (Stufe 3); maßgeblich ist wie überall die Stufe der
  * Kreatur.
  *
@@ -326,8 +329,13 @@ public final class HeroCatalog {
 
     private static Hero hero(String name, HeroClass heroClass, HeroSpecialty specialty,
                              Map<SecondarySkill, SkillLevel> skills) {
+        Set<Spell> spells = EnumSet.noneOf(Spell.class);
+        spells.addAll(specialty.startingSpells());
+        if (heroClass.magic()) {
+            spells.addAll(MageGuild.firstLevel(heroClass.faction()));
+        }
         return new Hero(name, heroClass, heroClass.faction(), heroClass.attack(), heroClass.defense(),
-                heroClass.power(), heroClass.knowledge(), skills, specialty, 1, specialty.startingSpells());
+                heroClass.power(), heroClass.knowledge(), skills, specialty, 1, spells);
     }
 
     private static HeroSpecialty creature(Unit unit) {

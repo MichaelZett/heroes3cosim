@@ -10,6 +10,7 @@ import de.zettsystems.h3comsim.battle.domain.Faction;
 import de.zettsystems.h3comsim.battle.domain.Hero;
 import de.zettsystems.h3comsim.battle.domain.HeroCatalog;
 import de.zettsystems.h3comsim.battle.domain.Hex;
+import de.zettsystems.h3comsim.battle.domain.MageGuild;
 import de.zettsystems.h3comsim.battle.domain.ObstacleGenerator;
 import de.zettsystems.h3comsim.battle.domain.SecondarySkill;
 import de.zettsystems.h3comsim.battle.domain.SkillLevel;
@@ -144,6 +145,67 @@ class SpellImpactTest {
         Path out = reportsDir.resolve("spell-impact.md");
         Files.writeString(out, report);
         IO.println("Spell-Impact-Report: " + out.toAbsolutePath());
+        IO.println(report);
+    }
+
+    /**
+     * Was bringt das Startbuch der Magier-Helden? Je Fraktion führt der erste Held der magischen
+     * Klasse beide Armeen; eine Seite kennt die Stufe 1 der Magiergilde, die andere gar nichts.
+     */
+    @Test
+    void guild_book_of_magic_heroes() throws Exception {
+        FactionPresetCatalog presets = new FactionPresetCatalog();
+        Map<Faction, FactionPresetDto> presetByFaction = new EnumMap<>(Faction.class);
+        for (FactionPresetDto p : presets.all()) {
+            presetByFaction.put(p.faction(), p);
+        }
+        StringBuilder sb = new StringBuilder(2048);
+        sb.append("# Startbuch der Magier-Helden\n\n")
+                .append("Spiegel-Duell mit dem ersten Helden der magischen Klasse je Fraktion; eine Seite ")
+                .append("kennt die Stufe 1 der Magiergilde, die andere keinen Zauber. ").append(SEEDS_PER_PAIR)
+                .append(" Seeds, getauschte Rollen, StrategicAutoSolver.\n\n")
+                .append("| Faktion | Held | Battles | Siege | Niederlagen | Draws | Win-Rate | Sigma | Zauber je Kampf |\n")
+                .append("|--|--|--|--|--|--|--|--|--|\n");
+        Tally overall = new Tally();
+        for (Faction f : FACTIONS_IN_ORDER) {
+            Hero mage = HeroCatalog.all().stream()
+                    .filter(h -> h.faction() == f && h.heroClass().magic())
+                    .findFirst().orElseThrow();
+            Hero bare = new Hero(mage.name(), mage.heroClass(), mage.faction(), mage.attack(), mage.defense(),
+                    mage.power(), mage.knowledge(), mage.skills(), mage.specialty(), mage.level(), Set.of());
+            Hero booked = bare.withSpellbook(MageGuild.firstLevel(f));
+            Tally tally = new Tally();
+            for (int s = 0; s < SEEDS_PER_PAIR; s++) {
+                long seed = (long) f.ordinal() * 7919L + 991L + s;
+                for (boolean casterIsAttacker : new boolean[] {true, false}) {
+                    List<Stack> attackerStacks = buildStacks(presetByFaction.get(f).stacks(), Side.ATTACKER);
+                    List<Stack> defenderStacks = buildStacks(presetByFaction.get(f).stacks(), Side.DEFENDER);
+                    BattleSetup setup = new BattleSetup(attackerStacks, defenderStacks,
+                            buildBattlefield(attackerStacks, defenderStacks, seed),
+                            casterIsAttacker ? booked : bare, casterIsAttacker ? bare : booked);
+                    BattleResult result = new Battle(new Random(seed), new StrategicAutoSolver(), event -> {
+                        if (event instanceof BattleEvent.HeroSpell cast) {
+                            tally.casts.merge(cast.spell(), 1, Integer::sum);
+                            overall.casts.merge(cast.spell(), 1, Integer::sum);
+                        }
+                    }).simulate(setup);
+                    Side casterSide = casterIsAttacker ? Side.ATTACKER : Side.DEFENDER;
+                    tally(tally, result, casterSide);
+                    tally(overall, result, casterSide);
+                }
+            }
+            sb.append("| ").append(f.name()).append(" | ").append(mage.name());
+            row(sb, tally);
+        }
+        sb.append("| Gesamt | –");
+        row(sb, overall);
+        sb.append("\nGewählte Zauber: ").append(overall.casts).append('\n');
+        String report = sb.toString();
+        Path reportsDir = Path.of("build", "reports");
+        Files.createDirectories(reportsDir);
+        Path out = reportsDir.resolve("guild-book.md");
+        Files.writeString(out, report);
+        IO.println("Guild-Book-Report: " + out.toAbsolutePath());
         IO.println(report);
     }
 

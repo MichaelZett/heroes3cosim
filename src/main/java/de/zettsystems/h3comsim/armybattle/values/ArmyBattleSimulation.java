@@ -2,6 +2,7 @@ package de.zettsystems.h3comsim.armybattle.values;
 
 import de.zettsystems.h3comsim.battle.domain.BattleResult;
 import de.zettsystems.h3comsim.battle.domain.events.BattleEvent;
+import de.zettsystems.h3comsim.battle.values.HeroDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
@@ -12,7 +13,13 @@ public record ArmyBattleSimulation(
         BattleResult result,
 
         @Schema(description = "Chronologische Liste der Battle-Events. Polymorph über den `type`-Diskriminator. Action-Events tragen `actorSlot`/`targetSlot` (0..6).")
-        List<BattleEvent> events) {
+        List<BattleEvent> events,
+
+        @Schema(description = "Held des Angreifers, wie er gekämpft hat — nach Level, Aufbau und gegebenenfalls zufälligem Aufstieg.")
+        HeroDto attackerHero,
+
+        @Schema(description = "Held des Verteidigers, analog zu `attackerHero`.")
+        HeroDto defenderHero) {
     public ArmyBattleSimulation {
         events = List.copyOf(events);
     }

@@ -43,12 +43,12 @@ class HeroMapperTest {
         HeroDto ciele = HeroMapper.toDto(HeroCatalog.byName("Ciele").orElseThrow());
         assertThat(ciele.specialty()).isEqualTo(new HeroSpecialtyDto(HeroSpecialtyDto.Kind.SPELL,
                 null, 0, null, 50, 0, 0, "MAGIC_ARROW", true));
-        assertThat(ciele.spells()).containsExactly(Spell.MAGIC_ARROW);
+        assertThat(ciele.spells()).contains(Spell.MAGIC_ARROW).hasSize(5);
 
         HeroDto adela = HeroMapper.toDto(HeroCatalog.byName("Adela").orElseThrow());
         assertThat(adela.specialty()).isEqualTo(new HeroSpecialtyDto(HeroSpecialtyDto.Kind.SPELL_UNIQUE,
                 null, 0, null, 0, 0, 0, "BLESS", true));
-        assertThat(adela.spells()).containsExactly(Spell.BLESS);
+        assertThat(adela.spells()).contains(Spell.BLESS);
         assertThat(HeroMapper.toDto(HeroCatalog.SORSHA).spells()).isEmpty();
     }
 }

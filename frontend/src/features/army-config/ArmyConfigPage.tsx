@@ -263,6 +263,7 @@ function buildSpec(stored: Partial<HeroBuild> | undefined, hero: HeroDto | undef
     heroLevel: build.level,
     attackBonus: build.attack,
     defenseBonus: build.defense,
+    randomGrowth: build.randomGrowth,
     powerBonus: build.power,
     knowledgeBonus: build.knowledge,
     // Ein Heldenwechsel kann Wisdom senken; was der Held nicht lernen kann, bleibt draussen.

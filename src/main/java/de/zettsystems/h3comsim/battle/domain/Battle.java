@@ -254,7 +254,7 @@ public final class Battle {
                         HeroSpellcasting.healing(hero, spell, cast.level(), target), target);
                 case EFFECT -> target.applySpell(spell, cast.level(), power,
                         hero.specialty().spellEffectBonus(spell, hero.level(), target.unit()));
-                case SUMMON -> throw new IllegalStateException("summons are handled by summon()");
+                case SUMMON, OTHER -> throw new IllegalStateException(spell + " is not cast on a stack");
             }
         }
         events.emit(new BattleEvent.SpellHit(side, spell, target.side(), target.slot(), damage, killed, healed,

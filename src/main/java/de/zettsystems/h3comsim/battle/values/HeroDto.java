@@ -13,7 +13,8 @@ import java.util.Map;
 @Schema(description = """
         Held aus dem H3-Catalog. `attack` und `defense` werden auf jede Kreatur der geführten
         Armee addiert (Manual S. 33), `power` und `knowledge` bestimmen Spell Power und Mana
-        seiner Zauber. Zauber-Spezialisten bringen ihren Zauber in `spells` mit.
+        seiner Zauber. `spells` sind die Startzauber: der Zauber eines Spezialisten und bei magischen
+        Klassen die Stufe 1 der Magiergilde ihrer Fraktion.
         """)
 public record HeroDto(
         @Schema(description = "Anzeigename — wird auch als Identifier in den Battle-Requests verwendet.",
@@ -44,6 +45,9 @@ public record HeroDto(
         @Schema(description = "Spezialfähigkeit des Helden")
         HeroSpecialtyDto specialty,
 
-        @Schema(description = "Startzauber: ein Zauber-Spezialist beginnt mit seinem Zauber, auch über dem Wisdom-Gate.")
+        @Schema(description = "Level des Helden; im Katalog 1.", example = "1")
+        int level,
+
+        @Schema(description = "Startzauber: der Zauber eines Spezialisten (auch über dem Wisdom-Gate) und bei magischen Klassen die fünf Stufe-1-Kampfzauber der Magiergilde ihrer Fraktion.")
         List<Spell> spells) {
 }
