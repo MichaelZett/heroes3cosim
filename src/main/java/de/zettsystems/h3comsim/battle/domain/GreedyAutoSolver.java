@@ -125,19 +125,28 @@ public final class GreedyAutoSolver implements AutoSolver {
         return avgDmg * opponent.getCount();
     }
 
-    @Override
-    public Action decide(Stack active, Stack opponent, Battlefield battlefield) {
-        Stack resurrectionTarget = Resurrection.worthwhileTarget(active, currentSetup);
+    /**
+     * Sonderaktionen vor jeder Bewegung, für beide Solver gleich: Resurrection (Arch Angel),
+     * Dämonen beschwören (Pit Lord), Kreatur-Zauber (Ogre Magi, Master Genie). {@code null}, wenn
+     * keine davon jetzt lohnt.
+     */
+    static @Nullable Action specialAction(Stack active, Stack opponent, @Nullable BattleSetup setup) {
+        Stack resurrectionTarget = Resurrection.worthwhileTarget(active, setup);
         if (resurrectionTarget != null) {
             return new Action.Resurrect(resurrectionTarget);
         }
-        Stack corpse = DemonRaising.worthwhileCorpse(active, currentSetup);
+        Stack corpse = DemonRaising.worthwhileCorpse(active, setup);
         if (corpse != null) {
             return new Action.RaiseDemons(corpse);
         }
-        Action cast = CreatureSpellcasting.decide(active, opponent, currentSetup);
-        if (cast != null) {
-            return cast;
+        return CreatureSpellcasting.decide(active, opponent, setup);
+    }
+
+    @Override
+    public Action decide(Stack active, Stack opponent, Battlefield battlefield) {
+        Action special = specialAction(active, opponent, currentSetup);
+        if (special != null) {
+            return special;
         }
         Hex from = active.position();
         Hex to = opponent.position();

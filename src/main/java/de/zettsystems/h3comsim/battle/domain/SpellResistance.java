@@ -57,8 +57,12 @@ final class SpellResistance {
 
     /** Chance in Prozent, einen feindlichen Zauber abzuwehren. */
     static int resistancePercent(Stack target, BattleSetup setup) {
-        int own = target.hasSpeciality(UnitSpeciality.MAGIC_RESISTANCE_40) ? 40
-                : target.hasSpeciality(UnitSpeciality.MAGIC_RESISTANCE_20) ? 20 : 0;
+        int own = 0;
+        if (target.hasSpeciality(UnitSpeciality.MAGIC_RESISTANCE_40)) {
+            own = 40;
+        } else if (target.hasSpeciality(UnitSpeciality.MAGIC_RESISTANCE_20)) {
+            own = 20;
+        }
         int aura = hasAuraNeighbour(target, setup) ? AURA_PERCENT : 0;
         return 100 - (100 - own) * (100 - aura) / 100;
     }
