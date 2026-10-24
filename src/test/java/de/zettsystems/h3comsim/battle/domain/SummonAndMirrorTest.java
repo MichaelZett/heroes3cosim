@@ -220,7 +220,7 @@ class SummonAndMirrorTest {
     }
 
     @Test
-    void reinforcing_adds_fresh_creatures_and_rejects_nothing() {
+    void reinforcing_adds_fresh_creatures_and_rejects_zero() {
         Stack elementals = stack(UnitCatalog.EARTH_ELEMENTAL, 4, 0, 5, Side.ATTACKER, 7);
         elementals.reinforce(3);
         assertThat(elementals.getCount()).isEqualTo(7);
