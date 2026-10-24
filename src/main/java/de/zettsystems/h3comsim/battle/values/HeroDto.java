@@ -45,6 +45,9 @@ public record HeroDto(
         @Schema(description = "Spezialfähigkeit des Helden")
         HeroSpecialtyDto specialty,
 
+        @Schema(description = "Level des Helden; im Katalog 1.", example = "1")
+        int level,
+
         @Schema(description = "Startzauber: der Zauber eines Spezialisten (auch über dem Wisdom-Gate) und bei magischen Klassen die fünf Stufe-1-Kampfzauber der Magiergilde ihrer Fraktion.")
         List<Spell> spells) {
 }

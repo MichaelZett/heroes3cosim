@@ -89,7 +89,17 @@ public record ArmySpec(
                 mit Basic/Advanced/Expert Wisdom bis Stufe 3/4/5. Er wirkt einen pro Runde,
                 solange das Mana reicht.
                 """, example = "[\"MAGIC_ARROW\", \"BLESS\"]", nullable = true)
-        @Nullable Set<Spell> spells) {
+        @Nullable Set<Spell> spells,
+
+        @Schema(description = """
+                Zufälliger Aufstieg: der Held steigt vom Katalog-Stand aus nach den Regeln des Spiels
+                bis `heroLevel` auf — Primärwerte nach den Chancen seiner Klasse, Sekundärfertigkeiten
+                nach den Angeboten beim Aufstieg (immer das linke, wie bei Helden, die über Level 1
+                beginnen), Zauber aus der Magiergilde seiner Fraktion (Stufe 1, ab Level 2 Stufe 2,
+                darüber nach Wisdom), auch Abenteuerzauber ohne Wirkung im Kampf. Gewürfelt wird aus
+                dem Seed der Schlacht. Die übrigen Aufbau-Felder kommen obendrauf.
+                """, example = "true", nullable = true)
+        @Nullable Boolean randomGrowth) {
 
     /** Obergrenze des Simulators, kein Spielwert — Kreatur-Boni wachsen linear weiter. */
     public static final int MAX_HERO_LEVEL = 99;
@@ -110,6 +120,7 @@ public record ArmySpec(
         warMachines = warMachines == null ? Set.of() : warMachines.stream()
                 .filter(Objects::nonNull)
                 .collect(Collectors.toUnmodifiableSet());
+        randomGrowth = Objects.requireNonNullElse(randomGrowth, false);
         spells = spells == null ? Set.of() : spells.stream()
                 .filter(Objects::nonNull)
                 .collect(Collectors.toUnmodifiableSet());
@@ -123,7 +134,7 @@ public record ArmySpec(
     /** Armee mit Helden, gesammeltem Glück/Moral und Level, ohne weiteren Aufbau. */
     public ArmySpec(List<StackSpec> stacks, @Nullable String heroName, int luckBonus,
                     int moraleBonus, int heroLevel) {
-        this(stacks, heroName, luckBonus, moraleBonus, heroLevel, 0, 0, 0, 0, Map.of(), Set.of(), Set.of());
+        this(stacks, heroName, luckBonus, moraleBonus, heroLevel, 0, 0, 0, 0, Map.of(), Set.of(), Set.of(), false);
     }
 
     /** Armee mit dem Standardhelden ihrer Hauptfraktion. */

@@ -181,6 +181,17 @@ export default function HeroBonusPicker({
           </select>
         </label>
       </div>
+      <label className="mt-3 flex items-center gap-2 text-sm text-slate-200">
+        <input
+          type="checkbox"
+          checked={value.randomGrowth}
+          onChange={(e) => onChange({ randomGrowth: e.target.checked })}
+        />
+        {t('army.randomGrowth')}
+      </label>
+      {value.randomGrowth && (
+        <p className="mt-1 text-xs text-slate-500">{t('army.randomGrowthHint')}</p>
+      )}
       <div className="mt-3 grid grid-cols-3 gap-3">
         {BUILD_SKILLS.map((skill) => {
           const start = rank(startSkills[skill]);

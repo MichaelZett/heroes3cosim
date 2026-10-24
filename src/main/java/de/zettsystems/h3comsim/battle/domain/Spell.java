@@ -7,10 +7,11 @@ import java.util.Set;
 /**
  * Kampfzauber (Manual, <em>Spell Reference</em> S. 64–79; Schule, Stufe und Kosten von dort).
  *
- * <p>Aufgenommen sind die Zauber, die Kreaturen wirken oder auslösen, und die Heldenzauber, die im
- * Simulator eine Wirkung haben: Schaden, Stärkungen, Schwächungen, Schutz und Wiederbelebung.
- * Nicht aufgenommen sind Zauber, die Feldelemente oder Kontrolle über Kreaturen brauchen
- * (Force Field, Quicksand, Land Mine, Fire Wall, Hypnotize, Berserk, Teleport, Clone, Sacrifice).
+ * <p>Alle 69 Zauber, die eine Magiergilde lehren kann. Wirkung haben Schaden, Stärkungen,
+ * Schwächungen, Schutz, Wiederbelebung und Beschwörung; {@link Kind#OTHER} sind die
+ * Abenteuerzauber und die Kampfzauber, die Feldelemente oder Kontrolle über Kreaturen brauchen
+ * (Force Field, Quicksand, Land Mine, Fire Wall, Hypnotize, Berserk, Teleport, Clone, Sacrifice,
+ * Earthquake, Remove Obstacle) — ein Held kann sie kennen, wirkt sie aber nie.
  *
  * <p>{@code mind} markiert die Gedankenzauber (heroes.thelazy.net, <em>Mind spells</em>), gegen
  * die Untote, Elementare, Golems, Gargoyles, Giants und Titans immun sind. {@code massAtExpert}:
@@ -70,7 +71,30 @@ public enum Spell {
     SUMMON_AIR_ELEMENTAL(MagicSchool.AIR, 5, 25, Kind.SUMMON, true, false, false),
     SUMMON_EARTH_ELEMENTAL(MagicSchool.EARTH, 5, 25, Kind.SUMMON, true, false, false),
     SUMMON_FIRE_ELEMENTAL(MagicSchool.FIRE, 5, 25, Kind.SUMMON, true, false, false),
-    SUMMON_WATER_ELEMENTAL(MagicSchool.WATER, 5, 25, Kind.SUMMON, true, false, false);
+    SUMMON_WATER_ELEMENTAL(MagicSchool.WATER, 5, 25, Kind.SUMMON, true, false, false),
+    // Ohne Wirkung im Simulator: Abenteuerzauber und Kampfzauber, die Feldelemente oder
+    // Kontrolle über Kreaturen brauchen. Ein Held kann sie aus der Gilde kennen, wirkt sie aber nie.
+    BERSERK(MagicSchool.FIRE, 4, 20, Kind.OTHER, false, true, false),
+    CLONE(MagicSchool.WATER, 4, 24, Kind.OTHER, true, false, false),
+    DIMENSION_DOOR(MagicSchool.AIR, 5, 25, Kind.OTHER, true, false, false),
+    DISGUISE(MagicSchool.AIR, 2, 4, Kind.OTHER, true, false, false),
+    EARTHQUAKE(MagicSchool.EARTH, 3, 20, Kind.OTHER, true, false, false),
+    FIRE_WALL(MagicSchool.FIRE, 2, 8, Kind.OTHER, false, false, false),
+    FLY(MagicSchool.AIR, 5, 20, Kind.OTHER, true, false, false),
+    FORCE_FIELD(MagicSchool.EARTH, 3, 12, Kind.OTHER, true, false, false),
+    HYPNOTIZE(MagicSchool.AIR, 3, 18, Kind.OTHER, false, true, false),
+    LAND_MINE(MagicSchool.FIRE, 3, 18, Kind.OTHER, false, false, false),
+    QUICKSAND(MagicSchool.EARTH, 2, 8, Kind.OTHER, false, false, false),
+    REMOVE_OBSTACLE(MagicSchool.WATER, 2, 7, Kind.OTHER, true, false, false),
+    SACRIFICE(MagicSchool.FIRE, 5, 25, Kind.OTHER, true, false, false),
+    SCUTTLE_BOAT(MagicSchool.WATER, 2, 8, Kind.OTHER, true, false, false),
+    SUMMON_BOAT(MagicSchool.WATER, 1, 8, Kind.OTHER, true, false, false),
+    TELEPORT(MagicSchool.WATER, 3, 15, Kind.OTHER, true, false, false),
+    TOWN_PORTAL(MagicSchool.EARTH, 4, 16, Kind.OTHER, true, false, false),
+    VIEW_AIR(MagicSchool.AIR, 1, 2, Kind.OTHER, true, false, false),
+    VIEW_EARTH(MagicSchool.EARTH, 1, 2, Kind.OTHER, true, false, false),
+    VISIONS(MagicSchool.AIR, 2, 4, Kind.OTHER, true, false, false),
+    WATER_WALK(MagicSchool.WATER, 4, 12, Kind.OTHER, true, false, false);
 
     /** Wirkungsart. */
     public enum Kind {
@@ -81,7 +105,9 @@ public enum Spell {
         /** Fügt Schaden zu. */
         DAMAGE,
         /** Ruft einen neuen Stack auf die eigene Seite. */
-        SUMMON
+        SUMMON,
+        /** Im Simulator ohne Wirkung; wird nie gewirkt. */
+        OTHER
     }
 
     /** Zauber, die nur Kreaturen auslösen und ein Held nicht wirkt. */
@@ -107,8 +133,8 @@ public enum Spell {
     }
 
     /**
-     * Schule. Magic Arrow gehört allen vier Schulen an (Manual S. 64 ff.) und wird mit der besten
-     * Schul-Fertigkeit des Helden gewirkt, siehe {@link #schools()}.
+     * Schule. Magic Arrow und Visions gehören allen vier Schulen an (Manual S. 64 ff.); Magic
+     * Arrow wird mit der besten Schul-Fertigkeit des Helden gewirkt, siehe {@link #schools()}.
      */
     public MagicSchool school() {
         return school;
@@ -116,7 +142,7 @@ public enum Spell {
 
     /** Alle Schulen, zu denen der Zauber gehört. */
     public Set<MagicSchool> schools() {
-        return this == MAGIC_ARROW ? Set.of(MagicSchool.values()) : Set.of(school);
+        return this == MAGIC_ARROW || this == VISIONS ? Set.of(MagicSchool.values()) : Set.of(school);
     }
 
     public int level() {

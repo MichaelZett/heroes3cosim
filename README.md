@@ -50,6 +50,23 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Artefakten, Gebäuden und Abenteuer-Orten, dazu Power, Knowledge und
   das Zauberbuch (siehe Heldenzauber). Single Battle und
   Einheiten-Matrix bleiben ohne Helden.
+- **Zufälliger Aufstieg**: Statt den Helden von Hand auszubauen, lässt er
+  sich je Armee zufällig auf das gewählte Level bringen, reproduzierbar
+  über den Seed. Jeder Aufstieg zieht den Primärwert nach den
+  Klassen-Wahrscheinlichkeiten (Level 2–9 und ab 10 getrennt) und bietet
+  zwei Fertigkeiten an: links eine vorhandene zum Verbessern (oder eine
+  neue, wenn keine mehr verbesserbar ist), rechts eine aus der anderen
+  Gruppe, gewichtet nach Klasse; Wisdom kommt spätestens alle 3 Level
+  (Magie-Klassen) bzw. 6, eine Magieschule alle 3 bzw. 4. Gewählt wird
+  immer links — so wie das Spiel Helden mit Start-Erfahrung auflevelt
+  (heroes.thelazy.net). Helden mit Zauberbuch bekommen die Gilde ihrer
+  Fraktion: Stufe 1 sofort, Stufe 2 ab Level 2, Stufe 3–5, sobald Wisdom
+  sie öffnet, höchstens bis zur Gildenstufe der Stadt (Castle 4,
+  Stronghold und Fortress 3). Die Zauber jeder Stufe werden wie im Spiel
+  gewichtet ausgelost, Abenteuer- und Spezialzauber (Fly, Town Portal,
+  Berserk …) eingeschlossen — sie stehen im Buch, wirken im Kampf aber
+  nicht. Die Tower-Bibliothek fehlt; Might-Helden ohne Start-Zauber
+  bleiben ohne Buch. Das Ergebnis zeigt die Auswertung je Seite an.
 - **Spezialfähigkeiten** der Helden in der SoD-Fassung: Kreatur-
   Spezialisten geben ihren Kreaturen (Basis- und Ausbaustufe) +1 Speed und
   +5 % Attack und Defense je angefangene Spanne von Kreaturstufe Leveln;

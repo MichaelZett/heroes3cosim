@@ -109,6 +109,8 @@ export interface HeroBuild {
   power: number;
   knowledge: number;
   spells: Spell[];
+  /** Zufaelliger Aufstieg bis zum Level nach den Regeln. */
+  randomGrowth: boolean;
   skills: Partial<Record<SecondarySkill, SkillLevel>>;
   luck: number;
   morale: number;
@@ -122,6 +124,7 @@ export const DEFAULT_BUILD: HeroBuild = {
   power: 0,
   knowledge: 0,
   spells: [],
+  randomGrowth: false,
   skills: {},
   luck: 0,
   morale: 0,

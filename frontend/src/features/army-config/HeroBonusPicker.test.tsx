@@ -11,6 +11,7 @@ const BUILD: HeroBuild = {
   power: 0,
   knowledge: 0,
   spells: [],
+  randomGrowth: false,
   skills: {},
   luck: 0,
   morale: 0,
@@ -154,5 +155,24 @@ describe('HeroBonusPicker', () => {
     expect(resurrection).toBeChecked();
     expect(resurrection).toBeDisabled();
     expect(screen.getByRole('checkbox', { name: 'Prayer' })).toBeDisabled();
+  });
+
+  it('switches random level-ups on and explains them', async () => {
+    const onChange = vi.fn();
+    const { rerender } = render(
+      <HeroBonusPicker value={BUILD} startSkills={{}} onChange={onChange} />,
+    );
+
+    await userEvent.click(screen.getByRole('checkbox', { name: /Zufällig aufsteigen/ }));
+    expect(onChange).toHaveBeenCalledWith({ randomGrowth: true });
+
+    rerender(
+      <HeroBonusPicker
+        value={{ ...BUILD, randomGrowth: true }}
+        startSkills={{}}
+        onChange={onChange}
+      />,
+    );
+    expect(screen.getByText(/nach den Chancen seiner Klasse/)).toBeInTheDocument();
   });
 });
