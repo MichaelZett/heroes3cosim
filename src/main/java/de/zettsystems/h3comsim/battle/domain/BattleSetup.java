@@ -255,7 +255,15 @@ public class BattleSetup {
         return rows;
     }
 
-    private boolean isFree(Hex hex) {
+    /**
+     * Lässt sich der ganz gefallene Stack zurückholen? Nur, wenn sein Feld frei ist („corpse" in
+     * H3, heroes.thelazy.net) und er nicht beschworen war.
+     */
+    boolean hasFreeCorpse(Stack stack) {
+        return !stack.isAlive() && stack.startCount() > 0 && !stack.isSummoned() && isFree(stack.position());
+    }
+
+    boolean isFree(Hex hex) {
         return battlefield.isPassable(hex) && aliveStacks().stream().noneMatch(st -> st.position().equals(hex));
     }
 

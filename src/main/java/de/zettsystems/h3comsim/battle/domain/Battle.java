@@ -171,7 +171,8 @@ public final class Battle {
         }
         for (int i = 0; i < cast.affected().size(); i++) {
             Stack target = cast.affected().get(i);
-            if (target.isAlive()) {
+            // Resurrection und Animate Dead holen auch ganz Gefallene zurück (Ziel geprüft in der Wahl).
+            if (target.isAlive() || HeroSpellcasting.revives(spell)) {
                 Stack reflectedTo = mirrored(setup, side, cast, target);
                 Stack hit = reflectedTo == null ? target : reflectedTo;
                 BattleLogger.logSpell(hero.name(), spell, hit.getName());
@@ -482,7 +483,7 @@ public final class Battle {
                     moveAndMelee(active, destination, target, setup);
             case Action.Melee(Stack target) -> meleeAttack(active, target, 0, setup);
             case Action.Shoot(Stack target) -> shoot(active, target, setup);
-            case Action.Resurrect(Stack target) -> resurrect(active, target);
+            case Action.Resurrect(Stack target) -> resurrect(active, target, setup);
             case Action.RaiseDemons(Stack corpse) -> raiseDemons(active, corpse, setup);
             case Action.CastSpell(Spell spell, Stack target) -> castSpell(active, spell, target, setup);
             case Action.CastRandomSpell() -> castRandomSpell(active, setup);
@@ -560,8 +561,8 @@ public final class Battle {
      * des Arch Angels. Ein Ziel, das die Regeln nicht erlauben, oder ein zweiter Versuch im
      * selben Kampf fällt auf Defend zurück — Solver-Bug-Sicherheitsnetz wie bei {@code shoot}.
      */
-    private void resurrect(Stack caster, Stack target) {
-        if (!caster.canResurrect() || !Resurrection.isValidTarget(caster, target)) {
+    private void resurrect(Stack caster, Stack target, BattleSetup setup) {
+        if (!caster.canResurrect() || !Resurrection.isValidTarget(caster, target, setup)) {
             emitDefend(caster);
             return;
         }

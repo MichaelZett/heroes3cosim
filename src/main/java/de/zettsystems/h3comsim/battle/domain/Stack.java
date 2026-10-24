@@ -490,11 +490,13 @@ public class Stack {
         int max = unit.health();
         int remaining = hp;
         int used = 0;
-        // Spezialfall: Stack komplett tot → braucht ganze HP-Wert für erste Resurrect.
+        // Spezialfall: Stack komplett tot → braucht ganze HP-Wert für erste Resurrect. Die
+        // Zurückgeholten kommen frisch: ohne Zauber und Zustände.
         if (aliveCount == 0) {
             if (remaining < max || startCount == 0) {
                 return 0;
             }
+            resetConditions();
             aliveCount = 1;
             topUnitCurrentHealth = max;
             remaining -= max;
@@ -662,6 +664,12 @@ public class Stack {
         aliveCount = count;
         topUnitCurrentHealth = newUnit.health();
         shotsRemaining = newUnit.shots();
+        resetConditions();
+        spellCastsLeft = CreatureSpellcasting.castsFor(newUnit);
+    }
+
+    /** Ein Stack, der aus dem Tod zurückkehrt, trägt keine Zauber und Zustände mehr. */
+    private void resetConditions() {
         petrified = false;
         petrifiedCounter = 0;
         cursed = false;
@@ -671,9 +679,9 @@ public class Stack {
         diseased = false;
         diseasedCounter = 0;
         aged = false;
+        defending = false;
         retaliationsThisTurn = 0;
         spells.clear();
-        spellCastsLeft = CreatureSpellcasting.castsFor(newUnit);
     }
 
     /** Beschworen (Summon Elementals): verschwindet nach dem Kampf und zählt nicht als Überlebender. */

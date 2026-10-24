@@ -13,10 +13,8 @@ import java.util.Comparator;
  * dauerhaft. Die HP füllen zuerst die angeschlagene oberste Kreatur auf und holen dann ganze
  * Kreaturen zurück, nie über die Start-Stärke hinaus ({@link Stack#heal(int)}).
  *
- * <p>Bewusst eingeschränkt: Ziel ist nur ein <em>lebender</em> verbündeter Stack mit Verlusten.
- * In H3 kann die Resurrection auch einen ganz gefallenen Stack zurückholen, sofern sein Feld
- * frei ist — dafür fehlt der Engine ein Leichen-Konzept. Der Arch Angel belebt außerdem nicht
- * sich selbst.
+ * <p>Ziel ist ein verbündeter Stack mit Verlusten — auch ein ganz gefallener, sofern sein Feld frei
+ * ist ({@link BattleSetup#hasFreeCorpse}). Der Arch Angel belebt nicht sich selbst.
  */
 final class Resurrection {
 
@@ -31,12 +29,11 @@ final class Resurrection {
 
     // target != caster: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
     @SuppressWarnings("ReferenceEquality")
-    static boolean isValidTarget(Stack caster, Stack target) {
+    static boolean isValidTarget(Stack caster, Stack target, BattleSetup setup) {
         return target != caster
                 && target.side() == caster.side()
-                && target.isAlive()
                 && target.unit().isResurrectable()
-                && target.missingHealth() > 0;
+                && (target.isAlive() ? target.missingHealth() > 0 : setup.hasFreeCorpse(target));
     }
 
     /**
@@ -52,7 +49,7 @@ final class Resurrection {
         }
         int amount = healthFor(caster);
         return setup.stacksOf(caster.side()).stream()
-                .filter(target -> isValidTarget(caster, target))
+                .filter(target -> isValidTarget(caster, target, setup))
                 .filter(target -> target.missingHealth() >= amount)
                 .max(Comparator.comparingInt(Stack::missingHealth).thenComparingInt(s -> -s.slot()))
                 .orElse(null);
