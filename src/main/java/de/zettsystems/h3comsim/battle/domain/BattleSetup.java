@@ -226,22 +226,37 @@ public class BattleSetup {
      * eine Spalte weiter innen; {@code null}, wenn das Feld voll ist.
      */
     @Nullable Hex freeHexFor(Side side) {
-        int center = battlefield.centerRow();
+        List<Integer> rows = rowsFromCenter();
         for (int column = 0; column < battlefield.width(); column++) {
-            for (int offset = 0; offset <= center; offset++) {
-                for (int r : new int[] {center - offset, center + offset}) {
-                    if (r < 0 || r >= battlefield.height()) {
-                        continue;
-                    }
-                    int q = side == Side.ATTACKER ? battlefield.leftmostQ(r) + column : battlefield.rightmostQ(r) - column;
-                    Hex hex = new Hex(q, r);
-                    if (battlefield.isPassable(hex) && aliveStacks().stream().noneMatch(st -> st.position().equals(hex))) {
-                        return hex;
-                    }
+            for (int r : rows) {
+                int q = side == Side.ATTACKER ? battlefield.leftmostQ(r) + column : battlefield.rightmostQ(r) - column;
+                Hex hex = new Hex(q, r);
+                if (isFree(hex)) {
+                    return hex;
                 }
             }
         }
         return null;
+    }
+
+    /** Reihen von der Mitte nach außen, oben vor unten. */
+    private List<Integer> rowsFromCenter() {
+        int center = battlefield.centerRow();
+        List<Integer> rows = new ArrayList<>(battlefield.height());
+        rows.add(center);
+        for (int offset = 1; rows.size() < battlefield.height(); offset++) {
+            if (center - offset >= 0) {
+                rows.add(center - offset);
+            }
+            if (center + offset < battlefield.height()) {
+                rows.add(center + offset);
+            }
+        }
+        return rows;
+    }
+
+    private boolean isFree(Hex hex) {
+        return battlefield.isPassable(hex) && aliveStacks().stream().noneMatch(st -> st.position().equals(hex));
     }
 
     /**
