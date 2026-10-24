@@ -4,12 +4,16 @@ import de.zettsystems.h3comsim.armybattle.values.ArmyBattleRequest;
 import de.zettsystems.h3comsim.armybattle.values.ArmyBattleSimulation;
 import de.zettsystems.h3comsim.armybattle.values.ArmySpec;
 import de.zettsystems.h3comsim.armybattle.values.StackSpec;
+import de.zettsystems.h3comsim.battle.domain.Spell;
 import de.zettsystems.h3comsim.battle.domain.events.BattleEvent;
+import de.zettsystems.h3comsim.battle.domain.events.Side;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -114,5 +118,34 @@ class HeroArmyBattleTest {
         ArmyBattleSimulation second = service.simulate(duel("Crag Hack"), SEED);
 
         assertThat(first.result()).isEqualTo(second.result());
+    }
+
+    @Test
+    void the_spellbook_reaches_the_battle_and_spends_mana() {
+        // Solmyr mit Magic Arrow, dazu 2 Power und 3 Knowledge.
+        List<StackSpec> army = List.of(new StackSpec("Pikeman", 30));
+        ArmySpec mage = new ArmySpec(army, "Solmyr", 0, 0, 1, 0, 0, 2, 3, Map.of(), Set.of(),
+                Set.of(Spell.MAGIC_ARROW));
+        ArmyBattleSimulation simulation = service.simulate(
+                new ArmyBattleRequest(mage, new ArmySpec(army, null), SEED), SEED);
+
+        List<BattleEvent.HeroSpell> casts = simulation.events().stream()
+                .filter(BattleEvent.HeroSpell.class::isInstance).map(BattleEvent.HeroSpell.class::cast).toList();
+        assertThat(casts).isNotEmpty().allSatisfy(c -> {
+            assertThat(c.actor()).isEqualTo(Side.ATTACKER);
+            assertThat(c.spell()).isEqualTo(Spell.MAGIC_ARROW);
+        });
+    }
+
+    @Test
+    void a_spell_beyond_the_wisdom_of_the_hero_is_rejected() {
+        List<StackSpec> army = List.of(new StackSpec("Pikeman", 30));
+        ArmyBattleRequest request = new ArmyBattleRequest(
+                new ArmySpec(army, "Crag Hack", 0, 0, 1, 0, 0, 0, 0, Map.of(), Set.of(), Set.of(Spell.IMPLOSION)),
+                new ArmySpec(army, null), SEED);
+
+        assertThatThrownBy(() -> service.simulate(request, SEED))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("cannot learn IMPLOSION");
     }
 }

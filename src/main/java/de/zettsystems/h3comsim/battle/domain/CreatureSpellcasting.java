@@ -98,7 +98,7 @@ final class CreatureSpellcasting {
     static List<Stack> usefulTargets(Stack caster, Spell spell, BattleSetup setup) {
         List<Stack> targets = new ArrayList<>();
         for (Stack ally : setup.stacksOf(caster.side())) {
-            if (ally.isAlive() && !SpellResistance.isImmune(ally.unit(), spell)
+            if (ally.isAlive() && !SpellResistance.isImmune(ally, spell)
                     && !(spell == Spell.FRENZY && ally == caster)
                     && isUseful(spell, ally, setup)) {
                 targets.add(ally);
@@ -126,7 +126,7 @@ final class CreatureSpellcasting {
             case SLAYER -> setup.opponentsOf(target).stream()
                     .anyMatch(o -> o.isAlive() && Stack.isSlayerTarget(o.unit(), CAST_LEVEL));
             case HASTE, SHIELD, STONE_SKIN, FIRE_SHIELD, PRAYER -> true;
-            case DISPEL, BLIND, WEAKNESS -> false;
+            default -> false;
         };
     }
 

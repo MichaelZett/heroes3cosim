@@ -197,6 +197,54 @@ describe('eventToNode', () => {
     expect(dispel.container.textContent).toContain('hebt 2 Zauber von Goblin auf');
   });
 
+  it('renders a hero spell and its hits', () => {
+    const snap = {
+      side: 'DEFENDER',
+      slot: 0,
+      unitName: 'Goblin',
+      count: 8,
+      topHp: 5,
+      q: 14,
+      r: 5,
+    } as const;
+    const cast = renderEvent({
+      type: 'HeroSpell',
+      actor: 'DEFENDER',
+      spell: 'FIREBALL',
+      level: 'ADVANCED',
+      manaLeft: 15,
+    });
+    expect(cast.container.textContent).toContain(
+      'Held des Verteidigers wirkt Fireball (Advanced), 15 Mana übrig',
+    );
+
+    const hit = {
+      type: 'SpellHit',
+      actor: 'ATTACKER',
+      spell: 'LIGHTNING_BOLT',
+      target: 'DEFENDER',
+      targetSlot: 0,
+      damage: 35,
+      killed: 7,
+      healed: 0,
+      resisted: false,
+      targetAfter: snap,
+    } as const;
+    expect(renderEvent(hit).container.textContent).toContain(
+      'Lightning Bolt trifft Goblin: 35 Schaden, 7 getötet',
+    );
+    expect(
+      renderEvent({ ...hit, resisted: true, damage: 0, killed: 0 }).container.textContent,
+    ).toContain('Lightning Bolt prallt an Goblin ab');
+    expect(
+      renderEvent({ ...hit, spell: 'CURE', damage: 0, killed: 0, healed: 12 }).container
+        .textContent,
+    ).toContain('Cure heilt Goblin um 12 Lebenspunkte');
+    expect(
+      renderEvent({ ...hit, spell: 'SLOW', damage: 0, killed: 0 }).container.textContent,
+    ).toContain('Slow wirkt auf Goblin');
+  });
+
   it('renders LuckyStrike as double damage', () => {
     const { container } = renderEvent({ type: 'LuckyStrike', actor: 'ATTACKER', actorSlot: 0 });
 

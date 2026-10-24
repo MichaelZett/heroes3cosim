@@ -2,6 +2,7 @@ package de.zettsystems.h3comsim.armybattle.values;
 
 import de.zettsystems.h3comsim.battle.domain.SecondarySkill;
 import de.zettsystems.h3comsim.battle.domain.SkillLevel;
+import de.zettsystems.h3comsim.battle.domain.Spell;
 import de.zettsystems.h3comsim.battle.domain.WarMachine;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
@@ -60,6 +61,18 @@ public record ArmySpec(
         @Min(0) @Max(99) @Nullable Integer defenseBonus,
 
         @Schema(description = """
+                Zusätzliche Power-Punkte des Helden, 0..99. Power ist die Spell Power: sie bestimmt
+                Schaden und Dauer seiner Zauber. Fehlt das Feld, gilt 0.
+                """, example = "2", minimum = "0", maximum = "99", nullable = true)
+        @Min(0) @Max(99) @Nullable Integer powerBonus,
+
+        @Schema(description = """
+                Zusätzliche Knowledge-Punkte des Helden, 0..99. Jeder Punkt gibt 10 Mana
+                (Intelligence hebt das). Fehlt das Feld, gilt 0.
+                """, example = "2", minimum = "0", maximum = "99", nullable = true)
+        @Min(0) @Max(99) @Nullable Integer knowledgeBonus,
+
+        @Schema(description = """
                 Gelernte oder verbesserte Sekundärfertigkeiten, zusätzlich zu den Startfertigkeiten.
                 Eine Startfertigkeit lässt sich nur heben, nicht senken; insgesamt höchstens acht.
                 """, example = "{\"OFFENSE\": \"EXPERT\"}", nullable = true)
@@ -69,7 +82,14 @@ public record ArmySpec(
                 Kriegsmaschinen des Helden: Ballista, Munitionswagen, Sanitätszelt (je höchstens
                 eine). Sie stehen nicht auf dem Feld und lassen sich nicht angreifen.
                 """, example = "[\"BALLISTA\", \"FIRST_AID_TENT\"]", nullable = true)
-        @Nullable Set<WarMachine> warMachines) {
+        @Nullable Set<WarMachine> warMachines,
+
+        @Schema(description = """
+                Zauberbuch des Helden: die Kampfzauber, die er kennt. Ohne Wisdom bis Stufe 2,
+                mit Basic/Advanced/Expert Wisdom bis Stufe 3/4/5. Er wirkt einen pro Runde,
+                solange das Mana reicht.
+                """, example = "[\"MAGIC_ARROW\", \"BLESS\"]", nullable = true)
+        @Nullable Set<Spell> spells) {
 
     /** Obergrenze des Simulators, kein Spielwert — Kreatur-Boni wachsen linear weiter. */
     public static final int MAX_HERO_LEVEL = 99;
@@ -81,11 +101,16 @@ public record ArmySpec(
         heroLevel = Objects.requireNonNullElse(heroLevel, 1);
         attackBonus = Objects.requireNonNullElse(attackBonus, 0);
         defenseBonus = Objects.requireNonNullElse(defenseBonus, 0);
+        powerBonus = Objects.requireNonNullElse(powerBonus, 0);
+        knowledgeBonus = Objects.requireNonNullElse(knowledgeBonus, 0);
         // Ein JSON-Eintrag mit null als Stufe bedeutet „nichts gelernt", kein Fehler.
         skills = skills == null ? Map.of() : skills.entrySet().stream()
                 .filter(e -> e.getKey() != null && e.getValue() != null)
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
         warMachines = warMachines == null ? Set.of() : warMachines.stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toUnmodifiableSet());
+        spells = spells == null ? Set.of() : spells.stream()
                 .filter(Objects::nonNull)
                 .collect(Collectors.toUnmodifiableSet());
     }
@@ -98,7 +123,7 @@ public record ArmySpec(
     /** Armee mit Helden, gesammeltem Glück/Moral und Level, ohne weiteren Aufbau. */
     public ArmySpec(List<StackSpec> stacks, @Nullable String heroName, int luckBonus,
                     int moraleBonus, int heroLevel) {
-        this(stacks, heroName, luckBonus, moraleBonus, heroLevel, 0, 0, Map.of(), Set.of());
+        this(stacks, heroName, luckBonus, moraleBonus, heroLevel, 0, 0, 0, 0, Map.of(), Set.of(), Set.of());
     }
 
     /** Armee mit dem Standardhelden ihrer Hauptfraktion. */

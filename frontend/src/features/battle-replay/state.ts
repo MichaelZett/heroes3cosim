@@ -98,11 +98,12 @@ function applyEvent(stacks: Map<string, SideState>, event: BattleEvent): void {
     case 'BallistaShot':
     case 'FirstAid':
     case 'SpellCast':
+    case 'SpellHit':
     case 'Dispel':
       snapshotInto(stacks, event.targetAfter);
       return;
     default:
-      // Marker-Events (Wait, TwoBlows, TwoShots, GoodMorale, BadMorale, LuckyStrike, TacticsPhase, Petrifying, Cursing,
+      // Marker-Events (Wait, TwoBlows, TwoShots, GoodMorale, BadMorale, LuckyStrike, TacticsPhase, HeroSpell, Petrifying, Cursing,
       // Poisoning, Diseasing, Aging, BattleStart, BattleEnd) — kein Grid-State.
       return;
   }

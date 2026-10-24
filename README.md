@@ -46,16 +46,41 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   unten). Je Armee einstellbar ist, was der Held unterwegs gesammelt hat:
   Level (1..99), zusätzliche Attack-/Defense-Punkte, gelernte oder
   verbesserte Fertigkeiten (höchstens acht) sowie Glück und Moral aus
-  Artefakten, Gebäuden und Abenteuer-Orten. Power, Knowledge und die
-  übrigen Fertigkeiten sind noch ohne Wirkung. Single Battle und
+  Artefakten, Gebäuden und Abenteuer-Orten, dazu Power, Knowledge und
+  das Zauberbuch (siehe Heldenzauber). Single Battle und
   Einheiten-Matrix bleiben ohne Helden.
 - **Spezialfähigkeiten** der Helden in der SoD-Fassung: Kreatur-
   Spezialisten geben ihren Kreaturen (Basis- und Ausbaustufe) +1 Speed und
   +5 % Attack und Defense je angefangene Spanne von Kreaturstufe Leveln;
   Fertigkeits-Spezialisten heben Offense, Archery oder Armorer um 5 % je
   Level; die Planeswalker geben ihren Elementaren feste Boni auf Attack,
-  Defense und Schaden. Zauber-, Ressourcen- und Ballista-Spezialitäten
-  werden angezeigt, wirken aber nicht.
+  Defense und Schaden; Ballista-Spezialisten heben deren Attack, Spezialisten
+  für Schadenszauber geben +3 % Schaden je volle Spanne von Zielstufe
+  Leveln (Ciele fest +50 % auf Magic Arrow). Die übrigen Zauber- und die
+  Ressourcen-Spezialitäten werden angezeigt, wirken aber nicht.
+- **Heldenzauber** (Manual S. 33–39, Spell Reference S. 64–79) — ein Held
+  mit Zauberbuch wirkt einmal pro Runde einen Zauber, sobald einer seiner
+  Stacks am Zug ist, ohne dass der Stack seine Aktion verliert. Mana: 10
+  je Knowledge, Intelligence +25/50/100 %; Spell Power = Power, sie setzt
+  Schaden und Dauer (eine Runde je Punkt). Wisdom öffnet Stufe 3/4/5,
+  ohne Wisdom bis Stufe 2. Die Schul-Fertigkeiten (Air, Earth, Fire,
+  Water Magic) heben die Stufe, auf der gezaubert wird; auf Expert treffen
+  die Massenzauber alle Stacks einer Seite. Sorcery gibt +5/10/15 %
+  Zauberschaden, Resistance 5/10/20 % Chance, dass ein feindlicher Zauber
+  an den eigenen Truppen abprallt. Schaden nach den Formeln des Manuals,
+  Fireball, Meteor Shower, Inferno und Frost Ring als Flächen, Chain
+  Lightning springt zum jeweils nächsten Stack mit halbem Schaden, Death
+  Ripple, Destroy Undead und Armageddon treffen ganze Gruppen; Flächen
+  treffen auch eigene Stacks. Dazu Stärkungen und Schwächungen (Bless,
+  Curse, Haste, Slow, Prayer, Blind, Disrupting Ray, Forgetfulness …),
+  Cure, Animate Dead und Resurrection. Golems nehmen halben bzw. ein
+  Viertel Schaden, Elementare doppelten oder keinen von den Zaubern ihrer
+  Gegen-Elemente; Anti-Magic sperrt die unteren Stufen. Welchen Zauber
+  der Held wählt, entscheidet eine Heuristik: erwartete vernichtete
+  Kosten bei Schaden, geschätzter Anteil am Wert des Stacks bei Wirkungen.
+  Schutz vor Schulen, Anti-Magic und Dispel wählt sie nicht. Die
+  Mana-Kosten folgen dem RoE-Manual, ohne die Rabatte der Schul-
+  Fertigkeiten aus späteren Fassungen.
 - **Kreatur-Zauber** (Werte aus der Spell Reference des Manuals) —
   Zauber liegen mit Stufe und Rundenzahl auf dem Stack und laufen am
   Rundenende ab. Ogre Magi wirken Bloodlust, Master Genies einen
@@ -341,9 +366,10 @@ zu lesen, nicht als universelle H3-Tier-Liste.
   `FriendlyFireDiagnosisTest`). Diese Zahlen stammen noch aus der Zeit,
   in der der Cerberus wahllos zwei Nachbarn traf, eigene eingeschlossen,
   und der Magog nur zwei statt aller sechs Felder ums Ziel.
-- **Helden, nächste Stufe**: Zauberei, die Power und Knowledge überhaupt
-  erst zu Wirkung verhilft. Bei den Kriegsmaschinen offen: angreifbare
-  Maschinen auf dem Feld.
+- **Helden, nächste Stufe**: Startzauber der Magier-Helden, Zauber im
+  Matrix-Modus, eine Zauberwahl, die Mana über den Kampf einteilt und die
+  gegnerischen Zauber kennt (Schutz vor Schulen, Dispel). Bei den
+  Kriegsmaschinen offen: angreifbare Maschinen auf dem Feld.
 - **Taktisches Warten ausbauen**: Nahkämpfer nutzen *Wait* bereits, wenn
   sie ihr Ziel diese Runde nicht erreichen — messbar stärker, aber der
   Gewinn kommt fast nur von Tower. Offen sind Schützen (warten, bis der

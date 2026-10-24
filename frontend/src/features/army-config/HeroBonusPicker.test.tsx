@@ -8,6 +8,9 @@ const BUILD: HeroBuild = {
   level: 1,
   attack: 0,
   defense: 0,
+  power: 0,
+  knowledge: 0,
+  spells: [],
   skills: {},
   luck: 0,
   morale: 0,
@@ -87,5 +90,53 @@ describe('HeroBonusPicker', () => {
 
     await userEvent.click(screen.getByRole('checkbox', { name: 'Munitionswagen' }));
     expect(onChange).toHaveBeenCalledWith({ warMachines: [] });
+  });
+
+  it('opens spell levels with Wisdom and shows spell power and mana', () => {
+    render(
+      <HeroBonusPicker
+        value={{ ...BUILD, knowledge: 1, skills: { INTELLIGENCE: 'BASIC' } }}
+        startSkills={{ WISDOM: 'BASIC' }}
+        basePower={2}
+        baseKnowledge={3}
+        onChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('checkbox', { name: 'Fireball' })).toBeEnabled();
+    expect(screen.getByRole('checkbox', { name: 'Chain Lightning' })).toBeDisabled();
+    // (3 + 1) Knowledge × 10, Basic Intelligence +25 %.
+    expect(screen.getByText(/Spell Power 2, 50 Mana/)).toBeInTheDocument();
+  });
+
+  it('drops spells the hero can no longer learn when Wisdom is lowered', async () => {
+    const onChange = vi.fn();
+    render(
+      <HeroBonusPicker
+        value={{
+          ...BUILD,
+          skills: { WISDOM: 'ADVANCED' },
+          spells: ['MAGIC_ARROW', 'FIREBALL', 'PRAYER'],
+        }}
+        startSkills={{}}
+        onChange={onChange}
+      />,
+    );
+
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Wisdom' }), 'BASIC');
+
+    expect(onChange).toHaveBeenCalledWith({
+      skills: { WISDOM: 'BASIC' },
+      spells: ['MAGIC_ARROW', 'FIREBALL'],
+    });
+  });
+
+  it('toggles spells in the spellbook', async () => {
+    const onChange = vi.fn();
+    render(<HeroBonusPicker value={BUILD} startSkills={{}} onChange={onChange} />);
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Magic Arrow' }));
+
+    expect(onChange).toHaveBeenCalledWith({ spells: ['MAGIC_ARROW'] });
   });
 });

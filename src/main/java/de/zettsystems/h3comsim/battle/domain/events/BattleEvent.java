@@ -2,6 +2,7 @@ package de.zettsystems.h3comsim.battle.domain.events;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import de.zettsystems.h3comsim.battle.domain.SkillLevel;
 import de.zettsystems.h3comsim.battle.domain.Spell;
 import de.zettsystems.h3comsim.battle.domain.WarMachine;
 import io.swagger.v3.oas.annotations.media.DiscriminatorMapping;
@@ -29,6 +30,8 @@ import java.util.List;
         @JsonSubTypes.Type(value = BattleEvent.FirstAid.class, name = "FirstAid"),
         @JsonSubTypes.Type(value = BattleEvent.SpellCast.class, name = "SpellCast"),
         @JsonSubTypes.Type(value = BattleEvent.Dispel.class, name = "Dispel"),
+        @JsonSubTypes.Type(value = BattleEvent.HeroSpell.class, name = "HeroSpell"),
+        @JsonSubTypes.Type(value = BattleEvent.SpellHit.class, name = "SpellHit"),
         @JsonSubTypes.Type(value = BattleEvent.MoveBack.class, name = "MoveBack"),
         @JsonSubTypes.Type(value = BattleEvent.DeathStare.class, name = "DeathStare"),
         @JsonSubTypes.Type(value = BattleEvent.Thunderbolts.class, name = "Thunderbolts"),
@@ -60,6 +63,7 @@ import java.util.List;
                 BattleEvent.BadMorale.class, BattleEvent.LuckyStrike.class, BattleEvent.TacticsPhase.class,
                 BattleEvent.BallistaShot.class, BattleEvent.FirstAid.class,
                 BattleEvent.SpellCast.class, BattleEvent.Dispel.class,
+                BattleEvent.HeroSpell.class, BattleEvent.SpellHit.class,
                 BattleEvent.MoveBack.class, BattleEvent.DeathStare.class, BattleEvent.Thunderbolts.class,
                 BattleEvent.Petrifying.class, BattleEvent.Cursing.class, BattleEvent.Poisoning.class,
                 BattleEvent.Diseasing.class, BattleEvent.Aging.class, BattleEvent.FireShield.class,
@@ -85,6 +89,8 @@ import java.util.List;
                 @DiscriminatorMapping(value = "FirstAid", schema = BattleEvent.FirstAid.class),
                 @DiscriminatorMapping(value = "SpellCast", schema = BattleEvent.SpellCast.class),
                 @DiscriminatorMapping(value = "Dispel", schema = BattleEvent.Dispel.class),
+                @DiscriminatorMapping(value = "HeroSpell", schema = BattleEvent.HeroSpell.class),
+                @DiscriminatorMapping(value = "SpellHit", schema = BattleEvent.SpellHit.class),
                 @DiscriminatorMapping(value = "MoveBack", schema = BattleEvent.MoveBack.class),
                 @DiscriminatorMapping(value = "DeathStare", schema = BattleEvent.DeathStare.class),
                 @DiscriminatorMapping(value = "Thunderbolts", schema = BattleEvent.Thunderbolts.class),
@@ -271,6 +277,29 @@ public sealed interface BattleEvent {
             @Schema(description = "Seite des Ziels") Side target,
             @Schema(description = "Slot des Ziels") int targetSlot,
             @Schema(description = "Anzahl aufgehobener Zauber") int removed,
+            @Schema(description = "Ziel danach") StackSnapshot targetAfter) implements BattleEvent {
+    }
+
+    @Schema(name = "HeroSpell",
+            description = "Der Held einer Seite wirkt einen Zauber (einmal pro Runde, Manual S. 45). Die Wirkung auf die einzelnen Stacks folgt als `SpellHit`.")
+    record HeroSpell(
+            @Schema(description = "Seite des Helden") Side actor,
+            @Schema(description = "Zauber") Spell spell,
+            @Schema(description = "Stufe, mit der er gewirkt wird") SkillLevel level,
+            @Schema(description = "Mana danach") int manaLeft) implements BattleEvent {
+    }
+
+    @Schema(name = "SpellHit",
+            description = "Wirkung eines Heldenzaubers auf einen Stack: Schaden, Heilung oder ein liegender Zauber. `resisted` = immun oder durch Magieresistenz abgewehrt.")
+    record SpellHit(
+            @Schema(description = "Seite des zaubernden Helden") Side actor,
+            @Schema(description = "Zauber") Spell spell,
+            @Schema(description = "Seite des Ziels") Side target,
+            @Schema(description = "Slot des Ziels") int targetSlot,
+            @Schema(description = "Verursachter Schaden") int damage,
+            @Schema(description = "Getötete Kreaturen") int killed,
+            @Schema(description = "Geheilte Lebenspunkte") int healed,
+            @Schema(description = "Immun oder abgewehrt") boolean resisted,
             @Schema(description = "Ziel danach") StackSnapshot targetAfter) implements BattleEvent {
     }
 

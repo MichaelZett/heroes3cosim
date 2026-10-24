@@ -1,21 +1,24 @@
 package de.zettsystems.h3comsim.battle.domain;
 
+import java.util.Collections;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Ein Held, der eine Armee in die Schlacht führt (Manual S. 33).
  *
- * <p>Von den vier Primärwerten wirken heute nur zwei:
+ * <p>Die vier Primärwerte:
  * <ul>
  *   <li><strong>Attack</strong> — „A hero's Attack skill number is added to each of their
  *       creature's attack rating"; ausgewertet in {@link Stack#getAttack()}.</li>
  *   <li><strong>Defense</strong> — „is added to each of their army creature's defense rating";
  *       ausgewertet in {@link Stack#getDefense()}.</li>
  *   <li><strong>Power</strong> und <strong>Knowledge</strong> steuern ausschließlich das
- *       Zaubern (Spell Power bzw. 10 Mana-Punkte je Punkt Knowledge). Ohne Zaubersystem sind
- *       sie reine Daten — sie werden geführt und ausgeliefert, aber nirgends gelesen.</li>
+ *       Zaubern: {@link #spellPower()} und {@link #maxMana()} (10 Mana je Punkt Knowledge),
+ *       ausgewertet in {@link HeroSpellcasting} und {@link SpellDamage}.</li>
  * </ul>
  *
  * <p>Der Katalog führt die Startwerte, mit denen ein Held rekrutiert wird, auf Level 1. Das
@@ -27,6 +30,7 @@ import java.util.Objects;
  *                  {@link SecondarySkill}.
  * @param specialty Spezialfähigkeit („Unique Ability")
  * @param level     Heldenlevel, ab 1
+ * @param spells    Zauberbuch: die Kampfzauber, die der Held kennt
  */
 public record Hero(
         String name,
@@ -38,7 +42,8 @@ public record Hero(
         int knowledge,
         Map<SecondarySkill, SkillLevel> skills,
         HeroSpecialty specialty,
-        int level
+        int level,
+        Set<Spell> spells
 ) {
     public Hero {
         Objects.requireNonNull(name, "name");
@@ -54,6 +59,7 @@ public record Hero(
         requireNonNegative(power, "power");
         requireNonNegative(knowledge, "knowledge");
         skills = Map.copyOf(skills);
+        spells = spells.isEmpty() ? Set.of() : Collections.unmodifiableSet(EnumSet.copyOf(spells));
     }
 
     /** Held ohne Spezialität auf Level 1 — für Tests, die eine Wirkung isolieren. */
@@ -63,10 +69,33 @@ public record Hero(
                 HeroSpecialty.Other.NONE, 1);
     }
 
+    /** Held ohne Zauberbuch. */
+    public Hero(String name, HeroClass heroClass, Faction faction, int attack, int defense,
+                int power, int knowledge, Map<SecondarySkill, SkillLevel> skills,
+                HeroSpecialty specialty, int level) {
+        this(name, heroClass, faction, attack, defense, power, knowledge, skills, specialty, level, Set.of());
+    }
+
     /** Derselbe Held auf einem anderen Level. */
     public Hero withLevel(int newLevel) {
         return new Hero(name, heroClass, faction, attack, defense, power, knowledge, skills,
-                specialty, newLevel);
+                specialty, newLevel, spells);
+    }
+
+    /**
+     * Derselbe Held mit diesem Zauberbuch.
+     *
+     * @throws IllegalArgumentException wenn er einen der Zauber nicht lernen kann ({@link #canLearn})
+     */
+    public Hero withSpellbook(Set<Spell> book) {
+        for (Spell spell : book) {
+            if (!canLearn(spell)) {
+                throw new IllegalArgumentException(name + " cannot learn " + spell
+                        + " (level " + spell.level() + ", Wisdom " + levelOf(SecondarySkill.WISDOM) + ")");
+            }
+        }
+        return new Hero(name, heroClass, faction, attack, defense, power, knowledge, skills,
+                specialty, level, book);
     }
 
     /** Höchstens acht Sekundärfertigkeiten je Held (Manual S. 35). */
@@ -82,8 +111,16 @@ public record Hero(
      *                                  Fertigkeiten hätte
      */
     public Hero withBuild(int attackBonus, int defenseBonus, Map<SecondarySkill, SkillLevel> learned) {
+        return withBuild(attackBonus, defenseBonus, 0, 0, learned);
+    }
+
+    /** Wie {@link #withBuild(int, int, Map)}, dazu Power- und Knowledge-Punkte. */
+    public Hero withBuild(int attackBonus, int defenseBonus, int powerBonus, int knowledgeBonus,
+                          Map<SecondarySkill, SkillLevel> learned) {
         requireNonNegative(attackBonus, "attackBonus");
         requireNonNegative(defenseBonus, "defenseBonus");
+        requireNonNegative(powerBonus, "powerBonus");
+        requireNonNegative(knowledgeBonus, "knowledgeBonus");
         Map<SecondarySkill, SkillLevel> merged = new EnumMap<>(SecondarySkill.class);
         merged.putAll(skills);
         learned.forEach((skill, lvl) -> {
@@ -96,7 +133,94 @@ public record Hero(
                     + " secondary skills, would have " + merged.size());
         }
         return new Hero(name, heroClass, faction, attack + attackBonus, defense + defenseBonus,
-                power, knowledge, merged, specialty, level);
+                power + powerBonus, knowledge + knowledgeBonus, merged, specialty, level, spells);
+    }
+
+    /**
+     * Höchste Zauberstufe, die der Held lernen kann (Manual S. 39): ohne Wisdom Stufe 2, mit
+     * Basic/Advanced/Expert Wisdom Stufe 3/4/5.
+     */
+    public int maxSpellLevel() {
+        return switch (levelOf(SecondarySkill.WISDOM)) {
+            case NONE -> 2;
+            case BASIC -> 3;
+            case ADVANCED -> 4;
+            case EXPERT -> 5;
+        };
+    }
+
+    public boolean canLearn(Spell spell) {
+        return spell.heroCastable() && spell.level() <= maxSpellLevel();
+    }
+
+    /**
+     * Stufe, mit der der Held den Zauber wirkt: die Fertigkeit seiner Schule (bei Magic Arrow die
+     * beste der vier). Ohne die Fertigkeit wirkt er auf Basic (Manual S. 35: die Fertigkeit hebt
+     * auf „basic/advanced/expert level").
+     */
+    public SkillLevel castLevel(Spell spell) {
+        SkillLevel best = SkillLevel.BASIC;
+        for (MagicSchool school : spell.schools()) {
+            SkillLevel level = levelOf(schoolSkill(school));
+            if (level.compareTo(best) > 0) {
+                best = level;
+            }
+        }
+        return best;
+    }
+
+    private static SecondarySkill schoolSkill(MagicSchool school) {
+        return switch (school) {
+            case AIR -> SecondarySkill.AIR_MAGIC;
+            case EARTH -> SecondarySkill.EARTH_MAGIC;
+            case FIRE -> SecondarySkill.FIRE_MAGIC;
+            case WATER -> SecondarySkill.WATER_MAGIC;
+        };
+    }
+
+    /** Spell Power = Power, mindestens 1. */
+    public int spellPower() {
+        return Math.max(1, power);
+    }
+
+    /**
+     * Mana zu Kampfbeginn (Manual S. 33): 10 je Punkt Knowledge, Intelligence hebt das Maximum um
+     * 25/50/100 % (S. 37), ein Intelligence-Spezialist um weitere 5 % je Level.
+     */
+    public int maxMana() {
+        int percent = switch (levelOf(SecondarySkill.INTELLIGENCE)) {
+            case NONE -> 0;
+            case BASIC -> 25;
+            case ADVANCED -> 50;
+            case EXPERT -> 100;
+        };
+        percent = percent * specialty.skillFactorPerMille(SecondarySkill.INTELLIGENCE, level) / 1000;
+        return knowledge * 10 * (100 + percent) / 100;
+    }
+
+    /** Sorcery (Manual S. 38): +5/10/15 % Zauberschaden, ein Spezialist +5 % je Level darauf. */
+    public int sorceryPercent() {
+        int percent = switch (levelOf(SecondarySkill.SORCERY)) {
+            case NONE -> 0;
+            case BASIC -> 5;
+            case ADVANCED -> 10;
+            case EXPERT -> 15;
+        };
+        return percent * specialty.skillFactorPerMille(SecondarySkill.SORCERY, level) / 1000;
+    }
+
+    /**
+     * Resistance (Manual S. 38): 5/10/20 % Chance, dass ein feindlicher Zauber auf die eigenen
+     * Truppen versagt; ein Spezialist (Thorgrim) +5 % je Level darauf.
+     */
+    public int resistancePercent() {
+        int percent = switch (levelOf(SecondarySkill.RESISTANCE)) {
+            case NONE -> 0;
+            case BASIC -> 5;
+            case ADVANCED -> 10;
+            case EXPERT -> 20;
+        };
+        return percent * specialty.skillFactorPerMille(SecondarySkill.RESISTANCE, level) / 1000;
     }
 
     private static void requireNonNegative(int value, String field) {

@@ -5,7 +5,7 @@ import LanguageSwitcher from '../../shared/ui/LanguageSwitcher';
 import ModeSwitcher from '../../shared/ui/ModeSwitcher';
 import { useArmyPresets, useHeroes, useSimulateArmyBattle, useUnits } from '../../shared/api/hooks';
 import { useArmyConfigStore } from './armyConfigStore';
-import { DEFAULT_BUILD, type HeroBuild } from './heroBuild';
+import { DEFAULT_BUILD, higherLevel, learnableSpells, type HeroBuild } from './heroBuild';
 import { useArmyBattleStore } from './armyBattleStore';
 import FactionPresetPicker from './FactionPresetPicker';
 import HeroBonusPicker from './HeroBonusPicker';
@@ -30,6 +30,10 @@ export default function ArmyConfigPage() {
     navigate('/army/battle');
   });
 
+  function heroByName(name: string | null): HeroDto | undefined {
+    return heroesQuery.data?.find((h) => h.name === name);
+  }
+
   function handleSubmit(e: SyntheticEvent) {
     e.preventDefault();
     const attackerStacks = trimEmpty(form.attackerStacks);
@@ -40,12 +44,12 @@ export default function ArmyConfigPage() {
       attacker: {
         stacks: attackerStacks,
         heroName: form.attackerHeroName,
-        ...buildSpec(form.attackerBuild),
+        ...buildSpec(form.attackerBuild, heroByName(form.attackerHeroName)),
       },
       defender: {
         stacks: defenderStacks,
         heroName: form.defenderHeroName,
-        ...buildSpec(form.defenderBuild),
+        ...buildSpec(form.defenderBuild, heroByName(form.defenderHeroName)),
       },
       seed: seedNum !== null && Number.isFinite(seedNum) ? seedNum : null,
     });
@@ -210,6 +214,7 @@ interface SideColumnProps {
 
 function SideColumn(props: Readonly<SideColumnProps>) {
   const { t } = useTranslation();
+  const selectedHero = props.heroes.find((h) => h.name === props.heroName);
   return (
     <section className="space-y-3 rounded-lg border border-slate-800 bg-slate-900 p-4">
       <h2 className="text-lg font-semibold text-slate-100">{props.title}</h2>
@@ -227,7 +232,9 @@ function SideColumn(props: Readonly<SideColumnProps>) {
       />
       <HeroBonusPicker
         value={props.build}
-        startSkills={props.heroes.find((h) => h.name === props.heroName)?.skills ?? {}}
+        startSkills={selectedHero?.skills ?? {}}
+        basePower={selectedHero?.power ?? 0}
+        baseKnowledge={selectedHero?.knowledge ?? 0}
         onChange={props.onBuildChange}
       />
       <div className="space-y-1.5">
@@ -249,12 +256,16 @@ function SideColumn(props: Readonly<SideColumnProps>) {
  * Request-Felder des Helden-Aufbaus. Aeltere, im Browser gespeicherte Formulare kennen den
  * Aufbau noch nicht — dann gelten die Defaults.
  */
-function buildSpec(stored: Partial<HeroBuild> | undefined) {
+function buildSpec(stored: Partial<HeroBuild> | undefined, hero: HeroDto | undefined) {
   const build = { ...DEFAULT_BUILD, ...stored };
   return {
     heroLevel: build.level,
     attackBonus: build.attack,
     defenseBonus: build.defense,
+    powerBonus: build.power,
+    knowledgeBonus: build.knowledge,
+    // Ein Heldenwechsel kann Wisdom senken; was der Held nicht lernen kann, bleibt draussen.
+    spells: learnableSpells(build.spells, higherLevel(hero?.skills.WISDOM, build.skills.WISDOM)),
     skills: build.skills,
     luckBonus: build.luck,
     moraleBonus: build.morale,

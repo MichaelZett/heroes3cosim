@@ -18,8 +18,10 @@ import java.util.Objects;
  *       Defense und Schaden ihrer Elementare, unabhängig vom Level.</li>
  *   <li>{@link Ballista} — „increases the Attack and Defense skill of any Ballista under his
  *       command"; SoD: +5 % je angefangene fünf Level (Ballista ist Stufe 5).</li>
- *   <li>{@link Other} — Zauber und Ressourcen. Ohne Zaubersystem und Abenteuerkarte ohne
- *       Wirkung.</li>
+ *   <li>{@link SpellDamage} — Spezialist für einen Schadenszauber: SoD +3 % Schaden je volle
+ *       Spanne von (Stufe der Zielkreatur) Heldenleveln (heroes.thelazy.net, z. B. Solmyr), bei
+ *       Ciele fest +50 % auf Magic Arrow (AB-Manual).</li>
+ *   <li>{@link Other} — übrige Zauber-Spezialitäten und Ressourcen, ohne Wirkung.</li>
  * </ul>
  *
  * <p>Eine Spezialität gilt für Basis- und Ausbaustufe der Kreatur; erkannt wird sie an Fraktion
@@ -48,6 +50,11 @@ public sealed interface HeroSpecialty {
 
     /** Attack-Aufschlag für die Ballista dieses Helden. */
     default int ballistaAttackBonus(int heroLevel) {
+        return 0;
+    }
+
+    /** Aufschlag in Prozent auf den Schaden dieses Zaubers gegen diese Kreatur. */
+    default int spellDamagePercent(Spell spell, int heroLevel, Unit target) {
         return 0;
     }
 
@@ -134,6 +141,30 @@ public sealed interface HeroSpecialty {
         @Override
         public int ballistaAttackBonus(int heroLevel) {
             return percentOf(WarMachine.BALLISTA.attack(), heroLevel, BALLISTA_LEVEL);
+        }
+    }
+
+    /**
+     * Schadenszauber-Spezialist. Die Rundung steht nicht im Wiki; gezählt werden volle Spannen.
+     *
+     * @param fixedPercent fester Aufschlag statt der Level-Formel (Ciele), sonst 0
+     */
+    record SpellDamage(Spell spell, int fixedPercent) implements HeroSpecialty {
+        public SpellDamage {
+            Objects.requireNonNull(spell, "spell");
+        }
+
+        @Override
+        public boolean effectiveInCombat() {
+            return true;
+        }
+
+        @Override
+        public int spellDamagePercent(Spell cast, int heroLevel, Unit target) {
+            if (cast != spell) {
+                return 0;
+            }
+            return fixedPercent > 0 ? fixedPercent : 3 * (heroLevel / target.tier());
         }
     }
 

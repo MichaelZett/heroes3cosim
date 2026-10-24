@@ -34,6 +34,7 @@ public class BattleSetup {
     private final int attackerTactics;
     private final int defenderTactics;
     private final Map<Side, Set<WarMachine>> warMachines = new EnumMap<>(Side.class);
+    private final Map<Side, Integer> mana = new EnumMap<>(Side.class);
 
     public BattleSetup(Unit attackerUnit, int attackerCount,
                        Unit defenderUnit, int defenderCount) {
@@ -101,6 +102,8 @@ public class BattleSetup {
         this.defenderLuck = ArmyLuck.ratingOf(defenderHero, defenderBonus, this.attackerStacks);
         this.attackerStacks.forEach(stack -> stack.assignArmyLuck(attackerLuck));
         this.defenderStacks.forEach(stack -> stack.assignArmyLuck(defenderLuck));
+        mana.put(Side.ATTACKER, attackerHero == null ? 0 : attackerHero.maxMana());
+        mana.put(Side.DEFENDER, defenderHero == null ? 0 : defenderHero.maxMana());
         this.attackerTactics = Tactics.columns(attackerHero, defenderHero);
         this.defenderTactics = Tactics.columns(defenderHero, attackerHero);
         List<Stack> all = new ArrayList<>(this.attackerStacks);
@@ -127,6 +130,15 @@ public class BattleSetup {
     /** Kriegsmaschinen dieser Seite, leer ohne {@link #equip}. */
     public Set<WarMachine> warMachinesOf(Side side) {
         return Collections.unmodifiableSet(warMachines.getOrDefault(side, EnumSet.noneOf(WarMachine.class)));
+    }
+
+    /** Mana, das der Held dieser Seite noch hat; zu Beginn {@link Hero#maxMana()}, ohne Helden 0. */
+    public int manaOf(Side side) {
+        return mana.getOrDefault(side, 0);
+    }
+
+    void spendMana(Side side, int amount) {
+        mana.put(side, Math.max(0, manaOf(side) - amount));
     }
 
     /**

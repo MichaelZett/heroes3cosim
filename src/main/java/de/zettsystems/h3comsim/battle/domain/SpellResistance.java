@@ -29,6 +29,18 @@ final class SpellResistance {
     private SpellResistance() {
     }
 
+    /**
+     * Wie {@link #isImmune(Unit, Spell)}, dazu Anti-Magic auf dem Stack (Manual S. 70): Basic lässt
+     * nur noch Zauber der Stufen 4 und 5 durch, Advanced nur Stufe 5, Expert gar keine.
+     */
+    static boolean isImmune(Stack target, Spell spell) {
+        ActiveSpell antiMagic = target.activeSpell(Spell.ANTI_MAGIC);
+        if (antiMagic != null && spell.level() <= antiMagic.byLevel(3, 4, 5)) {
+            return true;
+        }
+        return isImmune(target.unit(), spell);
+    }
+
     static boolean isImmune(Unit unit, Spell spell) {
         if (unit.hasSpeciality(UnitSpeciality.IMMUNE_TO_SPELLS)) {
             return true;
@@ -55,8 +67,21 @@ final class SpellResistance {
                 || unit.hasSpeciality(UnitSpeciality.IMMUNE_TO_MIND_SPELLS);
     }
 
-    /** Chance in Prozent, einen feindlichen Zauber abzuwehren. */
+    /**
+     * Chance in Prozent, einen feindlichen Zauber abzuwehren: eigene Resistenz, Unicorn-Aura und
+     * die Resistance-Fertigkeit des eigenen Helden, als unabhängige Chancen verrechnet.
+     */
     static int resistancePercent(Stack target, BattleSetup setup) {
+        Hero hero = target.commander();
+        int skill = hero == null ? 0 : hero.resistancePercent();
+        return combine(creatureResistancePercent(target, setup), skill);
+    }
+
+    private static int combine(int a, int b) {
+        return 100 - (100 - a) * (100 - b) / 100;
+    }
+
+    private static int creatureResistancePercent(Stack target, BattleSetup setup) {
         int own = 0;
         if (target.hasSpeciality(UnitSpeciality.MAGIC_RESISTANCE_40)) {
             own = 40;
@@ -64,7 +89,7 @@ final class SpellResistance {
             own = 20;
         }
         int aura = hasAuraNeighbour(target, setup) ? AURA_PERCENT : 0;
-        return 100 - (100 - own) * (100 - aura) / 100;
+        return combine(own, aura);
     }
 
     // ally != target: die Aura wirkt nicht auf das Unicorn selbst (Identitätsvergleich).
@@ -85,7 +110,7 @@ final class SpellResistance {
      * Resistenz scheitern.
      */
     static boolean takesEffect(Spell spell, Stack target, BattleSetup setup, RandomGenerator rng) {
-        if (isImmune(target.unit(), spell)) {
+        if (isImmune(target, spell)) {
             return false;
         }
         if (spell.beneficial()) {

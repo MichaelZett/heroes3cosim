@@ -32,6 +32,8 @@ public final class HeroMapper {
                     f.creature().name(), f.creature().tier(), null, f.attack(), f.defense(), f.damage(), null, effective);
             case HeroSpecialty.Ballista b -> new HeroSpecialtyDto(HeroSpecialtyDto.Kind.BALLISTA,
                     null, 0, null, 0, 0, 0, null, effective);
+            case HeroSpecialty.SpellDamage d -> new HeroSpecialtyDto(HeroSpecialtyDto.Kind.SPELL,
+                    null, 0, null, d.fixedPercent(), 0, 0, d.spell().name(), effective);
             case HeroSpecialty.Other o -> new HeroSpecialtyDto(HeroSpecialtyDto.Kind.OTHER,
                     null, 0, null, 0, 0, 0, o.description(), effective);
         };

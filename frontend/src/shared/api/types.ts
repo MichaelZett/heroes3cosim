@@ -165,6 +165,21 @@ export type BattleEvent =
       resisted: boolean;
       targetAfter: StackSnapshot;
     }
+  /** Der Held einer Seite wirkt einen Zauber; die Wirkung je Stack folgt als SpellHit. */
+  | { type: 'HeroSpell'; actor: Side; spell: Spell; level: SkillLevel; manaLeft: number }
+  /** Wirkung eines Heldenzaubers auf einen Stack; resisted = immun oder abgewehrt. */
+  | {
+      type: 'SpellHit';
+      actor: Side;
+      spell: Spell;
+      target: Side;
+      targetSlot: number;
+      damage: number;
+      killed: number;
+      healed: number;
+      resisted: boolean;
+      targetAfter: StackSnapshot;
+    }
   /** Serpent oder Dragon Fly hebt die nuetzlichen Zauber des Ziels auf. */
   | {
       type: 'Dispel';
@@ -287,27 +302,57 @@ export interface ArmySpec {
   skills?: Partial<Record<SecondarySkill, SkillLevel>>;
   /** Kriegsmaschinen des Helden. */
   warMachines?: WarMachine[];
+  /** Zusaetzliche Power-/Knowledge-Punkte des Helden, 0..99. */
+  powerBonus?: number;
+  knowledgeBonus?: number;
+  /** Zauberbuch: ohne Wisdom bis Stufe 2, mit Basic/Advanced/Expert bis 3/4/5. */
+  spells?: Spell[];
 }
 
 export type Spell =
   | 'BLESS'
   | 'BLOODLUST'
-  | 'CURE'
-  | 'DISPEL'
   | 'HASTE'
   | 'SHIELD'
   | 'STONE_SKIN'
-  | 'BLIND'
+  | 'PROTECTION_FROM_FIRE'
+  | 'PROTECTION_FROM_WATER'
   | 'FORTUNE'
   | 'PRECISION'
-  | 'WEAKNESS'
+  | 'PROTECTION_FROM_AIR'
   | 'AIR_SHIELD'
+  | 'ANTI_MAGIC'
   | 'MIRTH'
+  | 'PROTECTION_FROM_EARTH'
   | 'COUNTERSTRIKE'
   | 'FIRE_SHIELD'
   | 'FRENZY'
   | 'PRAYER'
-  | 'SLAYER';
+  | 'SLAYER'
+  | 'CURSE'
+  | 'SLOW'
+  | 'BLIND'
+  | 'DISRUPTING_RAY'
+  | 'WEAKNESS'
+  | 'FORGETFULNESS'
+  | 'MISFORTUNE'
+  | 'SORROW'
+  | 'CURE'
+  | 'DISPEL'
+  | 'ANIMATE_DEAD'
+  | 'RESURRECTION'
+  | 'MAGIC_ARROW'
+  | 'DEATH_RIPPLE'
+  | 'ICE_BOLT'
+  | 'LIGHTNING_BOLT'
+  | 'DESTROY_UNDEAD'
+  | 'FIREBALL'
+  | 'FROST_RING'
+  | 'ARMAGEDDON'
+  | 'CHAIN_LIGHTNING'
+  | 'INFERNO'
+  | 'METEOR_SHOWER'
+  | 'IMPLOSION';
 
 export type WarMachine = 'BALLISTA' | 'AMMO_CART' | 'FIRST_AID_TENT';
 
@@ -364,9 +409,8 @@ export type SecondarySkill =
 export type SkillLevel = 'NONE' | 'BASIC' | 'ADVANCED' | 'EXPERT';
 
 /**
- * Held aus /api/heroes. Von den Primaerwerten wirken derzeit nur attack und defense:
- * sie werden auf jede Kreatur der gefuehrten Armee addiert. Von den skills wirken Offense,
- * Archery, Armorer und Leadership; power, knowledge und die uebrigen skills werden nur gefuehrt.
+ * Held aus /api/heroes. attack und defense werden auf jede Kreatur der gefuehrten Armee addiert,
+ * power und knowledge bestimmen Spell Power und Mana seiner Zauber.
  */
 export interface HeroDto {
   name: string;
@@ -382,7 +426,7 @@ export interface HeroDto {
 
 /** Spezialfaehigkeit eines Helden; kind bestimmt, welche Felder belegt sind. */
 export interface HeroSpecialtyDto {
-  kind: 'CREATURE' | 'SKILL' | 'FIXED_CREATURE' | 'BALLISTA' | 'OTHER';
+  kind: 'CREATURE' | 'SKILL' | 'FIXED_CREATURE' | 'BALLISTA' | 'SPELL' | 'OTHER';
   unitName?: string | null;
   creatureTier: number;
   skill?: SecondarySkill | null;
