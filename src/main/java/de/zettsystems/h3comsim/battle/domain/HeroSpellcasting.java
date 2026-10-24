@@ -283,22 +283,26 @@ final class HeroSpellcasting {
         for (int i = 0; i < cast.affected().size(); i++) {
             Stack s = cast.affected().get(i);
             double chance = successChance(spell, s, side, setup);
-            if (chance == 0) {
-                continue;
+            if (chance > 0) {
+                total += chance * valueOn(hero, side, cast, i, s, setup);
             }
-            if (spell == Spell.DISPEL) {
-                total += chance * dispelValue(s, side, setup);
-                continue;
-            }
-            double value = switch (spell.kind()) {
-                case DAMAGE -> damageValue(hero, spell, baseDamage(cast, hero.spellPower(), i), s);
-                case INSTANT -> instantValue(hero, spell, cast.level(), s);
-                case EFFECT -> effectValue(hero, spell, cast.level(), s, setup);
-                case SUMMON -> 0;
-            };
-            total += (s.side() == side ? -1 : 1) * (spell.beneficial() ? -1 : 1) * chance * value;
         }
         return total;
+    }
+
+    /** Nutzen auf dem {@code index}-ten getroffenen Stack, falls der Zauber wirkt. */
+    private static double valueOn(Hero hero, Side side, Cast cast, int index, Stack s, BattleSetup setup) {
+        Spell spell = cast.spell();
+        if (spell == Spell.DISPEL) {
+            return dispelValue(s, side, setup);
+        }
+        double value = switch (spell.kind()) {
+            case DAMAGE -> damageValue(hero, spell, baseDamage(cast, hero.spellPower(), index), s);
+            case INSTANT -> instantValue(hero, spell, cast.level(), s);
+            case EFFECT -> effectValue(hero, spell, cast.level(), s, setup);
+            case SUMMON -> 0;
+        };
+        return (s.side() == side ? -1 : 1) * (spell.beneficial() ? -1 : 1) * value;
     }
 
     /** Chance, dass der Zauber auf dem Stack wirkt: 0 bei Immunität, sonst gegen die Resistenz. */
