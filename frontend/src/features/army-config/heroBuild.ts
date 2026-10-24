@@ -66,6 +66,11 @@ export const HERO_SPELLS: [Spell, number][] = [
   ['SLAYER', 4],
   ['SORROW', 4],
   ['IMPLOSION', 5],
+  ['MAGIC_MIRROR', 5],
+  ['SUMMON_AIR_ELEMENTAL', 5],
+  ['SUMMON_EARTH_ELEMENTAL', 5],
+  ['SUMMON_FIRE_ELEMENTAL', 5],
+  ['SUMMON_WATER_ELEMENTAL', 5],
 ];
 
 const SPELL_LEVEL = new Map<Spell, number>(HERO_SPELLS);

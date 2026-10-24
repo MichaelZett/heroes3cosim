@@ -32,6 +32,7 @@ import java.util.List;
         @JsonSubTypes.Type(value = BattleEvent.Dispel.class, name = "Dispel"),
         @JsonSubTypes.Type(value = BattleEvent.HeroSpell.class, name = "HeroSpell"),
         @JsonSubTypes.Type(value = BattleEvent.SpellHit.class, name = "SpellHit"),
+        @JsonSubTypes.Type(value = BattleEvent.Summon.class, name = "Summon"),
         @JsonSubTypes.Type(value = BattleEvent.MoveBack.class, name = "MoveBack"),
         @JsonSubTypes.Type(value = BattleEvent.DeathStare.class, name = "DeathStare"),
         @JsonSubTypes.Type(value = BattleEvent.Thunderbolts.class, name = "Thunderbolts"),
@@ -63,7 +64,7 @@ import java.util.List;
                 BattleEvent.BadMorale.class, BattleEvent.LuckyStrike.class, BattleEvent.TacticsPhase.class,
                 BattleEvent.BallistaShot.class, BattleEvent.FirstAid.class,
                 BattleEvent.SpellCast.class, BattleEvent.Dispel.class,
-                BattleEvent.HeroSpell.class, BattleEvent.SpellHit.class,
+                BattleEvent.HeroSpell.class, BattleEvent.SpellHit.class, BattleEvent.Summon.class,
                 BattleEvent.MoveBack.class, BattleEvent.DeathStare.class, BattleEvent.Thunderbolts.class,
                 BattleEvent.Petrifying.class, BattleEvent.Cursing.class, BattleEvent.Poisoning.class,
                 BattleEvent.Diseasing.class, BattleEvent.Aging.class, BattleEvent.FireShield.class,
@@ -91,6 +92,7 @@ import java.util.List;
                 @DiscriminatorMapping(value = "Dispel", schema = BattleEvent.Dispel.class),
                 @DiscriminatorMapping(value = "HeroSpell", schema = BattleEvent.HeroSpell.class),
                 @DiscriminatorMapping(value = "SpellHit", schema = BattleEvent.SpellHit.class),
+                @DiscriminatorMapping(value = "Summon", schema = BattleEvent.Summon.class),
                 @DiscriminatorMapping(value = "MoveBack", schema = BattleEvent.MoveBack.class),
                 @DiscriminatorMapping(value = "DeathStare", schema = BattleEvent.DeathStare.class),
                 @DiscriminatorMapping(value = "Thunderbolts", schema = BattleEvent.Thunderbolts.class),
@@ -290,7 +292,7 @@ public sealed interface BattleEvent {
     }
 
     @Schema(name = "SpellHit",
-            description = "Wirkung eines Heldenzaubers auf einen Stack: Schaden, Heilung oder ein liegender Zauber. `resisted` = immun oder durch Magieresistenz abgewehrt.")
+            description = "Wirkung eines Heldenzaubers auf einen Stack: Schaden, Heilung oder ein liegender Zauber. `resisted` = immun oder durch Magieresistenz abgewehrt, `reflected` = von Magic Mirror auf einen Stack des Zaubernden umgelenkt.")
     record SpellHit(
             @Schema(description = "Seite des zaubernden Helden") Side actor,
             @Schema(description = "Zauber") Spell spell,
@@ -300,7 +302,17 @@ public sealed interface BattleEvent {
             @Schema(description = "Getötete Kreaturen") int killed,
             @Schema(description = "Geheilte Lebenspunkte") int healed,
             @Schema(description = "Immun oder abgewehrt") boolean resisted,
+            @Schema(description = "Von Magic Mirror auf diesen Stack des Zaubernden umgelenkt") boolean reflected,
             @Schema(description = "Ziel danach") StackSnapshot targetAfter) implements BattleEvent {
+    }
+
+    @Schema(name = "Summon",
+            description = "Ein Held beschwört Elementare (Manual S. 66 ff.): ein neuer Stack auf seiner Seite, ab Slot 7, oder Verstärkung des schon beschworenen. Er handelt ab der nächsten Runde und zählt am Ende nicht als Überlebender.")
+    record Summon(
+            @Schema(description = "Seite des Helden") Side actor,
+            @Schema(description = "Beschwörungszauber") Spell spell,
+            @Schema(description = "Beschworene Kreaturen") int count,
+            @Schema(description = "Der beschworene Stack danach") StackSnapshot stack) implements BattleEvent {
     }
 
     @Schema(name = "BadMorale",

@@ -93,6 +93,18 @@ function applyEvent(stacks: Map<string, SideState>, event: BattleEvent): void {
     case 'Rebirth':
       snapshotInto(stacks, event.actorAfter);
       return;
+    case 'Summon': {
+      // Ein beschworener Stack taucht erst mitten im Kampf auf.
+      const key = stackKey(event.stack.side, event.stack.slot ?? 0);
+      const existing = stacks.get(key);
+      stacks.set(
+        key,
+        existing
+          ? { ...applySnapshot(existing, event.stack), startCount: event.stack.count }
+          : snapshotToSideState(event.stack, event.stack.topHp, event.stack.count),
+      );
+      return;
+    }
     case 'Resurrection':
     case 'RaiseDemons':
     case 'BallistaShot':

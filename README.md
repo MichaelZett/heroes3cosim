@@ -83,7 +83,12 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Viertel Schaden, Elementare doppelten oder keinen von den Zaubern ihrer
   Gegen-Elemente; Anti-Magic sperrt die unteren Stufen. Dispel hebt alle
   Zauber auf, auf Basic nur auf eigenen Stacks, auf Advanced auf jedem,
-  auf Expert auf allen. Welchen Zauber der Held wählt, entscheidet eine
+  auf Expert auf allen. Magic Mirror lenkt feindliche Zauber auf ein
+  einzelnes Ziel mit 20/30/40 % auf einen zufälligen Stack des Zaubernden
+  um. Summon Elementals ruft Power × 2/3/4 Elementare als neuen Stack an
+  den eigenen Rand (eine Art je Kampf, dieselbe Art erneut verstärkt ihn);
+  er handelt ab der nächsten Runde und zählt am Ende nicht als
+  Überlebender. Welchen Zauber der Held wählt, entscheidet eine
   Heuristik: erwartete vernichtete Kosten bei Schaden, geschätzter Anteil
   am Wert des Stacks bei Wirkungen, bei Schutz vor einer Schule und
   Anti-Magic der Schaden, den der gegnerische Held mit seinen Zaubern
@@ -378,8 +383,8 @@ zu lesen, nicht als universelle H3-Tier-Liste.
   `FriendlyFireDiagnosisTest`). Diese Zahlen stammen noch aus der Zeit,
   in der der Cerberus wahllos zwei Nachbarn traf, eigene eingeschlossen,
   und der Magog nur zwei statt aller sechs Felder ums Ziel.
-- **Helden, nächste Stufe**: Summon Elementals (wichtig für Conflux),
-  Magic Mirror, Zauber auf ganz gefallene Stacks, Zauber im Matrix-Modus.
+- **Helden, nächste Stufe**: Zauber auf ganz gefallene Stacks, Zauber im
+  Matrix-Modus, eine Wahl der Elementar-Art nach Lage statt nach Kosten.
   Bei den Kriegsmaschinen offen: angreifbare Maschinen auf dem Feld.
 - **Taktisches Warten ausbauen**: Nahkämpfer nutzen *Wait* bereits, wenn
   sie ihr Ziel diese Runde nicht erreichen — messbar stärker, aber der

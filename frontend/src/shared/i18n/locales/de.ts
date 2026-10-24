@@ -131,6 +131,11 @@ export const de = {
     INFERNO: 'Inferno',
     METEOR_SHOWER: 'Meteor Shower',
     IMPLOSION: 'Implosion',
+    MAGIC_MIRROR: 'Magic Mirror',
+    SUMMON_AIR_ELEMENTAL: 'Summon Air Elemental',
+    SUMMON_EARTH_ELEMENTAL: 'Summon Earth Elemental',
+    SUMMON_FIRE_ELEMENTAL: 'Summon Fire Elemental',
+    SUMMON_WATER_ELEMENTAL: 'Summon Water Elemental',
   },
   config: {
     title: 'Heroes 3 Combat Simulator',
@@ -211,6 +216,9 @@ export const de = {
     spellHitHealed: '{{spell}} heilt <target>{{target}}</target> um {{healed}} Lebenspunkte.',
     spellHitEffect: '{{spell}} wirkt auf <target>{{target}}</target>.',
     spellHitResisted: '{{spell}} prallt an <target>{{target}}</target> ab.',
+    spellMirrored: 'Magic Mirror lenkt den Zauber um:',
+    summon_attacker: 'Der Held des <actor>Angreifers</actor> beschwört {{count}} {{unit}}.',
+    summon_defender: 'Der Held des <actor>Verteidigers</actor> beschwört {{count}} {{unit}}.',
     spellCast: '<actor>{{actor}}</actor> wirkt {{spell}} auf <target>{{target}}</target>.',
     spellResisted:
       '<actor>{{actor}}</actor> wirkt {{spell}} auf <target>{{target}}</target> — abgewehrt.',

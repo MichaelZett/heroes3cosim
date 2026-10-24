@@ -228,6 +228,7 @@ describe('eventToNode', () => {
       killed: 7,
       healed: 0,
       resisted: false,
+      reflected: false,
       targetAfter: snap,
     } as const;
     expect(renderEvent(hit).container.textContent).toContain(
@@ -243,6 +244,18 @@ describe('eventToNode', () => {
     expect(
       renderEvent({ ...hit, spell: 'SLOW', damage: 0, killed: 0 }).container.textContent,
     ).toContain('Slow wirkt auf Goblin');
+    expect(renderEvent({ ...hit, reflected: true }).container.textContent).toContain(
+      'Magic Mirror lenkt den Zauber um: Lightning Bolt trifft Goblin',
+    );
+    expect(
+      renderEvent({
+        type: 'Summon',
+        actor: 'ATTACKER',
+        spell: 'SUMMON_FIRE_ELEMENTAL',
+        count: 6,
+        stack: { ...snap, side: 'ATTACKER', slot: 7, unitName: 'Fire Elemental' },
+      }).container.textContent,
+    ).toContain('Der Held des Angreifers beschwört 6 Fire Elemental');
   });
 
   it('renders LuckyStrike as double damage', () => {

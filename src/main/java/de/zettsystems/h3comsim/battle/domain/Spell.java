@@ -10,8 +10,7 @@ import java.util.Set;
  * <p>Aufgenommen sind die Zauber, die Kreaturen wirken oder auslösen, und die Heldenzauber, die im
  * Simulator eine Wirkung haben: Schaden, Stärkungen, Schwächungen, Schutz und Wiederbelebung.
  * Nicht aufgenommen sind Zauber, die Feldelemente oder Kontrolle über Kreaturen brauchen
- * (Force Field, Quicksand, Land Mine, Fire Wall, Hypnotize, Berserk, Teleport, Clone, Sacrifice,
- * Beschwörungen) sowie Magic Mirror.
+ * (Force Field, Quicksand, Land Mine, Fire Wall, Hypnotize, Berserk, Teleport, Clone, Sacrifice).
  *
  * <p>{@code mind} markiert die Gedankenzauber (heroes.thelazy.net, <em>Mind spells</em>), gegen
  * die Untote, Elementare, Golems, Gargoyles, Giants und Titans immun sind. {@code massAtExpert}:
@@ -39,6 +38,7 @@ public enum Spell {
     FRENZY(MagicSchool.FIRE, 4, 16, Kind.EFFECT, true, true, false),
     PRAYER(MagicSchool.WATER, 4, 16, Kind.EFFECT, true, false, true),
     SLAYER(MagicSchool.FIRE, 4, 16, Kind.EFFECT, true, false, false),
+    MAGIC_MIRROR(MagicSchool.AIR, 5, 25, Kind.EFFECT, true, false, false),
     // Schwächungen
     CURSE(MagicSchool.FIRE, 1, 6, Kind.EFFECT, false, false, true),
     SLOW(MagicSchool.EARTH, 1, 6, Kind.EFFECT, false, false, true),
@@ -65,7 +65,12 @@ public enum Spell {
     CHAIN_LIGHTNING(MagicSchool.AIR, 4, 24, Kind.DAMAGE, false, false, false),
     INFERNO(MagicSchool.FIRE, 4, 16, Kind.DAMAGE, false, false, false),
     METEOR_SHOWER(MagicSchool.EARTH, 4, 16, Kind.DAMAGE, false, false, false),
-    IMPLOSION(MagicSchool.EARTH, 5, 30, Kind.DAMAGE, false, false, false);
+    IMPLOSION(MagicSchool.EARTH, 5, 30, Kind.DAMAGE, false, false, false),
+    // Beschwörung
+    SUMMON_AIR_ELEMENTAL(MagicSchool.AIR, 5, 25, Kind.SUMMON, true, false, false),
+    SUMMON_EARTH_ELEMENTAL(MagicSchool.EARTH, 5, 25, Kind.SUMMON, true, false, false),
+    SUMMON_FIRE_ELEMENTAL(MagicSchool.FIRE, 5, 25, Kind.SUMMON, true, false, false),
+    SUMMON_WATER_ELEMENTAL(MagicSchool.WATER, 5, 25, Kind.SUMMON, true, false, false);
 
     /** Wirkungsart. */
     public enum Kind {
@@ -74,7 +79,9 @@ public enum Spell {
         /** Wirkt sofort und bleibt nicht liegen. */
         INSTANT,
         /** Fügt Schaden zu. */
-        DAMAGE
+        DAMAGE,
+        /** Ruft einen neuen Stack auf die eigene Seite. */
+        SUMMON
     }
 
     /** Zauber, die nur Kreaturen auslösen und ein Held nicht wirkt. */

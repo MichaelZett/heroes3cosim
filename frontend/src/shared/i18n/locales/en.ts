@@ -135,6 +135,11 @@ export const en: Dictionary = {
     INFERNO: 'Inferno',
     METEOR_SHOWER: 'Meteor Shower',
     IMPLOSION: 'Implosion',
+    MAGIC_MIRROR: 'Magic Mirror',
+    SUMMON_AIR_ELEMENTAL: 'Summon Air Elemental',
+    SUMMON_EARTH_ELEMENTAL: 'Summon Earth Elemental',
+    SUMMON_FIRE_ELEMENTAL: 'Summon Fire Elemental',
+    SUMMON_WATER_ELEMENTAL: 'Summon Water Elemental',
   },
   config: {
     title: 'Heroes 3 Combat Simulator',
@@ -215,6 +220,9 @@ export const en: Dictionary = {
     spellHitHealed: '{{spell}} heals <target>{{target}}</target> for {{healed}} health.',
     spellHitEffect: '{{spell}} takes effect on <target>{{target}}</target>.',
     spellHitResisted: '{{spell}} has no effect on <target>{{target}}</target>.',
+    spellMirrored: 'Magic Mirror redirects the spell:',
+    summon_attacker: 'The <actor>attacker</actor>’s hero summons {{count}} {{unit}}.',
+    summon_defender: 'The <actor>defender</actor>’s hero summons {{count}} {{unit}}.',
     spellCast: '<actor>{{actor}}</actor> casts {{spell}} on <target>{{target}}</target>.',
     spellResisted:
       '<actor>{{actor}}</actor> casts {{spell}} on <target>{{target}}</target> — resisted.',

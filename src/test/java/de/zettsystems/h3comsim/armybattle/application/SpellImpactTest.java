@@ -43,7 +43,9 @@ import java.util.Set;
  * Standardhelden ihrer Fraktion; eine Seite hat zusätzlich ein Zauberbuch, je nach Stufe auch
  * Power, Knowledge und Magie-Fertigkeiten. Gemessen wird die Win-Rate der zaubernden Seite und
  * welche Zauber die Heuristik wählt. In der letzten Stufe zaubern beide Seiten mit demselben
- * Erstbuch; nur eine kennt dazu Schutz vor Luft, Dispel und Anti-Magic.
+ * Erstbuch; nur eine kennt dazu Schutz vor Luft, Dispel und Anti-Magic. Dazu ein Beschwörer
+ * (alle vier Elementare, Expert Wisdom) und dasselbe Erstbuch auf beiden Seiten, eine mit Magic
+ * Mirror.
  *
  * <p>Aktivieren: {@code .\gradlew.bat test --tests "*SpellImpactTest" "-Ph3.harness=spell-impact"}.
  * Report unter {@code build/reports/spell-impact.md}.
@@ -57,17 +59,18 @@ class SpellImpactTest {
             Spell.HASTE, Spell.SHIELD, Spell.STONE_SKIN, Spell.CURSE, Spell.SLOW, Spell.PRECISION,
             Spell.WEAKNESS, Spell.LIGHTNING_BOLT, Spell.CURE);
 
-    private static final Set<Spell> GUARDED_BOOK = guarded();
+    private static final Set<Spell> GUARDED_BOOK = withFirstBook(Spell.PROTECTION_FROM_AIR, Spell.DISPEL, Spell.ANTI_MAGIC);
+    private static final Set<Spell> MIRRORED_BOOK = withFirstBook(Spell.MAGIC_MIRROR);
 
-    private static Set<Spell> guarded() {
+    private static Set<Spell> withFirstBook(Spell... extra) {
         Set<Spell> book = EnumSet.copyOf(FIRST_BOOK);
-        book.addAll(List.of(Spell.PROTECTION_FROM_AIR, Spell.DISPEL, Spell.ANTI_MAGIC));
+        book.addAll(List.of(extra));
         return book;
     }
 
     /**
-     * Zauberbuch und Aufbau der zaubernden Seite, bei {@link #GUARD_VS_BOOK} auch die Zauber des
-     * Gegners: beide zaubern, nur eine Seite kennt Schutz vor Luft, Dispel und Anti-Magic.
+     * Zauberbuch und Aufbau der zaubernden Seite, bei {@link #GUARD_VS_BOOK} und
+     * {@link #MIRROR_VS_BOOK} auch die Zauber des Gegners.
      */
     private enum Kit {
         MAGIC_ARROW(Set.of(Spell.MAGIC_ARROW), 0, 0, Map.of(), Set.of()),
@@ -79,6 +82,10 @@ class SpellImpactTest {
                 Map.of(SecondarySkill.WISDOM, SkillLevel.ADVANCED, SecondarySkill.AIR_MAGIC, SkillLevel.EXPERT,
                         SecondarySkill.EARTH_MAGIC, SkillLevel.EXPERT), Set.of()),
         GUARD_VS_BOOK(GUARDED_BOOK, 5, 5, Map.of(SecondarySkill.WISDOM, SkillLevel.BASIC),
+                SpellImpactTest.FIRST_BOOK),
+        SUMMONER(Set.of(Spell.SUMMON_AIR_ELEMENTAL, Spell.SUMMON_EARTH_ELEMENTAL, Spell.SUMMON_FIRE_ELEMENTAL,
+                Spell.SUMMON_WATER_ELEMENTAL), 5, 5, Map.of(SecondarySkill.WISDOM, SkillLevel.EXPERT), Set.of()),
+        MIRROR_VS_BOOK(MIRRORED_BOOK, 5, 5, Map.of(SecondarySkill.WISDOM, SkillLevel.EXPERT),
                 SpellImpactTest.FIRST_BOOK);
 
         private final Set<Spell> spells;
