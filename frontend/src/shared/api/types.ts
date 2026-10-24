@@ -178,8 +178,12 @@ export type BattleEvent =
       killed: number;
       healed: number;
       resisted: boolean;
+      /** Von Magic Mirror auf einen Stack des Zaubernden umgelenkt. */
+      reflected: boolean;
       targetAfter: StackSnapshot;
     }
+  /** Beschworene Elementare: neuer Stack ab Slot 7 oder Verstaerkung des beschworenen. */
+  | { type: 'Summon'; actor: Side; spell: Spell; count: number; stack: StackSnapshot }
   /** Serpent oder Dragon Fly hebt die nuetzlichen Zauber des Ziels auf. */
   | {
       type: 'Dispel';
@@ -352,7 +356,12 @@ export type Spell =
   | 'CHAIN_LIGHTNING'
   | 'INFERNO'
   | 'METEOR_SHOWER'
-  | 'IMPLOSION';
+  | 'IMPLOSION'
+  | 'MAGIC_MIRROR'
+  | 'SUMMON_AIR_ELEMENTAL'
+  | 'SUMMON_EARTH_ELEMENTAL'
+  | 'SUMMON_FIRE_ELEMENTAL'
+  | 'SUMMON_WATER_ELEMENTAL';
 
 export type WarMachine = 'BALLISTA' | 'AMMO_CART' | 'FIRST_AID_TENT';
 

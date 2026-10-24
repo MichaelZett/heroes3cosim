@@ -35,6 +35,8 @@ public class BattleSetup {
     private final int defenderTactics;
     private final Map<Side, Set<WarMachine>> warMachines = new EnumMap<>(Side.class);
     private final Map<Side, Integer> mana = new EnumMap<>(Side.class);
+    /** Je Seite die eine Elementar-Art, die beschworen werden darf, sobald die erste gerufen ist. */
+    private final Map<Side, Unit> summonedKind = new EnumMap<>(Side.class);
 
     public BattleSetup(Unit attackerUnit, int attackerCount,
                        Unit defenderUnit, int defenderCount) {
@@ -83,8 +85,9 @@ public class BattleSetup {
         if (attackerStacks.isEmpty() || defenderStacks.isEmpty()) {
             throw new IllegalArgumentException("Each side needs at least one stack");
         }
-        this.attackerStacks = List.copyOf(attackerStacks);
-        this.defenderStacks = List.copyOf(defenderStacks);
+        // Veränderlich nur für Beschwörungen ({@link #addSummoned}); nach außen unveränderliche Sichten.
+        this.attackerStacks = new ArrayList<>(attackerStacks);
+        this.defenderStacks = new ArrayList<>(defenderStacks);
         this.battlefield = Objects.requireNonNull(battlefield, "battlefield");
         Objects.requireNonNull(attackerBonus, "attackerBonus");
         Objects.requireNonNull(defenderBonus, "defenderBonus");
@@ -176,15 +179,97 @@ public class BattleSetup {
     }
 
     public List<Stack> attackerStacks() {
-        return attackerStacks;
+        return Collections.unmodifiableList(attackerStacks);
     }
 
     public List<Stack> defenderStacks() {
-        return defenderStacks;
+        return Collections.unmodifiableList(defenderStacks);
     }
 
     public List<Stack> stacksOf(Side side) {
+        return Collections.unmodifiableList(side == Side.ATTACKER ? attackerStacks : defenderStacks);
+    }
+
+    /**
+     * Elementar-Art, die diese Seite bereits beschworen hat — „Only one type of elemental can be
+     * summoned" (Manual S. 66 ff.) —, oder {@code null}.
+     */
+    public @Nullable Unit summonedKindOf(Side side) {
+        return summonedKind.get(side);
+    }
+
+    /**
+     * Nimmt einen beschworenen Stack in die Armee auf: unter dem Helden der Seite, mit deren Moral
+     * und Glück, im nächsten freien Slot.
+     */
+    void addSummoned(Stack stack) {
+        List<Stack> own = side(stack.side());
+        stack.assignCommander(heroOf(stack.side()));
+        stack.assignArmyMorale(moraleOf(stack.side()));
+        stack.assignArmyLuck(luckOf(stack.side()));
+        stack.markSummoned();
+        own.add(stack);
+        summonedKind.put(stack.side(), stack.unit());
+    }
+
+    /** Nächster freier Slot dieser Seite (beschworene Stacks bekommen Slots ab 7). */
+    int nextSlot(Side side) {
+        return side(side).stream().mapToInt(Stack::slot).max().orElse(-1) + 1;
+    }
+
+    private List<Stack> side(Side side) {
         return side == Side.ATTACKER ? attackerStacks : defenderStacks;
+    }
+
+    /**
+     * Freies Feld für einen beschworenen Stack: am eigenen Rand, von der Mitte nach außen, dann
+     * eine Spalte weiter innen; {@code null}, wenn das Feld voll ist.
+     */
+    @Nullable Hex freeHexFor(Side side) {
+        List<Integer> rows = rowsFromCenter();
+        for (int column = 0; column < battlefield.width(); column++) {
+            for (int r : rows) {
+                int q = side == Side.ATTACKER ? battlefield.leftmostQ(r) + column : battlefield.rightmostQ(r) - column;
+                Hex hex = new Hex(q, r);
+                if (isFree(hex)) {
+                    return hex;
+                }
+            }
+        }
+        return null;
+    }
+
+    /** Reihen von der Mitte nach außen, oben vor unten. */
+    private List<Integer> rowsFromCenter() {
+        int center = battlefield.centerRow();
+        List<Integer> rows = new ArrayList<>(battlefield.height());
+        rows.add(center);
+        for (int offset = 1; rows.size() < battlefield.height(); offset++) {
+            if (center - offset >= 0) {
+                rows.add(center - offset);
+            }
+            if (center + offset < battlefield.height()) {
+                rows.add(center + offset);
+            }
+        }
+        return rows;
+    }
+
+    private boolean isFree(Hex hex) {
+        return battlefield.isPassable(hex) && aliveStacks().stream().noneMatch(st -> st.position().equals(hex));
+    }
+
+    /**
+     * Hat die Seite noch eigene, nicht beschworene Truppen? „If you killed all enemies but lost all
+     * your army besides the summoned elementals, both sides lose the battle" (heroes.thelazy.net).
+     */
+    public boolean hasOwnTroops(Side side) {
+        return side(side).stream().anyMatch(st -> st.isAlive() && !st.isSummoned());
+    }
+
+    /** Überlebende Kreaturen ohne Beschworene — sie verschwinden nach dem Kampf. */
+    public int survivorsOf(Side side) {
+        return side(side).stream().filter(st -> !st.isSummoned()).mapToInt(Stack::getCount).sum();
     }
 
     public List<Stack> aliveStacks() {

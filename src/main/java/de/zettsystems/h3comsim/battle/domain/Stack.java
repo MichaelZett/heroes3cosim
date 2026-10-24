@@ -36,6 +36,7 @@ public class Stack {
     private int diseasedCounter;
     private boolean aged;
     private boolean rebirthUsed;
+    private boolean summoned;
     private boolean resurrectionUsed;
     private boolean demonsRaised;
     private boolean defending;
@@ -673,6 +674,24 @@ public class Stack {
         retaliationsThisTurn = 0;
         spells.clear();
         spellCastsLeft = CreatureSpellcasting.castsFor(newUnit);
+    }
+
+    /** Beschworen (Summon Elementals): verschwindet nach dem Kampf und zählt nicht als Überlebender. */
+    public boolean isSummoned() {
+        return summoned;
+    }
+
+    void markSummoned() {
+        summoned = true;
+    }
+
+    /** Verstärkt einen lebenden Stack um {@code count} frische Kreaturen (erneute Beschwörung). */
+    void reinforce(int count) {
+        if (count <= 0) {
+            throw new IllegalArgumentException("count must be > 0, was " + count);
+        }
+        aliveCount += count;
+        startCount += count;
     }
 
     /** Kreaturen, mit denen der Stack in den Kampf ging (nach einer Auferstehung: die neue Zahl). */

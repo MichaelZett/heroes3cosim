@@ -259,16 +259,28 @@ export function EventText({ event, names }: Readonly<EventTextProps>) {
       );
     case 'SpellHit':
       return (
+        <>
+          {event.reflected && `${t('events.spellMirrored')} `}
+          <Trans
+            i18nKey={spellHitKey(event)}
+            values={{
+              spell: t(`spell.${event.spell}`),
+              target: sideName(event.target, event.targetSlot, names),
+              damage: event.damage,
+              killed: event.killed,
+              healed: event.healed,
+            }}
+            components={{ target: sideSpan(event.target) }}
+          />
+        </>
+      );
+    case 'Summon':
+      return (
         <Trans
-          i18nKey={spellHitKey(event)}
-          values={{
-            spell: t(`spell.${event.spell}`),
-            target: sideName(event.target, event.targetSlot, names),
-            damage: event.damage,
-            killed: event.killed,
-            healed: event.healed,
-          }}
-          components={{ target: sideSpan(event.target) }}
+          i18nKey="events.summon"
+          values={{ count: event.count, unit: event.stack.unitName }}
+          components={{ actor: sideSpan(event.actor) }}
+          context={event.actor === 'ATTACKER' ? 'attacker' : 'defender'}
         />
       );
     case 'Dispel':

@@ -107,8 +107,8 @@ public final class Battle {
         events.emit(new BattleEvent.BattleEnd(winner,
                 setup.getAttackerCount(), setup.getDefenderCount(), turn, finalStacks));
         return new BattleResult(winner,
-                attackerStart, setup.getAttackerCount(),
-                defenderStart, setup.getDefenderCount(),
+                attackerStart, setup.survivorsOf(Side.ATTACKER),
+                defenderStart, setup.survivorsOf(Side.DEFENDER),
                 turn);
     }
 
@@ -165,17 +165,70 @@ public final class Battle {
         Spell spell = cast.spell();
         setup.spendMana(side, HeroSpellcasting.cost(spell, side, setup));
         events.emit(new BattleEvent.HeroSpell(side, spell, cast.level(), setup.manaOf(side)));
+        if (spell.kind() == Spell.Kind.SUMMON) {
+            summon(setup, side, hero, cast);
+            return;
+        }
         for (int i = 0; i < cast.affected().size(); i++) {
             Stack target = cast.affected().get(i);
             if (target.isAlive()) {
-                BattleLogger.logSpell(hero.name(), spell, target.getName());
-                applyHeroSpell(setup, side, hero, cast, i, target);
+                Stack reflectedTo = mirrored(setup, side, cast, target);
+                Stack hit = reflectedTo == null ? target : reflectedTo;
+                BattleLogger.logSpell(hero.name(), spell, hit.getName());
+                applyHeroSpell(setup, side, hero, cast, i, hit, reflectedTo != null);
             }
         }
     }
 
+    /**
+     * Magic Mirror (Manual S. 66): ein feindlicher Zauber auf ein einzelnes Ziel geht mit 20/30/40 %
+     * an einen zufälligen Stack des Zaubernden. Ohne Spiegel zieht das keinen Zufallswert.
+     *
+     * @return der neue Empfänger, oder {@code null}, wenn der Zauber sein Ziel trifft
+     */
+    private @Nullable Stack mirrored(BattleSetup setup, Side side, HeroSpellcasting.Cast cast, Stack target) {
+        ActiveSpell mirror = target.activeSpell(Spell.MAGIC_MIRROR);
+        if (mirror == null || target.side() == side || cast.target() == null
+                || !HeroSpellcasting.singleTarget(cast.spell())
+                || rng.nextInt(100) >= HeroSpellcasting.mirrorPercent(mirror)) {
+            return null;
+        }
+        List<Stack> casters = setup.stacksOf(side).stream().filter(Stack::isAlive).toList();
+        return casters.isEmpty() ? null : casters.get(rng.nextInt(casters.size()));
+    }
+
+    /**
+     * Summon Elementals (Manual S. 66 ff.): Power × 2/3/4 Elementare als neuer Stack am eigenen
+     * Rand. Dieselbe Art erneut verstärkt den beschworenen Stack bzw. ruft ihn zurück, wenn er
+     * gefallen ist. Er handelt ab der nächsten Runde.
+     */
+    private void summon(BattleSetup setup, Side side, Hero hero, HeroSpellcasting.Cast cast) {
+        Unit unit = HeroSpellcasting.summonedUnit(cast.spell());
+        int count = HeroSpellcasting.summonCount(cast.level(), hero.spellPower());
+        Stack summoned = setup.stacksOf(side).stream()
+                .filter(st -> st.isSummoned() && st.unit().equals(unit))
+                .findFirst().orElse(null);
+        if (summoned != null && summoned.isAlive()) {
+            summoned.reinforce(count);
+        } else {
+            Hex hex = setup.freeHexFor(side);
+            if (hex == null) {
+                return;
+            }
+            if (summoned == null) {
+                summoned = new Stack(unit, count, hex, side, setup.nextSlot(side));
+                setup.addSummoned(summoned);
+            } else {
+                summoned.moveTo(hex);
+                summoned.riseAs(unit, count);
+            }
+        }
+        BattleLogger.logSpell(hero.name(), cast.spell(), summoned.getName());
+        events.emit(new BattleEvent.Summon(side, cast.spell(), count, snapshot(summoned)));
+    }
+
     private void applyHeroSpell(BattleSetup setup, Side side, Hero hero, HeroSpellcasting.Cast cast, int index,
-                                Stack target) {
+                                Stack target, boolean reflected) {
         Spell spell = cast.spell();
         // Dispel auf eigene Stacks ist kein feindlicher Zauber und würfelt nicht gegen Resistenz.
         boolean friendlyDispel = spell == Spell.DISPEL && target.side() == side;
@@ -200,9 +253,11 @@ public final class Battle {
                         HeroSpellcasting.healing(hero, spell, cast.level(), target), target);
                 case EFFECT -> target.applySpell(spell, cast.level(), power,
                         hero.specialty().spellEffectBonus(spell, hero.level(), target.unit()));
+                case SUMMON -> throw new IllegalStateException("summons are handled by summon()");
             }
         }
-        events.emit(new BattleEvent.SpellHit(side, spell, target.side(), target.slot(), damage, killed, healed, !works, snapshot(target)));
+        events.emit(new BattleEvent.SpellHit(side, spell, target.side(), target.slot(), damage, killed, healed,
+                !works, reflected, snapshot(target)));
     }
 
     /** Cure, Animate Dead, Resurrection und Dispel; liefert die geheilten Lebenspunkte. */
@@ -1099,8 +1154,9 @@ public final class Battle {
     }
 
     private static Winner determineWinner(BattleSetup setup) {
-        boolean attackerAlive = setup.isAttackerAlive();
-        boolean defenderAlive = setup.isDefenderAlive();
+        // Wer nur noch Beschworene hat, verliert: sie verschwinden nach dem Kampf.
+        boolean attackerAlive = setup.hasOwnTroops(Side.ATTACKER);
+        boolean defenderAlive = setup.hasOwnTroops(Side.DEFENDER);
         if (attackerAlive && !defenderAlive) {
             BattleLogger.logDeath(setup.getDefenderName());
             return Winner.ATTACKER;

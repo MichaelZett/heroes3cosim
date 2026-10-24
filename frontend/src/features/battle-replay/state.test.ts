@@ -180,6 +180,44 @@ describe('reduceEvents', () => {
     expect(state!.attacker.count).toBe(4);
   });
 
+  it('adds a summoned stack in a new slot and reinforces it later', () => {
+    const summoned = {
+      side: 'ATTACKER',
+      slot: 7,
+      unitName: 'Earth Elemental',
+      count: 4,
+      topHp: 40,
+      q: 0,
+      r: 4,
+    } as const;
+    const events: BattleEvent[] = [
+      start,
+      {
+        type: 'Summon',
+        actor: 'ATTACKER',
+        spell: 'SUMMON_EARTH_ELEMENTAL',
+        count: 4,
+        stack: summoned,
+      },
+      {
+        type: 'Summon',
+        actor: 'ATTACKER',
+        spell: 'SUMMON_EARTH_ELEMENTAL',
+        count: 4,
+        stack: { ...summoned, count: 8 },
+      },
+    ];
+    expect(reduceEvents(events, 2)!.stacks.get('ATTACKER-7')).toMatchObject({
+      unitName: 'Earth Elemental',
+      count: 4,
+      maxHp: 40,
+    });
+    expect(reduceEvents(events, 3)!.stacks.get('ATTACKER-7')).toMatchObject({
+      count: 8,
+      startCount: 8,
+    });
+  });
+
   it('ignores marker events that carry no state mutation', () => {
     const events: BattleEvent[] = [
       start,

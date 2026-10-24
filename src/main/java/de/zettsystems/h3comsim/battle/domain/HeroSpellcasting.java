@@ -28,7 +28,9 @@ import java.util.function.Predicate;
  * den ein Stack je Runde im Kampf umsetzt, und die Dauer zählt bis zu {@link #EXPECTED_ROUNDS}
  * Runden. Schutz vor einer Schule und Anti-Magic zählen den Schaden, den der gegnerische Held
  * dem Stack mit seinen Zaubern und seinem Mana höchstens zufügen kann, gewichtet mit dem Anteil
- * des Stacks am eigenen Armeewert; Dispel zählt die aufgehobenen Wirkungen.
+ * des Stacks am eigenen Armeewert, Magic Mirror ebenso für die Zauber auf ein einzelnes Ziel;
+ * Dispel zählt die aufgehobenen Wirkungen. Eine Beschwörung zählt den Goldwert der Elementare,
+ * abzüglich dessen, was der gegnerische Held ihnen nehmen kann ({@link #summonValue}).
  *
  * <p>Mana: Jeder Wert wird mit der Zahl der Würfe multipliziert, die das Mana in den restlichen
  * Runden (bis {@link #EXPECTED_BATTLE_ROUNDS}) für diesen Zauber hergibt. Bei knappem Mana gewinnt
@@ -125,6 +127,12 @@ final class HeroSpellcasting {
             }
             case CHAIN_LIGHTNING -> enemies.forEach(e ->
                     casts.add(new Cast(spell, level, e, chain(e, level == SkillLevel.BASIC ? 4 : 5, setup))));
+            case SUMMON_AIR_ELEMENTAL, SUMMON_EARTH_ELEMENTAL, SUMMON_FIRE_ELEMENTAL, SUMMON_WATER_ELEMENTAL -> {
+                Unit kind = setup.summonedKindOf(side);
+                if ((kind == null || kind.equals(summonedUnit(spell))) && setup.freeHexFor(side) != null) {
+                    casts.add(new Cast(spell, level, null, List.of()));
+                }
+            }
             case DISPEL -> {
                 // Basic nur auf eigene Stacks, Advanced auf jeden, Expert auf alle (Manual S. 76).
                 if (level == SkillLevel.EXPERT) {
@@ -231,9 +239,64 @@ final class HeroSpellcasting {
         };
     }
 
+    /** Das Elementar, das ein Beschwörungszauber ruft. */
+    static Unit summonedUnit(Spell spell) {
+        return switch (spell) {
+            case SUMMON_AIR_ELEMENTAL -> UnitCatalog.AIR_ELEMENTAL;
+            case SUMMON_EARTH_ELEMENTAL -> UnitCatalog.EARTH_ELEMENTAL;
+            case SUMMON_FIRE_ELEMENTAL -> UnitCatalog.FIRE_ELEMENTAL;
+            case SUMMON_WATER_ELEMENTAL -> UnitCatalog.WATER_ELEMENTAL;
+            default -> throw new IllegalArgumentException(spell + " summons nothing");
+        };
+    }
+
+    /**
+     * Was eine Beschwörung bringt: der Goldwert der Elementare, je Runde mit {@link #ROUND_SHARE}
+     * umgesetzt, abzüglich dessen, was der gegnerische Held ihnen mit seinem schlimmsten Zauber
+     * nimmt. So fallen Elementare aus, die gegen seine Zauber empfindlich sind (Fire gegen Ice
+     * Bolt, Air gegen Lightning Bolt), und immune gewinnen. Das Tempo zählt nicht: eine Fassung,
+     * die schnelle Elementare gegen Schützen bevorzugte, verlor gegen „immer Earth" 0.386
+     * (−4.77 σ, {@code SpellImpactTest}).
+     */
+    static double summonValue(Spell spell, SkillLevel level, Hero hero, Side side, BattleSetup setup) {
+        Hex hex = setup.freeHexFor(side);
+        if (hex == null) {
+            return 0;
+        }
+        Stack probe = new Stack(summonedUnit(spell), summonCount(level, hero.spellPower()), hex, side,
+                setup.nextSlot(side));
+        double value = stackValue(probe);
+        double harmShare = value == 0 ? 0 : Math.min(1, threat(probe, s -> true, setup) / value);
+        return value * ROUND_SHARE * EXPECTED_ROUNDS * (1 - harmShare);
+    }
+
+    /** Power × 2/3/4 Elementare (Manual S. 66 ff.). */
+    static int summonCount(SkillLevel level, int power) {
+        return power * SpellDamage.byLevel(level, 2, 3, 4);
+    }
+
+    /** Magic Mirror (Manual S. 66): 20/30/40 % Chance, einen feindlichen Zauber umzulenken. */
+    static int mirrorPercent(ActiveSpell mirror) {
+        return mirror.byLevel(20, 30, 40);
+    }
+
+    /**
+     * Wirkt der Zauber auf genau ein gewähltes Ziel? Nur solche lenkt Magic Mirror um: Magic
+     * Arrow, die Bolts, Implosion und feindliche Wirkungen, wenn sie nicht als Massenzauber kommen.
+     */
+    static boolean singleTarget(Spell spell) {
+        return switch (spell) {
+            case MAGIC_ARROW, LIGHTNING_BOLT, ICE_BOLT, IMPLOSION -> true;
+            default -> spell.kind() == Spell.Kind.EFFECT && !spell.beneficial();
+        };
+    }
+
     /** Erwarteter Nutzen in Gold; eigene Verluste zählen negativ. */
     static double value(Hero hero, Side side, Cast cast, BattleSetup setup) {
         Spell spell = cast.spell();
+        if (spell.kind() == Spell.Kind.SUMMON) {
+            return summonValue(spell, cast.level(), hero, side, setup);
+        }
         double total = 0;
         for (int i = 0; i < cast.affected().size(); i++) {
             Stack s = cast.affected().get(i);
@@ -255,6 +318,7 @@ final class HeroSpellcasting {
             case DAMAGE -> damageValue(hero, spell, baseDamage(cast, hero.spellPower(), index), s);
             case INSTANT -> instantValue(hero, spell, cast.level(), s);
             case EFFECT -> effectValue(hero, spell, cast.level(), s, setup);
+            case SUMMON -> 0;
         };
         return (s.side() == side ? -1 : 1) * (spell.beneficial() ? -1 : 1) * value;
     }
@@ -318,7 +382,7 @@ final class HeroSpellcasting {
         }
         int power = hero.spellPower();
         int rounds = Math.min(spell == Spell.DISRUPTING_RAY ? EXPECTED_ROUNDS : power, EXPECTED_ROUNDS);
-        if (spell == Spell.ANTI_MAGIC || protectedSchool(spell) != null) {
+        if (spell == Spell.ANTI_MAGIC || spell == Spell.MAGIC_MIRROR || protectedSchool(spell) != null) {
             return protectionValue(spell, level, s, setup) * rounds;
         }
         int bonus = hero.specialty().spellEffectBonus(spell, hero.level(), s.unit());
@@ -345,7 +409,7 @@ final class HeroSpellcasting {
     }
 
     /**
-     * Was Schutz vor einer Schule oder Anti-Magic je Runde abwendet: der schlimmste Zauber, den der
+     * Was Schutz vor einer Schule, Anti-Magic oder Magic Mirror je Runde abwendet: der schlimmste Zauber, den der
      * gegnerische Held bezahlen kann, gewichtet mit dem Anteil des Stacks am eigenen Armeewert —
      * so wahrscheinlich trifft es gerade ihn.
      */
@@ -355,6 +419,10 @@ final class HeroSpellcasting {
         if (school != null) {
             int percent = SpellDamage.byLevel(level, 30, 50, 50);
             averted = threat(s, e -> e.kind() == Spell.Kind.DAMAGE && e.school() == school, setup) * percent / 100;
+        } else if (spell == Spell.MAGIC_MIRROR) {
+            // Was umgelenkt wird, trifft obendrein einen Gegner — hier nur das Abgewendete gezählt.
+            int percent = SpellDamage.byLevel(level, 20, 30, 40);
+            averted = threat(s, HeroSpellcasting::singleTarget, setup) * percent / 100;
         } else {
             int maxLevel = SpellDamage.byLevel(level, 3, 4, 5);
             averted = threat(s, e -> e.level() <= maxLevel, setup);
@@ -384,7 +452,7 @@ final class HeroSpellcasting {
                 case EFFECT -> Math.max(0, gainPercent(spell, level,
                         foe.specialty().spellEffectBonus(spell, foe.level(), s.unit()), s, setup))
                         / 100 * ROUND_SHARE * stackValue(s);
-                case INSTANT -> 0;
+                case INSTANT, SUMMON -> 0;
             };
             worst = Math.max(worst, harm * successChance(spell, s, setup));
         }
