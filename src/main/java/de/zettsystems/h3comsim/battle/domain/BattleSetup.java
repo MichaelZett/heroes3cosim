@@ -459,26 +459,33 @@ public class BattleSetup {
      * daneben steht. Reihenfolge in Blickrichtung des Movers ({@link Hex#neighbors(boolean)}).
      */
     public List<Hex> attackHeads(Stack mover, Stack target) {
-        boolean leftward = Hex.isLeftward(mover.position(), target.position());
-        Set<Hex> heads = new LinkedHashSet<>();
-        for (Hex own : target.hexes()) {
-            for (Hex n : own.neighbors(leftward)) {
-                if (!target.occupies(n)) {
-                    heads.add(n);
-                    if (mover.isDoubleWide()) {
-                        heads.add(new Hex(n.q() + (mover.side() == Side.ATTACKER ? 1 : -1), n.r()));
-                    }
-                }
-            }
-        }
         List<Hex> result = new ArrayList<>();
-        for (Hex head : heads) {
+        for (Hex head : headCandidates(mover, target)) {
             if (mover.hexesAt(head).stream().noneMatch(target::occupies) && touches(mover, head, target)
                     && fits(mover, head)) {
                 result.add(head);
             }
         }
         return result;
+    }
+
+    /** Die freien Nachbarn der Zielfelder, für Zweifeldrige dazu die Köpfe, deren Heck dort läge. */
+    private static Set<Hex> headCandidates(Stack mover, Stack target) {
+        boolean leftward = Hex.isLeftward(mover.position(), target.position());
+        int forward = mover.side() == Side.ATTACKER ? 1 : -1;
+        Set<Hex> heads = new LinkedHashSet<>();
+        for (Hex own : target.hexes()) {
+            for (Hex n : own.neighbors(leftward)) {
+                if (target.occupies(n)) {
+                    continue;
+                }
+                heads.add(n);
+                if (mover.isDoubleWide()) {
+                    heads.add(new Hex(n.q() + forward, n.r()));
+                }
+            }
+        }
+        return heads;
     }
 
     /** Stünde {@code mover} mit dem Kopf auf {@code head} neben {@code target}? */

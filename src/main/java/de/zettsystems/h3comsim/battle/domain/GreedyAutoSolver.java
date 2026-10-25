@@ -174,6 +174,14 @@ public final class GreedyAutoSolver implements AutoSolver {
                 return chargeOrWait(active, opponent, charge);
             }
         }
+        return approach(active, opponent, battlefield, to);
+    }
+
+    /** Bodentruppen ohne Anlauf-Bonus: auf geradem Weg heran, angreifen, wenn es reicht. */
+    private Action approach(Stack active, Stack opponent, Battlefield battlefield, Hex to) {
+        Hex from = active.position();
+        int speed = active.getSpeed();
+        Movement movement = active.unit().movement();
         Hex moveTarget = battlefield.moveToward(from, to, speed, movement);
         boolean fits = fitsAt(active, moveTarget, battlefield);
         if (fits && !moveTarget.equals(from) && BattleSetup.touches(active, moveTarget, opponent)) {
