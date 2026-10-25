@@ -125,6 +125,33 @@ class WarMachineOnFieldTest {
     }
 
     @Test
+    void the_most_expensive_reachable_machine_wins_walking_or_flying() {
+        Hex ballista = new Hex(FIELD.rightmostQ(3), 3);
+        for (Unit unit : List.of(UnitCatalog.ANCIENT_BEHEMOTH, UnitCatalog.ROYAL_GRIFFIN)) {
+            Stack attacker = new Stack(unit, 5, new Hex(ballista.q() - 4, 3), Side.ATTACKER, 0);
+            BattleSetup setup = new BattleSetup(List.of(attacker),
+                    List.of(new Stack(UnitCatalog.PEASANT, 1, new Hex(FIELD.leftmostQ(10), 10), Side.DEFENDER, 0)),
+                    FIELD).equip(Side.DEFENDER, EnumSet.allOf(WarMachine.class));
+
+            Action action = WarMachineTargeting.attack(attacker, setup);
+            assertThat(action).as(unit.name()).isInstanceOf(Action.MoveAndMelee.class);
+            Action.MoveAndMelee move = (Action.MoveAndMelee) action;
+            assertThat(move.target().unit().name()).isEqualTo("Ballista");
+            assertThat(move.destination().distanceTo(ballista)).isEqualTo(1);
+        }
+    }
+
+    @Test
+    void a_machine_out_of_reach_is_left_alone() {
+        Stack peasants = new Stack(UnitCatalog.PEASANT, 5, new Hex(0, 5), Side.ATTACKER, 0);
+        BattleSetup setup = new BattleSetup(List.of(peasants),
+                List.of(new Stack(UnitCatalog.PEASANT, 1, new Hex(14, 5), Side.DEFENDER, 0)), FIELD)
+                .equip(Side.DEFENDER, EnumSet.allOf(WarMachine.class));
+
+        assertThat(WarMachineTargeting.attack(peasants, setup)).isNull();
+    }
+
+    @Test
     void a_machine_hex_is_no_landing_spot_for_a_tank() {
         Hex cart = new Hex(FIELD.leftmostQ(1), 1);
         Stack pikemen = new Stack(UnitCatalog.PIKEMAN, 10, new Hex(FIELD.leftmostQ(3), 3), Side.ATTACKER, 0);

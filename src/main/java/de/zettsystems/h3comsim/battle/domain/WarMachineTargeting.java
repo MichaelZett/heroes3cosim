@@ -2,12 +2,13 @@ package de.zettsystems.h3comsim.battle.domain;
 
 import org.jspecify.annotations.Nullable;
 
+import java.util.Comparator;
 import java.util.List;
 
 /**
  * Wann ein Stack eine gegnerische Kriegsmaschine angreift: nur, wenn er in seinem Zug sonst keine
  * Kreatur angreift (der Solver will ziehen oder verteidigen) und eine Maschine erreicht. Die
- * teuerste erreichbare zuerst (Ballista vor Munitionswagen vor Zelt), bei Gleichstand die nähere.
+ * teuerste erreichbare zuerst (Ballista vor Munitionswagen vor Zelt), über das nächste freie Feld daneben.
  * Schützen, die schießen, bleiben bei ihrem Ziel — eine Kreatur zu treffen, ist fast immer mehr
  * wert als 250 Lebenspunkte Holz.
  */
@@ -21,37 +22,33 @@ final class WarMachineTargeting {
         if (active.isWarMachine()) {
             return null;
         }
-        Approach best = null;
-        for (Stack machine : setup.enemyMachinesOf(active)) {
-            Approach approach = approach(active, machine, setup);
-            if (approach != null && (best == null || approach.betterThan(best))) {
-                best = approach;
+        List<Stack> byCost = setup.enemyMachinesOf(active).stream()
+                .sorted(Comparator.comparingInt((Stack m) -> m.unit().cost()).reversed())
+                .toList();
+        for (Stack machine : byCost) {
+            Action action = approach(active, machine, setup);
+            if (action != null) {
+                return action;
             }
         }
-        return best == null ? null : best.action();
-    }
-
-    /** Ein Angriff auf eine Maschine: wie teuer sie ist und wie viele Schritte es braucht. */
-    private record Approach(Action action, int cost, int steps) {
-        boolean betterThan(Approach other) {
-            return cost > other.cost || (cost == other.cost && steps < other.steps);
-        }
+        return null;
     }
 
     /** Der kürzeste Angriff auf diese Maschine in diesem Zug, oder {@code null}. */
-    private static @Nullable Approach approach(Stack active, Stack machine, BattleSetup setup) {
-        int cost = machine.unit().cost();
+    private static @Nullable Action approach(Stack active, Stack machine, BattleSetup setup) {
         if (active.position().distanceTo(machine.position()) == 1) {
-            return new Approach(new Action.Melee(machine), cost, 0);
+            return new Action.Melee(machine);
         }
-        Approach best = null;
+        Hex best = null;
+        int bestSteps = Integer.MAX_VALUE;
         for (Hex landing : machine.position().neighbors()) {
             int steps = stepsTo(active, landing, setup);
-            if (steps > 0 && (best == null || steps < best.steps())) {
-                best = new Approach(new Action.MoveAndMelee(landing, machine), cost, steps);
+            if (steps > 0 && steps < bestSteps) {
+                best = landing;
+                bestSteps = steps;
             }
         }
-        return best;
+        return best == null ? null : new Action.MoveAndMelee(best, machine);
     }
 
     /** Schritte bis zu einem freien Feld, oder 0, wenn es in diesem Zug nicht erreichbar ist. */
