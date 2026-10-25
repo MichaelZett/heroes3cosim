@@ -123,6 +123,15 @@ final class HeroSpellcasting {
         List<Stack> own = alive(setup.stacksOf(side));
         List<Stack> enemies = alive(setup.stacksOf(other(side)));
         List<Cast> casts = new ArrayList<>();
+        if (spell.kind() == Spell.Kind.DAMAGE && singleTarget(spell)) {
+            // Auch gegnerische Kriegsmaschinen sind Ziele, außer für Implosion.
+            enemies = new ArrayList<>(enemies);
+            for (Stack machine : setup.machinesOf(other(side))) {
+                if (machine.isAlive() && !SpellResistance.isImmune(machine, spell)) {
+                    enemies.add(machine);
+                }
+            }
+        }
         if (spell == Spell.EARTHQUAKE) {
             Siege siege = setup.siege();
             if (siege != null && side == Side.ATTACKER && !siege.hasBreach()) {
@@ -146,7 +155,7 @@ final class HeroSpellcasting {
                     casts.add(new Cast(spell, level, e, chain(e, level == SkillLevel.BASIC ? 4 : 5, setup))));
             case SUMMON_AIR_ELEMENTAL, SUMMON_EARTH_ELEMENTAL, SUMMON_FIRE_ELEMENTAL, SUMMON_WATER_ELEMENTAL -> {
                 Unit kind = setup.summonedKindOf(side);
-                if ((kind == null || kind.equals(summonedUnit(spell))) && setup.freeHexFor(side) != null) {
+                if ((kind == null || kind.equals(summonedUnit(spell))) && setup.freeHexFor(side, summonedUnit(spell).doubleWide()) != null) {
                     casts.add(new Cast(spell, level, null, List.of()));
                 }
             }
@@ -165,7 +174,8 @@ final class HeroSpellcasting {
                 }
             }
             case DEATH_RIPPLE, DESTROY_UNDEAD, ARMAGEDDON -> {
-                List<Stack> hit = setup.aliveStacks().stream()
+                List<Stack> hit = setup.spellTargets().stream()
+                        .filter(s -> !SpellResistance.isImmune(s.unit(), spell))
                         .filter(s -> spell == Spell.ARMAGEDDON
                                 || (spell == Spell.DESTROY_UNDEAD) == s.unit().isUndead())
                         .toList();
@@ -185,14 +195,16 @@ final class HeroSpellcasting {
         return casts;
     }
 
-    /** Mittelpunkte für Flächenzauber: die Felder aller Stacks und deren Nachbarn. */
+    /** Mittelpunkte für Flächenzauber: die Felder aller Stacks und Maschinen und deren Nachbarn. */
     private static Set<Hex> centers(BattleSetup setup) {
         Set<Hex> centers = new LinkedHashSet<>();
-        for (Stack stack : setup.aliveStacks()) {
-            centers.add(stack.position());
-            for (Hex n : stack.position().neighbors()) {
-                if (setup.battlefield().contains(n)) {
-                    centers.add(n);
+        for (Stack stack : setup.spellTargets()) {
+            for (Hex own : stack.hexes()) {
+                centers.add(own);
+                for (Hex n : own.neighbors()) {
+                    if (setup.battlefield().contains(n)) {
+                        centers.add(n);
+                    }
                 }
             }
         }
@@ -202,9 +214,9 @@ final class HeroSpellcasting {
     static List<Stack> inArea(Spell spell, Hex center, BattleSetup setup) {
         int min = spell == Spell.FROST_RING ? 1 : 0;
         int max = spell == Spell.INFERNO ? 2 : 1;
-        return setup.aliveStacks().stream()
+        return setup.spellTargets().stream()
                 .filter(s -> {
-                    int d = s.position().distanceTo(center);
+                    int d = s.distanceTo(center);
                     return d >= min && d <= max;
                 })
                 .toList();
@@ -212,7 +224,8 @@ final class HeroSpellcasting {
 
     /**
      * Sprungfolge von Chain Lightning: vom Ziel jeweils zum nächsten noch nicht getroffenen Stack,
-     * gleich welcher Seite; bei gleichem Abstand der zuerst gelistete.
+     * gleich welcher Seite, Kriegsmaschinen eingeschlossen; bei gleichem Abstand der zuerst
+     * gelistete.
      */
     // s != current: Identitätsvergleich auf der mutable Stack-Entity.
     @SuppressWarnings("ReferenceEquality")
@@ -223,8 +236,8 @@ final class HeroSpellcasting {
         while (hit.size() < strikes) {
             Stack next = null;
             int bestDistance = Integer.MAX_VALUE;
-            for (Stack s : setup.aliveStacks()) {
-                int d = s.position().distanceTo(current.position());
+            for (Stack s : setup.spellTargets()) {
+                int d = s.distanceTo(current);
                 if (!hit.contains(s) && d < bestDistance) {
                     next = s;
                     bestDistance = d;
@@ -297,7 +310,7 @@ final class HeroSpellcasting {
      * (−4.77 σ, {@code SpellImpactTest}).
      */
     static double summonValue(Spell spell, SkillLevel level, Hero hero, Side side, BattleSetup setup) {
-        Hex hex = setup.freeHexFor(side);
+        Hex hex = setup.freeHexFor(side, summonedUnit(spell).doubleWide());
         if (hex == null) {
             return 0;
         }

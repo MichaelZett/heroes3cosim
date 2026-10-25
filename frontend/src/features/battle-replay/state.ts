@@ -17,6 +17,8 @@ export interface SideState {
   startCount: number;
   q: number;
   r: number;
+  /** Zweifeldrig: das zweite Feld liegt hinter dem Kopf, zum eigenen Rand hin. */
+  doubleWide: boolean;
 }
 
 export interface BattleState {
@@ -48,6 +50,7 @@ function snapshotToSideState(snap: StackSnapshot, maxHp: number, startCount: num
     startCount,
     q: snap.q,
     r: snap.r,
+    doubleWide: snap.doubleWide ?? false,
   };
 }
 
@@ -60,6 +63,7 @@ function applySnapshot(side: SideState, snap: StackSnapshot): SideState {
     topHp: snap.topHp,
     q: snap.q,
     r: snap.r,
+    doubleWide: snap.doubleWide ?? side.doubleWide,
   };
 }
 

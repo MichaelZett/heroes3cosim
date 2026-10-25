@@ -95,7 +95,7 @@ final class ArrowTowers {
             return perHealth;
         }
         int distance = setup.stacksOf(Side.DEFENDER).stream().filter(Stack::isAlive)
-                .mapToInt(d -> attacker.position().distanceTo(d.position())).min().orElse(Integer.MAX_VALUE);
+                .mapToInt(attacker::distanceTo).min().orElse(Integer.MAX_VALUE);
         int speed = attacker.getSpeed();
         if (distance <= speed + 1) {
             return perHealth;

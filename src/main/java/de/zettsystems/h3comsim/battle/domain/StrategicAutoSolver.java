@@ -71,11 +71,9 @@ public final class StrategicAutoSolver implements AutoSolver {
         if (alive.isEmpty()) {
             return null;
         }
-        Hex from = active.position();
-
         // Engagement-Override: ein adjazenter Gegner zwingt zum Nahkampf.
         Stack adjacent = alive.stream()
-                .filter(o -> from.distanceTo(o.position()) == 1)
+                .filter(o -> active.distanceTo(o) == 1)
                 .min(Comparator.comparingInt(Stack::slot))
                 .orElse(null);
         if (adjacent != null) {
@@ -191,7 +189,7 @@ public final class StrategicAutoSolver implements AutoSolver {
         if (plan.hasTankDuty(active.side())
                 && isTankCandidate(active)
                 && !active.canShoot()
-                && active.position().distanceTo(opponent.position()) > 1) {
+                && active.distanceTo(opponent) > 1) {
             // Tank steht schon adjacent zu einem eigenen Schützen → Position halten und
             // Defend (+20 % Defense) statt überflüssig auf einen anderen Adjacent zu wandern.
             // Ein zweiter Tank, der noch im Anflug ist, findet via findTankPosition trotzdem
@@ -378,16 +376,23 @@ public final class StrategicAutoSolver implements AutoSolver {
      */
     private static SplashTally tallySplash(Stack active, Stack target, List<Stack> aliveAll,
                                            boolean deathCloud) {
+        // Jeder Kollateral einmal, auch wenn er zweifeldrig an zwei Felder des Ziels grenzt.
+        Set<Stack> victims = new LinkedHashSet<>();
+        for (Hex own : target.hexes()) {
+            for (Hex neighbor : own.neighbors()) {
+                Stack collateral = splashVictimAt(neighbor, active, target, aliveAll, deathCloud);
+                if (collateral != null) {
+                    victims.add(collateral);
+                }
+            }
+        }
         int enemyHits = 0;
         int ownHits = 0;
-        for (Hex neighbor : target.position().neighbors()) {
-            Stack collateral = splashVictimAt(neighbor, active, target, aliveAll, deathCloud);
-            if (collateral != null) {
-                if (collateral.side() == active.side()) {
-                    ownHits++;
-                } else {
-                    enemyHits++;
-                }
+        for (Stack collateral : victims) {
+            if (collateral.side() == active.side()) {
+                ownHits++;
+            } else {
+                enemyHits++;
             }
         }
         return new SplashTally(enemyHits, ownHits);
@@ -403,7 +408,7 @@ public final class StrategicAutoSolver implements AutoSolver {
     private static @Nullable Stack splashVictimAt(Hex hex, Stack active, Stack target,
                                                   List<Stack> aliveAll, boolean deathCloud) {
         for (Stack s : aliveAll) {
-            if (s == active || s == target || !s.position().equals(hex)) {
+            if (s == active || s == target || !s.occupies(hex)) {
                 continue;
             }
             return deathCloud && s.unit().isUndead() ? null : s;
@@ -434,7 +439,12 @@ public final class StrategicAutoSolver implements AutoSolver {
         Stack best = null;
         int bestSecondaryDanger = -1;
         for (Stack target : aliveEnemies) {
-            Stack secondary = stackAt(behindHex(from, target.position()), aliveEnemies, target);
+            Hex hit = target.nearestHexTo(from);
+            Hex behind = behindHex(active.nearestHexTo(hit), hit);
+            if (target.occupies(behind)) {
+                behind = behindHex(hit, behind);
+            }
+            Stack secondary = stackAt(behind, aliveEnemies, target);
             if (secondary == null) {
                 continue;
             }
@@ -451,7 +461,7 @@ public final class StrategicAutoSolver implements AutoSolver {
     @SuppressWarnings("ReferenceEquality")
     private static @Nullable Stack stackAt(Hex hex, List<Stack> candidates, Stack excluded) {
         for (Stack s : candidates) {
-            if (s != excluded && s.position().equals(hex)) {
+            if (s != excluded && s.occupies(hex)) {
                 return s;
             }
         }
@@ -507,12 +517,11 @@ public final class StrategicAutoSolver implements AutoSolver {
 
     private boolean isAdjacentToOwnProtectedShooter(Stack active) {
         Side mySide = active.side();
-        Hex from = active.position();
         for (Stack shooter : plan.protectedShooters()) {
             if (shooter.side() != mySide || !shooter.isAlive()) {
                 continue;
             }
-            if (from.distanceTo(shooter.position()) == 1) {
+            if (active.distanceTo(shooter) == 1) {
                 return true;
             }
         }
@@ -550,7 +559,7 @@ public final class StrategicAutoSolver implements AutoSolver {
         int minDist = Integer.MAX_VALUE;
         for (Stack shooter : shooters) {
             for (Stack enemy : enemies) {
-                int d = shooter.position().distanceTo(enemy.position());
+                int d = shooter.distanceTo(enemy);
                 if (d < minDist) {
                     minDist = d;
                     best = new ThreatenedShooter(shooter, enemy);
@@ -565,15 +574,19 @@ public final class StrategicAutoSolver implements AutoSolver {
      */
     private static @Nullable Hex tankSpotFor(Stack active, ThreatenedShooter threatened,
                                              Battlefield battlefield, BattleSetup setup) {
-        Hex shooterPos = threatened.shooter().position();
-        Hex preferred = adjacentTowards(shooterPos, threatened.threat().position());
-        if (isReachableLandingSpot(active, preferred, battlefield, setup)) {
+        Stack shooter = threatened.shooter();
+        Hex threat = threatened.threat().nearestHexTo(shooter.position());
+        Hex shooterPos = shooter.nearestHexTo(threat);
+        Hex preferred = adjacentTowards(shooterPos, threat);
+        if (!shooter.occupies(preferred) && isReachableLandingSpot(active, preferred, battlefield, setup)) {
             return preferred;
         }
-        boolean leftward = Hex.isLeftward(shooterPos, threatened.threat().position());
-        for (Hex neighbor : shooterPos.neighbors(leftward)) {
-            if (isReachableLandingSpot(active, neighbor, battlefield, setup)) {
-                return neighbor;
+        boolean leftward = Hex.isLeftward(shooterPos, threat);
+        for (Hex own : shooter.hexes()) {
+            for (Hex neighbor : own.neighbors(leftward)) {
+                if (!shooter.occupies(neighbor) && isReachableLandingSpot(active, neighbor, battlefield, setup)) {
+                    return neighbor;
+                }
             }
         }
         return null;
@@ -613,35 +626,16 @@ public final class StrategicAutoSolver implements AutoSolver {
 
     private static boolean hasReachableFreeAdjacent(Stack target, Hex from, int speed,
                                                     Battlefield bf, Stack mover, BattleSetup setup) {
-        for (Hex adj : target.position().neighbors()) {
+        for (Hex adj : setup.attackHeads(mover, target)) {
             if (bf.isPassable(adj)
                     && from.distanceTo(adj) <= speed
-                    && !Objects.equals(adj, mover.position())
-                    && !isHexOccupiedByOther(adj, mover, setup)) {
+                    && !Objects.equals(adj, mover.position())) {
                 return true;
             }
         }
         return false;
     }
 
-    // s != mover: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
-    @SuppressWarnings("ReferenceEquality")
-    private static boolean isHexOccupiedByOther(Hex hex, Stack mover, BattleSetup setup) {
-        for (Stack s : setup.attackerStacks()) {
-            if (s != mover && s.isAlive() && s.position().equals(hex)) {
-                return true;
-            }
-        }
-        for (Stack s : setup.defenderStacks()) {
-            if (s != mover && s.isAlive() && s.position().equals(hex)) {
-                return true;
-            }
-        }
-        return setup.machineAt(hex) != null;
-    }
-
-    // other != active: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
-    @SuppressWarnings("ReferenceEquality")
     static boolean isReachableLandingSpot(Stack active, Hex hex, Battlefield bf,
                                           BattleSetup setup) {
         if (hex.equals(active.position())) {
@@ -655,20 +649,11 @@ public final class StrategicAutoSolver implements AutoSolver {
                 && active.position().distanceTo(hex) > active.getSpeed()) {
             return false;
         }
-        for (Stack other : setup.attackerStacks()) {
-            if (other != active && other.isAlive() && other.position().equals(hex)) {
-                return false;
-            }
-        }
-        for (Stack other : setup.defenderStacks()) {
-            if (other != active && other.isAlive() && other.position().equals(hex)) {
-                return false;
-            }
-        }
-        if (setup.machineAt(hex) != null) {
+        // Platz für alle Felder des Stacks, frei von anderen Stacks und Maschinen.
+        if (!active.hexesAt(hex).stream().allMatch(bf::isPassable) || !setup.fits(active, hex)) {
             return false;
         }
-        List<Hex> path = bf.findPath(active.position(), hex, active.unit().movement());
+        List<Hex> path = bf.pathFor(active, hex);
         return !path.isEmpty() && path.size() <= active.getSpeed();
     }
 

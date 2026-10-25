@@ -34,6 +34,17 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   nur Gegner), Fire Breath (Green/Gold/Red/Black Dragon — Ziel + Stack
   dahinter), Magog-Fireball (Ziel + alle 1-Hex-Nachbarn, Manual S. 97),
   Lich Death Cloud (Ziel + alle 1-Hex-Nachbarn außer Untoten).
+- **Zweifeldrige Kreaturen** — 45 Kreaturen (Drachen, Behemoths,
+  Cavaliers, Unicorns, Hydren und andere, Liste wie in VCMI) sowie
+  Ballista, Sanitätszelt und Katapult belegen zwei Felder; das zweite
+  liegt hinter dem Kopf, zum eigenen Rand hin. Nachbarschaft, Distanz,
+  Splash und Flächenzauber rechnen mit beiden Feldern; Landefelder und
+  am Boden jeder Schritt des Wegs brauchen Platz für beide, am Rand rückt
+  die Kreatur ein Feld vor. In
+  der Faction-Matrix mit dem Strategic-Solver verschiebt das vor allem
+  Stronghold (0.32 → 0.64), Rampart (0.35 → 0.15) und Dungeon
+  (0.71 → 0.54); mit dem Greedy-Solver ändert sich keine Fraktion um mehr
+  als 0.05 (80 Kämpfe je Paarung).
 - **Helden** — alle 144 Helden aus RoE und Armageddon's Blade (18
   Klassen, je Fraktion 16) mit ihren Startfertigkeiten; die Primärwerte
   hängen an der Klasse. Im Army-Battle führt jede Armee einen Helden:
@@ -152,7 +163,8 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   die Aura eines Unicorns gibt Nachbarn 20 %.
 - **Kriegsmaschinen** (Manual S. 117) — je Armee wählbar: Die Ballista
   schießt am Rundenende auf den lohnendsten Gegner, Grundschaden (2–3) ×
-  (Attack des Helden + 1) mit eigenem Attack 10; Artillery gibt ab
+  (Attack des Helden + 1) mit Attack 10 plus der Attack des Helden; alle
+  Maschinen bekommen Attack und Defense ihres Helden. Artillery gibt ab
   Advanced einen zweiten Schuss und 50/75/100 % Chance auf doppelten
   Grundschaden, Ballista-Spezialisten heben ihren Attack. Das Sanitätszelt
   heilt am Rundenende die oberste Kreatur des am stärksten verwundeten
@@ -165,6 +177,14 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   greift sie an, die teuerste zuerst. Im Spiegel-Duell mit allen drei
   Maschinen auf beiden Seiten gewinnt das gegen „Maschinen stehen lassen"
   0.559 (+4.4 σ) bei einer Wochenproduktion und 0.525 (+1.8 σ) bei vier.
+  Splash (Drachenatem, Magog, Cerberus), Flächenzauber, Chain Lightning
+  und Armageddon treffen Maschinen, die Todeswolke der Liches nicht;
+  Magic Arrow und die Bolts dürfen auf sie zielen. Gegen alle übrigen
+  Zauber sind sie immun, außer gegen die Wirkungen, die heroes.thelazy.net
+  als wirksam listet (Bless, Shield, Cure und andere).
+  Wirkung im Spiegel-Duell (`WarMachineImpactTest`, eine Seite
+  ausgerüstet, je 1440 Kämpfe): Ballista 0.601, mit Expert Artillery
+  0.840, Zelt mit Expert First Aid 0.904, alle drei 0.862.
   Das Katapult gibt es nur bei Belagerungen, siehe unten.
 - **Belagerung** (heroes.thelazy.net, *Fortifications*, Felder wie in der
   freien H3-Engine VCMI) — je Army-Battle wählbar: Der Verteidiger steht

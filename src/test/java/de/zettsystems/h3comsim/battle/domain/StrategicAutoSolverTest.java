@@ -424,13 +424,13 @@ class StrategicAutoSolverTest {
 
     @Test
     void flyer_picks_free_adjacent_when_straight_line_to_shooter_is_blocked() {
-        // Black Dragon (ATTACKER, FLYING, speed 15) gegen einen Eck-Schützen (Marksman auf
+        // Angel (ATTACKER, FLYING, speed 12, einfeldig) gegen einen Eck-Schützen (Marksman auf
         // (16,0)). Defender baut Tank-Wall vor dem Schützen — Halberdier auf (15,0),
         // Swordsman auf (15,1). Nur (16,1) bleibt als freier Adjacent.
         //
         // Ohne Flieger-Heuristik: Greedy.moveToward straight-line landet auf einem besetzten
         // Hex, Engine erkennt Belegung → Wait. Mit Heuristik: findFlyerLanding wählt (16,1).
-        Stack dragon = new Stack(UnitCatalog.BLACK_DRAGON, 1, new Hex(2, 5), Side.ATTACKER, 0);
+        Stack dragon = new Stack(UnitCatalog.ANGEL, 1, new Hex(6, 5), Side.ATTACKER, 0);
         Stack tank1 = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(15, 0), Side.DEFENDER, 0);
         Stack tank2 = new Stack(UnitCatalog.SWORDSMAN, 10, new Hex(15, 1), Side.DEFENDER, 1);
         Stack marksman = new Stack(UnitCatalog.MARKSMAN, 9, new Hex(16, 0), Side.DEFENDER, 2);
@@ -444,6 +444,21 @@ class StrategicAutoSolverTest {
         Action.MoveAndMelee mm = (Action.MoveAndMelee) act;
         assertThat(mm.destination()).isEqualTo(new Hex(16, 1));
         assertThat(mm.target()).isSameAs(marksman);
+    }
+
+    @Test
+    void a_two_hex_flyer_finds_no_room_beside_the_cornered_shooter() {
+        // Wie oben, aber ein Black Dragon: auf (16,1) läge sein Heck auf (15,1), dort steht der
+        // Swordsman. Ein anderes Feld, an dem nur das Heck anläge, gibt es in der Ecke nicht.
+        Stack dragon = new Stack(UnitCatalog.BLACK_DRAGON, 1, new Hex(2, 5), Side.ATTACKER, 0);
+        Stack tank1 = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(15, 0), Side.DEFENDER, 0);
+        Stack tank2 = new Stack(UnitCatalog.SWORDSMAN, 10, new Hex(15, 1), Side.DEFENDER, 1);
+        Stack marksman = new Stack(UnitCatalog.MARKSMAN, 9, new Hex(16, 0), Side.DEFENDER, 2);
+        BattleSetup setup = new BattleSetup(List.of(dragon), List.of(tank1, tank2, marksman), battlefield);
+        solver.planRound(setup);
+
+        assertThat(setup.attackHeads(dragon, marksman)).isEmpty();
+        assertThat(solver.decide(dragon, marksman, battlefield)).isNotInstanceOf(Action.MoveAndMelee.class);
     }
 
     @Test

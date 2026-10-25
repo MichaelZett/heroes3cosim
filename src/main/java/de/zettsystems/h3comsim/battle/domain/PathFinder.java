@@ -29,10 +29,19 @@ public final class PathFinder {
      * Liefert {@code from} zurück, wenn der Stack schon adjacent ist oder kein Pfad existiert.
      */
     public static Hex stepToward(Battlefield bf, Hex from, Hex target, int maxHexes) {
+        return stepToward(bf, from, target, maxHexes, 0);
+    }
+
+    /**
+     * Wie {@link #stepToward(Battlefield, Hex, Hex, int)} für einen zweifeldrigen Stack: sein Heck
+     * liegt {@code tailDq} Spalten neben dem Kopf (0 = einfeldig) und darf auf keinem Schritt auf
+     * einem Hindernis oder außerhalb des Felds stehen.
+     */
+    public static Hex stepToward(Battlefield bf, Hex from, Hex target, int maxHexes, int tailDq) {
         if (maxHexes <= 0 || from.distanceTo(target) <= 1) {
             return from;
         }
-        List<Hex> path = shortestPath(bf, from, target);
+        List<Hex> path = shortestPath(bf, from, target, tailDq);
         if (path.isEmpty()) {
             return from;
         }
@@ -45,11 +54,21 @@ public final class PathFinder {
      * (inklusive). Leer, wenn der Endpunkt nicht passable ist oder kein Pfad gefunden wird.
      */
     public static List<Hex> findPath(Battlefield bf, Hex from, Hex destination) {
-        if (from.equals(destination) || !bf.isPassable(destination)) {
+        return findPath(bf, from, destination, 0);
+    }
+
+    /** Wie {@link #findPath(Battlefield, Hex, Hex)}; auch das Heck ({@code tailDq}) bleibt frei. */
+    public static List<Hex> findPath(Battlefield bf, Hex from, Hex destination, int tailDq) {
+        if (from.equals(destination) || !fits(bf, destination, tailDq)) {
             return List.of();
         }
         return aStarSearch(bf, from, destination::equals, h -> h.distanceTo(destination),
-                Hex.isLeftward(from, destination));
+                Hex.isLeftward(from, destination), tailDq);
+    }
+
+    /** Stehen Kopf und Heck auf begehbaren Feldern? */
+    static boolean fits(Battlefield bf, Hex head, int tailDq) {
+        return bf.isPassable(head) && (tailDq == 0 || bf.isPassable(new Hex(head.q() + tailDq, head.r())));
     }
 
     /**
@@ -73,13 +92,13 @@ public final class PathFinder {
         return false;
     }
 
-    private static List<Hex> shortestPath(Battlefield bf, Hex from, Hex target) {
-        Set<Hex> goals = neighborGoals(bf, target);
+    private static List<Hex> shortestPath(Battlefield bf, Hex from, Hex target, int tailDq) {
+        Set<Hex> goals = neighborGoals(bf, target, tailDq);
         if (goals.isEmpty()) {
             return List.of();
         }
         return aStarSearch(bf, from, goals::contains, h -> minDistance(h, goals),
-                Hex.isLeftward(from, target));
+                Hex.isLeftward(from, target), tailDq);
     }
 
     /**
@@ -91,7 +110,7 @@ public final class PathFinder {
     private static List<Hex> aStarSearch(Battlefield bf, Hex from,
                                          Predicate<Hex> goalReached,
                                          ToIntFunction<Hex> heuristic,
-                                         boolean leftward) {
+                                         boolean leftward, int tailDq) {
         Map<Hex, Hex> cameFrom = new HashMap<>();
         Map<Hex, Integer> gScore = new HashMap<>();
         gScore.put(from, 0);
@@ -111,7 +130,7 @@ public final class PathFinder {
                 return reconstruct(cameFrom, current);
             }
             if (closed.add(current)) {
-                expandNeighbors(current, bf, cameFrom, gScore, open, leftward);
+                expandNeighbors(current, bf, cameFrom, gScore, open, leftward, tailDq);
             }
         }
         return List.of();
@@ -119,10 +138,10 @@ public final class PathFinder {
 
     private static void expandNeighbors(Hex current, Battlefield bf,
                                         Map<Hex, Hex> cameFrom, Map<Hex, Integer> gScore,
-                                        PriorityQueue<Hex> open, boolean leftward) {
+                                        PriorityQueue<Hex> open, boolean leftward, int tailDq) {
         int currentG = gScore.getOrDefault(current, Integer.MAX_VALUE);
         for (Hex neighbor : current.neighbors(leftward)) {
-            if (!bf.contains(neighbor) || bf.hasObstacle(neighbor)) {
+            if (!fits(bf, neighbor, tailDq)) {
                 continue;
             }
             int tentativeG = currentG + 1;
@@ -134,10 +153,10 @@ public final class PathFinder {
         }
     }
 
-    private static Set<Hex> neighborGoals(Battlefield bf, Hex target) {
+    private static Set<Hex> neighborGoals(Battlefield bf, Hex target, int tailDq) {
         Set<Hex> goals = new HashSet<>();
         for (Hex n : target.neighbors()) {
-            if (bf.isPassable(n)) {
+            if (fits(bf, n, tailDq)) {
                 goals.add(n);
             }
         }

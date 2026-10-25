@@ -23,6 +23,14 @@ public record StackSnapshot(
         int q,
 
         @Schema(description = "Axial-Hex-Koordinate r (Reihe)", example = "5")
-        int r
+        int r,
+
+        @Schema(description = "Zweifeldrig: das zweite Feld liegt dahinter, beim Angreifer bei q − 1, beim Verteidiger bei q + 1")
+        boolean doubleWide
 ) {
+
+    /** Einfeldiger Stack. */
+    public StackSnapshot(Side side, int slot, String unitName, int count, int topHp, int q, int r) {
+        this(side, slot, unitName, count, topHp, q, r, false);
+    }
 }

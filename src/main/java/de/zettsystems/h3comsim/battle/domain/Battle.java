@@ -12,6 +12,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -231,7 +232,7 @@ public final class Battle {
         if (summoned != null && summoned.isAlive()) {
             summoned.reinforce(count);
         } else {
-            Hex hex = setup.freeHexFor(side);
+            Hex hex = setup.freeHexFor(side, unit.doubleWide());
             if (hex == null) {
                 return;
             }
@@ -268,6 +269,7 @@ public final class Battle {
                     target.takeDamage(damage, Set.of());
                     killed = Math.max(0, countBefore - target.getCount());
                     emitRebirthIfFired(target, rebirthUsedBefore);
+                    setup.machineHit(target);
                 }
                 case INSTANT -> healed = applyInstantSpell(spell,
                         HeroSpellcasting.healing(hero, spell, cast.level(), target), target);
@@ -711,7 +713,7 @@ public final class Battle {
         Battlefield battlefield = setup.battlefieldFor(active.side());
         Hex startPos = active.position();
         moveTo(active, destination, battlefield);
-        if (!active.isAlive() || !active.position().isAdjacent(target.position())) {
+        if (!active.isAlive() || active.distanceTo(target) != 1) {
             // Im Graben stecken geblieben oder auf dem Weg gefallen: kein Angriff mehr.
             return;
         }
@@ -719,9 +721,7 @@ public final class Battle {
         meleeAttack(active, target, hexesMoved, setup);
         if (active.hasSpeciality(UnitSpeciality.MOVE_BACK) && active.isAlive()) {
             BattleLogger.logMoveBack(active.getName(), startPos.q(), startPos.r());
-            Hex returnFrom = active.position();
-            List<HexCoord> backPath = battlefield.findPath(returnFrom, startPos,
-                            active.unit().movement()).stream()
+            List<HexCoord> backPath = battlefield.pathFor(active, startPos).stream()
                     .map(h -> new HexCoord(h.q(), h.r())).toList();
             active.moveTo(startPos);
             events.emit(new BattleEvent.MoveBack(active.side(), active.slot(),
@@ -756,9 +756,8 @@ public final class Battle {
     }
 
     private static boolean hasAdjacentEnemy(Stack active, BattleSetup setup) {
-        Hex from = active.position();
         for (Stack o : setup.opponentsOf(active)) {
-            if (o.isAlive() && from.distanceTo(o.position()) == 1) {
+            if (o.isAlive() && active.distanceTo(o) == 1) {
                 return true;
             }
         }
@@ -777,21 +776,9 @@ public final class Battle {
         events.emit(new BattleEvent.Defend(active.side(), active.slot()));
     }
 
-    // Stack ist eine mutable Entity ohne equals/hashCode — der !=-Vergleich meint bewusst
-    // Objektidentität (ist es derselbe Stack wie der Mover?), kein Wert-Vergleich.
-    @SuppressWarnings("ReferenceEquality")
+    /** Kann {@code mover} mit dem Kopf nicht auf {@code hex} stehen — bei zweifeldrigen auch das Heck? */
     private static boolean isHexBlocked(Hex hex, Stack mover, BattleSetup setup) {
-        for (Stack s : setup.attackerStacks()) {
-            if (s != mover && s.isAlive() && s.position().equals(hex)) {
-                return true;
-            }
-        }
-        for (Stack s : setup.defenderStacks()) {
-            if (s != mover && s.isAlive() && s.position().equals(hex)) {
-                return true;
-            }
-        }
-        return setup.machineAt(hex) != null || !setup.battlefieldFor(mover.side()).isPassable(hex);
+        return !setup.fits(mover, hex);
     }
 
     /**
@@ -802,9 +789,13 @@ public final class Battle {
         Hex from = active.position();
         Siege siege = currentSetup == null ? null : currentSetup.siege();
         boolean ground = active.unit().movement() == Movement.GROUND;
-        List<Hex> walked = battlefield.findPath(from, destination, active.unit().movement());
+        List<Hex> walked = battlefield.pathFor(active, destination);
         if (siege != null && ground) {
             walked = untilMoat(walked, siege);
+            if (currentSetup != null && stuckWithoutRoom(currentSetup, active, walked, destination)) {
+                return;
+            }
+            walked = currentSetup == null ? walked : whereItFits(currentSetup, active, walked, destination);
         }
         Hex end = walked.isEmpty() ? destination : walked.getLast();
         List<HexCoord> path = walked.stream().map(h -> new HexCoord(h.q(), h.r())).toList();
@@ -815,6 +806,24 @@ public final class Battle {
         if (siege != null) {
             siegeHazards(active, ground ? walked : List.of(end), siege);
         }
+    }
+
+    /**
+     * Bleibt ein Stack vor dem Ziel im Graben stehen, braucht auch sein Heck dort Platz: der Weg
+     * endet am letzten Feld davor, auf dem er passt.
+     */
+    static List<Hex> whereItFits(BattleSetup setup, Stack active, List<Hex> walked, Hex destination) {
+        List<Hex> path = walked;
+        while (!path.isEmpty() && !path.getLast().equals(destination) && !setup.fits(active, path.getLast())) {
+            path = path.subList(0, path.size() - 1);
+        }
+        return path;
+    }
+
+    /** Passt der Stack auf keinem Feld des gekürzten Wegs, bleibt er stehen. */
+    static boolean stuckWithoutRoom(BattleSetup setup, Stack active, List<Hex> walked, Hex destination) {
+        return !walked.isEmpty() && !walked.getLast().equals(destination)
+                && whereItFits(setup, active, walked, destination).isEmpty();
     }
 
     /** Der Weg bis einschließlich des ersten Grabenfelds. */
@@ -928,8 +937,9 @@ public final class Battle {
     // collateral != primary: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
     @SuppressWarnings("ReferenceEquality")
     private void applyMeleeSplash(Stack active, Stack primary, BattleSetup setup) {
+        Hex[] contact = closestPair(active, primary);
         if (active.hasSpeciality(UnitSpeciality.THREE_HEADED_ATTACK)) {
-            for (Hex flank : active.position().commonNeighbors(primary.position())) {
+            for (Hex flank : contact[0].commonNeighbors(contact[1])) {
                 Stack candidate = findStackAt(active, flank, setup);
                 if (candidate != null && candidate.isAlive() && candidate.side() != active.side()) {
                     applySplashHit(active, candidate, AttackType.HAND_TO_HAND);
@@ -937,12 +947,32 @@ public final class Battle {
             }
         }
         if (active.hasSpeciality(UnitSpeciality.FIRE_BREATH)) {
-            Hex behind = behindHex(active.position(), primary.position());
+            Hex behind = behindHex(contact[0], contact[1]);
+            if (primary.occupies(behind)) {
+                // Hinter dem getroffenen Feld liegt das Heck des Ziels: der Atem geht ein Feld weiter.
+                behind = behindHex(contact[1], behind);
+            }
             Stack collateral = findStackAt(active, behind, setup);
             if (collateral != null && collateral != primary && collateral.isAlive()) {
                 applySplashHit(active, collateral, AttackType.HAND_TO_HAND);
             }
         }
+    }
+
+    /**
+     * Die beiden Felder, an denen sich zwei Stacks am nächsten kommen, Angreifer zuerst; bei
+     * Gleichstand die Köpfe.
+     */
+    private static Hex[] closestPair(Stack a, Stack b) {
+        Hex[] best = {a.position(), b.position()};
+        for (Hex ha : a.hexes()) {
+            for (Hex hb : b.hexes()) {
+                if (ha.distanceTo(hb) < best[0].distanceTo(best[1])) {
+                    best = new Hex[] {ha, hb};
+                }
+            }
+        }
+        return best;
     }
 
     private static Hex behindHex(Hex from, Hex through) {
@@ -952,22 +982,23 @@ public final class Battle {
 
     /**
      * Liefert irgendeinen lebenden Stack auf {@code hex} (egal welche Seite, außer
-     * {@code active} selbst). Für H3-Friendly-Fire-Splash-Mechaniken.
+     * {@code active} selbst), auch eine stehende Kriegsmaschine. Für H3-Friendly-Fire-Splash-
+     * Mechaniken; Splash trifft Maschinen (heroes.thelazy.net, <em>War Machine</em>).
      */
     // s != active: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
     @SuppressWarnings("ReferenceEquality")
     private @Nullable Stack findStackAt(Stack active, Hex hex, BattleSetup setup) {
         for (Stack s : setup.attackerStacks()) {
-            if (s != active && s.isAlive() && s.position().equals(hex)) {
+            if (s != active && s.isAlive() && s.occupies(hex)) {
                 return s;
             }
         }
         for (Stack s : setup.defenderStacks()) {
-            if (s != active && s.isAlive() && s.position().equals(hex)) {
+            if (s != active && s.isAlive() && s.occupies(hex)) {
                 return s;
             }
         }
-        return null;
+        return setup.machineAt(hex);
     }
 
     private void applySplashHit(Stack active, Stack secondary, AttackType attackType) {
@@ -984,12 +1015,15 @@ public final class Battle {
         int countBefore = secondary.getCount();
         BattleLogger.logAttack(active.getName(), secondary.getName());
         secondary.takeDamage(realDamage, active.getAttackerSpecialities());
+        if (currentSetup != null) {
+            currentSetup.machineHit(secondary);
+        }
         int killed = countBefore - secondary.getCount();
         if (attackType == AttackType.HAND_TO_HAND) {
             events.emit(new BattleEvent.Melee(active.side(), active.slot(),
                     secondary.side(), secondary.slot(), 0, realDamage, killed, snapshot(secondary)));
         } else {
-            int distance = active.position().distanceTo(secondary.position());
+            int distance = active.distanceTo(secondary);
             events.emit(new BattleEvent.Shoot(active.side(), active.slot(),
                     secondary.side(), secondary.slot(), distance, realDamage, killed, snapshot(secondary)));
         }
@@ -1049,7 +1083,7 @@ public final class Battle {
             BattleLogger.logImmuneToRetaliation(active.getName());
             return;
         }
-        if (!passive.isAbleToAct() || !passive.position().isAdjacent(active.position())) {
+        if (!passive.isAbleToAct() || passive.distanceTo(active) != 1) {
             return;
         }
         if (!passive.canRetaliate()) {
@@ -1068,7 +1102,7 @@ public final class Battle {
     }
 
     private void rangedAttack(Stack active, Stack passive, BattleSetup setup) {
-        int distance = active.position().distanceTo(passive.position());
+        int distance = active.distanceTo(passive);
         boolean behindWall = setup.shotCrossesWall(active, passive);
         BattleLogger.logShoot(active.getName(), passive.getName(), distance);
         int countBefore = passive.getCount();
@@ -1082,7 +1116,7 @@ public final class Battle {
         if (active.hasSpeciality(UnitSpeciality.TWO_SHOTS) && active.canShoot() && passive.isAlive()) {
             BattleLogger.logTwoShots(active.getName());
             events.emit(new BattleEvent.TwoShots(active.side(), active.slot()));
-            int distance2 = active.position().distanceTo(passive.position());
+            int distance2 = active.distanceTo(passive);
             boolean behindWall2 = setup.shotCrossesWall(active, passive);
             BattleLogger.logShoot(active.getName(), passive.getName(), distance2);
             int countBefore2 = passive.getCount();
@@ -1120,26 +1154,39 @@ public final class Battle {
      * SPLASH_SHOT: alle Stacks rund um das Hauptziel, wie ein Fireball — Undead inklusive.
      */
     private void applySplashShot(Stack active, Stack primary, BattleSetup setup) {
-        boolean leftward = Hex.isLeftward(active.position(), primary.position());
-        for (Hex neighbor : primary.position().neighbors(leftward)) {
-            Stack collateral = collateralAt(active, neighbor, primary, setup);
-            if (collateral != null) {
+        for (Stack collateral : around(active, primary, setup)) {
+            applySplashHit(active, collateral, AttackType.LONG_RANGE);
+        }
+    }
+
+    /**
+     * DEATH_CLOUD: alle non-undead Stacks im 1-Hex-Radius, ohne Stück-Limit, keine Kriegsmaschinen.
+     */
+    private void applyDeathCloud(Stack active, Stack primary, BattleSetup setup) {
+        for (Stack collateral : around(active, primary, setup)) {
+            // Kriegsmaschinen sind immun gegen die Todeswolke (heroes.thelazy.net, War Machine).
+            if (!collateral.unit().isUndead() && !collateral.isWarMachine()) {
                 applySplashHit(active, collateral, AttackType.LONG_RANGE);
             }
         }
     }
 
     /**
-     * DEATH_CLOUD: alle non-undead Stacks im 1-Hex-Radius, ohne Stück-Limit.
+     * Die lebenden Stacks rund um das Hauptziel, jeder einmal — auch wenn ein zweifeldriger an
+     * zwei Felder grenzt oder das Ziel selbst zwei Felder hat.
      */
-    private void applyDeathCloud(Stack active, Stack primary, BattleSetup setup) {
+    private List<Stack> around(Stack active, Stack primary, BattleSetup setup) {
         boolean leftward = Hex.isLeftward(active.position(), primary.position());
-        for (Hex neighbor : primary.position().neighbors(leftward)) {
-            Stack collateral = collateralAt(active, neighbor, primary, setup);
-            if (collateral != null && !collateral.unit().isUndead()) {
-                applySplashHit(active, collateral, AttackType.LONG_RANGE);
+        Set<Stack> seen = new LinkedHashSet<>();
+        for (Hex own : primary.hexes()) {
+            for (Hex neighbor : own.neighbors(leftward)) {
+                Stack collateral = collateralAt(active, neighbor, primary, setup);
+                if (collateral != null) {
+                    seen.add(collateral);
+                }
             }
         }
+        return List.copyOf(seen);
     }
 
     /**
@@ -1373,7 +1420,7 @@ public final class Battle {
 
     private static StackSnapshot snapshot(Stack stack) {
         return new StackSnapshot(stack.side(), stack.slot(), stack.getName(), stack.getCount(),
-                stack.getCurrentHealth(), stack.position().q(), stack.position().r());
+                stack.getCurrentHealth(), stack.position().q(), stack.position().r(), stack.isDoubleWide());
     }
 
     private static Winner determineWinner(BattleSetup setup) {
