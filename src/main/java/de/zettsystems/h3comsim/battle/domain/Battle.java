@@ -498,6 +498,14 @@ public final class Battle {
             events.emit(new BattleEvent.BadMorale(activeStack.side(), activeStack.slot()));
             return;
         }
+        Siege siege = setup.siege();
+        if (siege != null && !activeStack.hasWaitedThisTurn() && siege.isMoat(activeStack.position())) {
+            // Wer seinen Zug im Graben beginnt, nimmt erneut Schaden; wer aussetzt, nicht.
+            hazard(activeStack, siege.moatDamage(), false);
+            if (!activeStack.isAlive()) {
+                return;
+            }
+        }
         Stack opponent = autoSolver.pickTarget(activeStack, setup.opponentsOf(activeStack), battlefield);
         if (opponent == null) {
             return;
@@ -660,8 +668,12 @@ public final class Battle {
         }
         Battlefield battlefield = setup.battlefieldFor(active.side());
         Hex startPos = active.position();
-        int hexesMoved = startPos.distanceTo(destination);
         moveTo(active, destination, battlefield);
+        if (!active.isAlive() || !active.position().isAdjacent(target.position())) {
+            // Im Graben stecken geblieben oder auf dem Weg gefallen: kein Angriff mehr.
+            return;
+        }
+        int hexesMoved = startPos.distanceTo(active.position());
         meleeAttack(active, target, hexesMoved, setup);
         if (active.hasSpeciality(UnitSpeciality.MOVE_BACK) && active.isAlive()) {
             BattleLogger.logMoveBack(active.getName(), startPos.q(), startPos.r());
@@ -730,14 +742,74 @@ public final class Battle {
         return setup.machineAt(hex) != null || !setup.battlefieldFor(mover.side()).isPassable(hex);
     }
 
+    /**
+     * Bewegt den Stack. Bei einer Belagerung hält der Graben Bodentruppen auf dem ersten Grabenfeld
+     * des Wegs an (heroes.thelazy.net, <em>Moat</em>); danach folgen Graben- und Minenschaden.
+     */
     private void moveTo(Stack active, Hex destination, Battlefield battlefield) {
         Hex from = active.position();
-        List<HexCoord> path = battlefield.findPath(from, destination, active.unit().movement()).stream()
-                .map(h -> new HexCoord(h.q(), h.r())).toList();
-        BattleLogger.logMove(active.getName(), from.q(), from.r(), destination.q(), destination.r());
-        active.moveTo(destination);
+        List<Hex> walked = battlefield.findPath(from, destination, active.unit().movement());
+        Siege siege = currentSetup == null ? null : currentSetup.siege();
+        boolean ground = active.unit().movement() == Movement.GROUND;
+        if (siege != null && ground) {
+            for (int i = 0; i < walked.size(); i++) {
+                if (siege.isMoat(walked.get(i))) {
+                    walked = walked.subList(0, i + 1);
+                    break;
+                }
+            }
+        }
+        Hex end = walked.isEmpty() ? destination : walked.getLast();
+        List<HexCoord> path = walked.stream().map(h -> new HexCoord(h.q(), h.r())).toList();
+        BattleLogger.logMove(active.getName(), from.q(), from.r(), end.q(), end.r());
+        active.moveTo(end);
         events.emit(new BattleEvent.Move(active.side(), active.slot(),
-                from.q(), from.r(), destination.q(), destination.r(), path));
+                from.q(), from.r(), end.q(), end.r(), path));
+        if (siege != null) {
+            for (Hex hex : ground ? walked : List.of(end)) {
+                if (active.side() == Side.ATTACKER && active.isAlive() && siege.triggerMine(hex)) {
+                    hazard(active, mineDamage(active), true);
+                }
+            }
+            if (active.isAlive() && siege.isMoat(end)) {
+                hazard(active, siege.moatDamage(), false);
+            }
+        }
+    }
+
+    /**
+     * Landmine von Tower (SoD): 10 × Power des verteidigenden Helden plus 25/50/100 nach Fire
+     * Magic, mindestens 150. Gegen Feuer- und Zauberimmune wirkungslos.
+     */
+    private int mineDamage(Stack target) {
+        if (SpellResistance.isImmune(target, Spell.LAND_MINE)) {
+            return 0;
+        }
+        Hero defender = currentSetup == null ? null : currentSetup.heroOf(Side.DEFENDER);
+        if (defender == null) {
+            return 150;
+        }
+        int fire = SpellDamage.byLevel(defender.levelOf(SecondarySkill.FIRE_MAGIC), 25, 50, 100);
+        int bonus = defender.levelOf(SecondarySkill.FIRE_MAGIC) == SkillLevel.NONE ? 0 : fire;
+        return Math.max(150, 10 * defender.spellPower() + bonus);
+    }
+
+    /** Im Graben verliert ein Stack 3 Defense (heroes.thelazy.net, <em>Moat</em>). */
+    private int inMoat(Stack stack, int defense) {
+        Siege siege = currentSetup == null ? null : currentSetup.siege();
+        return siege != null && siege.isMoat(stack.position()) ? Math.max(0, defense - 3) : defense;
+    }
+
+    private void hazard(Stack target, int damage, boolean mine) {
+        if (damage <= 0) {
+            return;
+        }
+        int countBefore = target.getCount();
+        boolean rebirthUsedBefore = target.isRebirthUsed();
+        target.takeDamage(damage, Set.of());
+        emitRebirthIfFired(target, rebirthUsedBefore);
+        events.emit(new BattleEvent.MoatDamage(target.side(), target.slot(), damage,
+                Math.max(0, countBefore - target.getCount()), mine, snapshot(target)));
     }
 
     private void meleeAttack(Stack active, Stack passive, int hexesMoved, BattleSetup setup) {
@@ -839,7 +911,7 @@ public final class Battle {
     private void applySplashHit(Stack active, Stack secondary, AttackType attackType) {
         secondary.wakeFromBlind();
         int currentDamage = active.calculateCurrentDamage(attackType, 0, rng);
-        int effectiveDefense = secondary.effectiveDefenseAgainst(active.getAttackerSpecialities());
+        int effectiveDefense = inMoat(secondary, secondary.effectiveDefenseAgainst(active.getAttackerSpecialities()));
         int boniMaliPercentage = active.calculateAttackBoniMaliPercentage(secondary, attackType, effectiveDefense);
         // Splash-Treffer sind normale Angriffe und bekommen dieselben Helden-Modifikatoren
         // wie das Hauptziel — sonst würde ein Cerberus mit Offense-Held nur beim Primary
@@ -1034,7 +1106,7 @@ public final class Battle {
                 BattleLogger.logObstaclePenalty(active.getName());
             }
         }
-        int effectiveDefense = passive.effectiveDefenseAgainst(active.getAttackerSpecialities());
+        int effectiveDefense = inMoat(passive, passive.effectiveDefenseAgainst(active.getAttackerSpecialities()));
         int boniMaliPercentage = active.calculateAttackBoniMaliPercentage(passive, attackType, effectiveDefense);
         int damagePercent = 100 + boniMaliPercentage;
         if (active.isLucky(rng)) {

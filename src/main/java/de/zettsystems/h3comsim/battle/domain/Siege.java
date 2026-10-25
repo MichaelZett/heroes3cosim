@@ -21,6 +21,8 @@ public final class Siege {
     private final Fortification fortification;
     private final Faction town;
     private final Map<WallPart, Integer> health = new EnumMap<>(WallPart.class);
+    /** Noch nicht ausgelöste Landminen (nur Tower). */
+    private final Set<Hex> mines = new HashSet<>();
     private int version;
 
     public Siege(Fortification fortification, Faction town) {
@@ -28,6 +30,9 @@ public final class Siege {
         this.town = Objects.requireNonNull(town, "town");
         for (WallPart part : WallPart.values()) {
             health.put(part, initialHealth(part));
+        }
+        if (town == Faction.TOWER && fortification.hasKeepAndMoat()) {
+            mines.addAll(SiegeLayout.MOAT);
         }
     }
 
@@ -119,6 +124,27 @@ public final class Siege {
             return Set.of();
         }
         return town == Faction.FORTRESS ? SiegeLayout.FORTRESS_MOAT : SiegeLayout.MOAT;
+    }
+
+    /** Ein Grabenfeld, das Bodentruppen anhält und verletzt — bei Tower gibt es keins. */
+    boolean isMoat(Hex hex) {
+        return town != Faction.TOWER && moat().contains(hex);
+    }
+
+    /**
+     * Schaden des Grabens (SoD): 90 bei Dungeon, Inferno und Fortress, sonst 70
+     * (heroes.thelazy.net, <em>Moat</em>).
+     */
+    int moatDamage() {
+        return switch (town) {
+            case DUNGEON, INFERNO, FORTRESS -> 90;
+            default -> 70;
+        };
+    }
+
+    /** Löst die Landmine auf diesem Feld aus, falls dort noch eine liegt. */
+    boolean triggerMine(Hex hex) {
+        return mines.remove(hex);
     }
 
     /** Das Teil auf diesem Feld, oder {@code null}. */

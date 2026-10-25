@@ -31,6 +31,7 @@ import java.util.List;
         @JsonSubTypes.Type(value = BattleEvent.FirstAid.class, name = "FirstAid"),
         @JsonSubTypes.Type(value = BattleEvent.CatapultShot.class, name = "CatapultShot"),
         @JsonSubTypes.Type(value = BattleEvent.TowerShot.class, name = "TowerShot"),
+        @JsonSubTypes.Type(value = BattleEvent.MoatDamage.class, name = "MoatDamage"),
         @JsonSubTypes.Type(value = BattleEvent.SpellCast.class, name = "SpellCast"),
         @JsonSubTypes.Type(value = BattleEvent.Dispel.class, name = "Dispel"),
         @JsonSubTypes.Type(value = BattleEvent.HeroSpell.class, name = "HeroSpell"),
@@ -66,6 +67,7 @@ import java.util.List;
                 BattleEvent.TwoBlows.class, BattleEvent.TwoShots.class, BattleEvent.GoodMorale.class,
                 BattleEvent.BadMorale.class, BattleEvent.LuckyStrike.class, BattleEvent.TacticsPhase.class,
                 BattleEvent.BallistaShot.class, BattleEvent.FirstAid.class, BattleEvent.CatapultShot.class, BattleEvent.TowerShot.class,
+                BattleEvent.MoatDamage.class,
                 BattleEvent.SpellCast.class, BattleEvent.Dispel.class,
                 BattleEvent.HeroSpell.class, BattleEvent.SpellHit.class, BattleEvent.Summon.class,
                 BattleEvent.MoveBack.class, BattleEvent.DeathStare.class, BattleEvent.Thunderbolts.class,
@@ -93,6 +95,7 @@ import java.util.List;
                 @DiscriminatorMapping(value = "FirstAid", schema = BattleEvent.FirstAid.class),
                 @DiscriminatorMapping(value = "CatapultShot", schema = BattleEvent.CatapultShot.class),
                 @DiscriminatorMapping(value = "TowerShot", schema = BattleEvent.TowerShot.class),
+                @DiscriminatorMapping(value = "MoatDamage", schema = BattleEvent.MoatDamage.class),
                 @DiscriminatorMapping(value = "SpellCast", schema = BattleEvent.SpellCast.class),
                 @DiscriminatorMapping(value = "Dispel", schema = BattleEvent.Dispel.class),
                 @DiscriminatorMapping(value = "HeroSpell", schema = BattleEvent.HeroSpell.class),
@@ -284,6 +287,17 @@ public sealed interface BattleEvent {
             @Schema(description = "Schaden") int damage,
             @Schema(description = "Getötete Kreaturen") int killed,
             @Schema(description = "Ziel danach") StackSnapshot targetAfter) implements BattleEvent {
+    }
+
+    @Schema(name = "MoatDamage",
+            description = "Graben oder Landmine verletzen einen Stack: beim Betreten des Grabens, zu Beginn seines Zugs im Graben oder wenn ein Angreifer eine Mine bei Tower auslöst.")
+    record MoatDamage(
+            @Schema(description = "Seite des Stacks") Side side,
+            @Schema(description = "Slot des Stacks") int slot,
+            @Schema(description = "Schaden") int damage,
+            @Schema(description = "Getötete Kreaturen") int killed,
+            @Schema(description = "Eine Landmine (Tower) statt des Grabens") boolean mine,
+            @Schema(description = "Stack danach") StackSnapshot targetAfter) implements BattleEvent {
     }
 
     @Schema(name = "SpellCast",
