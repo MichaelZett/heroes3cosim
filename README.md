@@ -125,7 +125,9 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Heuristik: erwartete vernichtete Kosten bei Schaden, geschätzter Anteil
   am Wert des Stacks bei Wirkungen, bei Schutz vor einer Schule und
   Anti-Magic der Schaden, den der gegnerische Held mit seinen Zaubern
-  anrichten könnte. Bei knappem Mana zählt, wie oft sich ein Zauber in
+  anrichten könnte. Liegende Zauber und Beschwörungen zählen höchstens
+  zwei Runden; im Spiegel-Duell schlägt das die frühere Annahme von vier
+  Runden auf allen gemessenen Leveln mit 0.52–0.56. Bei knappem Mana zählt, wie oft sich ein Zauber in
   den restlichen Runden noch bezahlen lässt — zweimal Magic Arrow schlägt
   dann einmal Lightning Bolt. Die Mana-Kosten folgen dem RoE-Manual, ohne
   die Rabatte der Schul-Fertigkeiten aus späteren Fassungen; Magi und

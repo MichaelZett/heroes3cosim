@@ -43,8 +43,14 @@ final class HeroSpellcasting {
 
     /** Anteil seines Werts, den ein Stack je Runde an Schaden umsetzt — grob ein Fünftel. */
     static final double ROUND_SHARE = 0.2;
-    /** Runden, die eine Wirkung höchstens zählt; ein Kampf ist selten länger entschieden. */
-    static final int EXPECTED_ROUNDS = 4;
+    /**
+     * Runden, die eine Wirkung höchstens zählt. Gemessen im Spiegel-Duell mit zufällig
+     * aufgestiegenen Magiern (gleiches Buch auf beiden Seiten): 2 schlägt die frühere 4 auf Level 1,
+     * 5, 10, 15 und 25 mit 0.52–0.56; 1, 3 und 6 sowie ein anderer {@link #ROUND_SHARE} brachten
+     * nichts Besseres. Mit 4 überschätzte die Wahl liegende Zauber und Beschwörungen gegenüber
+     * sofortigem Schaden.
+     */
+    static final int EXPECTED_ROUNDS = 2;
     /** Runden, für die ein Held sein Mana einteilt. */
     static final int EXPECTED_BATTLE_ROUNDS = 5;
     private static final int COST_MODIFIER = 2;
