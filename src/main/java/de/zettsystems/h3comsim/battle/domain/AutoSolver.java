@@ -34,4 +34,13 @@ public interface AutoSolver {
     default boolean attacksWarMachines(Stack active) {
         return true;
     }
+
+    /**
+     * Schießt ein Zyklop des Angreifers auf die Mauern statt auf eine Kreatur ({@link WallShots})?
+     * Gefragt wird nur, wenn er es kann. Standard: solange keine Bresche offen ist und eigene
+     * Nahkämpfer am Boden draußen warten.
+     */
+    default boolean shootsWalls(Stack active, BattleSetup setup) {
+        return WallShots.worthwhile(active, setup);
+    }
 }

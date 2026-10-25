@@ -103,6 +103,8 @@ export type BattleEvent =
       hit: WallPart;
       damage: number;
       healthAfter: number;
+      /** Slot des schießenden Zyklopen; fehlt beim Katapult. */
+      shooterSlot?: number | null;
     }
   | {
       type: 'TowerShot';
@@ -111,6 +113,15 @@ export type BattleEvent =
       damage: number;
       killed: number;
       targetAfter: StackSnapshot;
+    }
+  | {
+      type: 'QuakeHit';
+      hit: WallPart;
+      healthAfter: number;
+    }
+  | {
+      type: 'Drawbridge';
+      state: Gate;
     }
   | {
       type: 'MoatDamage';
@@ -417,6 +428,9 @@ export type Spell =
 export type WarMachine = 'BALLISTA' | 'AMMO_CART' | 'FIRST_AID_TENT' | 'CATAPULT';
 
 export type Fortification = 'FORT' | 'CITADEL' | 'CASTLE';
+
+/** Zustand der Zugbrücke. */
+export type Gate = 'CLOSED' | 'OPEN' | 'BLOCKED' | 'DESTROYED';
 
 export type WallPart =
   | 'UPPER_WALL'

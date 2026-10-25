@@ -2,6 +2,7 @@ package de.zettsystems.h3comsim.battle.domain.events;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import de.zettsystems.h3comsim.battle.domain.Siege;
 import de.zettsystems.h3comsim.battle.domain.SkillLevel;
 import de.zettsystems.h3comsim.battle.domain.Spell;
 import de.zettsystems.h3comsim.battle.domain.WallPart;
@@ -32,6 +33,8 @@ import java.util.List;
         @JsonSubTypes.Type(value = BattleEvent.CatapultShot.class, name = "CatapultShot"),
         @JsonSubTypes.Type(value = BattleEvent.TowerShot.class, name = "TowerShot"),
         @JsonSubTypes.Type(value = BattleEvent.MoatDamage.class, name = "MoatDamage"),
+        @JsonSubTypes.Type(value = BattleEvent.Drawbridge.class, name = "Drawbridge"),
+        @JsonSubTypes.Type(value = BattleEvent.QuakeHit.class, name = "QuakeHit"),
         @JsonSubTypes.Type(value = BattleEvent.SpellCast.class, name = "SpellCast"),
         @JsonSubTypes.Type(value = BattleEvent.Dispel.class, name = "Dispel"),
         @JsonSubTypes.Type(value = BattleEvent.HeroSpell.class, name = "HeroSpell"),
@@ -67,7 +70,7 @@ import java.util.List;
                 BattleEvent.TwoBlows.class, BattleEvent.TwoShots.class, BattleEvent.GoodMorale.class,
                 BattleEvent.BadMorale.class, BattleEvent.LuckyStrike.class, BattleEvent.TacticsPhase.class,
                 BattleEvent.BallistaShot.class, BattleEvent.FirstAid.class, BattleEvent.CatapultShot.class, BattleEvent.TowerShot.class,
-                BattleEvent.MoatDamage.class,
+                BattleEvent.MoatDamage.class, BattleEvent.Drawbridge.class, BattleEvent.QuakeHit.class,
                 BattleEvent.SpellCast.class, BattleEvent.Dispel.class,
                 BattleEvent.HeroSpell.class, BattleEvent.SpellHit.class, BattleEvent.Summon.class,
                 BattleEvent.MoveBack.class, BattleEvent.DeathStare.class, BattleEvent.Thunderbolts.class,
@@ -96,6 +99,8 @@ import java.util.List;
                 @DiscriminatorMapping(value = "CatapultShot", schema = BattleEvent.CatapultShot.class),
                 @DiscriminatorMapping(value = "TowerShot", schema = BattleEvent.TowerShot.class),
                 @DiscriminatorMapping(value = "MoatDamage", schema = BattleEvent.MoatDamage.class),
+                @DiscriminatorMapping(value = "Drawbridge", schema = BattleEvent.Drawbridge.class),
+                @DiscriminatorMapping(value = "QuakeHit", schema = BattleEvent.QuakeHit.class),
                 @DiscriminatorMapping(value = "SpellCast", schema = BattleEvent.SpellCast.class),
                 @DiscriminatorMapping(value = "Dispel", schema = BattleEvent.Dispel.class),
                 @DiscriminatorMapping(value = "HeroSpell", schema = BattleEvent.HeroSpell.class),
@@ -271,12 +276,18 @@ public sealed interface BattleEvent {
     }
 
     @Schema(name = "CatapultShot",
-            description = "Das Katapult des Angreifers schießt zu Rundenbeginn auf die Befestigung. Ein Fehlschuss trifft ein anderes Mauersegment (`hit` ≠ `aimed`).")
+            description = "Das Katapult des Angreifers schießt zu Rundenbeginn auf die Befestigung, oder ein Zyklop des Angreifers in seinem Zug (`shooterSlot`). Ein Fehlschuss trifft ein anderes Mauersegment (`hit` ≠ `aimed`).")
     record CatapultShot(
             @Schema(description = "Worauf gezielt wurde") WallPart aimed,
             @Schema(description = "Was getroffen wurde") WallPart hit,
             @Schema(description = "Abgezogene Treffer, 0..2") int damage,
-            @Schema(description = "Verbleibende Treffer des getroffenen Teils; 0 = zerstört") int healthAfter) implements BattleEvent {
+            @Schema(description = "Verbleibende Treffer des getroffenen Teils; 0 = zerstört") int healthAfter,
+            @Schema(description = "Slot des schießenden Zyklopen; fehlt beim Katapult", nullable = true)
+            @Nullable Integer shooterSlot) implements BattleEvent {
+
+        public CatapultShot(WallPart aimed, WallPart hit, int damage, int healthAfter) {
+            this(aimed, hit, damage, healthAfter, null);
+        }
     }
 
     @Schema(name = "TowerShot",
@@ -298,6 +309,19 @@ public sealed interface BattleEvent {
             @Schema(description = "Getötete Kreaturen") int killed,
             @Schema(description = "Eine Landmine (Tower) statt des Grabens") boolean mine,
             @Schema(description = "Stack danach") StackSnapshot targetAfter) implements BattleEvent {
+    }
+
+    @Schema(name = "Drawbridge",
+            description = "Die Zugbrücke wechselt ihren Zustand: Ein Verteidiger auf dem Tor öffnet sie, ein Stack — lebend oder gefallen — auf dem Tor hält sie offen, einer davor sperrt sie.")
+    record Drawbridge(
+            @Schema(description = "Neuer Zustand") Siege.Gate state) implements BattleEvent {
+    }
+
+    @Schema(name = "QuakeHit",
+            description = "Earthquake des angreifenden Helden trifft ein Teil der Befestigung (je Treffer ein Event).")
+    record QuakeHit(
+            @Schema(description = "Getroffenes Teil") WallPart hit,
+            @Schema(description = "Verbleibende Treffer; 0 = zerstört") int healthAfter) implements BattleEvent {
     }
 
     @Schema(name = "SpellCast",

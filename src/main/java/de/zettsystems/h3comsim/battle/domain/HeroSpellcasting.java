@@ -123,6 +123,13 @@ final class HeroSpellcasting {
         List<Stack> own = alive(setup.stacksOf(side));
         List<Stack> enemies = alive(setup.stacksOf(other(side)));
         List<Cast> casts = new ArrayList<>();
+        if (spell == Spell.EARTHQUAKE) {
+            Siege siege = setup.siege();
+            if (siege != null && side == Side.ATTACKER && !siege.hasBreach()) {
+                casts.add(new Cast(spell, level, null, List.of()));
+            }
+            return casts;
+        }
         if (spell.kind() == Spell.Kind.OTHER) {
             return casts;
         }
@@ -301,6 +308,21 @@ final class HeroSpellcasting {
         return value * ROUND_SHARE * EXPECTED_ROUNDS * (1 - harmShare);
     }
 
+    /**
+     * Earthquake lohnt, wenn es eine Bresche schlägt: dann kommen die eigenen Nahkämpfer am Boden
+     * früher an den Feind. Bewertet wie eine Beschwörung — ihr Wert, ein Rundenanteil davon für die
+     * erwarteten Runden — mal der Chance, dass die Treffer ein Segment oder das Tor einreißen.
+     */
+    static double earthquakeValue(SkillLevel level, Side side, BattleSetup setup) {
+        Siege siege = setup.siege();
+        if (siege == null) {
+            return 0;
+        }
+        double waiting = setup.stacksOf(side).stream().filter(WallShots::waitsOutside)
+                .mapToDouble(HeroSpellcasting::stackValue).sum();
+        return Earthquake.breachChance(siege, Earthquake.hits(level)) * waiting * ROUND_SHARE * EXPECTED_ROUNDS;
+    }
+
     /** Power × 2/3/4 Elementare (Manual S. 66 ff.). */
     static int summonCount(SkillLevel level, int power) {
         return power * SpellDamage.byLevel(level, 2, 3, 4);
@@ -327,6 +349,9 @@ final class HeroSpellcasting {
         Spell spell = cast.spell();
         if (spell.kind() == Spell.Kind.SUMMON) {
             return summonValue(spell, cast.level(), hero, side, setup);
+        }
+        if (spell == Spell.EARTHQUAKE) {
+            return earthquakeValue(cast.level(), side, setup);
         }
         double total = 0;
         for (int i = 0; i < cast.affected().size(); i++) {

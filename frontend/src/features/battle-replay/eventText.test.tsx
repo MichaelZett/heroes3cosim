@@ -414,6 +414,22 @@ describe('eventToNode', () => {
         targetAfter: snap,
       }).container.textContent,
     ).toContain('Landmine');
+    expect(
+      renderEvent({
+        type: 'CatapultShot',
+        aimed: 'GATE',
+        hit: 'GATE',
+        damage: 1,
+        healthAfter: 1,
+        shooterSlot: 0,
+      }).container.textContent,
+    ).toMatch(/zielt auf Tor und trifft Tor: 1 Treffer, noch 1/);
+    expect(
+      renderEvent({ type: 'QuakeHit', hit: 'LOWER_WALL', healthAfter: 1 }).container.textContent,
+    ).toBe('Das Erdbeben trifft untere Mauer, noch 1.');
+    expect(renderEvent({ type: 'Drawbridge', state: 'OPEN' }).container.textContent).toContain(
+      'Zugbrücke senkt sich',
+    );
   });
 
   it('formats Move with origin and destination coordinates', () => {

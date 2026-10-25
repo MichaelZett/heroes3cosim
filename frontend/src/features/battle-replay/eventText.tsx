@@ -315,6 +315,21 @@ export function EventText({ event, names }: Readonly<EventTextProps>) {
         />
       );
     case 'CatapultShot':
+      if (event.shooterSlot != null) {
+        return (
+          <Trans
+            i18nKey="events.wallShot"
+            values={{
+              shooter: sideName('ATTACKER', event.shooterSlot, names),
+              aimed: t(`wallPart.${event.aimed}`),
+              hit: t(`wallPart.${event.hit}`),
+              damage: event.damage,
+              health: event.healthAfter,
+            }}
+            components={{ actor: sideSpan('ATTACKER') }}
+          />
+        );
+      }
       return t('events.catapultShot', {
         aimed: t(`wallPart.${event.aimed}`),
         hit: t(`wallPart.${event.hit}`),
@@ -334,6 +349,10 @@ export function EventText({ event, names }: Readonly<EventTextProps>) {
           components={{ target: sideSpan('ATTACKER') }}
         />
       );
+    case 'QuakeHit':
+      return t('events.quakeHit', { hit: t(`wallPart.${event.hit}`), health: event.healthAfter });
+    case 'Drawbridge':
+      return t(`events.drawbridge_${event.state}`);
     case 'MoatDamage':
       return (
         <Trans

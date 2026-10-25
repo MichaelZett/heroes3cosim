@@ -1,8 +1,10 @@
 package de.zettsystems.h3comsim.battle.domain;
 
 import de.zettsystems.h3comsim.battle.domain.events.Side;
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.jspecify.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -23,6 +25,7 @@ public final class Siege {
     private final Map<WallPart, Integer> health = new EnumMap<>(WallPart.class);
     /** Noch nicht ausgelöste Landminen (nur Tower). */
     private final Set<Hex> mines = new HashSet<>();
+    private Gate gate = Gate.CLOSED;
     private int version;
 
     public Siege(Fortification fortification, Faction town) {
@@ -66,7 +69,7 @@ public final class Siege {
         return health(part) > 0;
     }
 
-    /** Zieht Treffer ab; gibt zurück, ob das Teil damit fällt. */
+    /** Zieht Treffer ab; gibt zurück, ob das Teil damit fällt. Ein gefallenes Tor öffnet den Weg. */
     boolean damage(WallPart part, int hits) {
         int before = health(part);
         if (before == 0 || hits <= 0) {
@@ -74,7 +77,11 @@ public final class Siege {
         }
         health.put(part, Math.max(0, before - hits));
         version++;
-        return health(part) == 0;
+        boolean falls = health(part) == 0;
+        if (falls && part == WallPart.GATE) {
+            gate = Gate.DESTROYED;
+        }
+        return falls;
     }
 
     /** Zählt jede Änderung; zum Verwerfen zwischengespeicherter Felder. */
@@ -82,10 +89,60 @@ public final class Siege {
         return version;
     }
 
-    /** Felder, die für diese Seite nicht begehbar sind: Mauern, für Angreifer auch das stehende Tor. */
+    /** Ist ein Weg hinein offen: die Zugbrücke unten oder zerstört, ein Mauersegment gefallen? */
+    boolean hasBreach() {
+        return gate == Gate.OPEN || gate == Gate.DESTROYED
+                || Arrays.stream(WallPart.values()).anyMatch(part -> part.isWall() && !stands(part));
+    }
+
+    /** Der Zustand der Zugbrücke. */
+    public Gate gate() {
+        return gate;
+    }
+
+    /**
+     * Führt die Zugbrücke nach, nachdem sich etwas auf dem Feld bewegt hat oder gefallen ist
+     * (VCMI, <em>updateGateState</em>). Ein Stack, lebend oder tot, auf einer der beiden Torhälften
+     * hält sie offen — dorthin kommt bei geschlossener Brücke nur der Verteidiger, und erst dann
+     * öffnet sie sich. Ein Stack auf dem Feld davor hält sie geschlossen und sperrt das Tor auch für
+     * den Verteidiger. Beim breiten Graben von Fortress gehört das Feld davor zur Brücke: Dort hält
+     * ein Stack die offene Brücke offen, und ein Verteidiger, der dort steht, hat sie geöffnet.
+     *
+     * @param occupied die Felder aller Stacks, auch der gefallenen
+     * @param defenders die Felder der lebenden Stacks des Verteidigers
+     * @return ob sich der Zustand geändert hat
+     */
+    boolean updateGate(Set<Hex> occupied, Set<Hex> defenders) {
+        Gate before = gate;
+        boolean onGate = occupied.contains(SiegeLayout.GATE_OUTER) || occupied.contains(SiegeLayout.GATE_INNER);
+        boolean onBridge = occupied.contains(SiegeLayout.GATE_BRIDGE);
+        if (!stands(WallPart.GATE)) {
+            gate = Gate.DESTROYED;
+        } else if (gate == Gate.OPEN) {
+            gate = onGate || (onBridge && hasWideMoat()) ? Gate.OPEN : Gate.CLOSED;
+        } else if (onGate || (hasWideMoat() && defenders.contains(SiegeLayout.GATE_BRIDGE))) {
+            gate = Gate.OPEN;
+        } else {
+            gate = onBridge ? Gate.BLOCKED : Gate.CLOSED;
+        }
+        if (gate == before) {
+            return false;
+        }
+        version++;
+        return true;
+    }
+
+    private boolean hasWideMoat() {
+        return town == Faction.FORTRESS && fortification.hasKeepAndMoat();
+    }
+
+    /**
+     * Felder, die für diese Seite nicht begehbar sind: die Mauern; das Tor bei geschlossener Brücke
+     * für den Angreifer, bei gesperrter für beide.
+     */
     Set<Hex> blockedFor(Side side) {
         Set<Hex> blocked = shotBlockers();
-        if (side == Side.ATTACKER && stands(WallPart.GATE)) {
+        if (gate == Gate.BLOCKED || (gate == Gate.CLOSED && side == Side.ATTACKER)) {
             blocked.add(SiegeLayout.GATE_OUTER);
             blocked.add(SiegeLayout.GATE_INNER);
         }
@@ -126,8 +183,14 @@ public final class Siege {
         return town == Faction.FORTRESS ? SiegeLayout.FORTRESS_MOAT : SiegeLayout.MOAT;
     }
 
-    /** Ein Grabenfeld, das Bodentruppen anhält und verletzt — bei Tower gibt es keins. */
+    /**
+     * Ein Grabenfeld, das Bodentruppen anhält und verletzt — bei Tower gibt es keins. Über das Feld
+     * vor dem Tor im Graben von Fortress führt die offene oder zerstörte Brücke.
+     */
     boolean isMoat(Hex hex) {
+        if (hex.equals(SiegeLayout.GATE_BRIDGE) && (gate == Gate.OPEN || gate == Gate.DESTROYED)) {
+            return false;
+        }
         return town != Faction.TOWER && moat().contains(hex);
     }
 
@@ -155,5 +218,18 @@ public final class Siege {
             }
         }
         return null;
+    }
+
+    /** Zustand der Zugbrücke (heroes.thelazy.net, <em>Wall</em>, Abschnitt Drawbridge). */
+    @Schema(name = "Gate", description = "Zustand der Zugbrücke.", enumAsRef = true)
+    public enum Gate {
+        /** Hochgezogen: nur der Verteidiger kommt hindurch, und dabei öffnet sie sich. */
+        CLOSED,
+        /** Heruntergelassen: frei für beide Seiten, solange ein Stack auf dem Tor steht oder liegt. */
+        OPEN,
+        /** Ein Stack vor dem Tor hält sie oben; niemand kommt hindurch. */
+        BLOCKED,
+        /** Zerstört: frei für beide Seiten. */
+        DESTROYED
     }
 }

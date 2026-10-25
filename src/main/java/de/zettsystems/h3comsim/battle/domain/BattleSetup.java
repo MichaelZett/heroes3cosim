@@ -258,6 +258,27 @@ public class BattleSetup {
         });
     }
 
+    /**
+     * Führt die Zugbrücke nach dem Stand auf dem Feld nach; gefallene Stacks zählen mit.
+     *
+     * @return der neue Zustand, wenn er sich geändert hat, sonst {@code null}
+     */
+    Siege.@Nullable Gate updateGate() {
+        if (siege == null) {
+            return null;
+        }
+        Set<Hex> occupied = new HashSet<>();
+        Set<Hex> defenders = new HashSet<>();
+        attackerStacks.forEach(s -> occupied.add(s.position()));
+        for (Stack s : defenderStacks) {
+            occupied.add(s.position());
+            if (s.isAlive()) {
+                defenders.add(s.position());
+            }
+        }
+        return siege.updateGate(occupied, defenders) ? siege.gate() : null;
+    }
+
     /** Das Feld ohne Mauern, mit den Hindernissen, wie sie zu Kampfbeginn gemeldet werden. */
     public Battlefield baseBattlefield() {
         return battlefield;

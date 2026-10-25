@@ -14,9 +14,14 @@ import java.util.random.RandomGenerator;
  * 17, sonst 18; ohne Castle eines weniger). Der Schaden ignoriert die Defense des Ziels, kennt
  * kein Glück und keine Fertigkeit.
  *
- * <p>Ziel: Das Spiel bewertet Angreifer in Klassen — wer sofort angreifen kann (Schützen), zählt
- * voll, wer erst später, die Hälfte oder ein Drittel. Hier: der Stack, bei dem der erwartete
- * Schaden den meisten Goldwert vernichtet, Schützen voll, alle anderen zur Hälfte.
+ * <p>Ziel: Ohne Artillery steuert sie die Spiel-KI. Sie teilt die Angreifer in Klassen — wer
+ * sofort angreifen kann (Schützen), zählt voll, wer im nächsten Zug, die Hälfte, wer erst später,
+ * ein Drittel — und rechnet mit einem Turmschaden von 1 (ein Fehler des Spiels): Sie schießt
+ * damit auf den höchsten Wert je Lebenspunkt, egal wie viel der Schuss wirklich vernichtet, bei
+ * Gleichstand auf den Stack ganz rechts in der Armee. Ein Held mit Artillery steuert die Türme
+ * selbst (heroes.thelazy.net, <em>Arrow tower</em>, <em>Artillery</em>); hier wählt er den Stack,
+ * bei dem der erwartete Schaden den meisten Goldwert vernichtet, Schützen voll, alle anderen zur
+ * Hälfte.
  */
 final class ArrowTowers {
 
@@ -55,6 +60,8 @@ final class ArrowTowers {
     }
 
     static @Nullable Stack target(WallPart tower, Siege siege, BattleSetup setup) {
+        Hero defender = setup.heroOf(Side.DEFENDER);
+        boolean controlled = defender != null && defender.levelOf(SecondarySkill.ARTILLERY) != SkillLevel.NONE;
         double damage = expectedDamage(tower, siege);
         Stack best = null;
         double bestValue = -1;
@@ -62,14 +69,37 @@ final class ArrowTowers {
             if (!attacker.isAlive()) {
                 continue;
             }
-            int totalHealth = (attacker.getCount() - 1) * attacker.unit().health() + attacker.getCurrentHealth();
-            double value = Math.min(damage, totalHealth) * attacker.unit().cost() / attacker.unit().health()
-                    * (attacker.canShoot() ? 1 : 0.5);
-            if (value > bestValue) {
+            double value = controlled ? controlledValue(attacker, damage) : gameAiValue(attacker, setup);
+            if (value > bestValue || (!controlled && value == bestValue)) {
                 best = attacker;
                 bestValue = value;
             }
         }
         return best;
+    }
+
+    private static double controlledValue(Stack attacker, double damage) {
+        int totalHealth = (attacker.getCount() - 1) * attacker.unit().health() + attacker.getCurrentHealth();
+        return Math.min(damage, totalHealth) * attacker.unit().cost() / attacker.unit().health()
+                * (attacker.canShoot() ? 1 : 0.5);
+    }
+
+    /**
+     * Wert je Lebenspunkt nach Klasse: sofort angreifen kann, wer schießt oder in Reichweite steht,
+     * im nächsten Zug, wer höchstens doppelt so weit steht — die Mauern bleiben dabei außer Acht.
+     * Die Stacks kommen in Slot-Reihenfolge, der letzte gewinnt Gleichstände.
+     */
+    private static double gameAiValue(Stack attacker, BattleSetup setup) {
+        double perHealth = (double) attacker.unit().cost() / attacker.unit().health();
+        if (attacker.canShoot()) {
+            return perHealth;
+        }
+        int distance = setup.stacksOf(Side.DEFENDER).stream().filter(Stack::isAlive)
+                .mapToInt(d -> attacker.position().distanceTo(d.position())).min().orElse(Integer.MAX_VALUE);
+        int speed = attacker.getSpeed();
+        if (distance <= speed + 1) {
+            return perHealth;
+        }
+        return perHealth * (distance <= 2 * speed + 1 ? 0.5 : 1.0 / 3);
     }
 }

@@ -250,9 +250,16 @@ export const en: Dictionary = {
       "The <actor>defender</actor>'s first aid tent heals <target>{{target}}</target> by {{healed}} hit points.",
     catapultShot:
       'The catapult aims at the {{aimed}} and hits the {{hit}}: {{damage}} hits, {{health}} left.',
+    wallShot:
+      '<actor>{{shooter}}</actor> aim at the {{aimed}} and hit the {{hit}}: {{damage}} hits, {{health}} left.',
     towerShot:
       'The {{tower}} hits <target>{{target}}</target>: {{damage}} damage, {{killed}} killed.',
     moatDamage: 'The moat hurts <target>{{target}}</target>: {{damage}} damage, {{killed}} killed.',
+    quakeHit: 'The earthquake hits the {{hit}}, {{health}} left.',
+    drawbridge_CLOSED: 'The drawbridge goes up.',
+    drawbridge_OPEN: 'The drawbridge comes down.',
+    drawbridge_BLOCKED: 'A stack in front of the gate blocks the drawbridge.',
+    drawbridge_DESTROYED: 'The drawbridge is destroyed.',
     mineDamage:
       'A land mine under <target>{{target}}</target>: {{damage}} damage, {{killed}} killed.',
     battleStartWarMachines:

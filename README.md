@@ -171,9 +171,11 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   in einer Stadt der Fraktion seines Helden, ohne Felsen auf dem Feld.
   Fort baut Mauern und Tor: sechs unzerstörbare Mauerstücke, vier
   Segmente mit 2 Treffern (mit Castle 3), das Tor mit 2. Mauern sperren
-  Bodentruppen, das stehende Tor nur die Angreifer; Flieger fliegen
-  darüber, und ein Schuss von draußen über eine stehende Mauer verliert
-  die Hälfte (außer Magi). Citadel fügt den Hauptturm und den Graben
+  Bodentruppen; Flieger fliegen darüber, und ein Schuss von draußen über
+  eine stehende Mauer verliert die Hälfte (außer Magi). Die Zugbrücke
+  öffnet sich nur für den Verteidiger und bleibt unten, solange ein Stack
+  auf dem Tor steht — auch ein gefallener, dann kommen die Angreifer
+  hindurch. Ein Stack vor dem Tor sperrt sie für beide Seiten. Citadel fügt den Hauptturm und den Graben
   hinzu, Castle zwei Seitentürme. Die Türme schießen zu Rundenbeginn,
   Schaden für eine voll ausgebaute Stadt, ohne Defense des Ziels. Der
   Graben hält Bodentruppen auf, nimmt ihnen 3 Defense und verletzt sie
@@ -182,7 +184,12 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Landminen gegen Angreifer. Jeder angreifende Held bringt ein Katapult
   mit, das nach den Türmen auf die Befestigung schießt — Zielwahl,
   Trefferchancen und Schaden je Ballistics-Stufe nach den SoD-Werten.
-  Der Verteidiger stellt ohne Tactics auf und hat keine Ballista.
+  Zyklopen schießen wie ein Katapult mit Basic Ballistics auf die Mauern,
+  Cyclops Kings mit Advanced, solange noch keine Bresche offen ist; der
+  Held kann Earthquake wirken (2/3/4 Treffer auf zufällige Teile). Ohne
+  Artillery wählt die Spiel-KI die Ziele der Türme, samt ihrem Fehler,
+  mit einem Schaden von 1 zu rechnen; mit Artillery zielt der Verteidiger
+  selbst. Der Verteidiger stellt ohne Tactics auf und hat keine Ballista.
   Messung (`SiegeImpactTest`, Spiegel-Duell, Standardhelden, je 360
   Kämpfe): Bei gleich großen Armeen gewinnt der Verteidiger im Fort
   0.653, in Citadel und Castle fast immer. Mit doppelter Armee nimmt der
@@ -458,8 +465,8 @@ zu lesen, nicht als universelle H3-Tier-Liste.
   Gewinn kommt fast nur von Tower. Offen sind Schützen (warten, bis der
   eigene Tank die Splash-Zone geleert hat) und Flieger (warten, bis
   feststeht, wo der Gegner landet).
-- **Belagerung**: Mauern, Catapult, Wall-Penalty für Schützen — eigene
-  Battlefield-Variante mit Wall-Hexes.
+- **Belagerung, Rest**: Teleport über den Graben und eine Solver-Planung,
+  die den Graben mitdenkt.
 
 ## Quellen
 

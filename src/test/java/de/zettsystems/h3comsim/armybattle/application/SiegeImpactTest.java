@@ -103,7 +103,9 @@ class SiegeImpactTest {
                         ArmyBattleSimulation sim = service.simulate(
                                 new ArmyBattleRequest(attacker, defender, seed, level), seed);
                         int hits = (int) sim.events().stream()
-                                .filter(e -> e instanceof BattleEvent.CatapultShot c && c.damage() > 0).count();
+                                .filter(e -> e instanceof BattleEvent.CatapultShot c && c.damage() > 0
+                                        && c.shooterSlot() == null)
+                                .count();
                         Winner w = sim.result().winner();
                         return new int[] {w == Winner.DEFENDER ? 1 : 0, w == Winner.ATTACKER ? 1 : 0,
                                 w == Winner.DRAW ? 1 : 0, 1, sim.result().turnsTaken(), hits};

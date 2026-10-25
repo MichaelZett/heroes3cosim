@@ -13,6 +13,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.random.RandomGenerator;
 
@@ -126,6 +127,7 @@ public final class Battle {
      */
     private void doTurn(BattleSetup setup, TurnOrder order) {
         siegeEnginesAct(setup);
+        updateGate(setup);
         autoSolver.planRound(setup);
         List<Stack> roundStacks = setup.aliveStacks();
         List<Stack> pending = new ArrayList<>(roundStacks);
@@ -139,6 +141,7 @@ public final class Battle {
                 if (activeStack.isAbleToAct() && setup.bothAlive()) {
                     actWithMorale(activeStack, setup);
                 }
+                updateGate(setup);
                 if (activeStack.hasWaitedThisTurn()) {
                     waiting.add(activeStack);
                 }
@@ -147,7 +150,16 @@ public final class Battle {
         }
         runLatePhase(waiting, setup, order, heroesCast);
         warMachinesAct(setup);
+        updateGate(setup);
         roundStacks.forEach(Stack::endTurn);
+    }
+
+    /** Nach jedem Zug: Bewegung oder ein Gefallener auf dem Tor kann die Zugbrücke umstellen. */
+    private void updateGate(BattleSetup setup) {
+        Siege.@Nullable Gate changed = setup.updateGate();
+        if (changed != null) {
+            events.emit(new BattleEvent.Drawbridge(changed));
+        }
     }
 
     /**
@@ -170,6 +182,10 @@ public final class Battle {
         events.emit(new BattleEvent.HeroSpell(side, spell, cast.level(), setup.manaOf(side)));
         if (spell.kind() == Spell.Kind.SUMMON) {
             summon(setup, side, hero, cast);
+            return;
+        }
+        if (spell == Spell.EARTHQUAKE) {
+            earthquake(Objects.requireNonNull(setup.siege()), cast.level());
             return;
         }
         for (int i = 0; i < cast.affected().size(); i++) {
@@ -341,6 +357,31 @@ public final class Battle {
         }
     }
 
+    private void earthquake(Siege siege, SkillLevel level) {
+        for (int i = 0; i < Earthquake.hits(level); i++) {
+            WallPart hit = Earthquake.strike(siege, rng);
+            if (hit == null) {
+                return;
+            }
+            events.emit(new BattleEvent.QuakeHit(hit, siege.health(hit)));
+        }
+    }
+
+    /** Ein Zyklop schießt auf die Befestigung, mit dem Ballistics-Grad seiner Art. */
+    private void wallShots(Stack shooter, Siege siege) {
+        SkillLevel ballistics = WallShots.ballistics(shooter);
+        shooter.useShot();
+        for (int i = 0; i < Catapult.shots(ballistics); i++) {
+            Catapult.Shot shot = Catapult.fire(siege, ballistics, rng);
+            if (shot == null) {
+                return;
+            }
+            siege.damage(shot.hit(), shot.damage());
+            events.emit(new BattleEvent.CatapultShot(shot.aimed(), shot.hit(), shot.damage(), siege.health(shot.hit()),
+                    shooter.slot()));
+        }
+    }
+
     private static @Nullable SiegeSnapshot siegeSnapshot(@Nullable Siege siege) {
         if (siege == null) {
             return null;
@@ -474,6 +515,7 @@ public final class Battle {
                 if (activeStack.isAbleToAct() && setup.bothAlive()) {
                     actWithMorale(activeStack, setup);
                 }
+                updateGate(setup);
             }
             BattleLogger.logShortDelimiter();
         }
@@ -568,7 +610,14 @@ public final class Battle {
             case Action.MoveAndMelee(Hex destination, Stack target) ->
                     moveAndMelee(active, destination, target, setup);
             case Action.Melee(Stack target) -> meleeAttack(active, target, 0, setup);
-            case Action.Shoot(Stack target) -> shoot(active, target, setup);
+            case Action.Shoot(Stack target) -> {
+                if (WallShots.possible(active, setup) && !hasAdjacentEnemy(active, setup)
+                        && autoSolver.shootsWalls(active, setup)) {
+                    wallShots(active, Objects.requireNonNull(setup.siege()));
+                } else {
+                    shoot(active, target, setup);
+                }
+            }
             case Action.Resurrect(Stack target) -> resurrect(active, target, setup);
             case Action.RaiseDemons(Stack corpse) -> raiseDemons(active, corpse, setup);
             case Action.CastSpell(Spell spell, Stack target) -> castSpell(active, spell, target, setup);
