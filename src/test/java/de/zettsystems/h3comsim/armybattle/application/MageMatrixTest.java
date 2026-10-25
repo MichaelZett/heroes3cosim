@@ -131,8 +131,8 @@ class MageMatrixTest {
                         pool.execute(() -> {
                             Fight fight = fight(presets, attacker, leader.of(attacker), defender,
                                     leader.of(defender), level, seed);
-                            byFaction.get(attacker).record(fight, Side.ATTACKER);
-                            byFaction.get(defender).record(fight, Side.DEFENDER);
+                            byFaction.get(attacker).add(fight, Side.ATTACKER);
+                            byFaction.get(defender).add(fight, Side.DEFENDER);
                         });
                     }
                 }
@@ -152,8 +152,8 @@ class MageMatrixTest {
                 Hero standard = Leader.STANDARD.of(f);
                 for (int s = 0; s < SEEDS_PER_PAIR * 4; s++) {
                     long seed = f.ordinal() * 7919L + 331L + s;
-                    pool.execute(() -> tally.record(fight(presets, f, mage, f, standard, level, seed), Side.ATTACKER));
-                    pool.execute(() -> tally.record(fight(presets, f, standard, f, mage, level, seed), Side.DEFENDER));
+                    pool.execute(() -> tally.add(fight(presets, f, mage, f, standard, level, seed), Side.ATTACKER));
+                    pool.execute(() -> tally.add(fight(presets, f, standard, f, mage, level, seed), Side.DEFENDER));
                 }
             }
         }
@@ -249,7 +249,7 @@ class MageMatrixTest {
         private final LongAdder draws = new LongAdder();
         private final LongAdder casts = new LongAdder();
 
-        void record(Fight fight, Side side) {
+        void add(Fight fight, Side side) {
             fights.increment();
             casts.add(side == Side.ATTACKER ? fight.attackerCasts() : fight.defenderCasts());
             if (fight.winner() == Winner.DRAW) {
