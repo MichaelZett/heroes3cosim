@@ -5,7 +5,10 @@ import static de.zettsystems.h3comsim.battle.domain.UnitSpecialityType.ATTACK;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpecialityType.DEFENSE;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpecialityType.SPECIAL;
 
-// https://heroes.thelazy.net/index.php/Special_ability
+/**
+ * Die Fähigkeiten der Kreaturen (https://heroes.thelazy.net/index.php/Special_ability). Jede wird
+ * von der Engine ausgewertet; der Typ sagt, wann sie greift.
+ */
 public enum UnitSpeciality {
 
     NO_RETALIATION(DEFENSE),
@@ -116,12 +119,13 @@ public enum UnitSpeciality {
     /** Pegasi und Silver Pegasi (Manual S. 106): Zauber des gegnerischen Helden kosten 2 Mana mehr. */
     SPELL_COST_INCREASE(SPECIAL),
 
-    // Not yet evaluated by the engine — defined for unit catalog tagging only.
+    /** Angel und Arch Angel (Manual S. 96): heben die Moral der ganzen Armee (ArmyMorale). */
     GOOD_ARMY_MORALE(SPECIAL),
     /** Stone Golem (Manual S. 113): halber Schaden durch Zauber. */
     SPELL_DAMAGE_HALVED(DEFENSE),
     /** Iron Golem (Manual S. 113): ein Viertel des Zauberschadens. */
     SPELL_DAMAGE_QUARTERED(DEFENSE),
+    /** Cyclops und Cyclops King: schießen in einer Belagerung auf die Mauern (WallShots). */
     ATTACKS_WALLS(SPECIAL),
 
     // Multi-Stack-Fähigkeiten (greifen erst, wenn mehr als ein Gegner-Stack auf dem Feld steht).
