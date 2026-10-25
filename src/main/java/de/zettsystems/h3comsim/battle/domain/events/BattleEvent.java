@@ -126,7 +126,8 @@ public sealed interface BattleEvent {
             @Schema(description = "Glücks-Rating der Verteidiger-Armee, analog zu `attackerLuck`.", example = "0") int defenderLuck,
             @Schema(description = "Kriegsmaschinen des Angreifers") List<WarMachine> attackerWarMachines,
             @Schema(description = "Kriegsmaschinen des Verteidigers") List<WarMachine> defenderWarMachines,
-            @Schema(description = "Die Kriegsmaschinen beider Seiten auf dem Feld, als Stacks ab Slot 20 (Ballista 20, Ammo Cart 21, First Aid Tent 22). Sie lassen sich angreifen; Treffer auf sie kommen als Melee- oder Shoot-Events.") List<StackSnapshot> warMachineStacks) implements BattleEvent {
+            @Schema(description = "Die Kriegsmaschinen beider Seiten auf dem Feld, als Stacks ab Slot 20 (Ballista 20, Ammo Cart 21, First Aid Tent 22). Sie lassen sich angreifen; Treffer auf sie kommen als Melee- oder Shoot-Events.") List<StackSnapshot> warMachineStacks,
+            @Schema(description = "Die Befestigung bei einer Belagerung, sonst null.", nullable = true) @Nullable SiegeSnapshot siege) implements BattleEvent {
         public BattleStart {
             obstacles = List.copyOf(obstacles);
             stacks = List.copyOf(stacks);

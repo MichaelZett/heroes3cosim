@@ -4,6 +4,7 @@ import de.zettsystems.h3comsim.battle.domain.events.BattleEvent;
 import de.zettsystems.h3comsim.battle.domain.events.EventCollector;
 import de.zettsystems.h3comsim.battle.domain.events.HexCoord;
 import de.zettsystems.h3comsim.battle.domain.events.NoopEventCollector;
+import de.zettsystems.h3comsim.battle.domain.events.SiegeSnapshot;
 import de.zettsystems.h3comsim.battle.domain.events.Side;
 import de.zettsystems.h3comsim.battle.domain.events.StackSnapshot;
 import de.zettsystems.h3comsim.battle.domain.events.Winner;
@@ -56,7 +57,7 @@ public final class Battle {
         this.currentSetup = setup;
         BattleLogger.logStartOfCombat(setup.getAttackerName(), setup.getAttackerCount(),
                 setup.getDefenderName(), setup.getDefenderCount());
-        Battlefield bf = setup.battlefield();
+        Battlefield bf = setup.baseBattlefield();
         List<HexCoord> obstacleCoords = bf.obstacles().stream()
                 .map(h -> new HexCoord(h.q(), h.r()))
                 .toList();
@@ -69,7 +70,7 @@ public final class Battle {
                 heroName(setup.attackerHero()), heroName(setup.defenderHero()),
                 setup.luckOf(Side.ATTACKER), setup.luckOf(Side.DEFENDER),
                 List.copyOf(setup.warMachinesOf(Side.ATTACKER)), List.copyOf(setup.warMachinesOf(Side.DEFENDER)),
-                machineSnapshots(setup)));
+                machineSnapshots(setup), siegeSnapshot(setup.siege())));
         for (Side side : Side.values()) {
             if (setup.tacticsOf(side) > 0) {
                 events.emit(new BattleEvent.TacticsPhase(side, setup.tacticsOf(side)));
@@ -296,6 +297,24 @@ public final class Battle {
         }
     }
 
+    private static @Nullable SiegeSnapshot siegeSnapshot(@Nullable Siege siege) {
+        if (siege == null) {
+            return null;
+        }
+        List<SiegeSnapshot.Part> parts = new ArrayList<>();
+        for (WallPart part : WallPart.values()) {
+            Hex hex = part.hex();
+            parts.add(new SiegeSnapshot.Part(part, hex == null ? null : coord(hex), siege.health(part)));
+        }
+        return new SiegeSnapshot(siege.fortification(), siege.town(),
+                SiegeLayout.PERMANENT_WALL.stream().map(Battle::coord).toList(), parts,
+                siege.moat().stream().map(Battle::coord).toList());
+    }
+
+    private static HexCoord coord(Hex hex) {
+        return new HexCoord(hex.q(), hex.r());
+    }
+
     private static List<StackSnapshot> machineSnapshots(BattleSetup setup) {
         List<StackSnapshot> machines = new ArrayList<>();
         for (Side side : Side.values()) {
@@ -425,7 +444,7 @@ public final class Battle {
      * eine Armee mit Moral 0 den RNG-Strom bei gleichem Seed identisch.
      */
     private void actWithMorale(Stack activeStack, BattleSetup setup) {
-        Battlefield battlefield = setup.battlefield();
+        Battlefield battlefield = setup.battlefieldFor(activeStack.side());
         // Der Freeze-Wurf gehört vor die Entscheidung, nicht dahinter: in H3 friert die Kreatur
         // ein, bevor der Spieler überhaupt zwischen Angriff, Wait und Defend wählen darf.
         // Wer in Phase 1 gewartet hat, hat dort bereits gewürfelt — in der Late-Phase würde ein
@@ -462,7 +481,7 @@ public final class Battle {
      *         der Late-Phase erneut drankommt; {@code true}, wenn er sie verbraucht hat.
      */
     private boolean takeAction(Stack active, Stack opponent, BattleSetup setup) {
-        Battlefield battlefield = setup.battlefield();
+        Battlefield battlefield = setup.battlefieldFor(active.side());
         Action action = autoSolver.decide(active, opponent, battlefield);
         if ((action instanceof Action.Move || action instanceof Action.Defend) && autoSolver.attacksWarMachines(active)) {
             Action machineAttack = WarMachineTargeting.attack(active, setup);
@@ -595,7 +614,7 @@ public final class Battle {
             emitDefend(active);
             return;
         }
-        Battlefield battlefield = setup.battlefield();
+        Battlefield battlefield = setup.battlefieldFor(active.side());
         Hex startPos = active.position();
         int hexesMoved = startPos.distanceTo(destination);
         moveTo(active, destination, battlefield);
@@ -664,7 +683,7 @@ public final class Battle {
                 return true;
             }
         }
-        return setup.machineAt(hex) != null;
+        return setup.machineAt(hex) != null || !setup.battlefieldFor(mover.side()).isPassable(hex);
     }
 
     private void moveTo(Stack active, Hex destination, Battlefield battlefield) {
@@ -965,7 +984,8 @@ public final class Battle {
                 BattleLogger.logDistancePenalty(active.getName(), distance);
             }
             // Hindernis-Strafe nur über Stadtmauern (heroes.thelazy.net, Obstacle penalty).
-            if (behindWall && !attackerSpecs.contains(UnitSpeciality.NO_OBSTACLE_PENALTY)) {
+            // NO_OBSTACLE_PENALTY ist keine Angriffs-, sondern eine Sonderfähigkeit — also am Stack prüfen.
+            if (behindWall && !active.hasSpeciality(UnitSpeciality.NO_OBSTACLE_PENALTY)) {
                 currentDamage = currentDamage / 2;
                 BattleLogger.logObstaclePenalty(active.getName());
             }
