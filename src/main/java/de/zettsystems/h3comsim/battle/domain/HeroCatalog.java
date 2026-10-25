@@ -324,6 +324,17 @@ public final class HeroCatalog {
     private static final Map<String, Hero> BY_NAME = ALL.stream()
             .collect(Collectors.toUnmodifiableMap(Hero::name, h -> h));
 
+    /**
+     * Je Fraktion ein Held der magischen Klasse, dessen Wirkung im Kampf allein am Zauberbuch
+     * hängt: kein Startzauber, keine Spezialität mit Kampfwirkung außer Intelligence (mehr Mana).
+     * Bevorzugt mit Intelligence als Startfertigkeit, sonst ohne kampfwirksame zweite Fertigkeit
+     * (Stronghold Dessa statt Saurug mit Resistance), Gleichstand alphabetisch. Castle Caitlin,
+     * Rampart Elleshar, Tower Aine, Inferno Ayden, Necropolis Nagash, Dungeon Sephinroth,
+     * Stronghold Dessa, Fortress Andra, Conflux Gelare (jeder Elementalist beginnt mit einer
+     * Schule).
+     */
+    private static final Map<Faction, Hero> MAGES = mages();
+
     private HeroCatalog() {
     }
 
@@ -380,6 +391,20 @@ public final class HeroCatalog {
         return map;
     }
 
+    private static Map<Faction, Hero> mages() {
+        Map<Faction, Hero> map = new EnumMap<>(Faction.class);
+        map.put(Faction.CASTLE, BY_NAME.get("Caitlin"));
+        map.put(Faction.RAMPART, BY_NAME.get("Elleshar"));
+        map.put(Faction.TOWER, BY_NAME.get("Aine"));
+        map.put(Faction.INFERNO, BY_NAME.get("Ayden"));
+        map.put(Faction.NECROPOLIS, BY_NAME.get("Nagash"));
+        map.put(Faction.DUNGEON, BY_NAME.get("Sephinroth"));
+        map.put(Faction.STRONGHOLD, BY_NAME.get("Dessa"));
+        map.put(Faction.FORTRESS, BY_NAME.get("Andra"));
+        map.put(Faction.CONFLUX, BY_NAME.get("Gelare"));
+        return map;
+    }
+
     /** Alle Helden, nach Fraktion, Klasse (martialisch zuerst) und Name sortiert. */
     public static List<Hero> all() {
         return ALL;
@@ -392,6 +417,11 @@ public final class HeroCatalog {
     /** Der Standardheld dieser Fraktion; leer für {@link Faction#NEUTRAL}. */
     public static Optional<Hero> defaultFor(Faction faction) {
         return Optional.ofNullable(DEFAULTS.get(faction));
+    }
+
+    /** Der Magier dieser Fraktion (siehe {@link #MAGES}); leer für {@link Faction#NEUTRAL}. */
+    public static Optional<Hero> mageFor(Faction faction) {
+        return Optional.ofNullable(MAGES.get(faction));
     }
 
     /**

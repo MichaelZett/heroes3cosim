@@ -62,10 +62,11 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   (heroes.thelazy.net). Helden mit Zauberbuch bekommen die Gilde ihrer
   Fraktion: Stufe 1 sofort, Stufe 2 ab Level 2, Stufe 3–5, sobald Wisdom
   sie öffnet, höchstens bis zur Gildenstufe der Stadt (Castle 4,
-  Stronghold und Fortress 3). Die Zauber jeder Stufe werden wie im Spiel
+  Stronghold und Fortress 3); Tower hat die Library und lehrt je Stufe
+  einen Zauber mehr. Die Zauber jeder Stufe werden wie im Spiel
   gewichtet ausgelost, Abenteuer- und Spezialzauber (Fly, Town Portal,
   Berserk …) eingeschlossen — sie stehen im Buch, wirken im Kampf aber
-  nicht. Die Tower-Bibliothek fehlt; Might-Helden ohne Start-Zauber
+  nicht. Might-Helden ohne Start-Zauber
   bleiben ohne Buch. Das Ergebnis zeigt die Auswertung je Seite an.
 - **Spezialfähigkeiten** der Helden in der SoD-Fassung: Kreatur-
   Spezialisten geben ihren Kreaturen (Basis- und Ausbaustufe) +1 Speed und
@@ -74,7 +75,8 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Level; die Planeswalker geben ihren Elementaren feste Boni auf Attack,
   Defense und Schaden; Ballista-Spezialisten heben deren Attack.
   Helden der magischen Klassen beginnen mit Stufe 1 der Magiergilde ihrer
-  Fraktion: den fünf wahrscheinlichsten Kampfzaubern der Stufe 1 nach den
+  Fraktion: den fünf wahrscheinlichsten Kampfzaubern der Stufe 1 (Tower mit
+  Library sechs) nach den
   Gilden-Wahrscheinlichkeiten von heroes.thelazy.net (im Spiel zufällig;
   Necropolis etwa ohne Bless, mit Curse). Gegen denselben Helden ohne
   Zauber gewinnt das Buch im Spiegel-Duell 0.810 (Tower und Castle 1.000,
@@ -123,7 +125,9 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Heuristik: erwartete vernichtete Kosten bei Schaden, geschätzter Anteil
   am Wert des Stacks bei Wirkungen, bei Schutz vor einer Schule und
   Anti-Magic der Schaden, den der gegnerische Held mit seinen Zaubern
-  anrichten könnte. Bei knappem Mana zählt, wie oft sich ein Zauber in
+  anrichten könnte. Liegende Zauber und Beschwörungen zählen höchstens
+  zwei Runden; im Spiegel-Duell schlägt das die frühere Annahme von vier
+  Runden auf allen gemessenen Leveln mit 0.52–0.56. Bei knappem Mana zählt, wie oft sich ein Zauber in
   den restlichen Runden noch bezahlen lässt — zweimal Magic Arrow schlägt
   dann einmal Lightning Bolt. Die Mana-Kosten folgen dem RoE-Manual, ohne
   die Rabatte der Schul-Fertigkeiten aus späteren Fassungen; Magi und

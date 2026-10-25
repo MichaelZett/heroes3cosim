@@ -130,6 +130,20 @@ class HeroPrimarySkillsTest {
     }
 
     @Test
+    void every_town_faction_has_a_mage_whose_only_combat_edge_is_the_guild_book() {
+        assertThat(HeroCatalog.mageFor(Faction.NEUTRAL)).isEmpty();
+        for (Faction faction : Faction.values()) {
+            if (faction != Faction.NEUTRAL) {
+                Hero mage = HeroCatalog.mageFor(faction).orElseThrow();
+                assertThat(mage.faction()).as("Magier für %s", faction).isEqualTo(faction);
+                assertThat(mage.heroClass().magic()).as(mage.name()).isTrue();
+                assertThat(mage.specialty().startingSpells()).as(mage.name()).isEmpty();
+                assertThat(mage.spells()).as(mage.name()).isEqualTo(MageGuild.firstLevel(faction));
+            }
+        }
+    }
+
+    @Test
     void catalog_carries_the_manual_start_skills() {
         // Stichproben über beide Handbücher, auch mit Fertigkeiten, die nicht wirken.
         assertThat(HeroCatalog.byName("Melodia").orElseThrow().levelOf(SecondarySkill.LUCK))

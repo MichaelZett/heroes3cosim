@@ -16,11 +16,12 @@ import java.util.random.RandomGenerator;
  * auf Stufe 1, vier, drei, zwei, einen auf Stufe 5 (heroes.thelazy.net, <em>Mage Guild</em>).
  * Die Gewichte stammen von den Seiten der einzelnen Zauber; 0 heißt, der Zauber erscheint in
  * dieser Stadt nie, und wo die Gilde nicht so hoch ausgebaut werden kann (Castle bis Stufe 4,
- * Stronghold und Fortress bis Stufe 3), stehen alle Gewichte der Stufe auf 0. Die Library von
- * Tower (ein Zauber mehr je Stufe) ist nicht abgebildet.
+ * Stronghold und Fortress bis Stufe 3), stehen alle Gewichte der Stufe auf 0. Tower hat die
+ * Library gebaut und lehrt einen Zauber mehr je Stufe; seine Gewichte sind die Werte ohne Library
+ * (der zweite Tower-Wert der Zauberseiten), wie bei den anderen Städten für fünf, vier, … Plätze.
  *
- * <p>{@link #firstLevel} ist das feste Startbuch der Magier-Helden im Katalog: die fünf
- * wahrscheinlichsten Kampfzauber der Stufe 1, bei gleichem Gewicht nach Namen. {@link #draw} zieht
+ * <p>{@link #firstLevel} ist das feste Startbuch der Magier-Helden im Katalog: die
+ * wahrscheinlichsten Kampfzauber der Stufe 1, so viele wie die Gilde Plätze hat, bei gleichem Gewicht nach Namen. {@link #draw} zieht
  * wie das Spiel, Abenteuerzauber eingeschlossen.
  */
 public final class MageGuild {
@@ -37,81 +38,81 @@ public final class MageGuild {
             WEIGHTS.put(town, new EnumMap<>(Spell.class));
         }
         // Castle, Rampart, Tower, Inferno, Necropolis, Dungeon, Stronghold, Fortress, Conflux
-        weights(Spell.AIR_SHIELD, 13, 24, 32, 9, 13, 13, 24, 17, 13);
+        weights(Spell.AIR_SHIELD, 13, 24, 24, 9, 13, 13, 24, 17, 13);
         weights(Spell.ANIMATE_DEAD, 0, 0, 0, 0, 44, 0, 0, 0, 0);
-        weights(Spell.ANTI_MAGIC, 35, 24, 32, 17, 25, 24, 35, 40, 35);
+        weights(Spell.ANTI_MAGIC, 35, 24, 24, 17, 25, 24, 35, 40, 35);
         weights(Spell.ARMAGEDDON, 0, 0, 0, 10, 10, 20, 0, 0, 0);
-        weights(Spell.BERSERK, 10, 10, 16, 10, 20, 10, 0, 0, 10);
-        weights(Spell.BLESS, 54, 32, 39, 0, 0, 19, 20, 31, 31);
-        weights(Spell.BLIND, 25, 35, 18, 47, 24, 25, 25, 35, 37);
+        weights(Spell.BERSERK, 10, 10, 10, 10, 20, 10, 0, 0, 10);
+        weights(Spell.BLESS, 54, 32, 31, 0, 0, 19, 20, 31, 31);
+        weights(Spell.BLIND, 25, 35, 13, 47, 24, 25, 25, 35, 37);
         weights(Spell.BLOODLUST, 0, 0, 0, 53, 32, 30, 53, 31, 31);
-        weights(Spell.CHAIN_LIGHTNING, 20, 20, 29, 20, 20, 20, 0, 0, 20);
-        weights(Spell.CLONE, 10, 10, 29, 10, 10, 10, 0, 0, 20);
-        weights(Spell.COUNTERSTRIKE, 10, 20, 16, 10, 10, 10, 0, 0, 10);
-        weights(Spell.CURE, 54, 54, 39, 31, 0, 30, 31, 53, 31);
-        weights(Spell.CURSE, 0, 0, 25, 31, 54, 30, 0, 0, 0);
+        weights(Spell.CHAIN_LIGHTNING, 20, 20, 20, 20, 20, 20, 0, 0, 20);
+        weights(Spell.CLONE, 10, 10, 20, 10, 10, 10, 0, 0, 20);
+        weights(Spell.COUNTERSTRIKE, 10, 20, 10, 10, 10, 10, 0, 0, 10);
+        weights(Spell.CURE, 54, 54, 31, 31, 0, 30, 31, 53, 31);
+        weights(Spell.CURSE, 0, 0, 20, 31, 54, 30, 0, 0, 0);
         weights(Spell.DEATH_RIPPLE, 0, 0, 0, 0, 95, 0, 0, 0, 0);
-        weights(Spell.DESTROY_UNDEAD, 35, 24, 32, 9, 0, 13, 13, 9, 13);
-        weights(Spell.DIMENSION_DOOR, 0, 20, 28, 16, 16, 16, 0, 0, 13);
-        weights(Spell.DISGUISE, 13, 13, 18, 18, 13, 13, 13, 0, 11);
-        weights(Spell.DISPEL, 54, 54, 63, 53, 54, 52, 53, 53, 53);
-        weights(Spell.DISRUPTING_RAY, 35, 25, 46, 47, 24, 35, 35, 35, 37);
-        weights(Spell.EARTHQUAKE, 13, 24, 17, 25, 13, 13, 13, 90, 13);
-        weights(Spell.FIRE_SHIELD, 10, 10, 16, 10, 10, 10, 0, 0, 10);
-        weights(Spell.FIRE_WALL, 25, 25, 33, 47, 24, 25, 25, 25, 37);
-        weights(Spell.FIREBALL, 24, 24, 32, 90, 35, 44, 35, 9, 35);
-        weights(Spell.FLY, 0, 16, 32, 16, 16, 12, 0, 0, 13);
-        weights(Spell.FORCE_FIELD, 13, 13, 32, 9, 25, 24, 13, 17, 24);
-        weights(Spell.FORGETFULNESS, 24, 24, 17, 17, 13, 13, 13, 17, 24);
-        weights(Spell.FORTUNE, 25, 35, 33, 18, 13, 13, 25, 25, 11);
-        weights(Spell.FRENZY, 10, 10, 16, 10, 10, 10, 0, 0, 10);
-        weights(Spell.FROST_RING, 44, 43, 55, 0, 35, 35, 35, 17, 35);
-        weights(Spell.HASTE, 32, 54, 39, 31, 32, 52, 31, 53, 53);
-        weights(Spell.HYPNOTIZE, 13, 13, 32, 25, 0, 24, 13, 17, 35);
-        weights(Spell.ICE_BOLT, 95, 95, 46, 0, 35, 35, 25, 96, 77);
-        weights(Spell.IMPLOSION, 0, 16, 28, 16, 20, 12, 0, 0, 13);
-        weights(Spell.INFERNO, 10, 10, 16, 20, 10, 10, 0, 0, 20);
-        weights(Spell.LAND_MINE, 24, 24, 32, 25, 25, 35, 24, 9, 13);
-        weights(Spell.LIGHTNING_BOLT, 25, 25, 98, 65, 35, 95, 95, 25, 77);
-        weights(Spell.MAGIC_ARROW, 89, 89, 94, 89, 89, 88, 89, 89, 89);
-        weights(Spell.MAGIC_MIRROR, 0, 16, 28, 0, 0, 12, 0, 0, 13);
-        weights(Spell.METEOR_SHOWER, 20, 20, 29, 20, 20, 20, 0, 0, 20);
-        weights(Spell.MIRTH, 13, 13, 17, 9, 13, 13, 35, 9, 13);
-        weights(Spell.MISFORTUNE, 13, 13, 17, 25, 25, 13, 13, 9, 13);
-        weights(Spell.PRAYER, 20, 10, 16, 0, 0, 0, 0, 0, 10);
-        weights(Spell.PRECISION, 35, 35, 33, 34, 13, 35, 25, 25, 11);
-        weights(Spell.PROTECTION_FROM_AIR, 13, 13, 18, 18, 13, 13, 13, 13, 11);
-        weights(Spell.PROTECTION_FROM_EARTH, 13, 13, 17, 9, 13, 13, 13, 0, 13);
-        weights(Spell.PROTECTION_FROM_FIRE, 20, 20, 25, 20, 20, 19, 20, 20, 20);
-        weights(Spell.PROTECTION_FROM_WATER, 20, 20, 25, 20, 20, 19, 20, 20, 20);
-        weights(Spell.QUICKSAND, 25, 25, 46, 18, 24, 25, 35, 35, 20);
-        weights(Spell.REMOVE_OBSTACLE, 25, 25, 46, 18, 24, 25, 25, 25, 20);
-        weights(Spell.RESURRECTION, 20, 20, 29, 20, 20, 20, 0, 0, 10);
+        weights(Spell.DESTROY_UNDEAD, 35, 24, 24, 9, 0, 13, 13, 9, 13);
+        weights(Spell.DIMENSION_DOOR, 0, 20, 14, 16, 16, 16, 0, 0, 13);
+        weights(Spell.DISGUISE, 13, 13, 13, 18, 13, 13, 13, 0, 11);
+        weights(Spell.DISPEL, 54, 54, 53, 53, 54, 52, 53, 53, 53);
+        weights(Spell.DISRUPTING_RAY, 35, 25, 35, 47, 24, 35, 35, 35, 37);
+        weights(Spell.EARTHQUAKE, 13, 24, 13, 25, 13, 13, 13, 90, 13);
+        weights(Spell.FIRE_SHIELD, 10, 10, 10, 10, 10, 10, 0, 0, 10);
+        weights(Spell.FIRE_WALL, 25, 25, 25, 47, 24, 25, 25, 25, 37);
+        weights(Spell.FIREBALL, 24, 24, 24, 90, 35, 44, 35, 9, 35);
+        weights(Spell.FLY, 0, 16, 16, 16, 16, 12, 0, 0, 13);
+        weights(Spell.FORCE_FIELD, 13, 13, 24, 9, 25, 24, 13, 17, 24);
+        weights(Spell.FORGETFULNESS, 24, 24, 13, 17, 13, 13, 13, 17, 24);
+        weights(Spell.FORTUNE, 25, 35, 25, 18, 13, 13, 25, 25, 11);
+        weights(Spell.FRENZY, 10, 10, 10, 10, 10, 10, 0, 0, 10);
+        weights(Spell.FROST_RING, 44, 43, 43, 0, 35, 35, 35, 17, 35);
+        weights(Spell.HASTE, 32, 54, 31, 31, 32, 52, 31, 53, 53);
+        weights(Spell.HYPNOTIZE, 13, 13, 24, 25, 0, 24, 13, 17, 35);
+        weights(Spell.ICE_BOLT, 95, 95, 35, 0, 35, 35, 25, 96, 77);
+        weights(Spell.IMPLOSION, 0, 16, 14, 16, 20, 12, 0, 0, 13);
+        weights(Spell.INFERNO, 10, 10, 10, 20, 10, 10, 0, 0, 20);
+        weights(Spell.LAND_MINE, 24, 24, 24, 25, 25, 35, 24, 9, 13);
+        weights(Spell.LIGHTNING_BOLT, 25, 25, 96, 65, 35, 95, 95, 25, 77);
+        weights(Spell.MAGIC_ARROW, 89, 89, 89, 89, 89, 88, 89, 89, 89);
+        weights(Spell.MAGIC_MIRROR, 0, 16, 14, 0, 0, 12, 0, 0, 13);
+        weights(Spell.METEOR_SHOWER, 20, 20, 20, 20, 20, 20, 0, 0, 20);
+        weights(Spell.MIRTH, 13, 13, 13, 9, 13, 13, 35, 9, 13);
+        weights(Spell.MISFORTUNE, 13, 13, 13, 25, 25, 13, 13, 9, 13);
+        weights(Spell.PRAYER, 20, 10, 10, 0, 0, 0, 0, 0, 10);
+        weights(Spell.PRECISION, 35, 35, 25, 34, 13, 35, 25, 25, 11);
+        weights(Spell.PROTECTION_FROM_AIR, 13, 13, 13, 18, 13, 13, 13, 13, 11);
+        weights(Spell.PROTECTION_FROM_EARTH, 13, 13, 13, 9, 13, 13, 13, 0, 13);
+        weights(Spell.PROTECTION_FROM_FIRE, 20, 20, 20, 20, 20, 19, 20, 20, 20);
+        weights(Spell.PROTECTION_FROM_WATER, 20, 20, 20, 20, 20, 19, 20, 20, 20);
+        weights(Spell.QUICKSAND, 25, 25, 35, 18, 24, 25, 35, 35, 20);
+        weights(Spell.REMOVE_OBSTACLE, 25, 25, 35, 18, 24, 25, 25, 25, 20);
+        weights(Spell.RESURRECTION, 20, 20, 20, 20, 20, 20, 0, 0, 10);
         weights(Spell.SACRIFICE, 0, 0, 0, 20, 16, 12, 0, 0, 0);
-        weights(Spell.SCUTTLE_BOAT, 35, 25, 33, 18, 24, 25, 25, 25, 20);
-        weights(Spell.SHIELD, 54, 20, 39, 20, 54, 30, 31, 31, 31);
-        weights(Spell.SLAYER, 10, 10, 16, 10, 10, 10, 0, 0, 10);
-        weights(Spell.SLOW, 32, 54, 63, 53, 32, 30, 31, 31, 53);
-        weights(Spell.SORROW, 10, 10, 16, 10, 10, 10, 0, 0, 10);
-        weights(Spell.STONE_SKIN, 32, 32, 63, 31, 54, 30, 53, 31, 31);
-        weights(Spell.SUMMON_AIR_ELEMENTAL, 0, 0, 28, 0, 16, 0, 0, 0, 12);
-        weights(Spell.SUMMON_BOAT, 20, 32, 39, 31, 20, 30, 31, 20, 20);
-        weights(Spell.SUMMON_EARTH_ELEMENTAL, 0, 16, 28, 16, 16, 12, 0, 0, 12);
+        weights(Spell.SCUTTLE_BOAT, 35, 25, 25, 18, 24, 25, 25, 25, 20);
+        weights(Spell.SHIELD, 54, 20, 31, 20, 54, 30, 31, 31, 31);
+        weights(Spell.SLAYER, 10, 10, 10, 10, 10, 10, 0, 0, 10);
+        weights(Spell.SLOW, 32, 54, 53, 53, 32, 30, 31, 31, 53);
+        weights(Spell.SORROW, 10, 10, 10, 10, 10, 10, 0, 0, 10);
+        weights(Spell.STONE_SKIN, 32, 32, 53, 31, 54, 30, 53, 31, 31);
+        weights(Spell.SUMMON_AIR_ELEMENTAL, 0, 0, 14, 0, 16, 0, 0, 0, 12);
+        weights(Spell.SUMMON_BOAT, 20, 32, 31, 31, 20, 30, 31, 20, 20);
+        weights(Spell.SUMMON_EARTH_ELEMENTAL, 0, 16, 14, 16, 16, 12, 0, 0, 12);
         weights(Spell.SUMMON_FIRE_ELEMENTAL, 0, 0, 0, 16, 0, 12, 0, 0, 12);
-        weights(Spell.SUMMON_WATER_ELEMENTAL, 0, 16, 28, 0, 0, 12, 0, 0, 12);
-        weights(Spell.TELEPORT, 24, 24, 32, 32, 25, 24, 24, 40, 24);
-        weights(Spell.TOWN_PORTAL, 20, 20, 29, 20, 20, 20, 0, 0, 20);
-        weights(Spell.VIEW_AIR, 20, 20, 25, 20, 20, 19, 20, 20, 20);
-        weights(Spell.VIEW_EARTH, 20, 20, 25, 20, 20, 19, 20, 20, 20);
-        weights(Spell.VISIONS, 13, 13, 18, 18, 13, 13, 13, 13, 11);
-        weights(Spell.WATER_WALK, 20, 20, 29, 20, 20, 20, 0, 0, 20);
-        weights(Spell.WEAKNESS, 13, 13, 18, 34, 24, 25, 25, 25, 20);
+        weights(Spell.SUMMON_WATER_ELEMENTAL, 0, 16, 14, 0, 0, 12, 0, 0, 12);
+        weights(Spell.TELEPORT, 24, 24, 24, 32, 25, 24, 24, 40, 24);
+        weights(Spell.TOWN_PORTAL, 20, 20, 20, 20, 20, 20, 0, 0, 20);
+        weights(Spell.VIEW_AIR, 20, 20, 20, 20, 20, 19, 20, 20, 20);
+        weights(Spell.VIEW_EARTH, 20, 20, 20, 20, 20, 19, 20, 20, 20);
+        weights(Spell.VISIONS, 13, 13, 13, 18, 13, 13, 13, 13, 11);
+        weights(Spell.WATER_WALK, 20, 20, 20, 20, 20, 20, 0, 0, 20);
+        weights(Spell.WEAKNESS, 13, 13, 13, 34, 24, 25, 25, 25, 20);
         for (Faction town : TOWNS) {
             FIRST_LEVEL.put(town, Set.copyOf(spellsOfLevel(town, 1).stream()
                     .filter(spell -> spell.kind() != Spell.Kind.OTHER)
                     .sorted(Comparator.comparingInt((Spell spell) -> -weight(town, spell))
                             .thenComparing(Spell::name))
-                    .limit(SLOTS[0])
+                    .limit(slots(town, 1))
                     .toList()));
         }
     }
@@ -131,7 +132,7 @@ public final class MageGuild {
         return town == null ? 0 : town.getOrDefault(spell, 0);
     }
 
-    /** Die fünf Stufe-1-Kampfzauber des festen Startbuchs; leer für neutrale. */
+    /** Die Stufe-1-Kampfzauber des festen Startbuchs (Tower sechs, sonst fünf); leer für neutrale. */
     public static Set<Spell> firstLevel(Faction faction) {
         return FIRST_LEVEL.getOrDefault(faction, Set.of());
     }
@@ -156,7 +157,7 @@ public final class MageGuild {
             return drawn;
         }
         List<Spell> pool = new ArrayList<>(spellsOfLevel(faction, level));
-        while (drawn.size() < SLOTS[level - 1] && !pool.isEmpty()) {
+        while (drawn.size() < slots(faction, level) && !pool.isEmpty()) {
             int total = pool.stream().mapToInt(spell -> weight(faction, spell)).sum();
             int roll = rng.nextInt(total);
             for (Spell spell : pool) {
@@ -169,6 +170,11 @@ public final class MageGuild {
             }
         }
         return drawn;
+    }
+
+    /** Plätze der Gildenstufe; die Library von Tower gibt je Stufe einen dazu. */
+    static int slots(Faction faction, int level) {
+        return SLOTS[level - 1] + (faction == Faction.TOWER ? 1 : 0);
     }
 
     private static List<Spell> spellsOfLevel(Faction faction, int level) {
