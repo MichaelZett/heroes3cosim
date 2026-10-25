@@ -871,13 +871,12 @@ public final class Battle {
     }
 
     private void rangedAttack(Stack active, Stack passive, BattleSetup setup) {
-        Battlefield battlefield = setup.battlefield();
         int distance = active.position().distanceTo(passive.position());
-        boolean obstacleInLine = PathFinder.hasObstacleInLine(battlefield, active.position(), passive.position());
+        boolean behindWall = setup.shotCrossesWall(active, passive);
         BattleLogger.logShoot(active.getName(), passive.getName(), distance);
         int countBefore = passive.getCount();
         passive.wakeFromBlind();
-        int dealt = dealDamage(active, passive, AttackType.LONG_RANGE, 0, distance, obstacleInLine);
+        int dealt = dealDamage(active, passive, AttackType.LONG_RANGE, 0, distance, behindWall);
         events.emit(new BattleEvent.Shoot(active.side(), active.slot(),
                 passive.side(), passive.slot(), distance,
                 dealt, countBefore - passive.getCount(), snapshot(passive)));
@@ -887,10 +886,10 @@ public final class Battle {
             BattleLogger.logTwoShots(active.getName());
             events.emit(new BattleEvent.TwoShots(active.side(), active.slot()));
             int distance2 = active.position().distanceTo(passive.position());
-            boolean obstacleInLine2 = PathFinder.hasObstacleInLine(battlefield, active.position(), passive.position());
+            boolean behindWall2 = setup.shotCrossesWall(active, passive);
             BattleLogger.logShoot(active.getName(), passive.getName(), distance2);
             int countBefore2 = passive.getCount();
-            int dealt2 = dealDamage(active, passive, AttackType.LONG_RANGE, 0, distance2, obstacleInLine2);
+            int dealt2 = dealDamage(active, passive, AttackType.LONG_RANGE, 0, distance2, behindWall2);
             events.emit(new BattleEvent.Shoot(active.side(), active.slot(),
                     passive.side(), passive.slot(), distance2,
                     dealt2, countBefore2 - passive.getCount(), snapshot(passive)));
@@ -957,7 +956,7 @@ public final class Battle {
     }
 
     private int dealDamage(Stack active, Stack passive, AttackType attackType,
-                           int hexesMoved, int distance, boolean obstacleInLine) {
+                           int hexesMoved, int distance, boolean behindWall) {
         int currentDamage = active.calculateCurrentDamage(attackType, hexesMoved, rng);
         if (attackType == AttackType.LONG_RANGE) {
             Set<UnitSpeciality> attackerSpecs = active.getAttackerSpecialities();
@@ -965,7 +964,8 @@ public final class Battle {
                 currentDamage = currentDamage / 2;
                 BattleLogger.logDistancePenalty(active.getName(), distance);
             }
-            if (obstacleInLine && !attackerSpecs.contains(UnitSpeciality.NO_OBSTACLE_PENALTY)) {
+            // Hindernis-Strafe nur über Stadtmauern (heroes.thelazy.net, Obstacle penalty).
+            if (behindWall && !attackerSpecs.contains(UnitSpeciality.NO_OBSTACLE_PENALTY)) {
                 currentDamage = currentDamage / 2;
                 BattleLogger.logObstaclePenalty(active.getName());
             }

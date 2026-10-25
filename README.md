@@ -201,8 +201,13 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Obstacles herum, zugbasierte Move-Sequenz pro Hex (Token wandert
   sichtbar Schritt für Schritt).
 - **Fernkampf** mit `shotsRemaining`, Nahkampf-Penalty bei Distanz 1,
-  ½-Schaden ab >10 Hex Distanz und nochmal ½ wenn ein Hindernis in der
-  Schusslinie liegt — beide negierbar durch entsprechende Marker.
+  ½-Schaden ab >10 Hex Distanz und nochmal ½, wenn der Schuss über eine
+  stehende Stadtmauer geht — beide negierbar durch entsprechende Marker.
+  Gewöhnliche Hindernisse halbieren nichts (heroes.thelazy.net, *Obstacle
+  penalty*). Bis Oktober 2026 galt die Strafe auch für Felsen; mit der
+  Korrektur gewinnen schützenlastige Armeen deutlich (Strategic, je 640
+  Kämpfe: Tower 371 → 445, Dungeon 395 → 456, Rampart 196 → 227 Siege),
+  Necropolis, Fortress und Stronghold verlieren 36–54 Siege.
 - **HTTP-API** über Spring Boot 4 mit
   [Swagger-UI](http://localhost:8080/swagger-ui.html): `GET /api/units`,
   `GET /api/factions`, `POST /api/battles/simulate` für einzelne Kämpfe,

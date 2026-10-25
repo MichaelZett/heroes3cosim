@@ -36,20 +36,12 @@ class RangedPenaltiesTest {
         assertThat(farDamage).isBetween(closeDamage / 2 - 3, closeDamage / 2 + 3);
     }
 
+    /** Die Hindernis-Strafe gilt nur für Schüsse über Stadtmauern, nicht für Felsen auf dem Feld. */
     @Test
-    void obstacle_in_the_line_halves_damage() {
+    void an_ordinary_obstacle_in_the_line_costs_nothing() {
         int clearShot = firstShotDamage(new Hex(8, 5), Battlefield.STANDARD); // distance 6, clear
         Battlefield blocked = Battlefield.STANDARD.withObstacles(Set.of(new Hex(11, 5)));
-        int blockedShot = firstShotDamage(new Hex(8, 5), blocked);
-        assertThat(blockedShot).isBetween(clearShot / 2 - 3, clearShot / 2 + 3);
-    }
-
-    @Test
-    void distance_and_obstacle_penalties_stack_to_quarter_damage() {
-        int clearShot = firstShotDamage(new Hex(8, 5), Battlefield.STANDARD); // distance 6, clear
-        Battlefield blocked = Battlefield.STANDARD.withObstacles(Set.of(new Hex(7, 5)));
-        int doublePenalty = firstShotDamage(new Hex(0, 5), blocked);          // distance 14 + obstacle
-        assertThat(doublePenalty).isBetween(clearShot / 4 - 3, clearShot / 4 + 3);
+        assertThat(firstShotDamage(new Hex(8, 5), blocked)).isEqualTo(clearShot);
     }
 
     private static int firstShotDamage(Hex attackerPos, Battlefield battlefield) {

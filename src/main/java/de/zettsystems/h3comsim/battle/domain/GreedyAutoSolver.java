@@ -15,17 +15,12 @@ import java.util.List;
  *   <li>Schütze gegen schnelleren Melee-Gegner, der dieses Mal nicht in Distanz 1 wäre → schießen.</li>
  *   <li>Schütze, der schneller als der heranrückende Melee-Gegner ist und nächste Runde im
  *       Nahkampf wäre → ausweichen in beliebiger Richtung, damit Distanz &gt; Gegner-Speed bleibt.
- *       Bei mehreren Kandidaten gewinnt der mit obstacle-freier Schusslinie (kein eigener
- *       Obstacle-Penalty).</li>
- *   <li>Schütze vs. Schütze: bleiben stehen und schießen, außer der Aktive hat
- *       {@code NO_OBSTACLE_PENALTY} und der Gegner nicht — dann wird, falls möglich, eine
- *       Position hinter Obstacle gesucht, damit der Gegner ½-Schaden eingehend bekommt während
- *       der Aktive ungerührt feuert. Setzt die Bewegung aber nur, wenn die Cover-Position
- *       erreichbar ist und die Distanz erhalten bleibt.</li>
+ *   <li>Schütze vs. Schütze: bleiben stehen und schießen. Deckung hinter Hindernissen gibt es
+ *       nicht — die Hindernis-Strafe gilt nur für Schüsse über Stadtmauern.</li>
  *   <li>Sonst → Bewegung Richtung Gegner, ggf. Move-and-Melee.</li>
  * </ul>
  *
- * <p><strong>Stack-Belegung</strong>: alle Kandidaten-Suchen (Charge, Kite, Cover, Flieger-
+ * <p><strong>Stack-Belegung</strong>: alle Kandidaten-Suchen (Charge, Kite, Flieger-
  * Landung) filtern Hexen heraus, die von einem anderen lebenden Stack besetzt sind. Dafür
  * speichert {@link #planRound(BattleSetup)} das aktuelle Setup. Ohne planRound-Call
  * (z.B. in einigen Unit-Tests) bleibt {@code currentSetup} null und der Filter ist inaktiv —
@@ -89,7 +84,7 @@ public final class GreedyAutoSolver implements AutoSolver {
      * </ul>
      * Sichert dieselbe API wie die 1-vs-1-Variante: {@link #decide(Stack, Stack, Battlefield)}
      * läuft anschließend gegen das hier gewählte Single-Target weiter — bestehende
-     * Kite/Cover/Charge-Heuristiken bleiben unverändert.
+     * Kite/Charge-Heuristiken bleiben unverändert.
      */
     @Override
     public @Nullable Stack pickTarget(Stack active, List<Stack> opponents, Battlefield battlefield) {
@@ -368,7 +363,7 @@ public final class GreedyAutoSolver implements AutoSolver {
         int mySpeed = active.getSpeed();
 
         if (opponent.canShoot()) {
-            return decideShooterVsShooter(active, opponent, bf, from, to, mySpeed);
+            return new Action.Shoot(opponent);
         }
 
         // Multi-Stack: Kite-Heuristik ist nicht sinnvoll, weil sie nur gegen den
@@ -516,26 +511,6 @@ public final class GreedyAutoSolver implements AutoSolver {
         return projectedDamage >= opponentTotalHp;
     }
 
-    private Action decideShooterVsShooter(Stack active, Stack opponent, Battlefield bf,
-                                          Hex from, Hex to, int mySpeed) {
-        boolean iHaveCoverIgnore = active.unit().hasSpeciality(UnitSpeciality.NO_OBSTACLE_PENALTY);
-        boolean opponentHasCoverIgnore = opponent.unit().hasSpeciality(UnitSpeciality.NO_OBSTACLE_PENALTY);
-        // Cover-Repositionierung lohnt nur, wenn ich obstacle-immune bin (ich schieße voll durch)
-        // und der Gegner nicht (er halbiert). Sonst ist der verlorene Schuss diese Runde teurer
-        // als der Cover-Vorteil.
-        if (!iHaveCoverIgnore || opponentHasCoverIgnore) {
-            return new Action.Shoot(opponent);
-        }
-        if (bf.obstacles().isEmpty()) {
-            return new Action.Shoot(opponent);
-        }
-        Hex cover = findCoverPosition(active, from, to, bf, mySpeed, active.unit().movement());
-        if (cover == null) {
-            return new Action.Shoot(opponent);
-        }
-        return new Action.Move(cover);
-    }
-
     /**
      * Sucht ein Feld, das mindestens {@code opponentSpeed + 2} Hex vom Gegner entfernt ist
      * (damit der Gegner nächste Runde noch nicht adjacent ist) und vom Start in einem Zug
@@ -546,27 +521,7 @@ public final class GreedyAutoSolver implements AutoSolver {
                                            int mySpeed, int opponentSpeed, Movement movement) {
         return reachableCandidates(active, from, to, bf, mySpeed, movement).stream()
                 .filter(c -> c.distanceTo(to) - opponentSpeed > 1)
-                .max(kiteScore(to, bf))
-                .orElse(null);
-    }
-
-    private static Comparator<Hex> kiteScore(Hex to, Battlefield bf) {
-        Comparator<Hex> byDistance = Comparator.comparingInt(c -> c.distanceTo(to));
-        Comparator<Hex> byClearLine = Comparator.comparingInt(
-                c -> PathFinder.hasObstacleInLine(bf, c, to) ? 0 : 1);
-        return byDistance.thenComparing(byClearLine);
-    }
-
-    /**
-     * Sucht ein Feld, von dem die Sichtlinie des Gegners auf mich durch ein Hindernis verläuft
-     * (er bekommt Obstacle-Penalty), während meine Sichtlinie frei bleibt (oder ich ohnehin
-     * obstacle-immun bin). Erreichbar in einem Zug, kein anderer Stack drauf.
-     */
-    private @Nullable Hex findCoverPosition(Stack active, Hex from, Hex to, Battlefield bf,
-                                            int mySpeed, Movement movement) {
-        return reachableCandidates(active, from, to, bf, mySpeed, movement).stream()
-                .filter(c -> PathFinder.hasObstacleInLine(bf, to, c))
-                .findFirst()
+                .max(Comparator.comparingInt(c -> c.distanceTo(to)))
                 .orElse(null);
     }
 

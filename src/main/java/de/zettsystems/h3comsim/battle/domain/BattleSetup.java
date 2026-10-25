@@ -182,6 +182,15 @@ public class BattleSetup {
         }
     }
 
+    /**
+     * Halbiert die Mauer diesen Schuss? Die Hindernis-Strafe gibt es nur bei Belagerungen, wenn
+     * die Schusslinie über eine stehende Mauer führt (heroes.thelazy.net, <em>Obstacle
+     * penalty</em>); gewöhnliche Hindernisse halbieren nichts.
+     */
+    boolean shotCrossesWall(Stack shooter, Stack target) {
+        return false;
+    }
+
     /** Mana, das der Held dieser Seite noch hat; zu Beginn {@link Hero#maxMana()}, ohne Helden 0. */
     public int manaOf(Side side) {
         return mana.getOrDefault(side, 0);
