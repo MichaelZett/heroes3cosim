@@ -135,6 +135,9 @@ public class BattleSetup {
         all.addAll(this.defenderStacks);
         Tactics.arrange(this.attackerStacks, Side.ATTACKER, attackerTactics, battlefield(), all);
         Tactics.arrange(this.defenderStacks, Side.DEFENDER, defenderTactics, battlefield(), all);
+        if (siege != null && attackerHero != null) {
+            equip(Side.ATTACKER, Set.of());
+        }
     }
 
     /**
@@ -149,6 +152,11 @@ public class BattleSetup {
         if (siege != null && side == Side.DEFENDER) {
             // Der Verteidiger einer Stadt hat keine Ballista auf dem Feld; seine Türme ersetzen sie.
             copy.remove(WarMachine.BALLISTA);
+        }
+        // Das Katapult hat jeder angreifende Held, aber nur bei einer Belagerung.
+        copy.remove(WarMachine.CATAPULT);
+        if (siege != null && side == Side.ATTACKER && attackerHero != null) {
+            copy.add(WarMachine.CATAPULT);
         }
         warMachines.put(side, copy);
         Map<WarMachine, Stack> placed = new EnumMap<>(WarMachine.class);

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import de.zettsystems.h3comsim.battle.domain.SkillLevel;
 import de.zettsystems.h3comsim.battle.domain.Spell;
+import de.zettsystems.h3comsim.battle.domain.WallPart;
 import de.zettsystems.h3comsim.battle.domain.WarMachine;
 import io.swagger.v3.oas.annotations.media.DiscriminatorMapping;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -28,6 +29,7 @@ import java.util.List;
         @JsonSubTypes.Type(value = BattleEvent.TacticsPhase.class, name = "TacticsPhase"),
         @JsonSubTypes.Type(value = BattleEvent.BallistaShot.class, name = "BallistaShot"),
         @JsonSubTypes.Type(value = BattleEvent.FirstAid.class, name = "FirstAid"),
+        @JsonSubTypes.Type(value = BattleEvent.CatapultShot.class, name = "CatapultShot"),
         @JsonSubTypes.Type(value = BattleEvent.SpellCast.class, name = "SpellCast"),
         @JsonSubTypes.Type(value = BattleEvent.Dispel.class, name = "Dispel"),
         @JsonSubTypes.Type(value = BattleEvent.HeroSpell.class, name = "HeroSpell"),
@@ -62,7 +64,7 @@ import java.util.List;
                 BattleEvent.Shoot.class, BattleEvent.Melee.class, BattleEvent.Retaliation.class,
                 BattleEvent.TwoBlows.class, BattleEvent.TwoShots.class, BattleEvent.GoodMorale.class,
                 BattleEvent.BadMorale.class, BattleEvent.LuckyStrike.class, BattleEvent.TacticsPhase.class,
-                BattleEvent.BallistaShot.class, BattleEvent.FirstAid.class,
+                BattleEvent.BallistaShot.class, BattleEvent.FirstAid.class, BattleEvent.CatapultShot.class,
                 BattleEvent.SpellCast.class, BattleEvent.Dispel.class,
                 BattleEvent.HeroSpell.class, BattleEvent.SpellHit.class, BattleEvent.Summon.class,
                 BattleEvent.MoveBack.class, BattleEvent.DeathStare.class, BattleEvent.Thunderbolts.class,
@@ -88,6 +90,7 @@ import java.util.List;
                 @DiscriminatorMapping(value = "TacticsPhase", schema = BattleEvent.TacticsPhase.class),
                 @DiscriminatorMapping(value = "BallistaShot", schema = BattleEvent.BallistaShot.class),
                 @DiscriminatorMapping(value = "FirstAid", schema = BattleEvent.FirstAid.class),
+                @DiscriminatorMapping(value = "CatapultShot", schema = BattleEvent.CatapultShot.class),
                 @DiscriminatorMapping(value = "SpellCast", schema = BattleEvent.SpellCast.class),
                 @DiscriminatorMapping(value = "Dispel", schema = BattleEvent.Dispel.class),
                 @DiscriminatorMapping(value = "HeroSpell", schema = BattleEvent.HeroSpell.class),
@@ -260,6 +263,15 @@ public sealed interface BattleEvent {
             @Schema(description = "Slot des geheilten Stacks") int targetSlot,
             @Schema(description = "Geheilte Lebenspunkte") int healed,
             @Schema(description = "Stack nach der Heilung") StackSnapshot targetAfter) implements BattleEvent {
+    }
+
+    @Schema(name = "CatapultShot",
+            description = "Das Katapult des Angreifers schießt zu Rundenbeginn auf die Befestigung. Ein Fehlschuss trifft ein anderes Mauersegment (`hit` ≠ `aimed`).")
+    record CatapultShot(
+            @Schema(description = "Worauf gezielt wurde") WallPart aimed,
+            @Schema(description = "Was getroffen wurde") WallPart hit,
+            @Schema(description = "Abgezogene Treffer, 0..2") int damage,
+            @Schema(description = "Verbleibende Treffer des getroffenen Teils; 0 = zerstört") int healthAfter) implements BattleEvent {
     }
 
     @Schema(name = "SpellCast",

@@ -125,6 +125,7 @@ public final class Battle {
      * ({@link TurnOrder}). Tote Stacks fallen über {@link Stack#isAbleToAct()} heraus.
      */
     private void doTurn(BattleSetup setup, TurnOrder order) {
+        siegeEnginesAct(setup);
         autoSolver.planRound(setup);
         List<Stack> roundStacks = setup.aliveStacks();
         List<Stack> pending = new ArrayList<>(roundStacks);
@@ -294,6 +295,27 @@ public final class Battle {
             if (setup.bothAlive() && setup.hasWorking(side, WarMachine.FIRST_AID_TENT)) {
                 tendWounded(setup, side);
             }
+        }
+    }
+
+    /**
+     * Zu Rundenbeginn einer Belagerung handeln zuerst die Türme, dann das Katapult (heroes.thelazy.net,
+     * <em>Combat</em>). Ohne Belagerung zieht das keinen Zufallswert.
+     */
+    private void siegeEnginesAct(BattleSetup setup) {
+        Siege siege = setup.siege();
+        if (siege == null || !setup.hasWorking(Side.ATTACKER, WarMachine.CATAPULT)) {
+            return;
+        }
+        Hero hero = setup.heroOf(Side.ATTACKER);
+        SkillLevel ballistics = hero == null ? SkillLevel.NONE : hero.levelOf(SecondarySkill.BALLISTICS);
+        for (int i = 0; i < Catapult.shots(ballistics); i++) {
+            Catapult.Shot shot = Catapult.fire(siege, ballistics, rng);
+            if (shot == null) {
+                return;
+            }
+            siege.damage(shot.hit(), shot.damage());
+            events.emit(new BattleEvent.CatapultShot(shot.aimed(), shot.hit(), shot.damage(), siege.health(shot.hit())));
         }
     }
 

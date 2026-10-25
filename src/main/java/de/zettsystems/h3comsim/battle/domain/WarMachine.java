@@ -10,7 +10,8 @@ import java.util.Set;
 
 /**
  * Kriegsmaschinen (Manual S. 117, <em>War Machines</em>): je Held höchstens eine jeder Art. Das
- * Katapult fehlt — es gehört zur Belagerung, die der Simulator nicht kennt.
+ * Katapult ({@link #CATAPULT}) hat jeder angreifende Held bei einer Belagerung von selbst; es
+ * schießt auf die Mauern ({@link Catapult}) und lässt sich wählen, wirkt aber nur dort.
  *
  * <ul>
  *   <li>{@link #BALLISTA} — schießt am Ende jeder Runde auf einen gegnerischen Stack, Schaden
@@ -36,7 +37,9 @@ public enum WarMachine {
     // Slots ab 20: die Kreaturen haben 0..6, beschworene Stacks folgen ab 7.
     BALLISTA("Ballista", 10, 10, 250, 2, 3, 2500, 3, 20),
     AMMO_CART("Ammo Cart", 0, 5, 100, 0, 0, 1000, 1, 21),
-    FIRST_AID_TENT("First Aid Tent", 0, 0, 75, 0, 0, 750, 9, 22);
+    FIRST_AID_TENT("First Aid Tent", 0, 0, 75, 0, 0, 750, 9, 22),
+    // Nur bei Belagerungen, und dort hat jeder angreifende Held eines (Feld 120 des Spiels).
+    CATAPULT("Catapult", 10, 10, 1000, 0, 0, 0, 7, 23);
 
     private static final Map<WarMachine, Unit> UNITS = units();
 
