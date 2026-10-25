@@ -80,6 +80,25 @@ describe('reduceEvents', () => {
     expect(reduceEvents(events, 2)!.stacks.get(stackKey('DEFENDER', 20))?.count).toBe(0);
   });
 
+  it('tracks the walls of a siege through catapult hits', () => {
+    const events: BattleEvent[] = [
+      {
+        ...start,
+        siege: {
+          fortification: 'FORT',
+          town: 'CASTLE',
+          permanentWall: [{ q: 14, r: 0 }],
+          parts: [{ part: 'GATE', hex: { q: 10, r: 5 }, health: 2 }],
+          moat: [],
+        },
+      },
+      { type: 'CatapultShot', aimed: 'GATE', hit: 'GATE', damage: 2, healthAfter: 0 },
+    ];
+    expect(reduceEvents(events, 1)!.siege!.parts[0].health).toBe(2);
+    expect(reduceEvents(events, 2)!.siege!.parts[0].health).toBe(0);
+    expect(reduceEvents([start], 1)!.siege).toBeNull();
+  });
+
   it('applies Move events to the actor position', () => {
     const events: BattleEvent[] = [
       start,

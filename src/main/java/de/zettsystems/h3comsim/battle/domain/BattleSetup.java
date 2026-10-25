@@ -133,10 +133,10 @@ public class BattleSetup {
         this.defenderTactics = siege == null ? Tactics.columns(defenderHero, attackerHero) : 0;
         List<Stack> all = new ArrayList<>(this.attackerStacks);
         all.addAll(this.defenderStacks);
-        Tactics.arrange(this.attackerStacks, Side.ATTACKER, attackerTactics, battlefield(), all);
-        Tactics.arrange(this.defenderStacks, Side.DEFENDER, defenderTactics, battlefield(), all);
+        Tactics.arrange(this.attackerStacks, Side.ATTACKER, attackerTactics, fieldFor(Side.ATTACKER), all);
+        Tactics.arrange(this.defenderStacks, Side.DEFENDER, defenderTactics, fieldFor(Side.ATTACKER), all);
         if (siege != null && attackerHero != null) {
-            equip(Side.ATTACKER, Set.of());
+            placeMachines(Side.ATTACKER, Set.of());
         }
     }
 
@@ -148,6 +148,11 @@ public class BattleSetup {
      * @return dieses Setup, zum Verketten
      */
     public BattleSetup equip(Side side, Set<WarMachine> machines) {
+        placeMachines(side, machines);
+        return this;
+    }
+
+    private void placeMachines(Side side, Set<WarMachine> machines) {
         Set<WarMachine> copy = machines.isEmpty() ? EnumSet.noneOf(WarMachine.class) : EnumSet.copyOf(machines);
         if (siege != null && side == Side.DEFENDER) {
             // Der Verteidiger einer Stadt hat keine Ballista auf dem Feld; seine Türme ersetzen sie.
@@ -165,9 +170,8 @@ public class BattleSetup {
         }
         machineStacks.put(side, placed);
         if (copy.contains(WarMachine.AMMO_CART)) {
-            stacksOf(side).forEach(Stack::grantUnlimitedAmmo);
+            side(side).forEach(Stack::grantUnlimitedAmmo);
         }
-        return this;
     }
 
     /** Kriegsmaschinen dieser Seite, leer ohne {@link #equip} — auch die schon zerstörten. */
@@ -233,6 +237,10 @@ public class BattleSetup {
      * Angreifer auch mit dem geschlossenen Tor.
      */
     public Battlefield battlefieldFor(Side side) {
+        return fieldFor(side);
+    }
+
+    private Battlefield fieldFor(Side side) {
         if (siege == null) {
             return battlefield;
         }

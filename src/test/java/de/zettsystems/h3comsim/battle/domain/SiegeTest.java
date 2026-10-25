@@ -6,6 +6,8 @@ import de.zettsystems.h3comsim.battle.domain.events.Side;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 
@@ -46,7 +48,7 @@ class SiegeTest {
         assertThat(defenderView.findPath(new Hex(14, 5), new Hex(0, 5), Movement.GROUND)).isNotEmpty();
         assertThat(setup.baseBattlefield().obstacles()).as("Mauern sind keine Hindernisse").isEmpty();
 
-        setup.siege().damage(WallPart.MID_UPPER_WALL, 2);
+        Objects.requireNonNull(setup.siege()).damage(WallPart.MID_UPPER_WALL, 2);
         assertThat(setup.battlefieldFor(Side.ATTACKER).findPath(new Hex(0, 5), new Hex(14, 5), Movement.GROUND))
                 .as("durch die Bresche").isNotEmpty();
     }
@@ -64,7 +66,7 @@ class SiegeTest {
 
     @Test
     void the_defender_stays_behind_the_walls_without_tactics_or_ballista() {
-        Hero tactician = HeroCatalog.SORSHA.withBuild(0, 0, java.util.Map.of(SecondarySkill.TACTICS, SkillLevel.EXPERT));
+        Hero tactician = HeroCatalog.SORSHA.withBuild(0, 0, Map.of(SecondarySkill.TACTICS, SkillLevel.EXPERT));
         Stack defender = new Stack(UnitCatalog.PIKEMAN, 10, new Hex(14, 5), Side.DEFENDER, 0);
         BattleSetup setup = new BattleSetup(List.of(new Stack(UnitCatalog.PIKEMAN, 10, new Hex(0, 5), Side.ATTACKER, 0)),
                 List.of(defender), FIELD, null, CollectedBonus.NONE, tactician, CollectedBonus.NONE,

@@ -363,6 +363,59 @@ describe('eventToNode', () => {
     expect(getByText('Goblin')).toHaveClass('text-blue-300');
   });
 
+  it('describes catapult, tower and moat events of a siege', () => {
+    const snap = {
+      side: 'ATTACKER' as const,
+      slot: 0,
+      unitName: 'Pikeman',
+      count: 8,
+      topHp: 10,
+      q: 9,
+      r: 4,
+    };
+    expect(
+      renderEvent({
+        type: 'CatapultShot',
+        aimed: 'GATE',
+        hit: 'MID_UPPER_WALL',
+        damage: 2,
+        healthAfter: 0,
+      }).container.textContent,
+    ).toContain('Tor');
+    expect(
+      renderEvent({
+        type: 'TowerShot',
+        tower: 'KEEP',
+        targetSlot: 0,
+        damage: 60,
+        killed: 2,
+        targetAfter: snap,
+      }).container.textContent,
+    ).toContain('Hauptturm');
+    expect(
+      renderEvent({
+        type: 'MoatDamage',
+        side: 'ATTACKER',
+        slot: 0,
+        damage: 70,
+        killed: 0,
+        mine: false,
+        targetAfter: snap,
+      }).container.textContent,
+    ).toContain('Graben');
+    expect(
+      renderEvent({
+        type: 'MoatDamage',
+        side: 'ATTACKER',
+        slot: 0,
+        damage: 150,
+        killed: 3,
+        mine: true,
+        targetAfter: snap,
+      }).container.textContent,
+    ).toContain('Landmine');
+  });
+
   it('formats Move with origin and destination coordinates', () => {
     const { container } = renderEvent({
       type: 'Move',

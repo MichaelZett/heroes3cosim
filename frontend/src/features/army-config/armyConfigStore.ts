@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Faction, StackSpec } from '../../shared/api/types';
+import type { Faction, Fortification, StackSpec } from '../../shared/api/types';
 import { DEFAULT_BUILD, type HeroBuild } from './heroBuild';
 
 /**
@@ -19,6 +19,8 @@ export interface ArmyConfigForm {
   defenderHeroName: string | null;
   defenderBuild: HeroBuild;
   seedText: string;
+  /** Belagerung: Befestigung der Stadt des Verteidigers; null = Feldschlacht. */
+  fortification?: Fortification | null;
 }
 
 export interface ArmyConfigStore {
@@ -40,6 +42,7 @@ const DEFAULT_FORM: ArmyConfigForm = {
   defenderHeroName: null,
   defenderBuild: DEFAULT_BUILD,
   seedText: '',
+  fortification: null,
 };
 
 function withUpdatedSlot(

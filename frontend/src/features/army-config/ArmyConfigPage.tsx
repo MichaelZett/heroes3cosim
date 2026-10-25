@@ -11,7 +11,15 @@ import FactionPresetPicker from './FactionPresetPicker';
 import HeroBonusPicker from './HeroBonusPicker';
 import HeroPicker from './HeroPicker';
 import SlotEditor from './SlotEditor';
-import type { Faction, FactionPresetDto, HeroDto, StackSpec } from '../../shared/api/types';
+import type {
+  Faction,
+  FactionPresetDto,
+  Fortification,
+  HeroDto,
+  StackSpec,
+} from '../../shared/api/types';
+
+const FORTIFICATIONS: Fortification[] = ['FORT', 'CITADEL', 'CASTLE'];
 
 export default function ArmyConfigPage() {
   const navigate = useNavigate();
@@ -52,6 +60,7 @@ export default function ArmyConfigPage() {
         ...buildSpec(form.defenderBuild, heroByName(form.defenderHeroName)),
       },
       seed: seedNum !== null && Number.isFinite(seedNum) ? seedNum : null,
+      fortification: form.fortification ?? null,
     });
   }
 
@@ -143,6 +152,30 @@ export default function ArmyConfigPage() {
             }
           />
         </div>
+
+        <section className="rounded-lg border border-slate-800 bg-slate-900 p-6">
+          <h2 className="text-lg font-semibold text-slate-100">{t('army.siegeTitle')}</h2>
+          <label className="mt-4 block">
+            <span className="text-sm text-slate-400">{t('army.siegeHint')}</span>
+            <select
+              aria-label={t('army.siegeTitle')}
+              className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-amber-500 focus:outline-none"
+              value={form.fortification ?? ''}
+              onChange={(e) =>
+                setForm({
+                  fortification: e.target.value === '' ? null : (e.target.value as Fortification),
+                })
+              }
+            >
+              <option value="">{t('army.siegeNone')}</option>
+              {FORTIFICATIONS.map((f) => (
+                <option key={f} value={f}>
+                  {t(`fortification.${f}`)}
+                </option>
+              ))}
+            </select>
+          </label>
+        </section>
 
         <section className="rounded-lg border border-slate-800 bg-slate-900 p-6">
           <h2 className="text-lg font-semibold text-slate-100">{t('config.seedTitle')}</h2>

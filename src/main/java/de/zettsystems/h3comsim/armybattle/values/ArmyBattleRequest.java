@@ -1,5 +1,6 @@
 package de.zettsystems.h3comsim.armybattle.values;
 
+import de.zettsystems.h3comsim.battle.domain.Fortification;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -15,5 +16,14 @@ public record ArmyBattleRequest(
 
         @Schema(description = "Optionaler PRNG-Seed für deterministische Reproduktion. Bei null wird ein Zufalls-Seed gezogen.",
                 example = "42", nullable = true)
-        @Nullable Long seed) {
+        @Nullable Long seed,
+
+        @Schema(description = "Belagerung: Befestigung der Stadt des Verteidigers (FORT, CITADEL, CASTLE). Die Stadt ist die Fraktion seines Helden. Bei null eine Feldschlacht.",
+                example = "CASTLE", nullable = true)
+        @Nullable Fortification fortification) {
+
+    /** Feldschlacht ohne Belagerung. */
+    public ArmyBattleRequest(ArmySpec attacker, ArmySpec defender, @Nullable Long seed) {
+        this(attacker, defender, seed, null);
+    }
 }

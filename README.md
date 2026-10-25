@@ -165,7 +165,29 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   greift sie an, die teuerste zuerst. Im Spiegel-Duell mit allen drei
   Maschinen auf beiden Seiten gewinnt das gegen „Maschinen stehen lassen"
   0.559 (+4.4 σ) bei einer Wochenproduktion und 0.525 (+1.8 σ) bei vier.
-  Das Katapult fehlt, weil es nur bei Belagerungen zählt.
+  Das Katapult gibt es nur bei Belagerungen, siehe unten.
+- **Belagerung** (heroes.thelazy.net, *Fortifications*, Felder wie in der
+  freien H3-Engine VCMI) — je Army-Battle wählbar: Der Verteidiger steht
+  in einer Stadt der Fraktion seines Helden, ohne Felsen auf dem Feld.
+  Fort baut Mauern und Tor: sechs unzerstörbare Mauerstücke, vier
+  Segmente mit 2 Treffern (mit Castle 3), das Tor mit 2. Mauern sperren
+  Bodentruppen, das stehende Tor nur die Angreifer; Flieger fliegen
+  darüber, und ein Schuss von draußen über eine stehende Mauer verliert
+  die Hälfte (außer Magi). Citadel fügt den Hauptturm und den Graben
+  hinzu, Castle zwei Seitentürme. Die Türme schießen zu Rundenbeginn,
+  Schaden für eine voll ausgebaute Stadt, ohne Defense des Ziels. Der
+  Graben hält Bodentruppen auf, nimmt ihnen 3 Defense und verletzt sie
+  beim Betreten und zu Beginn jedes Zugs dort (70, bei Dungeon, Inferno
+  und Fortress 90; Fortress zweireihig); Tower legt stattdessen
+  Landminen gegen Angreifer. Jeder angreifende Held bringt ein Katapult
+  mit, das nach den Türmen auf die Befestigung schießt — Zielwahl,
+  Trefferchancen und Schaden je Ballistics-Stufe nach den SoD-Werten.
+  Der Verteidiger stellt ohne Tactics auf und hat keine Ballista.
+  Messung (`SiegeImpactTest`, Spiegel-Duell, Standardhelden, je 360
+  Kämpfe): Bei gleich großen Armeen gewinnt der Verteidiger im Fort
+  0.653, in Citadel und Castle fast immer. Mit doppelter Armee nimmt der
+  Angreifer ein Fort sicher ein, eine Castle hält dann noch 0.475, mit
+  Expert Ballistics 0.321; mit vierfacher Armee fällt jede Stadt.
 - **Tactics** (Manual S. 42) — hat ein Held die Fertigkeit auf höherer
   Stufe als der Gegner, stellt er vor Kampfbeginn in den ersten 3/5/7
   Spalten auf (ein, zwei, drei Grade Vorsprung). Die Nahkämpfer rücken in
