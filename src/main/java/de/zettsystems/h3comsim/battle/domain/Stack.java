@@ -26,6 +26,9 @@ public class Stack {
     private int topUnitCurrentHealth;
     private int shotsRemaining;
     private Hex position;
+    /** Die Dendroiden, die diesen Stack gefesselt haben, und ihr Feld zu diesem Zeitpunkt. */
+    private @Nullable Stack boundBy;
+    private @Nullable Hex boundAnchor;
     private boolean petrified;
     private int petrifiedCounter;
     private boolean cursed;
@@ -102,6 +105,22 @@ public class Stack {
 
     public void moveTo(Hex position) {
         this.position = Objects.requireNonNull(position, "position");
+    }
+
+    /** Dendroiden fesseln den Stack an seinen Platz, solange sie leben und sich nicht bewegen. */
+    void bindTo(Stack dendroids) {
+        this.boundBy = dendroids;
+        this.boundAnchor = dendroids.position();
+    }
+
+    /** Ist der Stack gefesselt? Haben sich die Dendroiden bewegt oder sind sie gefallen, nicht mehr. */
+    public boolean isBound() {
+        Stack by = boundBy;
+        if (by != null && (!by.isAlive() || !by.position().equals(boundAnchor))) {
+            boundBy = null;
+            boundAnchor = null;
+        }
+        return boundBy != null;
     }
 
     public boolean isDoubleWide() {
@@ -518,15 +537,10 @@ public class Stack {
 
     public void takeDamage(int baseDamage, Set<UnitSpeciality> attackerSpecialities) {
         int realDamage = baseDamage;
-        boolean angelHate = unit.hasSpeciality(UnitSpeciality.ANGEL_RACE)
-                && attackerSpecialities.contains(UnitSpeciality.ANGEL_HATE);
-        boolean devilHate = unit.hasSpeciality(UnitSpeciality.DEVIL_RACE)
-                && attackerSpecialities.contains(UnitSpeciality.DEVIL_HATE);
-        boolean titanHate = unit.hasSpeciality(UnitSpeciality.TITAN_RACE)
-                && attackerSpecialities.contains(UnitSpeciality.TITAN_HATE);
-        if (angelHate || devilHate || titanHate) {
-            realDamage = (int) Math.round(1.5 * realDamage);
-            LOG.info("Stack von {} wird vom Gegner gehasst, bekommt 1,5x Schaden.", getName());
+        int hatePercent = hatePercent(attackerSpecialities);
+        if (hatePercent > 0) {
+            realDamage = (int) Math.round(realDamage * (100 + hatePercent) / 100.0);
+            LOG.info("Stack von {} wird vom Gegner gehasst, bekommt {} % mehr Schaden.", getName(), hatePercent);
         }
         if (petrified) {
             applyDamage((int) Math.round(0.5 * realDamage));
@@ -535,6 +549,34 @@ public class Stack {
             applyDamage(realDamage);
         }
         tryRebirth();
+    }
+
+    /** Ein Hass-Paar: Marker am Angreifer, Volks-Marker am Ziel, Aufschlag in Prozent. */
+    private record Hatred(UnitSpeciality hate, UnitSpeciality race, int percent) {
+    }
+
+    /**
+     * Hass (heroes.thelazy.net): Angel und Devil, Titan und Black Dragon, Genie und Efreet je
+     * +50 %, Elementare gegen ihr Gegenelement +100 % (Air gegen Earth, Water gegen Fire, je mit
+     * Ausbau). Hier als Faktor auf den fertigen Schaden.
+     */
+    private static final List<Hatred> HATREDS = List.of(
+            new Hatred(UnitSpeciality.ANGEL_HATE, UnitSpeciality.ANGEL_RACE, 50),
+            new Hatred(UnitSpeciality.DEVIL_HATE, UnitSpeciality.DEVIL_RACE, 50),
+            new Hatred(UnitSpeciality.TITAN_HATE, UnitSpeciality.TITAN_RACE, 50),
+            new Hatred(UnitSpeciality.BLACK_DRAGON_HATE, UnitSpeciality.BLACK_DRAGON_RACE, 50),
+            new Hatred(UnitSpeciality.GENIE_HATE, UnitSpeciality.GENIE_RACE, 50),
+            new Hatred(UnitSpeciality.EFREET_HATE, UnitSpeciality.EFREET_RACE, 50),
+            new Hatred(UnitSpeciality.AIR_HATE, UnitSpeciality.AIR_RACE, 100),
+            new Hatred(UnitSpeciality.EARTH_HATE, UnitSpeciality.EARTH_RACE, 100),
+            new Hatred(UnitSpeciality.FIRE_HATE, UnitSpeciality.FIRE_RACE, 100),
+            new Hatred(UnitSpeciality.WATER_HATE, UnitSpeciality.WATER_RACE, 100));
+
+    /** Aufschlag in Prozent, den ein Angreifer mit diesen Fähigkeiten gegen diesen Stack bekommt. */
+    int hatePercent(Set<UnitSpeciality> attackerSpecialities) {
+        return HATREDS.stream()
+                .filter(h -> unit.hasSpeciality(h.race()) && attackerSpecialities.contains(h.hate()))
+                .mapToInt(Hatred::percent).max().orElse(0);
     }
 
     public void loseTopCreatures(int killCount) {

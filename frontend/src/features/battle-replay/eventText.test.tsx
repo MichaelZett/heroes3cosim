@@ -427,6 +427,15 @@ describe('eventToNode', () => {
     expect(
       renderEvent({ type: 'QuakeHit', hit: 'LOWER_WALL', healthAfter: 1 }).container.textContent,
     ).toBe('Das Erdbeben trifft untere Mauer, noch 1.');
+    expect(
+      renderEvent({
+        type: 'Bind',
+        actor: 'ATTACKER',
+        actorSlot: 0,
+        target: 'DEFENDER',
+        targetSlot: 0,
+      }).container.textContent,
+    ).toContain('fesseln');
     expect(renderEvent({ type: 'Drawbridge', state: 'OPEN' }).container.textContent).toContain(
       'Zugbrücke senkt sich',
     );

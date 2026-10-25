@@ -286,6 +286,7 @@ export const de = {
     cursing: '<actor>{{actor}}</actor> verflucht <target>{{target}}</target>.',
     poisoning: '<actor>{{actor}}</actor> vergiftet <target>{{target}}</target>.',
     diseasing: '<actor>{{actor}}</actor> infiziert <target>{{target}}</target> mit Krankheit.',
+    bind: '<actor>{{actor}}</actor> fesseln <target>{{target}}</target> an ihren Platz.',
     aging: '<actor>{{actor}}</actor> lässt <target>{{target}}</target> altern — halbe HP.',
     fireShield:
       '<shielded>{{shielded}}</shielded> reflektiert {{damage}} Schaden durch Feuerschild auf <attacker>{{attacker}}</attacker>.',

@@ -9,8 +9,9 @@ import java.util.random.RandomGenerator;
 
 /**
  * Zaubernde Kreaturen. Ogre Magi wirken Bloodlust, Master Genies einen zufälligen nützlichen
- * Zauber — beide laut heroes.thelazy.net „at advanced level with a spell power of 6", dreimal
- * pro Kampf, und das Zaubern verbraucht ihre Aktion. Die Dauer ist damit 6 Runden („1
+ * Zauber, Storm, Ice, Energy und Magma Elementals den Schutz vor ihrem Element — alle laut
+ * heroes.thelazy.net „at advanced level with a spell power of 6", dreimal pro Kampf, und das
+ * Zaubern verbraucht ihre Aktion. Die Dauer ist damit 6 Runden („1
  * Round/Power", Manual S. 64 ff.).
  *
  * <p>Wann gezaubert wird, ist eine Solver-Entscheidung: hier nur, wenn der Stack in diesem Zug
@@ -34,7 +35,24 @@ final class CreatureSpellcasting {
 
     static int castsFor(Unit unit) {
         return unit.hasSpeciality(UnitSpeciality.CASTS_BLOODLUST)
-                || unit.hasSpeciality(UnitSpeciality.CASTS_RANDOM_BENEFICIAL) ? CASTS_PER_BATTLE : 0;
+                || unit.hasSpeciality(UnitSpeciality.CASTS_RANDOM_BENEFICIAL)
+                || unit.hasSpeciality(UnitSpeciality.CASTS_PROTECTION) ? CASTS_PER_BATTLE : 0;
+    }
+
+    /** Der feste Zauber dieser Kreatur, oder {@code null} für Master Genies und Nicht-Zauberer. */
+    static @Nullable Spell fixedSpell(Unit unit) {
+        if (unit.hasSpeciality(UnitSpeciality.CASTS_BLOODLUST)) {
+            return Spell.BLOODLUST;
+        }
+        if (!unit.hasSpeciality(UnitSpeciality.CASTS_PROTECTION)) {
+            return null;
+        }
+        return switch (unit.name()) {
+            case "Storm Elemental" -> Spell.PROTECTION_FROM_AIR;
+            case "Ice Elemental" -> Spell.PROTECTION_FROM_WATER;
+            case "Energy Elemental" -> Spell.PROTECTION_FROM_FIRE;
+            default -> Spell.PROTECTION_FROM_EARTH;
+        };
     }
 
     /** Ein möglicher Zauber auf ein Ziel. */
@@ -46,9 +64,10 @@ final class CreatureSpellcasting {
         if (setup == null || active.spellCastsLeft() == 0 || canAttackNow(active, opponent)) {
             return null;
         }
-        if (active.hasSpeciality(UnitSpeciality.CASTS_BLOODLUST)) {
-            Stack target = best(usefulTargets(active, Spell.BLOODLUST, setup));
-            return target == null ? null : new Action.CastSpell(Spell.BLOODLUST, target);
+        Spell fixed = fixedSpell(active.unit());
+        if (fixed != null) {
+            Stack target = best(usefulTargets(active, fixed, setup));
+            return target == null ? null : new Action.CastSpell(fixed, target);
         }
         if (active.hasSpeciality(UnitSpeciality.CASTS_RANDOM_BENEFICIAL) && !usefulCasts(active, setup).isEmpty()) {
             return new Action.CastRandomSpell();
@@ -126,6 +145,9 @@ final class CreatureSpellcasting {
             case SLAYER -> setup.opponentsOf(target).stream()
                     .anyMatch(o -> o.isAlive() && Stack.isSlayerTarget(o.unit(), CAST_LEVEL));
             case HASTE, SHIELD, STONE_SKIN, FIRE_SHIELD, PRAYER -> true;
+            case PROTECTION_FROM_AIR, PROTECTION_FROM_WATER, PROTECTION_FROM_FIRE, PROTECTION_FROM_EARTH ->
+                    HeroSpellcasting.threat(target, e -> e.kind() == Spell.Kind.DAMAGE
+                            && e.school() == spell.school(), setup) > 0;
             default -> false;
         };
     }
