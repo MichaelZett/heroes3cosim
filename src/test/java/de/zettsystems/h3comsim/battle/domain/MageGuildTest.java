@@ -10,13 +10,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 class MageGuildTest {
 
     @Test
-    void every_town_offers_five_first_level_combat_spells() {
+    void every_town_offers_five_first_level_combat_spells_tower_six() {
         for (Faction faction : Faction.values()) {
             if (faction == Faction.NEUTRAL) {
                 assertThat(MageGuild.firstLevel(faction)).isEmpty();
                 continue;
             }
-            assertThat(MageGuild.firstLevel(faction)).as(faction.name()).hasSize(5)
+            assertThat(MageGuild.firstLevel(faction)).as(faction.name()).hasSize(faction == Faction.TOWER ? 6 : 5)
                     .allSatisfy(spell -> {
                         assertThat(spell.level()).isEqualTo(1);
                         assertThat(spell.heroCastable()).isTrue();
@@ -31,6 +31,9 @@ class MageGuildTest {
         assertThat(MageGuild.firstLevel(Faction.INFERNO)).doesNotContain(Spell.BLESS);
         assertThat(MageGuild.firstLevel(Faction.CASTLE)).doesNotContain(Spell.BLOODLUST, Spell.CURSE);
         assertThat(MageGuild.firstLevel(Faction.NECROPOLIS)).contains(Spell.CURSE);
+        // Tower nach den Werten ohne Library, sechs Plätze: Bless und Cure gleichauf, alphabetisch vor Haste.
+        assertThat(MageGuild.firstLevel(Faction.TOWER)).containsExactlyInAnyOrder(Spell.MAGIC_ARROW, Spell.DISPEL,
+                Spell.SLOW, Spell.STONE_SKIN, Spell.BLESS, Spell.CURE);
     }
 
     @Test
@@ -43,7 +46,7 @@ class MageGuildTest {
             }
         });
         assertThat(Arrays.stream(HeroClass.values()).filter(HeroClass::magic)).hasSize(9);
-        // Solmyr: Chain Lightning aus der Spezialität, dazu die Gilde von Tower.
-        assertThat(HeroCatalog.byName("Solmyr").orElseThrow().spells()).hasSize(6).contains(Spell.CHAIN_LIGHTNING);
+        // Solmyr: Chain Lightning aus der Spezialität, dazu die Gilde von Tower mit Library.
+        assertThat(HeroCatalog.byName("Solmyr").orElseThrow().spells()).hasSize(7).contains(Spell.CHAIN_LIGHTNING);
     }
 }

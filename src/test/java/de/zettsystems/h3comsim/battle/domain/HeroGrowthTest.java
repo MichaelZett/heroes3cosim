@@ -82,11 +82,11 @@ class HeroGrowthTest {
 
         Hero novice = grow("Solmyr", 1, 3);
         assertThat(novice.spells()).contains(Spell.CHAIN_LIGHTNING)
-                .filteredOn(s -> s.level() == 1).hasSize(5);
+                .filteredOn(s -> s.level() == 1).as("Tower mit Library").hasSize(6);
         assertThat(novice.spells()).filteredOn(s -> s.level() == 2).isEmpty();
 
         Hero journeyman = grow("Solmyr", 2, 3);
-        assertThat(journeyman.spells()).filteredOn(s -> s.level() == 2).hasSize(4);
+        assertThat(journeyman.spells()).filteredOn(s -> s.level() == 2).hasSize(5);
 
         for (long seed = 0; seed < 20; seed++) {
             Hero battleMage = grow("Gird", 40, seed);
@@ -107,6 +107,8 @@ class HeroGrowthTest {
                     .doesNotContain(Spell.BLESS, Spell.CURE);
             assertThat(MageGuild.draw(Faction.CASTLE, 5, new Random(seed))).as("Castle baut Stufe 5 nicht").isEmpty();
             assertThat(MageGuild.draw(Faction.NECROPOLIS, 2, new Random(seed))).hasSize(4);
+            assertThat(MageGuild.draw(Faction.TOWER, 2, new Random(seed))).as("Library: einer mehr").hasSize(5);
+            assertThat(MageGuild.draw(Faction.TOWER, 5, new Random(seed))).hasSize(2);
         }
     }
 }
