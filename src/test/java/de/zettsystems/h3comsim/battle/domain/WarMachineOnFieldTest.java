@@ -105,6 +105,38 @@ class WarMachineOnFieldTest {
         assertThat(WarMachineTargeting.attack(behemoths, setup)).isInstanceOf(Action.Melee.class);
     }
 
+    @Test
+    void solvers_never_land_on_a_machine_next_to_their_target() {
+        Hex cart = new Hex(FIELD.rightmostQ(1), 1);
+        for (AutoSolver solver : List.of(new GreedyAutoSolver(), new StrategicAutoSolver())) {
+            Stack griffins = new Stack(UnitCatalog.ROYAL_GRIFFIN, 10, new Hex(cart.q() - 8, 1), Side.ATTACKER, 0);
+            Stack marksmen = new Stack(UnitCatalog.MARKSMAN, 5, new Hex(cart.q() - 1, 1), Side.DEFENDER, 0);
+            BattleSetup setup = new BattleSetup(List.of(griffins), List.of(marksmen), FIELD)
+                    .equip(Side.DEFENDER, Set.of(WarMachine.AMMO_CART));
+            ListEventCollector collector = new ListEventCollector();
+            new Battle(new Random(2), solver, collector).simulate(setup);
+
+            assertThat(collector.events()).as(solver.getClass().getSimpleName())
+                    .noneMatch(e -> e instanceof BattleEvent.Move m && m.actor() == Side.ATTACKER
+                            && m.toQ() == cart.q() && m.toR() == cart.r())
+                    .anyMatch(e -> e instanceof BattleEvent.Melee m && m.actor() == Side.ATTACKER
+                            && m.targetSlot() == 0);
+        }
+    }
+
+    @Test
+    void a_machine_hex_is_no_landing_spot_for_a_tank() {
+        Hex cart = new Hex(FIELD.leftmostQ(1), 1);
+        Stack pikemen = new Stack(UnitCatalog.PIKEMAN, 10, new Hex(FIELD.leftmostQ(3), 3), Side.ATTACKER, 0);
+        BattleSetup setup = new BattleSetup(List.of(pikemen),
+                List.of(new Stack(UnitCatalog.PEASANT, 1, new Hex(14, 5), Side.DEFENDER, 0)), FIELD)
+                .equip(Side.ATTACKER, Set.of(WarMachine.AMMO_CART));
+
+        assertThat(StrategicAutoSolver.isReachableLandingSpot(pikemen, cart, FIELD, setup)).isFalse();
+        assertThat(StrategicAutoSolver.isReachableLandingSpot(pikemen, new Hex(cart.q() + 1, 1), FIELD, setup))
+                .isTrue();
+    }
+
     /**
      * Ancient Behemoths direkt neben der gegnerischen Ballista; der einzige gegnerische Stack steht
      * am anderen Ende des Felds, unerreichbar.

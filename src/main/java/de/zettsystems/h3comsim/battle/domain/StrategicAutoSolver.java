@@ -642,8 +642,8 @@ public final class StrategicAutoSolver implements AutoSolver {
 
     // other != active: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
     @SuppressWarnings("ReferenceEquality")
-    private static boolean isReachableLandingSpot(Stack active, Hex hex, Battlefield bf,
-                                                  BattleSetup setup) {
+    static boolean isReachableLandingSpot(Stack active, Hex hex, Battlefield bf,
+                                          BattleSetup setup) {
         if (hex.equals(active.position())) {
             return false;
         }
