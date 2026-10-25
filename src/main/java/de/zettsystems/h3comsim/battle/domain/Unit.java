@@ -15,6 +15,21 @@ public record Unit(
         boolean upgrade,
         Set<UnitSpeciality> specialities
 ) {
+    /**
+     * Die zweifeldrigen Kreaturen und Kriegsmaschinen, wie sie die freie H3-Engine VCMI führt
+     * ({@code doubleWide} in {@code config/creatures}). Angel ist einfeldig, Arch Angel nicht.
+     */
+    private static final Set<String> DOUBLE_WIDE = Set.of(
+            "Griffin", "Royal Griffin", "Cavalier", "Champion", "Arch Angel",
+            "Centaur", "Centaur Captain", "Pegasus", "Silver Pegasus", "Unicorn", "War Unicorn",
+            "Green Dragon", "Gold Dragon", "Naga", "Naga Queen", "Hell Hound", "Cerberus",
+            "Black Knight", "Dread Knight", "Bone Dragon", "Ghost Dragon",
+            "Medusa", "Medusa Queen", "Manticore", "Scorpicore", "Red Dragon", "Black Dragon",
+            "Wolf Rider", "Wolf Raider", "Roc", "Thunderbird", "Behemoth", "Ancient Behemoth",
+            "Basilisk", "Greater Basilisk", "Gorgon", "Mighty Gorgon", "Wyvern", "Wyvern Monarch",
+            "Hydra", "Chaos Hydra", "Water Elemental", "Ice Elemental", "Firebird", "Phoenix",
+            "Ballista", "First Aid Tent", "Catapult");
+
     public Unit {
         Objects.requireNonNull(name, "name");
         Objects.requireNonNull(stats, "stats");
@@ -30,6 +45,11 @@ public record Unit(
 
     public int attack() {
         return stats.attack();
+    }
+
+    /** Belegt die Kreatur zwei Felder nebeneinander? */
+    public boolean doubleWide() {
+        return DOUBLE_WIDE.contains(name);
     }
 
     public int defense() {

@@ -7,6 +7,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -94,12 +95,60 @@ public class Stack {
         return slot;
     }
 
+    /** Das Feld des Kopfs; bei zweifeldrigen Kreaturen liegt das zweite dahinter ({@link #tailOf}). */
     public Hex position() {
         return position;
     }
 
     public void moveTo(Hex position) {
         this.position = Objects.requireNonNull(position, "position");
+    }
+
+    public boolean isDoubleWide() {
+        return unit.doubleWide();
+    }
+
+    /**
+     * Das zweite Feld einer zweifeldrigen Kreatur mit dem Kopf auf {@code head}: zum eigenen Rand
+     * hin, beim Angreifer links, beim Verteidiger rechts. Wie in VCMI dreht sie sich nicht um.
+     */
+    public static Hex tailOf(Hex head, Side side) {
+        return new Hex(head.q() + (side == Side.ATTACKER ? -1 : 1), head.r());
+    }
+
+    /** Die Felder, die der Stack belegt: der Kopf, bei zweifeldrigen dazu das Heck. */
+    public List<Hex> hexes() {
+        return hexesAt(position);
+    }
+
+    /** Die Felder, die der Stack mit dem Kopf auf {@code head} belegen würde. */
+    public List<Hex> hexesAt(Hex head) {
+        return isDoubleWide() ? List.of(head, tailOf(head, side)) : List.of(head);
+    }
+
+    public boolean occupies(Hex hex) {
+        return position.equals(hex) || (isDoubleWide() && tailOf(position, side).equals(hex));
+    }
+
+    /** Kürzeste Distanz von einem der eigenen Felder zu {@code hex}. */
+    public int distanceTo(Hex hex) {
+        return hexes().stream().mapToInt(h -> h.distanceTo(hex)).min().orElseThrow();
+    }
+
+    /** Kürzeste Distanz zwischen einem Feld dieses und einem Feld des anderen Stacks; 1 = benachbart. */
+    public int distanceTo(Stack other) {
+        return other.hexes().stream().mapToInt(this::distanceTo).min().orElseThrow();
+    }
+
+    /** Das eigene Feld, das {@code from} am nächsten liegt; bei Gleichstand der Kopf. */
+    public Hex nearestHexTo(Hex from) {
+        Hex best = position;
+        for (Hex h : hexes()) {
+            if (h.distanceTo(from) < best.distanceTo(from)) {
+                best = h;
+            }
+        }
+        return best;
     }
 
     public int shotsRemaining() {

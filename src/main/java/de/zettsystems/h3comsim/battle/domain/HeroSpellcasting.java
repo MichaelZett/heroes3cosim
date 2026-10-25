@@ -155,7 +155,7 @@ final class HeroSpellcasting {
                     casts.add(new Cast(spell, level, e, chain(e, level == SkillLevel.BASIC ? 4 : 5, setup))));
             case SUMMON_AIR_ELEMENTAL, SUMMON_EARTH_ELEMENTAL, SUMMON_FIRE_ELEMENTAL, SUMMON_WATER_ELEMENTAL -> {
                 Unit kind = setup.summonedKindOf(side);
-                if ((kind == null || kind.equals(summonedUnit(spell))) && setup.freeHexFor(side) != null) {
+                if ((kind == null || kind.equals(summonedUnit(spell))) && setup.freeHexFor(side, summonedUnit(spell).doubleWide()) != null) {
                     casts.add(new Cast(spell, level, null, List.of()));
                 }
             }
@@ -199,10 +199,12 @@ final class HeroSpellcasting {
     private static Set<Hex> centers(BattleSetup setup) {
         Set<Hex> centers = new LinkedHashSet<>();
         for (Stack stack : setup.spellTargets()) {
-            centers.add(stack.position());
-            for (Hex n : stack.position().neighbors()) {
-                if (setup.battlefield().contains(n)) {
-                    centers.add(n);
+            for (Hex own : stack.hexes()) {
+                centers.add(own);
+                for (Hex n : own.neighbors()) {
+                    if (setup.battlefield().contains(n)) {
+                        centers.add(n);
+                    }
                 }
             }
         }
@@ -214,7 +216,7 @@ final class HeroSpellcasting {
         int max = spell == Spell.INFERNO ? 2 : 1;
         return setup.spellTargets().stream()
                 .filter(s -> {
-                    int d = s.position().distanceTo(center);
+                    int d = s.distanceTo(center);
                     return d >= min && d <= max;
                 })
                 .toList();
@@ -235,7 +237,7 @@ final class HeroSpellcasting {
             Stack next = null;
             int bestDistance = Integer.MAX_VALUE;
             for (Stack s : setup.spellTargets()) {
-                int d = s.position().distanceTo(current.position());
+                int d = s.distanceTo(current);
                 if (!hit.contains(s) && d < bestDistance) {
                     next = s;
                     bestDistance = d;
@@ -308,7 +310,7 @@ final class HeroSpellcasting {
      * (−4.77 σ, {@code SpellImpactTest}).
      */
     static double summonValue(Spell spell, SkillLevel level, Hero hero, Side side, BattleSetup setup) {
-        Hex hex = setup.freeHexFor(side);
+        Hex hex = setup.freeHexFor(side, summonedUnit(spell).doubleWide());
         if (hex == null) {
             return 0;
         }

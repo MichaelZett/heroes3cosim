@@ -167,8 +167,9 @@ class GreedyAutoSolverTest {
         // Wood Elf (speed 6) wäre langsamer als ein speed-7-Melee. Wenn Kiten nicht reicht,
         // soll der Schütze trotzdem schießen, statt nutzlos zu fliehen.
         Stack shooter = new Stack(UnitCatalog.WOOD_ELF, 10, new Hex(0, 5));
-        // Cavalier hat Speed 7 — schneller als Wood Elf.
-        Stack opponent = new Stack(UnitCatalog.CAVALIER, 10, new Hex(2, 5));
+        // Cavalier hat Speed 7 — schneller als Wood Elf. Zweifeldrig, als Gegner reicht sein Heck
+        // nach rechts: Abstand 2.
+        Stack opponent = new Stack(UnitCatalog.CAVALIER, 10, new Hex(2, 5), Side.DEFENDER);
 
         Action action = solver.decide(shooter, opponent, battlefield);
 

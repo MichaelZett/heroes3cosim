@@ -13,6 +13,7 @@ const base: SideState = {
   startCount: 12,
   q: 3,
   r: 5,
+  doubleWide: false,
 };
 
 function renderToken(side: SideState) {
@@ -44,6 +45,21 @@ describe('StackToken', () => {
     expect(container.querySelector('rect')).not.toBeNull();
     expect(container.querySelector('title')?.textContent).toBe('Ballista');
     expect(container.textContent).toContain('B');
+  });
+
+  it('stretches a two-hex stack over the hex behind it, towards its own edge', () => {
+    const { container } = renderToken({ ...base, unitName: 'Black Dragon', doubleWide: true });
+    const token = container.querySelector('[data-testid="wide-token"]');
+    expect(container.querySelector('circle')).toBeNull();
+    expect(token).not.toBeNull();
+    // Der Verteidiger reicht nach rechts: das Rechteck beginnt links vom Kopf und ist breiter als hoch.
+    expect(Number(token?.getAttribute('width'))).toBeGreaterThan(
+      Number(token?.getAttribute('height')),
+    );
+    expect(Number(token?.getAttribute('x'))).toBeLessThan(0);
+    const attacker = renderToken({ ...base, side: 'ATTACKER', doubleWide: true });
+    const attackerToken = attacker.container.querySelector('[data-testid="wide-token"]');
+    expect(Number(attackerToken?.getAttribute('x'))).toBeLessThan(Number(token?.getAttribute('x')));
   });
 
   it('hides a destroyed war machine', () => {

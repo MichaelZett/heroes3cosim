@@ -60,7 +60,7 @@ final class CreatureSpellcasting {
         if (active.canShoot()) {
             return true;
         }
-        return active.position().distanceTo(opponent.position()) - 1 <= active.getSpeed();
+        return active.distanceTo(opponent) - 1 <= active.getSpeed();
     }
 
     /**

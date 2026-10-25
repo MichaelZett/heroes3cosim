@@ -62,6 +62,8 @@ export interface StackSnapshot {
   topHp: number;
   q: number;
   r: number;
+  /** Zweifeldrig: das zweite Feld liegt beim Angreifer bei q − 1, beim Verteidiger bei q + 1. */
+  doubleWide?: boolean;
 }
 
 export interface HexCoord {

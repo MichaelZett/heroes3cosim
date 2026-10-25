@@ -147,7 +147,8 @@ class SpellEffectTest {
     @Test
     void magic_resistance_of_dwarves_and_the_unicorn_aura_combine() {
         Stack dwarves = new Stack(UnitCatalog.BATTLE_DWARF, 10, new Hex(1, 5), Side.ATTACKER, 0);
-        Stack unicorns = new Stack(UnitCatalog.UNICORN, 2, new Hex(2, 5), Side.ATTACKER, 1);
+        // Zweifeldrig: Kopf auf (3,5), das Heck auf (2,5) grenzt an die Zwerge.
+        Stack unicorns = new Stack(UnitCatalog.UNICORN, 2, new Hex(3, 5), Side.ATTACKER, 1);
         Stack lonely = new Stack(UnitCatalog.DWARF, 10, new Hex(1, 9), Side.ATTACKER, 2);
         Stack enemy = new Stack(UnitCatalog.PIKEMAN, 10, new Hex(14, 5), Side.DEFENDER, 0);
         BattleSetup setup = new BattleSetup(List.of(dwarves, unicorns, lonely), List.of(enemy), Battlefield.STANDARD);

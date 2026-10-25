@@ -37,7 +37,7 @@ final class DemonRaising {
                 && corpse.side() == caster.side()
                 && !corpse.isAlive()
                 && corpse.unit().isLiving()
-                && setup.aliveStacks().stream().noneMatch(s -> s.position().equals(corpse.position()))
+                && setup.aliveStacks().stream().noneMatch(s -> s.occupies(corpse.position()))
                 && demonsFrom(caster, corpse) > 0;
     }
 

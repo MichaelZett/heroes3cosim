@@ -92,9 +92,8 @@ public final class GreedyAutoSolver implements AutoSolver {
         if (alive.isEmpty()) {
             return null;
         }
-        Hex from = active.position();
         Stack adjacent = alive.stream()
-                .filter(o -> from.distanceTo(o.position()) == 1)
+                .filter(o -> active.distanceTo(o) == 1)
                 .min(Comparator.comparingInt(Stack::slot))
                 .orElse(null);
         if (adjacent != null) {
@@ -104,13 +103,13 @@ public final class GreedyAutoSolver implements AutoSolver {
             return alive.stream()
                     .max(Comparator
                             .comparingInt(GreedyAutoSolver::dangerScore)
-                            .thenComparingInt(o -> -from.distanceTo(o.position()))
+                            .thenComparingInt(o -> -active.distanceTo(o))
                             .thenComparingInt(o -> -o.slot()))
                     .orElseThrow();
         }
         return alive.stream()
                 .min(Comparator
-                        .comparingInt((Stack o) -> from.distanceTo(o.position()))
+                        .comparingInt((Stack o) -> active.distanceTo(o))
                         .thenComparingInt(Stack::slot))
                 .orElseThrow();
     }
@@ -144,8 +143,9 @@ public final class GreedyAutoSolver implements AutoSolver {
             return special;
         }
         Hex from = active.position();
-        Hex to = opponent.position();
-        int distance = from.distanceTo(to);
+        // Bei einem zweifeldrigen Ziel das nähere seiner Felder.
+        Hex to = opponent.nearestHexTo(from);
+        int distance = active.distanceTo(opponent);
         int speed = active.getSpeed();
         Movement movement = active.unit().movement();
 
@@ -169,23 +169,32 @@ public final class GreedyAutoSolver implements AutoSolver {
         // IMPACT_DAMAGE-Units (Cavalier/Champion): maximalen Run-up wählen statt direkter Linie.
         // Engine zählt {@code hexesMoved = startPos.distanceTo(destination)} → straight-line.
         if (active.hasSpeciality(UnitSpeciality.IMPACT_DAMAGE)) {
-            Hex charge = findMaxRunupCharge(active, to, battlefield, speed, movement);
+            Hex charge = findMaxRunupCharge(active, opponent, battlefield, speed, movement);
             if (charge != null) {
                 return chargeOrWait(active, opponent, charge);
             }
         }
         Hex moveTarget = battlefield.moveToward(from, to, speed, movement);
+        boolean fits = fitsAt(active, moveTarget, battlefield);
+        if (fits && !moveTarget.equals(from) && BattleSetup.touches(active, moveTarget, opponent)) {
+            return chargeOrWait(active, opponent, moveTarget);
+        }
+        if (active.isDoubleWide()) {
+            // Der gerade Weg führt den Kopf ans Ziel; passt das Heck dort nicht, vielleicht ein
+            // anderes Landefeld, an dem das Heck anliegt.
+            Hex landing = findGroundLanding(active, opponent, battlefield, speed, movement);
+            if (landing != null) {
+                return chargeOrWait(active, opponent, landing);
+            }
+        }
         if (moveTarget.equals(from)) {
             return waitOr(active, new Action.Defend());
         }
-        if (isOccupiedByOther(moveTarget, active)) {
+        if (!fits) {
             // moveToward berücksichtigt keine Stacks → könnte auf den Tank vor dem Ziel zielen.
             // Statt blind hinzulaufen und vom Engine-Sicherheitsnetz zu Defend degradiert zu
             // werden, defendieren wir direkt.
             return waitOr(active, new Action.Defend());
-        }
-        if (moveTarget.distanceTo(to) == 1) {
-            return chargeOrWait(active, opponent, moveTarget);
         }
         // Reiner Annäherungsschritt: der Stack erreicht sein Ziel diese Runde nicht und würde
         // sich nur exponiert ins Niemandsland stellen. H3-Standardzug ist hier Wait (Manual
@@ -218,12 +227,11 @@ public final class GreedyAutoSolver implements AutoSolver {
         Hex best = null;
         int bestScore = Integer.MIN_VALUE;
         int bestDist = Integer.MAX_VALUE;
-        for (Hex candidate : opponent.position().neighbors(Hex.isLeftward(from, opponent.position()))) {
+        for (Hex candidate : landingCandidates(active, opponent)) {
             int d = from.distanceTo(candidate);
             if (candidate.equals(from)
-                    || !bf.isPassable(candidate)
                     || (!teleports && d > speed)
-                    || isOccupiedByOther(candidate, active)) {
+                    || !fitsAt(active, candidate, bf)) {
                 continue;
             }
             int splashScore = computeSplashScore(active, candidate, opponent, fireBreath, threeHeaded);
@@ -265,12 +273,21 @@ public final class GreedyAutoSolver implements AutoSolver {
      */
     private int computeSplashScore(Stack active, Hex landingHex, Stack primary,
                                    boolean fireBreath, boolean threeHeaded) {
+        // Die beiden Felder, an denen sich Angreifer und Ziel nach der Landung berühren.
+        Hex own = landingHex;
+        for (Hex h : active.hexesAt(landingHex)) {
+            if (primary.distanceTo(h) < primary.distanceTo(own)) {
+                own = h;
+            }
+        }
+        Hex hit = primary.nearestHexTo(own);
         int score = 0;
         if (fireBreath) {
-            score += collateralValue(active, behindHex(landingHex, primary.position()));
+            Hex behind = behindHex(own, hit);
+            score += collateralValue(active, primary.occupies(behind) ? behindHex(hit, behind) : behind);
         }
         if (threeHeaded) {
-            for (Hex flank : landingHex.commonNeighbors(primary.position())) {
+            for (Hex flank : own.commonNeighbors(hit)) {
                 // Three-Headed Attack trifft nur Gegner — eigene Stacks auf den Flanken zählen nicht.
                 score += Math.max(0, collateralValue(active, flank));
             }
@@ -302,35 +319,64 @@ public final class GreedyAutoSolver implements AutoSolver {
      * straight-line als auch A*-Pfad ≤ Speed). Liefert {@code null}, wenn kein adjazenter Hex
      * erreichbar ist — dann fällt der Solver auf den normalen Move-Pfad zurück.
      */
-    private @Nullable Hex findMaxRunupCharge(Stack active, Hex to, Battlefield bf, int speed,
+    private @Nullable Hex findMaxRunupCharge(Stack active, Stack opponent, Battlefield bf, int speed,
                                              Movement movement) {
         Hex from = active.position();
-        return to.neighbors(Hex.isLeftward(from, to)).stream()
+        return landingCandidates(active, opponent).stream()
                 .filter(c -> isReachableInOneTurn(active, c, from, bf, speed, movement))
                 .filter(c -> from.distanceTo(c) > 0)
                 .max(Comparator.comparingInt(c -> Math.min(from.distanceTo(c), 10)))
                 .orElse(null);
     }
 
+    /**
+     * Das nächste Landefeld am Ziel, das ein zweifeldriger Bodenstack in diesem Zug erreicht —
+     * auch eines, an dem nur sein Heck anliegt; {@code null}, wenn keines erreichbar ist.
+     */
+    private @Nullable Hex findGroundLanding(Stack active, Stack opponent, Battlefield bf, int speed,
+                                            Movement movement) {
+        Hex from = active.position();
+        return landingCandidates(active, opponent).stream()
+                .filter(c -> !c.equals(from))
+                .filter(c -> isReachableInOneTurn(active, c, from, bf, speed, movement))
+                .min(Comparator.comparingInt(from::distanceTo))
+                .orElse(null);
+    }
+
+    /**
+     * Kopffelder, von denen aus der Stack das Ziel im Nahkampf erreicht ({@link BattleSetup#attackHeads});
+     * ohne Setup die Nachbarn des Zielfelds.
+     */
+    private List<Hex> landingCandidates(Stack active, Stack opponent) {
+        BattleSetup setup = currentSetup;
+        if (setup == null) {
+            return opponent.position().neighbors(Hex.isLeftward(active.position(), opponent.position()));
+        }
+        return setup.attackHeads(active, opponent);
+    }
+
     private boolean isReachableInOneTurn(Stack active, Hex candidate, Hex from, Battlefield bf,
                                          int speed, Movement movement) {
-        if (!bf.isPassable(candidate)) {
-            return false;
-        }
         if (from.distanceTo(candidate) > speed) {
             return false;
         }
-        if (isOccupiedByOther(candidate, active)) {
+        if (!fitsAt(active, candidate, bf)) {
             return false;
         }
         List<Hex> path = bf.findPath(from, candidate, movement);
         return !path.isEmpty() && path.size() <= speed;
     }
 
-    /** Belegt durch einen anderen Stack oder eine stehende Kriegsmaschine. */
-    private boolean isOccupiedByOther(Hex hex, Stack mover) {
+    /**
+     * Hat {@code mover} mit dem Kopf auf {@code head} Platz — alle seine Felder begehbar, keines
+     * von einem anderen Stack oder einer Maschine belegt? Ohne Setup nur das Feld selbst.
+     */
+    private boolean fitsAt(Stack mover, Hex head, Battlefield bf) {
         BattleSetup setup = currentSetup;
-        return findStackAt(hex, mover) != null || (setup != null && setup.machineAt(hex) != null);
+        if (setup == null) {
+            return bf.isPassable(head);
+        }
+        return mover.hexesAt(head).stream().allMatch(bf::isPassable) && setup.fits(mover, head);
     }
 
     /**
@@ -345,12 +391,12 @@ public final class GreedyAutoSolver implements AutoSolver {
             return null;
         }
         for (Stack s : setup.attackerStacks()) {
-            if (s != mover && s.isAlive() && s.position().equals(hex)) {
+            if (s != mover && s.isAlive() && s.occupies(hex)) {
                 return s;
             }
         }
         for (Stack s : setup.defenderStacks()) {
-            if (s != mover && s.isAlive() && s.position().equals(hex)) {
+            if (s != mover && s.isAlive() && s.occupies(hex)) {
                 return s;
             }
         }
@@ -437,7 +483,7 @@ public final class GreedyAutoSolver implements AutoSolver {
             if (!enemy.isAlive() || enemy.canShoot() || enemy.getSpeed() > active.getSpeed()) {
                 continue;
             }
-            if (landing.distanceTo(enemy.position()) <= enemy.getSpeed() + 1) {
+            if (enemy.distanceTo(landing) <= enemy.getSpeed() + 1) {
                 incoming += dangerScore(enemy);
             }
         }

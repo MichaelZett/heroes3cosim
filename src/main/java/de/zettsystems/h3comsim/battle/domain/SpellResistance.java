@@ -115,7 +115,7 @@ final class SpellResistance {
         for (Stack ally : setup.stacksOf(target.side())) {
             if (ally != target && ally.isAlive()
                     && ally.hasSpeciality(UnitSpeciality.MAGIC_RESISTANCE_AURA)
-                    && ally.position().distanceTo(target.position()) == 1) {
+                    && ally.distanceTo(target) == 1) {
                 return true;
             }
         }

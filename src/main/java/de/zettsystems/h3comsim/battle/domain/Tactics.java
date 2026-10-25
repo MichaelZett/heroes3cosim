@@ -81,7 +81,7 @@ public final class Tactics {
             if (!isAhead(target, stack.position(), side)) {
                 return null;
             }
-            if (field.isPassable(target) && isFree(target, all)) {
+            if (stack.hexesAt(target).stream().allMatch(h -> field.isPassable(h) && isFree(h, stack, all))) {
                 return target;
             }
         }
@@ -92,7 +92,9 @@ public final class Tactics {
         return side == Side.ATTACKER ? target.q() > current.q() : target.q() < current.q();
     }
 
-    private static boolean isFree(Hex hex, List<Stack> all) {
-        return all.stream().noneMatch(s -> s.isAlive() && s.position().equals(hex));
+    // s != mover: Identitätsvergleich auf der mutable Stack-Entity.
+    @SuppressWarnings("ReferenceEquality")
+    private static boolean isFree(Hex hex, Stack mover, List<Stack> all) {
+        return all.stream().noneMatch(s -> s != mover && s.isAlive() && s.occupies(hex));
     }
 }

@@ -36,12 +36,12 @@ final class WarMachineTargeting {
 
     /** Der kürzeste Angriff auf diese Maschine in diesem Zug, oder {@code null}. */
     private static @Nullable Action approach(Stack active, Stack machine, BattleSetup setup) {
-        if (active.position().distanceTo(machine.position()) == 1) {
+        if (active.distanceTo(machine) == 1) {
             return new Action.Melee(machine);
         }
         Hex best = null;
         int bestSteps = Integer.MAX_VALUE;
-        for (Hex landing : machine.position().neighbors()) {
+        for (Hex landing : setup.attackHeads(active, machine)) {
             int steps = stepsTo(active, landing, setup);
             if (steps > 0 && steps < bestSteps) {
                 best = landing;
@@ -54,7 +54,7 @@ final class WarMachineTargeting {
     /** Schritte bis zu einem freien Feld, oder 0, wenn es in diesem Zug nicht erreichbar ist. */
     private static int stepsTo(Stack active, Hex landing, BattleSetup setup) {
         Battlefield field = setup.battlefield();
-        if (!field.contains(landing) || !setup.isFree(landing)) {
+        if (!field.contains(landing) || !setup.fits(active, landing)) {
             return 0;
         }
         Hex from = active.position();

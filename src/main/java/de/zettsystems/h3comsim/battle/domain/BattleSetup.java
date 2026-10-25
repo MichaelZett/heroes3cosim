@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -114,6 +115,8 @@ public class BattleSetup {
         this.defenderStacks = new ArrayList<>(defenderStacks);
         this.battlefield = Objects.requireNonNull(battlefield, "battlefield");
         this.siege = siege;
+        fitOnField(this.attackerStacks, battlefield);
+        fitOnField(this.defenderStacks, battlefield);
         Objects.requireNonNull(attackerBonus, "attackerBonus");
         Objects.requireNonNull(defenderBonus, "defenderBonus");
         this.attackerHero = attackerHero;
@@ -140,6 +143,19 @@ public class BattleSetup {
         Tactics.arrange(this.defenderStacks, Side.DEFENDER, defenderTactics, fieldFor(Side.ATTACKER), all);
         if (siege != null && attackerHero != null) {
             placeMachines(Side.ATTACKER, Set.of());
+        }
+    }
+
+    /**
+     * Eine zweifeldrige Kreatur auf der Randzelle ragte mit dem Heck über den Rand; sie rückt um
+     * ein Feld vor, wie im Spiel der Kopf in der zweiten Spalte steht.
+     */
+    private static void fitOnField(List<Stack> stacks, Battlefield field) {
+        for (Stack stack : stacks) {
+            Hex head = stack.position();
+            if (stack.isDoubleWide() && !field.contains(Stack.tailOf(head, stack.side()))) {
+                stack.moveTo(new Hex(head.q() + (stack.side() == Side.ATTACKER ? 1 : -1), head.r()));
+            }
         }
     }
 
@@ -200,7 +216,7 @@ public class BattleSetup {
     public @Nullable Stack machineAt(Hex hex) {
         for (Map<WarMachine, Stack> placed : machineStacks.values()) {
             for (Stack machine : placed.values()) {
-                if (machine.isAlive() && machine.position().equals(hex)) {
+                if (machine.isAlive() && machine.occupies(hex)) {
                     return machine;
                 }
             }
@@ -284,11 +300,11 @@ public class BattleSetup {
         }
         Set<Hex> occupied = new HashSet<>();
         Set<Hex> defenders = new HashSet<>();
-        attackerStacks.forEach(s -> occupied.add(s.position()));
+        attackerStacks.forEach(s -> occupied.addAll(s.hexes()));
         for (Stack s : defenderStacks) {
-            occupied.add(s.position());
+            occupied.addAll(s.hexes());
             if (s.isAlive()) {
-                defenders.add(s.position());
+                defenders.addAll(s.hexes());
             }
         }
         return siege.updateGate(occupied, defenders) ? siege.gate() : null;
@@ -390,12 +406,17 @@ public class BattleSetup {
      * eine Spalte weiter innen; {@code null}, wenn das Feld voll ist.
      */
     @Nullable Hex freeHexFor(Side side) {
+        return freeHexFor(side, false);
+    }
+
+    /** Wie {@link #freeHexFor(Side)}; für eine zweifeldrige Kreatur muss auch das Heck frei sein. */
+    @Nullable Hex freeHexFor(Side side, boolean doubleWide) {
         List<Integer> rows = rowsFromCenter();
         for (int column = 0; column < battlefield.width(); column++) {
             for (int r : rows) {
                 int q = side == Side.ATTACKER ? battlefield.leftmostQ(r) + column : battlefield.rightmostQ(r) - column;
                 Hex hex = new Hex(q, r);
-                if (isFree(hex)) {
+                if (isFree(hex) && (!doubleWide || isFree(Stack.tailOf(hex, side)))) {
                     return hex;
                 }
             }
@@ -429,7 +450,59 @@ public class BattleSetup {
 
     boolean isFree(Hex hex) {
         return battlefield().isPassable(hex) && machineAt(hex) == null
-                && aliveStacks().stream().noneMatch(st -> st.position().equals(hex));
+                && aliveStacks().stream().noneMatch(st -> st.occupies(hex));
+    }
+
+    /**
+     * Die Kopffelder, von denen aus {@code mover} {@code target} im Nahkampf erreicht und auf denen
+     * er Platz hat: neben jedem Feld des Ziels, eine zweifeldrige Kreatur auch so, dass ihr Heck
+     * daneben steht. Reihenfolge in Blickrichtung des Movers ({@link Hex#neighbors(boolean)}).
+     */
+    public List<Hex> attackHeads(Stack mover, Stack target) {
+        boolean leftward = Hex.isLeftward(mover.position(), target.position());
+        Set<Hex> heads = new LinkedHashSet<>();
+        for (Hex own : target.hexes()) {
+            for (Hex n : own.neighbors(leftward)) {
+                if (!target.occupies(n)) {
+                    heads.add(n);
+                    if (mover.isDoubleWide()) {
+                        heads.add(new Hex(n.q() + (mover.side() == Side.ATTACKER ? 1 : -1), n.r()));
+                    }
+                }
+            }
+        }
+        List<Hex> result = new ArrayList<>();
+        for (Hex head : heads) {
+            if (mover.hexesAt(head).stream().noneMatch(target::occupies) && touches(mover, head, target)
+                    && fits(mover, head)) {
+                result.add(head);
+            }
+        }
+        return result;
+    }
+
+    /** Stünde {@code mover} mit dem Kopf auf {@code head} neben {@code target}? */
+    public static boolean touches(Stack mover, Hex head, Stack target) {
+        return mover.hexesAt(head).stream().anyMatch(h -> target.distanceTo(h) == 1);
+    }
+
+    /**
+     * Passt {@code mover} mit dem Kopf auf {@code head}? Alle seine Felder müssen für seine Seite
+     * begehbar sein und frei von anderen Stacks und Maschinen; was er selbst schon belegt, zählt
+     * als frei.
+     */
+    // st != mover: Identitätsvergleich auf der mutable Stack-Entity.
+    @SuppressWarnings("ReferenceEquality")
+    public boolean fits(Stack mover, Hex head) {
+        Battlefield field = battlefieldFor(mover.side());
+        for (Hex hex : mover.hexesAt(head)) {
+            Stack machine = machineAt(hex);
+            if (!field.isPassable(hex) || (machine != null && machine != mover)
+                    || aliveStacks().stream().anyMatch(st -> st != mover && st.occupies(hex))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
