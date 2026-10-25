@@ -122,6 +122,28 @@ class DoubleWideTest {
     }
 
     @Test
+    void on_the_way_the_tail_never_touches_an_obstacle_but_a_flyer_passes_over() {
+        Hex rock = new Hex(4, 4);
+        Battlefield field = FIELD.withObstacles(java.util.Set.of(rock));
+        Hex destination = new Hex(5, 3);
+        Stack pikemen = new Stack(UnitCatalog.PIKEMAN, 1, new Hex(5, 5), Side.ATTACKER, 0);
+        Stack behemoths = new Stack(UnitCatalog.BEHEMOTH, 1, new Hex(5, 5), Side.ATTACKER, 0);
+        Stack dragon = new Stack(UnitCatalog.BLACK_DRAGON, 1, new Hex(5, 5), Side.ATTACKER, 0);
+
+        // Der kurze Weg über (5,4) legte das Heck auf den Felsen (4,4).
+        assertThat(field.pathFor(pikemen, destination)).containsExactly(new Hex(5, 4), destination);
+        List<Hex> wide = field.pathFor(behemoths, destination);
+        assertThat(wide).hasSize(3).endsWith(destination)
+                .allSatisfy(h -> assertThat(behemoths.hexesAt(h)).allMatch(field::isPassable));
+        assertThat(field.pathFor(dragon, destination)).hasSize(2);
+        assertThat(field.moveToward(behemoths, new Hex(5, 1), 1)).isNotEqualTo(new Hex(5, 4));
+        // Ohne Hindernis, aber am Rand: das Heck bleibt auf dem Feld.
+        Stack edge = new Stack(UnitCatalog.BEHEMOTH, 1, new Hex(FIELD.leftmostQ(4) + 1, 4), Side.ATTACKER, 0);
+        assertThat(FIELD.pathFor(edge, new Hex(FIELD.leftmostQ(6) + 1, 6)))
+                .allSatisfy(h -> assertThat(FIELD.contains(Stack.tailOf(h, Side.ATTACKER))).isTrue());
+    }
+
+    @Test
     void a_walk_cut_short_in_the_moat_ends_where_the_tail_has_room() {
         Stack behemoths = new Stack(UnitCatalog.BEHEMOTH, 1, new Hex(5, 5), Side.ATTACKER, 0);
         Stack blocker = new Stack(UnitCatalog.PIKEMAN, 1, new Hex(7, 5), Side.ATTACKER, 1);

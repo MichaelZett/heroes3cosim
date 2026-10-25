@@ -653,7 +653,7 @@ public final class StrategicAutoSolver implements AutoSolver {
         if (!active.hexesAt(hex).stream().allMatch(bf::isPassable) || !setup.fits(active, hex)) {
             return false;
         }
-        List<Hex> path = bf.findPath(active.position(), hex, active.unit().movement());
+        List<Hex> path = bf.pathFor(active, hex);
         return !path.isEmpty() && path.size() <= active.getSpeed();
     }
 

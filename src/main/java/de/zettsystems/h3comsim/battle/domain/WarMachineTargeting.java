@@ -60,7 +60,7 @@ final class WarMachineTargeting {
         Hex from = active.position();
         int steps = active.unit().movement() == Movement.FLYING
                 ? from.distanceTo(landing)
-                : field.findPath(from, landing, Movement.GROUND).size();
+                : field.pathFor(active, landing).size();
         return steps <= active.getSpeed() ? steps : 0;
     }
 }

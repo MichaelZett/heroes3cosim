@@ -721,9 +721,7 @@ public final class Battle {
         meleeAttack(active, target, hexesMoved, setup);
         if (active.hasSpeciality(UnitSpeciality.MOVE_BACK) && active.isAlive()) {
             BattleLogger.logMoveBack(active.getName(), startPos.q(), startPos.r());
-            Hex returnFrom = active.position();
-            List<HexCoord> backPath = battlefield.findPath(returnFrom, startPos,
-                            active.unit().movement()).stream()
+            List<HexCoord> backPath = battlefield.pathFor(active, startPos).stream()
                     .map(h -> new HexCoord(h.q(), h.r())).toList();
             active.moveTo(startPos);
             events.emit(new BattleEvent.MoveBack(active.side(), active.slot(),
@@ -791,7 +789,7 @@ public final class Battle {
         Hex from = active.position();
         Siege siege = currentSetup == null ? null : currentSetup.siege();
         boolean ground = active.unit().movement() == Movement.GROUND;
-        List<Hex> walked = battlefield.findPath(from, destination, active.unit().movement());
+        List<Hex> walked = battlefield.pathFor(active, destination);
         if (siege != null && ground) {
             walked = untilMoat(walked, siege);
             if (currentSetup != null && stuckWithoutRoom(currentSetup, active, walked, destination)) {

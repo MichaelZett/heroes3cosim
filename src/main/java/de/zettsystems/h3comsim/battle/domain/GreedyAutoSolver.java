@@ -169,7 +169,7 @@ public final class GreedyAutoSolver implements AutoSolver {
         // IMPACT_DAMAGE-Units (Cavalier/Champion): maximalen Run-up wählen statt direkter Linie.
         // Engine zählt {@code hexesMoved = startPos.distanceTo(destination)} → straight-line.
         if (active.hasSpeciality(UnitSpeciality.IMPACT_DAMAGE)) {
-            Hex charge = findMaxRunupCharge(active, opponent, battlefield, speed, movement);
+            Hex charge = findMaxRunupCharge(active, opponent, battlefield, speed);
             if (charge != null) {
                 return chargeOrWait(active, opponent, charge);
             }
@@ -181,8 +181,7 @@ public final class GreedyAutoSolver implements AutoSolver {
     private Action approach(Stack active, Stack opponent, Battlefield battlefield, Hex to) {
         Hex from = active.position();
         int speed = active.getSpeed();
-        Movement movement = active.unit().movement();
-        Hex moveTarget = battlefield.moveToward(from, to, speed, movement);
+        Hex moveTarget = battlefield.moveToward(active, to, speed);
         boolean fits = fitsAt(active, moveTarget, battlefield);
         if (fits && !moveTarget.equals(from) && BattleSetup.touches(active, moveTarget, opponent)) {
             return chargeOrWait(active, opponent, moveTarget);
@@ -190,7 +189,7 @@ public final class GreedyAutoSolver implements AutoSolver {
         if (active.isDoubleWide()) {
             // Der gerade Weg führt den Kopf ans Ziel; passt das Heck dort nicht, vielleicht ein
             // anderes Landefeld, an dem das Heck anliegt.
-            Hex landing = findGroundLanding(active, opponent, battlefield, speed, movement);
+            Hex landing = findGroundLanding(active, opponent, battlefield, speed);
             if (landing != null) {
                 return chargeOrWait(active, opponent, landing);
             }
@@ -327,11 +326,10 @@ public final class GreedyAutoSolver implements AutoSolver {
      * straight-line als auch A*-Pfad ≤ Speed). Liefert {@code null}, wenn kein adjazenter Hex
      * erreichbar ist — dann fällt der Solver auf den normalen Move-Pfad zurück.
      */
-    private @Nullable Hex findMaxRunupCharge(Stack active, Stack opponent, Battlefield bf, int speed,
-                                             Movement movement) {
+    private @Nullable Hex findMaxRunupCharge(Stack active, Stack opponent, Battlefield bf, int speed) {
         Hex from = active.position();
         return landingCandidates(active, opponent).stream()
-                .filter(c -> isReachableInOneTurn(active, c, from, bf, speed, movement))
+                .filter(c -> isReachableInOneTurn(active, c, from, bf, speed))
                 .filter(c -> from.distanceTo(c) > 0)
                 .max(Comparator.comparingInt(c -> Math.min(from.distanceTo(c), 10)))
                 .orElse(null);
@@ -341,12 +339,11 @@ public final class GreedyAutoSolver implements AutoSolver {
      * Das nächste Landefeld am Ziel, das ein zweifeldriger Bodenstack in diesem Zug erreicht —
      * auch eines, an dem nur sein Heck anliegt; {@code null}, wenn keines erreichbar ist.
      */
-    private @Nullable Hex findGroundLanding(Stack active, Stack opponent, Battlefield bf, int speed,
-                                            Movement movement) {
+    private @Nullable Hex findGroundLanding(Stack active, Stack opponent, Battlefield bf, int speed) {
         Hex from = active.position();
         return landingCandidates(active, opponent).stream()
                 .filter(c -> !c.equals(from))
-                .filter(c -> isReachableInOneTurn(active, c, from, bf, speed, movement))
+                .filter(c -> isReachableInOneTurn(active, c, from, bf, speed))
                 .min(Comparator.comparingInt(from::distanceTo))
                 .orElse(null);
     }
@@ -364,14 +361,14 @@ public final class GreedyAutoSolver implements AutoSolver {
     }
 
     private boolean isReachableInOneTurn(Stack active, Hex candidate, Hex from, Battlefield bf,
-                                         int speed, Movement movement) {
+                                         int speed) {
         if (from.distanceTo(candidate) > speed) {
             return false;
         }
         if (!fitsAt(active, candidate, bf)) {
             return false;
         }
-        List<Hex> path = bf.findPath(from, candidate, movement);
+        List<Hex> path = bf.pathFor(active, candidate);
         return !path.isEmpty() && path.size() <= speed;
     }
 
@@ -448,8 +445,7 @@ public final class GreedyAutoSolver implements AutoSolver {
         if (!threatIsDeadly(opponent, active)) {
             return new Action.Shoot(opponent);
         }
-        Hex kite = findKitePosition(active, from, to, bf, mySpeed, opponentSpeed,
-                active.unit().movement());
+        Hex kite = findKitePosition(active, from, to, bf, mySpeed, opponentSpeed);
         if (kite == null) {
             return new Action.Shoot(opponent);
         }
@@ -572,18 +568,18 @@ public final class GreedyAutoSolver implements AutoSolver {
      * die obstacle-freie eigene Schusslinie.
      */
     private @Nullable Hex findKitePosition(Stack active, Hex from, Hex to, Battlefield bf,
-                                           int mySpeed, int opponentSpeed, Movement movement) {
-        return reachableCandidates(active, from, to, bf, mySpeed, movement).stream()
+                                           int mySpeed, int opponentSpeed) {
+        return reachableCandidates(active, from, to, bf, mySpeed).stream()
                 .filter(c -> c.distanceTo(to) - opponentSpeed > 1)
                 .max(Comparator.comparingInt(c -> c.distanceTo(to)))
                 .orElse(null);
     }
 
     private List<Hex> reachableCandidates(Stack active, Hex from, Hex to, Battlefield bf,
-                                          int mySpeed, Movement movement) {
+                                          int mySpeed) {
         List<Hex> candidates = new ArrayList<>();
         for (Hex c : bf.cells()) {
-            if (isKiteCandidate(active, c, from, to, bf, mySpeed, movement)) {
+            if (isKiteCandidate(active, c, from, to, bf, mySpeed)) {
                 candidates.add(c);
             }
         }
@@ -599,10 +595,10 @@ public final class GreedyAutoSolver implements AutoSolver {
     }
 
     private boolean isKiteCandidate(Stack active, Hex c, Hex from, Hex to, Battlefield bf,
-                                    int mySpeed, Movement movement) {
+                                    int mySpeed) {
         if (c.equals(from) || c.equals(to)) {
             return false;
         }
-        return isReachableInOneTurn(active, c, from, bf, mySpeed, movement);
+        return isReachableInOneTurn(active, c, from, bf, mySpeed);
     }
 }

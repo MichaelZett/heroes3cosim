@@ -116,6 +116,14 @@ public class Stack {
         return new Hex(head.q() + (side == Side.ATTACKER ? -1 : 1), head.r());
     }
 
+    /** Spaltenabstand des Hecks vom Kopf: −1 beim Angreifer, +1 beim Verteidiger, 0 einfeldig. */
+    public int tailDq() {
+        if (!isDoubleWide()) {
+            return 0;
+        }
+        return side == Side.ATTACKER ? -1 : 1;
+    }
+
     /** Die Felder, die der Stack belegt: der Kopf, bei zweifeldrigen dazu das Heck. */
     public List<Hex> hexes() {
         return hexesAt(position);

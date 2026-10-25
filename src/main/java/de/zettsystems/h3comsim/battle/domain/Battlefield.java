@@ -90,10 +90,22 @@ public record Battlefield(int width, int height, Set<Hex> obstacles) {
      * Manual) → gerade Linie. {@link Movement#GROUND} muss A* um Hindernisse herum.
      */
     public Hex moveToward(Hex from, Hex target, int maxHexes, Movement movement) {
-        if (movement == Movement.FLYING || obstacles.isEmpty()) {
+        return moveToward(from, target, maxHexes, movement, 0);
+    }
+
+    /**
+     * Wie oben für den Stack selbst: Ein zweifeldriger Bodenstack läuft so, dass auch sein Heck nie
+     * auf einem Hindernis oder außerhalb des Felds steht; Flieger fliegen darüber.
+     */
+    public Hex moveToward(Stack mover, Hex target, int maxHexes) {
+        return moveToward(mover.position(), target, maxHexes, mover.unit().movement(), mover.tailDq());
+    }
+
+    private Hex moveToward(Hex from, Hex target, int maxHexes, Movement movement, int tailDq) {
+        if (movement == Movement.FLYING || (tailDq == 0 && obstacles.isEmpty())) {
             return straightMoveToward(from, target, maxHexes);
         }
-        return PathFinder.stepToward(this, from, target, maxHexes);
+        return PathFinder.stepToward(this, from, target, maxHexes, tailDq);
     }
 
     private Hex straightMoveToward(Hex from, Hex target, int maxHexes) {
@@ -124,13 +136,25 @@ public record Battlefield(int width, int height, Set<Hex> obstacles) {
      * damit Tokens nicht einen Sprung machen, sondern sichtbar Schritt für Schritt laufen.
      */
     public List<Hex> findPath(Hex from, Hex destination, Movement movement) {
+        return findPath(from, destination, movement, 0);
+    }
+
+    /**
+     * Der Weg des Stacks von seinem Feld nach {@code destination}. Ein zweifeldriger Bodenstack
+     * braucht auf jedem Schritt Platz für Kopf und Heck: kein Hindernis, nicht außerhalb des Felds.
+     */
+    public List<Hex> pathFor(Stack mover, Hex destination) {
+        return findPath(mover.position(), destination, mover.unit().movement(), mover.tailDq());
+    }
+
+    private List<Hex> findPath(Hex from, Hex destination, Movement movement, int tailDq) {
         if (from.equals(destination)) {
             return List.of();
         }
-        if (movement == Movement.FLYING || obstacles.isEmpty()) {
+        if (movement == Movement.FLYING || (tailDq == 0 && obstacles.isEmpty())) {
             return straightLine(from, destination);
         }
-        return PathFinder.findPath(this, from, destination);
+        return PathFinder.findPath(this, from, destination, tailDq);
     }
 
     private static List<Hex> straightLine(Hex from, Hex destination) {
