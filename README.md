@@ -192,9 +192,11 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   selbst. Der Verteidiger stellt ohne Tactics auf und hat keine Ballista.
   Messung (`SiegeImpactTest`, Spiegel-Duell, Standardhelden, je 360
   Kämpfe): Bei gleich großen Armeen gewinnt der Verteidiger im Fort
-  0.653, in Citadel und Castle fast immer. Mit doppelter Armee nimmt der
-  Angreifer ein Fort sicher ein, eine Castle hält dann noch 0.475, mit
-  Expert Ballistics 0.321; mit vierfacher Armee fällt jede Stadt.
+  0.669, in Citadel und Castle immer. Mit doppelter Armee nimmt der
+  Angreifer ein Fort sicher ein, eine Citadel hält dann 0.149, eine
+  Castle 0.597, mit Expert Ballistics 0.300; mit vierfacher Armee fällt
+  jede Stadt. Die Mauerschüsse der Zyklopen bringen Stronghold mit
+  doppelter Armee gegen eine Citadel 0.630 statt 0.534 (je 540 Kämpfe).
 - **Tactics** (Manual S. 42) — hat ein Held die Fertigkeit auf höherer
   Stufe als der Gegner, stellt er vor Kampfbeginn in den ersten 3/5/7
   Spalten auf (ein, zwei, drei Grade Vorsprung). Die Nahkämpfer rücken in
