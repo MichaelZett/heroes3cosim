@@ -304,9 +304,31 @@ public final class Battle {
      */
     private void siegeEnginesAct(BattleSetup setup) {
         Siege siege = setup.siege();
-        if (siege == null || !setup.hasWorking(Side.ATTACKER, WarMachine.CATAPULT)) {
+        if (siege == null) {
             return;
         }
+        for (WallPart tower : ArrowTowers.standing(siege)) {
+            Stack target = setup.bothAlive() ? ArrowTowers.target(tower, siege, setup) : null;
+            if (target != null) {
+                towerShot(tower, siege, target);
+            }
+        }
+        if (setup.bothAlive() && setup.hasWorking(Side.ATTACKER, WarMachine.CATAPULT)) {
+            catapultShots(setup, siege);
+        }
+    }
+
+    private void towerShot(WallPart tower, Siege siege, Stack target) {
+        int damage = ArrowTowers.damage(tower, siege, rng);
+        int countBefore = target.getCount();
+        boolean rebirthUsedBefore = target.isRebirthUsed();
+        target.takeDamage(damage, Set.of());
+        emitRebirthIfFired(target, rebirthUsedBefore);
+        events.emit(new BattleEvent.TowerShot(tower, target.slot(), damage,
+                Math.max(0, countBefore - target.getCount()), snapshot(target)));
+    }
+
+    private void catapultShots(BattleSetup setup, Siege siege) {
         Hero hero = setup.heroOf(Side.ATTACKER);
         SkillLevel ballistics = hero == null ? SkillLevel.NONE : hero.levelOf(SecondarySkill.BALLISTICS);
         for (int i = 0; i < Catapult.shots(ballistics); i++) {

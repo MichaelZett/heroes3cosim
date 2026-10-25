@@ -30,6 +30,7 @@ import java.util.List;
         @JsonSubTypes.Type(value = BattleEvent.BallistaShot.class, name = "BallistaShot"),
         @JsonSubTypes.Type(value = BattleEvent.FirstAid.class, name = "FirstAid"),
         @JsonSubTypes.Type(value = BattleEvent.CatapultShot.class, name = "CatapultShot"),
+        @JsonSubTypes.Type(value = BattleEvent.TowerShot.class, name = "TowerShot"),
         @JsonSubTypes.Type(value = BattleEvent.SpellCast.class, name = "SpellCast"),
         @JsonSubTypes.Type(value = BattleEvent.Dispel.class, name = "Dispel"),
         @JsonSubTypes.Type(value = BattleEvent.HeroSpell.class, name = "HeroSpell"),
@@ -64,7 +65,7 @@ import java.util.List;
                 BattleEvent.Shoot.class, BattleEvent.Melee.class, BattleEvent.Retaliation.class,
                 BattleEvent.TwoBlows.class, BattleEvent.TwoShots.class, BattleEvent.GoodMorale.class,
                 BattleEvent.BadMorale.class, BattleEvent.LuckyStrike.class, BattleEvent.TacticsPhase.class,
-                BattleEvent.BallistaShot.class, BattleEvent.FirstAid.class, BattleEvent.CatapultShot.class,
+                BattleEvent.BallistaShot.class, BattleEvent.FirstAid.class, BattleEvent.CatapultShot.class, BattleEvent.TowerShot.class,
                 BattleEvent.SpellCast.class, BattleEvent.Dispel.class,
                 BattleEvent.HeroSpell.class, BattleEvent.SpellHit.class, BattleEvent.Summon.class,
                 BattleEvent.MoveBack.class, BattleEvent.DeathStare.class, BattleEvent.Thunderbolts.class,
@@ -91,6 +92,7 @@ import java.util.List;
                 @DiscriminatorMapping(value = "BallistaShot", schema = BattleEvent.BallistaShot.class),
                 @DiscriminatorMapping(value = "FirstAid", schema = BattleEvent.FirstAid.class),
                 @DiscriminatorMapping(value = "CatapultShot", schema = BattleEvent.CatapultShot.class),
+                @DiscriminatorMapping(value = "TowerShot", schema = BattleEvent.TowerShot.class),
                 @DiscriminatorMapping(value = "SpellCast", schema = BattleEvent.SpellCast.class),
                 @DiscriminatorMapping(value = "Dispel", schema = BattleEvent.Dispel.class),
                 @DiscriminatorMapping(value = "HeroSpell", schema = BattleEvent.HeroSpell.class),
@@ -272,6 +274,16 @@ public sealed interface BattleEvent {
             @Schema(description = "Was getroffen wurde") WallPart hit,
             @Schema(description = "Abgezogene Treffer, 0..2") int damage,
             @Schema(description = "Verbleibende Treffer des getroffenen Teils; 0 = zerstört") int healthAfter) implements BattleEvent {
+    }
+
+    @Schema(name = "TowerShot",
+            description = "Ein Pfeilturm des Verteidigers schießt zu Rundenbeginn auf einen Stack des Angreifers; der Schaden ignoriert dessen Defense.")
+    record TowerShot(
+            @Schema(description = "Welcher Turm") WallPart tower,
+            @Schema(description = "Slot des getroffenen Angreifer-Stacks") int targetSlot,
+            @Schema(description = "Schaden") int damage,
+            @Schema(description = "Getötete Kreaturen") int killed,
+            @Schema(description = "Ziel danach") StackSnapshot targetAfter) implements BattleEvent {
     }
 
     @Schema(name = "SpellCast",
