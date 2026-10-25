@@ -92,6 +92,8 @@ export type BattleEvent =
       /** Kriegsmaschinen beider Seiten. */
       attackerWarMachines?: WarMachine[];
       defenderWarMachines?: WarMachine[];
+      /** Die Kriegsmaschinen auf dem Feld, als Stacks ab Slot 20; angreifbar. */
+      warMachineStacks?: StackSnapshot[];
     }
   | {
       type: 'Move';

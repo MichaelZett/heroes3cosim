@@ -26,4 +26,12 @@ public interface AutoSolver {
     }
 
     Action decide(Stack active, Stack opponent, Battlefield battlefield);
+
+    /**
+     * Greift ein Stack, der in seinem Zug keine Kreatur angreift, eine erreichbare gegnerische
+     * Kriegsmaschine an ({@link WarMachineTargeting})? Standard: ja.
+     */
+    default boolean attacksWarMachines(Stack active) {
+        return true;
+    }
 }

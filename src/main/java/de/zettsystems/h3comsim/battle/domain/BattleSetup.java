@@ -34,6 +34,8 @@ public class BattleSetup {
     private final int attackerTactics;
     private final int defenderTactics;
     private final Map<Side, Set<WarMachine>> warMachines = new EnumMap<>(Side.class);
+    /** Die Maschinen als Stacks auf dem Feld; nicht Teil der Armeelisten. */
+    private final Map<Side, Map<WarMachine, Stack>> machineStacks = new EnumMap<>(Side.class);
     private final Map<Side, Integer> mana = new EnumMap<>(Side.class);
     /** Je Seite die eine Elementar-Art, die beschworen werden darf, sobald die erste gerufen ist. */
     private final Map<Side, Unit> summonedKind = new EnumMap<>(Side.class);
@@ -116,23 +118,68 @@ public class BattleSetup {
     }
 
     /**
-     * Rüstet eine Seite mit Kriegsmaschinen aus ({@link WarMachine}). Vor {@code simulate}
-     * aufzurufen; ein Munitionswagen gibt den Stacks der Seite sofort unbegrenzte Schüsse.
+     * Rüstet eine Seite mit Kriegsmaschinen aus ({@link WarMachine}) und stellt sie auf ihre
+     * Felder. Vor {@code simulate} aufzurufen; ein Munitionswagen gibt den Stacks der Seite sofort
+     * unbegrenzte Schüsse.
      *
      * @return dieses Setup, zum Verketten
      */
     public BattleSetup equip(Side side, Set<WarMachine> machines) {
         Set<WarMachine> copy = machines.isEmpty() ? EnumSet.noneOf(WarMachine.class) : EnumSet.copyOf(machines);
         warMachines.put(side, copy);
+        Map<WarMachine, Stack> placed = new EnumMap<>(WarMachine.class);
+        for (WarMachine machine : copy) {
+            placed.put(machine, new Stack(machine.unit(), 1, machine.hex(side, battlefield), side, machine.slot()));
+        }
+        machineStacks.put(side, placed);
         if (copy.contains(WarMachine.AMMO_CART)) {
             stacksOf(side).forEach(Stack::grantUnlimitedAmmo);
         }
         return this;
     }
 
-    /** Kriegsmaschinen dieser Seite, leer ohne {@link #equip}. */
+    /** Kriegsmaschinen dieser Seite, leer ohne {@link #equip} — auch die schon zerstörten. */
     public Set<WarMachine> warMachinesOf(Side side) {
         return Collections.unmodifiableSet(warMachines.getOrDefault(side, EnumSet.noneOf(WarMachine.class)));
+    }
+
+    /** Die Maschinen dieser Seite als Stacks auf dem Feld, auch die zerstörten. */
+    public List<Stack> machinesOf(Side side) {
+        return List.copyOf(machineStacks.getOrDefault(side, Map.of()).values());
+    }
+
+    /** Hat die Seite diese Maschine, und steht sie noch? */
+    public boolean hasWorking(Side side, WarMachine machine) {
+        Stack stack = machineStacks.getOrDefault(side, Map.of()).get(machine);
+        return stack != null && stack.isAlive();
+    }
+
+    /** Die stehende Maschine auf diesem Feld, oder {@code null}. */
+    public @Nullable Stack machineAt(Hex hex) {
+        for (Map<WarMachine, Stack> placed : machineStacks.values()) {
+            for (Stack machine : placed.values()) {
+                if (machine.isAlive() && machine.position().equals(hex)) {
+                    return machine;
+                }
+            }
+        }
+        return null;
+    }
+
+    /** Die stehenden Maschinen der Gegenseite dieses Stacks. */
+    public List<Stack> enemyMachinesOf(Stack stack) {
+        Side enemy = stack.side() == Side.ATTACKER ? Side.DEFENDER : Side.ATTACKER;
+        return machinesOf(enemy).stream().filter(Stack::isAlive).toList();
+    }
+
+    /**
+     * Nach einem Treffer auf eine Maschine: ist der Munitionswagen zerstört, zählen die Schüsse
+     * der Seite ab jetzt wieder (heroes.thelazy.net, <em>Ammo Cart</em>).
+     */
+    void machineHit(Stack machine) {
+        if (!machine.isAlive() && machine.unit().equals(WarMachine.AMMO_CART.unit())) {
+            stacksOf(machine.side()).forEach(Stack::revokeUnlimitedAmmo);
+        }
     }
 
     /** Mana, das der Held dieser Seite noch hat; zu Beginn {@link Hero#maxMana()}, ohne Helden 0. */
@@ -264,7 +311,8 @@ public class BattleSetup {
     }
 
     boolean isFree(Hex hex) {
-        return battlefield.isPassable(hex) && aliveStacks().stream().noneMatch(st -> st.position().equals(hex));
+        return battlefield.isPassable(hex) && machineAt(hex) == null
+                && aliveStacks().stream().noneMatch(st -> st.position().equals(hex));
     }
 
     /**

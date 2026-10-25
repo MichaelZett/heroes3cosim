@@ -158,8 +158,14 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   heilt am Rundenende die oberste Kreatur des am stärksten verwundeten
   Stacks um 1–25 Lebenspunkte, mit First Aid bis 50/75/100. Der
   Munitionswagen gibt den Schützen unbegrenzt Schüsse. Die Maschinen
-  stehen nicht auf dem Feld und lassen sich nicht angreifen; das Katapult
-  fehlt, weil es nur bei Belagerungen zählt.
+  stehen am eigenen Rand (Reihen 1, 3 und 9, wie im Spiel), schlagen
+  nicht zurück und lassen sich zerstören: Ballista und Zelt hören dann auf,
+  nach dem Munitionswagen verbrauchen Schützen wieder Munition. Ein Stack,
+  der in seinem Zug keine Kreatur angreift, aber eine Maschine erreicht,
+  greift sie an, die teuerste zuerst. Im Spiegel-Duell mit allen drei
+  Maschinen auf beiden Seiten gewinnt das gegen „Maschinen stehen lassen"
+  0.559 (+4.4 σ) bei einer Wochenproduktion und 0.525 (+1.8 σ) bei vier.
+  Das Katapult fehlt, weil es nur bei Belagerungen zählt.
 - **Tactics** (Manual S. 42) — hat ein Held die Fertigkeit auf höherer
   Stufe als der Gegner, stellt er vor Kampfbeginn in den ersten 3/5/7
   Spalten auf (ein, zwei, drei Grade Vorsprung). Die Nahkämpfer rücken in
@@ -418,8 +424,8 @@ zu lesen, nicht als universelle H3-Tier-Liste.
   `FriendlyFireDiagnosisTest`). Diese Zahlen stammen noch aus der Zeit,
   in der der Cerberus wahllos zwei Nachbarn traf, eigene eingeschlossen,
   und der Magog nur zwei statt aller sechs Felder ums Ziel.
-- **Helden, nächste Stufe**: Zauber im Matrix-Modus.
-  Bei den Kriegsmaschinen offen: angreifbare Maschinen auf dem Feld.
+- **Helden, nächste Stufe**: Zauber-Artefakte, Eagle Eye und die
+  Schul-Rabatte aus späteren Fassungen.
 - **Taktisches Warten ausbauen**: Nahkämpfer nutzen *Wait* bereits, wenn
   sie ihr Ziel diese Runde nicht erreichen — messbar stärker, aber der
   Gewinn kommt fast nur von Tower. Offen sind Schützen (warten, bis der

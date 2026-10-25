@@ -50,6 +50,36 @@ describe('reduceEvents', () => {
     expect(state!.stacks.size).toBe(2);
   });
 
+  it('places war machines on the grid and lets attacks destroy them', () => {
+    const ballista: StackSnapshot = {
+      side: 'DEFENDER',
+      slot: 20,
+      unitName: 'Ballista',
+      count: 1,
+      topHp: 250,
+      q: 15,
+      r: 3,
+    };
+    const events: BattleEvent[] = [
+      { ...start, warMachineStacks: [ballista] },
+      {
+        type: 'Melee',
+        actor: 'ATTACKER',
+        actorSlot: 0,
+        target: 'DEFENDER',
+        targetSlot: 20,
+        hexesMoved: 0,
+        damage: 250,
+        killed: 1,
+        targetAfter: { ...ballista, count: 0, topHp: 0 },
+      },
+    ];
+    expect(reduceEvents(events, 1)!.stacks.get(stackKey('DEFENDER', 20))?.unitName).toBe(
+      'Ballista',
+    );
+    expect(reduceEvents(events, 2)!.stacks.get(stackKey('DEFENDER', 20))?.count).toBe(0);
+  });
+
   it('applies Move events to the actor position', () => {
     const events: BattleEvent[] = [
       start,

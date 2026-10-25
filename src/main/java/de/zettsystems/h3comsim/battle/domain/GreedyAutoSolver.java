@@ -332,8 +332,10 @@ public final class GreedyAutoSolver implements AutoSolver {
         return !path.isEmpty() && path.size() <= speed;
     }
 
+    /** Belegt durch einen anderen Stack oder eine stehende Kriegsmaschine. */
     private boolean isOccupiedByOther(Hex hex, Stack mover) {
-        return findStackAt(hex, mover) != null;
+        BattleSetup setup = currentSetup;
+        return findStackAt(hex, mover) != null || (setup != null && setup.machineAt(hex) != null);
     }
 
     /**

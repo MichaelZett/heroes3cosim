@@ -126,7 +126,7 @@ function initialStacks(start: BattleEvent & { type: 'BattleStart' }): Map<string
   const initials: StackSnapshot[] = start.stacks?.length
     ? start.stacks
     : [start.attacker, start.defender];
-  for (const snap of initials) {
+  for (const snap of [...initials, ...(start.warMachineStacks ?? [])]) {
     const slot = snap.slot ?? 0;
     stacks.set(stackKey(snap.side, slot), snapshotToSideState(snap, snap.topHp, snap.count));
   }

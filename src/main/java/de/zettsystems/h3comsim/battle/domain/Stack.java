@@ -112,6 +112,11 @@ public class Stack {
         }
     }
 
+    /** Der Munitionswagen ist zerstört: ab jetzt zählen die Schüsse wieder. */
+    void revokeUnlimitedAmmo() {
+        this.unlimitedAmmo = false;
+    }
+
     /** Munitionswagen der eigenen Armee: Schüsse gehen nicht mehr aus. */
     void grantUnlimitedAmmo() {
         this.unlimitedAmmo = true;
@@ -398,7 +403,12 @@ public class Stack {
     }
 
     public boolean canRetaliate() {
-        return retaliationsThisTurn < maxRetaliationsPerTurn();
+        return !isWarMachine() && retaliationsThisTurn < maxRetaliationsPerTurn();
+    }
+
+    /** Eine Kriegsmaschine ({@link WarMachine}): steht fest, schlägt nicht zurück. */
+    public boolean isWarMachine() {
+        return WarMachine.isMachine(unit);
     }
 
     public void recordRetaliation() {

@@ -637,7 +637,7 @@ public final class StrategicAutoSolver implements AutoSolver {
                 return true;
             }
         }
-        return false;
+        return setup.machineAt(hex) != null;
     }
 
     // other != active: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
@@ -664,6 +664,9 @@ public final class StrategicAutoSolver implements AutoSolver {
             if (other != active && other.isAlive() && other.position().equals(hex)) {
                 return false;
             }
+        }
+        if (setup.machineAt(hex) != null) {
+            return false;
         }
         List<Hex> path = bf.findPath(active.position(), hex, active.unit().movement());
         return !path.isEmpty() && path.size() <= active.getSpeed();

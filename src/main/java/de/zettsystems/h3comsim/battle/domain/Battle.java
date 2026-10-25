@@ -68,7 +68,8 @@ public final class Battle {
                 setup.moraleOf(Side.ATTACKER), setup.moraleOf(Side.DEFENDER),
                 heroName(setup.attackerHero()), heroName(setup.defenderHero()),
                 setup.luckOf(Side.ATTACKER), setup.luckOf(Side.DEFENDER),
-                List.copyOf(setup.warMachinesOf(Side.ATTACKER)), List.copyOf(setup.warMachinesOf(Side.DEFENDER))));
+                List.copyOf(setup.warMachinesOf(Side.ATTACKER)), List.copyOf(setup.warMachinesOf(Side.DEFENDER)),
+                machineSnapshots(setup)));
         for (Side side : Side.values()) {
             if (setup.tacticsOf(side) > 0) {
                 events.emit(new BattleEvent.TacticsPhase(side, setup.tacticsOf(side)));
@@ -284,15 +285,23 @@ public final class Battle {
      */
     private void warMachinesAct(BattleSetup setup) {
         for (Side side : Side.values()) {
-            if (setup.warMachinesOf(side).contains(WarMachine.BALLISTA)) {
+            if (setup.hasWorking(side, WarMachine.BALLISTA)) {
                 fireBallista(setup, side);
             }
         }
         for (Side side : Side.values()) {
-            if (setup.bothAlive() && setup.warMachinesOf(side).contains(WarMachine.FIRST_AID_TENT)) {
+            if (setup.bothAlive() && setup.hasWorking(side, WarMachine.FIRST_AID_TENT)) {
                 tendWounded(setup, side);
             }
         }
+    }
+
+    private static List<StackSnapshot> machineSnapshots(BattleSetup setup) {
+        List<StackSnapshot> machines = new ArrayList<>();
+        for (Side side : Side.values()) {
+            setup.machinesOf(side).forEach(machine -> machines.add(snapshot(machine)));
+        }
+        return machines;
     }
 
     private void fireBallista(BattleSetup setup, Side side) {
@@ -455,6 +464,12 @@ public final class Battle {
     private boolean takeAction(Stack active, Stack opponent, BattleSetup setup) {
         Battlefield battlefield = setup.battlefield();
         Action action = autoSolver.decide(active, opponent, battlefield);
+        if ((action instanceof Action.Move || action instanceof Action.Defend) && autoSolver.attacksWarMachines(active)) {
+            Action machineAttack = WarMachineTargeting.attack(active, setup);
+            if (machineAttack != null) {
+                action = machineAttack;
+            }
+        }
         switch (action) {
             case Action.Wait() -> {
                 if (active.hasWaitedThisTurn()) {
@@ -649,7 +664,7 @@ public final class Battle {
                 return true;
             }
         }
-        return false;
+        return setup.machineAt(hex) != null;
     }
 
     private void moveTo(Stack active, Hex destination, Battlefield battlefield) {
@@ -671,7 +686,7 @@ public final class Battle {
                 dealt, countBeforeFirst - passive.getCount(), snapshot(passive)));
         applyFireShield(active, passive, dealt);
         applyMeleeSplash(active, passive, setup);
-        applyLifeDrain(active, dealt);
+        applyLifeDrain(active, passive, dealt);
         triggerRetaliation(active, passive, retaliationPercent);
         if (active.hasSpeciality(UnitSpeciality.TWO_BLOWS) && passive.isAlive() && active.isAlive()) {
             BattleLogger.logTwoBlows(active.getName());
@@ -683,13 +698,18 @@ public final class Battle {
                     passive.side(), passive.slot(), 0,
                     dealtSecond, countBeforeSecond - passive.getCount(), snapshot(passive)));
             applyFireShield(active, passive, dealtSecond);
-            applyLifeDrain(active, dealtSecond);
+            applyLifeDrain(active, passive, dealtSecond);
             triggerRetaliation(active, passive, 100);
+        }
+        if (passive.isWarMachine()) {
+            setup.machineHit(passive);
         }
     }
 
-    private void applyLifeDrain(Stack active, int dealt) {
-        if (dealt <= 0 || !active.isAlive() || !active.hasSpeciality(UnitSpeciality.LIFE_DRAIN)) {
+    /** Maschinen sind gegen Life Drain immun (heroes.thelazy.net, <em>War Machine</em>). */
+    private void applyLifeDrain(Stack active, Stack passive, int dealt) {
+        if (dealt <= 0 || passive.isWarMachine() || !active.isAlive()
+                || !active.hasSpeciality(UnitSpeciality.LIFE_DRAIN)) {
             return;
         }
         int healed = active.heal(dealt);
@@ -877,6 +897,9 @@ public final class Battle {
             applyRangedSplash(active, passive, setup);
             active.useShot();
         }
+        if (passive.isWarMachine()) {
+            setup.machineHit(passive);
+        }
     }
 
     /**
@@ -964,7 +987,8 @@ public final class Battle {
         passive.takeDamage(realDamage, active.getAttackerSpecialities());
         emitRebirthIfFired(passive, rebirthUsedBefore);
 
-        if (passive.isAlive()) {
+        // Maschinen sind gegen die Fähigkeiten nach dem Treffer immun (Death Stare, Petrify, Poison …).
+        if (passive.isAlive() && !passive.isWarMachine()) {
             doDeathStare(active, passive, attackType);
             doThunderbolts(active, passive, attackType);
             doPetrifying(active, passive);
@@ -978,7 +1002,7 @@ public final class Battle {
             } else {
                 BattleLogger.logLastUnitDead(passive.getName());
             }
-        } else {
+        } else if (!passive.isAlive()) {
             BattleLogger.logLastUnitDead(passive.getName());
         }
         return realDamage;
