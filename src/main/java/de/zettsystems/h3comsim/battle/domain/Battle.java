@@ -610,14 +610,7 @@ public final class Battle {
             case Action.MoveAndMelee(Hex destination, Stack target) ->
                     moveAndMelee(active, destination, target, setup);
             case Action.Melee(Stack target) -> meleeAttack(active, target, 0, setup);
-            case Action.Shoot(Stack target) -> {
-                if (WallShots.possible(active, setup) && !hasAdjacentEnemy(active, setup)
-                        && autoSolver.shootsWalls(active, setup)) {
-                    wallShots(active, Objects.requireNonNull(setup.siege()));
-                } else {
-                    shoot(active, target, setup);
-                }
-            }
+            case Action.Shoot(Stack target) -> shootCreatureOrWall(active, target, setup);
             case Action.Resurrect(Stack target) -> resurrect(active, target, setup);
             case Action.RaiseDemons(Stack corpse) -> raiseDemons(active, corpse, setup);
             case Action.CastSpell(Spell spell, Stack target) -> castSpell(active, spell, target, setup);
@@ -733,6 +726,16 @@ public final class Battle {
             active.moveTo(startPos);
             events.emit(new BattleEvent.MoveBack(active.side(), active.slot(),
                     startPos.q(), startPos.r(), backPath));
+        }
+    }
+
+    /** Ein Zyklop des Angreifers darf statt der Kreatur die Befestigung beschießen ({@link WallShots}). */
+    private void shootCreatureOrWall(Stack active, Stack target, BattleSetup setup) {
+        if (WallShots.possible(active, setup) && !hasAdjacentEnemy(active, setup)
+                && autoSolver.shootsWalls(active, setup)) {
+            wallShots(active, Objects.requireNonNull(setup.siege()));
+        } else {
+            shoot(active, target, setup);
         }
     }
 

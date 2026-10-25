@@ -70,7 +70,7 @@ final class ArrowTowers {
                 continue;
             }
             double value = controlled ? controlledValue(attacker, damage) : gameAiValue(attacker, setup);
-            if (value > bestValue || (!controlled && value == bestValue)) {
+            if (controlled ? value > bestValue : value >= bestValue) {
                 best = attacker;
                 bestValue = value;
             }
