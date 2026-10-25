@@ -90,6 +90,22 @@ export const en: Dictionary = {
     BALLISTA: 'Ballista',
     AMMO_CART: 'Ammo cart',
     FIRST_AID_TENT: 'First aid tent',
+    CATAPULT: 'Catapult',
+  },
+  fortification: {
+    FORT: 'Fort',
+    CITADEL: 'Citadel',
+    CASTLE: 'Castle',
+  },
+  wallPart: {
+    UPPER_WALL: 'upper wall',
+    MID_UPPER_WALL: 'wall above the gate',
+    MID_LOWER_WALL: 'wall below the gate',
+    LOWER_WALL: 'lower wall',
+    GATE: 'gate',
+    KEEP: 'keep',
+    UPPER_TOWER: 'upper tower',
+    LOWER_TOWER: 'lower tower',
   },
   spell: {
     BLESS: 'Bless',
@@ -183,6 +199,8 @@ export const en: Dictionary = {
     combatLog: 'Combat log',
     of: 'of {{total}}',
     fieldAria: 'Hex battlefield',
+    moat: 'Moat',
+    wall: 'Wall',
     waitingForReplay: 'Replay is about to start…',
   },
   playback: {
@@ -230,6 +248,20 @@ export const en: Dictionary = {
       "The <actor>attacker</actor>'s first aid tent heals <target>{{target}}</target> by {{healed}} hit points.",
     firstAid_defender:
       "The <actor>defender</actor>'s first aid tent heals <target>{{target}}</target> by {{healed}} hit points.",
+    catapultShot:
+      'The catapult aims at the {{aimed}} and hits the {{hit}}: {{damage}} hits, {{health}} left.',
+    wallShot:
+      '<actor>{{shooter}}</actor> aim at the {{aimed}} and hit the {{hit}}: {{damage}} hits, {{health}} left.',
+    towerShot:
+      'The {{tower}} hits <target>{{target}}</target>: {{damage}} damage, {{killed}} killed.',
+    moatDamage: 'The moat hurts <target>{{target}}</target>: {{damage}} damage, {{killed}} killed.',
+    quakeHit: 'The earthquake hits the {{hit}}, {{health}} left.',
+    drawbridge_CLOSED: 'The drawbridge goes up.',
+    drawbridge_OPEN: 'The drawbridge comes down.',
+    drawbridge_BLOCKED: 'A stack in front of the gate blocks the drawbridge.',
+    drawbridge_DESTROYED: 'The drawbridge is destroyed.',
+    mineDamage:
+      'A land mine under <target>{{target}}</target>: {{damage}} damage, {{killed}} killed.',
     battleStartWarMachines:
       'War machines: <actor>attacker {{attacker}}</actor>, <target>defender {{defender}}</target>.',
     heroSpell_attacker:
@@ -279,6 +311,10 @@ export const en: Dictionary = {
     mixedArmy: 'Mixed Armies',
   },
   army: {
+    siegeTitle: 'Siege',
+    siegeHint:
+      'The defender holds a town of the faction of the defending hero: walls and gate (Fort), plus keep and moat (Citadel), plus two towers and stronger walls (Castle). The attacker brings a catapult.',
+    siegeNone: 'None — open field',
     title: 'Armies vs Armies',
     subtitle: 'Up to 7 stacks per side — pick a faction preset or compose the slots manually.',
     attacker: 'Attacker army',

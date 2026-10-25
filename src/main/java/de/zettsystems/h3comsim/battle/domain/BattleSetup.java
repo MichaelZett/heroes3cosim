@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -25,6 +26,10 @@ public class BattleSetup {
     private final List<Stack> attackerStacks;
     private final List<Stack> defenderStacks;
     private final Battlefield battlefield;
+    private final @Nullable Siege siege;
+    /** Das Feld je Seite mit den Mauern, zwischengespeichert bis zur nächsten Änderung der Belagerung. */
+    private final Map<Side, Battlefield> siegeFields = new EnumMap<>(Side.class);
+    private int siegeFieldsVersion = -1;
     private final @Nullable Hero attackerHero;
     private final @Nullable Hero defenderHero;
     private final int attackerMorale;
@@ -34,6 +39,8 @@ public class BattleSetup {
     private final int attackerTactics;
     private final int defenderTactics;
     private final Map<Side, Set<WarMachine>> warMachines = new EnumMap<>(Side.class);
+    /** Die Maschinen als Stacks auf dem Feld; nicht Teil der Armeelisten. */
+    private final Map<Side, Map<WarMachine, Stack>> machineStacks = new EnumMap<>(Side.class);
     private final Map<Side, Integer> mana = new EnumMap<>(Side.class);
     /** Je Seite die eine Elementar-Art, die beschworen werden darf, sobald die erste gerufen ist. */
     private final Map<Side, Unit> summonedKind = new EnumMap<>(Side.class);
@@ -80,6 +87,23 @@ public class BattleSetup {
                        Battlefield battlefield,
                        @Nullable Hero attackerHero, CollectedBonus attackerBonus,
                        @Nullable Hero defenderHero, CollectedBonus defenderBonus) {
+        this(attackerStacks, defenderStacks, battlefield, attackerHero, attackerBonus, defenderHero, defenderBonus,
+                null);
+    }
+
+    /**
+     * Wie oben, als Belagerung, wenn {@code siege} gesetzt ist: der Verteidiger steht hinter den
+     * Mauern ({@link Siege}). Tactics stellt dann nur der Angreifer auf — die Aufstellung des
+     * Verteidigers würde seine Nahkämpfer über die Mauer schieben.
+     */
+    // Je Seite Stacks, Held und Boni, dazu Feld und Belagerung: ein Parameterobjekt würde nur die
+    // Aufrufer verlängern, die Konstruktoren darüber decken die üblichen Fälle ab.
+    @SuppressWarnings("java:S107")
+    public BattleSetup(List<Stack> attackerStacks, List<Stack> defenderStacks,
+                       Battlefield battlefield,
+                       @Nullable Hero attackerHero, CollectedBonus attackerBonus,
+                       @Nullable Hero defenderHero, CollectedBonus defenderBonus,
+                       @Nullable Siege siege) {
         Objects.requireNonNull(attackerStacks, "attackerStacks");
         Objects.requireNonNull(defenderStacks, "defenderStacks");
         if (attackerStacks.isEmpty() || defenderStacks.isEmpty()) {
@@ -89,6 +113,7 @@ public class BattleSetup {
         this.attackerStacks = new ArrayList<>(attackerStacks);
         this.defenderStacks = new ArrayList<>(defenderStacks);
         this.battlefield = Objects.requireNonNull(battlefield, "battlefield");
+        this.siege = siege;
         Objects.requireNonNull(attackerBonus, "attackerBonus");
         Objects.requireNonNull(defenderBonus, "defenderBonus");
         this.attackerHero = attackerHero;
@@ -108,31 +133,155 @@ public class BattleSetup {
         mana.put(Side.ATTACKER, attackerHero == null ? 0 : attackerHero.maxMana());
         mana.put(Side.DEFENDER, defenderHero == null ? 0 : defenderHero.maxMana());
         this.attackerTactics = Tactics.columns(attackerHero, defenderHero);
-        this.defenderTactics = Tactics.columns(defenderHero, attackerHero);
+        this.defenderTactics = siege == null ? Tactics.columns(defenderHero, attackerHero) : 0;
         List<Stack> all = new ArrayList<>(this.attackerStacks);
         all.addAll(this.defenderStacks);
-        Tactics.arrange(this.attackerStacks, Side.ATTACKER, attackerTactics, battlefield, all);
-        Tactics.arrange(this.defenderStacks, Side.DEFENDER, defenderTactics, battlefield, all);
+        Tactics.arrange(this.attackerStacks, Side.ATTACKER, attackerTactics, fieldFor(Side.ATTACKER), all);
+        Tactics.arrange(this.defenderStacks, Side.DEFENDER, defenderTactics, fieldFor(Side.ATTACKER), all);
+        if (siege != null && attackerHero != null) {
+            placeMachines(Side.ATTACKER, Set.of());
+        }
     }
 
     /**
-     * Rüstet eine Seite mit Kriegsmaschinen aus ({@link WarMachine}). Vor {@code simulate}
-     * aufzurufen; ein Munitionswagen gibt den Stacks der Seite sofort unbegrenzte Schüsse.
+     * Rüstet eine Seite mit Kriegsmaschinen aus ({@link WarMachine}) und stellt sie auf ihre
+     * Felder. Vor {@code simulate} aufzurufen; ein Munitionswagen gibt den Stacks der Seite sofort
+     * unbegrenzte Schüsse.
      *
      * @return dieses Setup, zum Verketten
      */
     public BattleSetup equip(Side side, Set<WarMachine> machines) {
-        Set<WarMachine> copy = machines.isEmpty() ? EnumSet.noneOf(WarMachine.class) : EnumSet.copyOf(machines);
-        warMachines.put(side, copy);
-        if (copy.contains(WarMachine.AMMO_CART)) {
-            stacksOf(side).forEach(Stack::grantUnlimitedAmmo);
-        }
+        placeMachines(side, machines);
         return this;
     }
 
-    /** Kriegsmaschinen dieser Seite, leer ohne {@link #equip}. */
+    private void placeMachines(Side side, Set<WarMachine> machines) {
+        Set<WarMachine> copy = machines.isEmpty() ? EnumSet.noneOf(WarMachine.class) : EnumSet.copyOf(machines);
+        if (siege != null && side == Side.DEFENDER) {
+            // Der Verteidiger einer Stadt hat keine Ballista auf dem Feld; seine Türme ersetzen sie.
+            copy.remove(WarMachine.BALLISTA);
+        }
+        // Das Katapult hat jeder angreifende Held, aber nur bei einer Belagerung.
+        copy.remove(WarMachine.CATAPULT);
+        if (siege != null && side == Side.ATTACKER && attackerHero != null) {
+            copy.add(WarMachine.CATAPULT);
+        }
+        warMachines.put(side, copy);
+        Map<WarMachine, Stack> placed = new EnumMap<>(WarMachine.class);
+        for (WarMachine machine : copy) {
+            placed.put(machine, new Stack(machine.unit(), 1, machine.hex(side, battlefield), side, machine.slot()));
+        }
+        machineStacks.put(side, placed);
+        if (copy.contains(WarMachine.AMMO_CART)) {
+            side(side).forEach(Stack::grantUnlimitedAmmo);
+        }
+    }
+
+    /** Kriegsmaschinen dieser Seite, leer ohne {@link #equip} — auch die schon zerstörten. */
     public Set<WarMachine> warMachinesOf(Side side) {
         return Collections.unmodifiableSet(warMachines.getOrDefault(side, EnumSet.noneOf(WarMachine.class)));
+    }
+
+    /** Die Maschinen dieser Seite als Stacks auf dem Feld, auch die zerstörten. */
+    public List<Stack> machinesOf(Side side) {
+        return List.copyOf(machineStacks.getOrDefault(side, Map.of()).values());
+    }
+
+    /** Hat die Seite diese Maschine, und steht sie noch? */
+    public boolean hasWorking(Side side, WarMachine machine) {
+        Stack stack = machineStacks.getOrDefault(side, Map.of()).get(machine);
+        return stack != null && stack.isAlive();
+    }
+
+    /** Die stehende Maschine auf diesem Feld, oder {@code null}. */
+    public @Nullable Stack machineAt(Hex hex) {
+        for (Map<WarMachine, Stack> placed : machineStacks.values()) {
+            for (Stack machine : placed.values()) {
+                if (machine.isAlive() && machine.position().equals(hex)) {
+                    return machine;
+                }
+            }
+        }
+        return null;
+    }
+
+    /** Die stehenden Maschinen der Gegenseite dieses Stacks. */
+    public List<Stack> enemyMachinesOf(Stack stack) {
+        Side enemy = stack.side() == Side.ATTACKER ? Side.DEFENDER : Side.ATTACKER;
+        return machinesOf(enemy).stream().filter(Stack::isAlive).toList();
+    }
+
+    /**
+     * Nach einem Treffer auf eine Maschine: ist der Munitionswagen zerstört, zählen die Schüsse
+     * der Seite ab jetzt wieder (heroes.thelazy.net, <em>Ammo Cart</em>).
+     */
+    void machineHit(Stack machine) {
+        if (!machine.isAlive() && machine.unit().equals(WarMachine.AMMO_CART.unit())) {
+            stacksOf(machine.side()).forEach(Stack::revokeUnlimitedAmmo);
+        }
+    }
+
+    /**
+     * Halbiert die Mauer diesen Schuss? Die Hindernis-Strafe gibt es nur bei Belagerungen, wenn
+     * die Schusslinie über eine stehende Mauer führt (heroes.thelazy.net, <em>Obstacle
+     * penalty</em>); gewöhnliche Hindernisse halbieren nichts.
+     */
+    boolean shotCrossesWall(Stack shooter, Stack target) {
+        return siege != null && siege.crossesWall(shooter.position(), target.position(), battlefield);
+    }
+
+    /** Die Belagerung, oder {@code null} für eine Feldschlacht. */
+    public @Nullable Siege siege() {
+        return siege;
+    }
+
+    /**
+     * Das Feld aus Sicht dieser Seite: bei einer Belagerung mit den Mauern als Hindernis, für den
+     * Angreifer auch mit dem geschlossenen Tor.
+     */
+    public Battlefield battlefieldFor(Side side) {
+        return fieldFor(side);
+    }
+
+    private Battlefield fieldFor(Side side) {
+        if (siege == null) {
+            return battlefield;
+        }
+        if (siegeFieldsVersion != siege.version()) {
+            siegeFields.clear();
+            siegeFieldsVersion = siege.version();
+        }
+        return siegeFields.computeIfAbsent(side, s -> {
+            Set<Hex> blocked = new HashSet<>(battlefield.obstacles());
+            blocked.addAll(siege.blockedFor(s));
+            return battlefield.withObstacles(blocked);
+        });
+    }
+
+    /**
+     * Führt die Zugbrücke nach dem Stand auf dem Feld nach; gefallene Stacks zählen mit.
+     *
+     * @return der neue Zustand, wenn er sich geändert hat, sonst {@code null}
+     */
+    Siege.@Nullable Gate updateGate() {
+        if (siege == null) {
+            return null;
+        }
+        Set<Hex> occupied = new HashSet<>();
+        Set<Hex> defenders = new HashSet<>();
+        attackerStacks.forEach(s -> occupied.add(s.position()));
+        for (Stack s : defenderStacks) {
+            occupied.add(s.position());
+            if (s.isAlive()) {
+                defenders.add(s.position());
+            }
+        }
+        return siege.updateGate(occupied, defenders) ? siege.gate() : null;
+    }
+
+    /** Das Feld ohne Mauern, mit den Hindernissen, wie sie zu Kampfbeginn gemeldet werden. */
+    public Battlefield baseBattlefield() {
+        return battlefield;
     }
 
     /** Mana, das der Held dieser Seite noch hat; zu Beginn {@link Hero#maxMana()}, ohne Helden 0. */
@@ -264,7 +413,8 @@ public class BattleSetup {
     }
 
     boolean isFree(Hex hex) {
-        return battlefield.isPassable(hex) && aliveStacks().stream().noneMatch(st -> st.position().equals(hex));
+        return battlefield().isPassable(hex) && machineAt(hex) == null
+                && aliveStacks().stream().noneMatch(st -> st.position().equals(hex));
     }
 
     /**
@@ -321,8 +471,9 @@ public class BattleSetup {
         return defenderStacks.getFirst();
     }
 
+    /** Das Feld mit den Mauern aus Sicht des Angreifers — das vorsichtigere der beiden. */
     public Battlefield battlefield() {
-        return battlefield;
+        return battlefieldFor(Side.ATTACKER);
     }
 
     public String getAttackerName() {

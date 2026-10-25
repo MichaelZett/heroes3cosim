@@ -1,4 +1,11 @@
-import type { BattleEvent, HexCoord, Side, StackSnapshot } from '../../shared/api/types';
+import type {
+  BattleEvent,
+  HexCoord,
+  SiegeSnapshot,
+  Side,
+  StackSnapshot,
+  WallPart,
+} from '../../shared/api/types';
 
 export interface SideState {
   side: Side;
@@ -16,6 +23,8 @@ export interface BattleState {
   width: number;
   height: number;
   obstacles: readonly HexCoord[];
+  /** Befestigung bei einer Belagerung, mit den Treffern nach den bisherigen Katapultschüssen. */
+  siege: SiegeSnapshot | null;
   /** Schlüssel: `${side}-${slot}`. Quelle der Wahrheit für alle Stacks. */
   stacks: ReadonlyMap<string, SideState>;
   /** Convenience: Slot-0 Attacker (für Single-Battle-Konsumenten). */
@@ -112,6 +121,8 @@ function applyEvent(stacks: Map<string, SideState>, event: BattleEvent): void {
     case 'SpellCast':
     case 'SpellHit':
     case 'Dispel':
+    case 'TowerShot':
+    case 'MoatDamage':
       snapshotInto(stacks, event.targetAfter);
       return;
     default:
@@ -126,7 +137,7 @@ function initialStacks(start: BattleEvent & { type: 'BattleStart' }): Map<string
   const initials: StackSnapshot[] = start.stacks?.length
     ? start.stacks
     : [start.attacker, start.defender];
-  for (const snap of initials) {
+  for (const snap of [...initials, ...(start.warMachineStacks ?? [])]) {
     const slot = snap.slot ?? 0;
     stacks.set(stackKey(snap.side, slot), snapshotToSideState(snap, snap.topHp, snap.count));
   }
@@ -142,10 +153,20 @@ export function reduceEvents(events: readonly BattleEvent[], cursor: number): Ba
   const start = events[0];
   if (start?.type !== 'BattleStart') return null;
   const stacks = initialStacks(start);
+  const wallHealth = new Map<WallPart, number>();
+  for (const part of start.siege?.parts ?? []) wallHealth.set(part.part, part.health);
   const end = Math.min(cursor, events.length);
   for (let i = 1; i < end; i++) {
-    applyEvent(stacks, events[i]);
+    const event = events[i];
+    if (event.type === 'CatapultShot') wallHealth.set(event.hit, event.healthAfter);
+    applyEvent(stacks, event);
   }
+  const siege = start.siege
+    ? {
+        ...start.siege,
+        parts: start.siege.parts.map((p) => ({ ...p, health: wallHealth.get(p.part) ?? p.health })),
+      }
+    : null;
   const attacker =
     stacks.get(stackKey('ATTACKER', start.attacker.slot ?? 0)) ??
     snapshotToSideState(start.attacker, start.attacker.topHp, start.attacker.count);
@@ -156,6 +177,7 @@ export function reduceEvents(events: readonly BattleEvent[], cursor: number): Ba
     width: start.battlefieldWidth,
     height: start.battlefieldHeight,
     obstacles: start.obstacles ?? [],
+    siege,
     stacks,
     attacker,
     defender,

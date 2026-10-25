@@ -5,6 +5,7 @@ import de.zettsystems.h3comsim.battle.domain.events.EventCollector;
 import de.zettsystems.h3comsim.battle.domain.events.HexCoord;
 import de.zettsystems.h3comsim.battle.domain.events.NoopEventCollector;
 import de.zettsystems.h3comsim.battle.domain.events.Side;
+import de.zettsystems.h3comsim.battle.domain.events.SiegeSnapshot;
 import de.zettsystems.h3comsim.battle.domain.events.StackSnapshot;
 import de.zettsystems.h3comsim.battle.domain.events.Winner;
 import org.jspecify.annotations.Nullable;
@@ -12,6 +13,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.random.RandomGenerator;
 
@@ -56,7 +58,7 @@ public final class Battle {
         this.currentSetup = setup;
         BattleLogger.logStartOfCombat(setup.getAttackerName(), setup.getAttackerCount(),
                 setup.getDefenderName(), setup.getDefenderCount());
-        Battlefield bf = setup.battlefield();
+        Battlefield bf = setup.baseBattlefield();
         List<HexCoord> obstacleCoords = bf.obstacles().stream()
                 .map(h -> new HexCoord(h.q(), h.r()))
                 .toList();
@@ -68,7 +70,8 @@ public final class Battle {
                 setup.moraleOf(Side.ATTACKER), setup.moraleOf(Side.DEFENDER),
                 heroName(setup.attackerHero()), heroName(setup.defenderHero()),
                 setup.luckOf(Side.ATTACKER), setup.luckOf(Side.DEFENDER),
-                List.copyOf(setup.warMachinesOf(Side.ATTACKER)), List.copyOf(setup.warMachinesOf(Side.DEFENDER))));
+                List.copyOf(setup.warMachinesOf(Side.ATTACKER)), List.copyOf(setup.warMachinesOf(Side.DEFENDER)),
+                machineSnapshots(setup), siegeSnapshot(setup.siege())));
         for (Side side : Side.values()) {
             if (setup.tacticsOf(side) > 0) {
                 events.emit(new BattleEvent.TacticsPhase(side, setup.tacticsOf(side)));
@@ -123,6 +126,8 @@ public final class Battle {
      * ({@link TurnOrder}). Tote Stacks fallen über {@link Stack#isAbleToAct()} heraus.
      */
     private void doTurn(BattleSetup setup, TurnOrder order) {
+        siegeEnginesAct(setup);
+        updateGate(setup);
         autoSolver.planRound(setup);
         List<Stack> roundStacks = setup.aliveStacks();
         List<Stack> pending = new ArrayList<>(roundStacks);
@@ -136,6 +141,7 @@ public final class Battle {
                 if (activeStack.isAbleToAct() && setup.bothAlive()) {
                     actWithMorale(activeStack, setup);
                 }
+                updateGate(setup);
                 if (activeStack.hasWaitedThisTurn()) {
                     waiting.add(activeStack);
                 }
@@ -144,7 +150,16 @@ public final class Battle {
         }
         runLatePhase(waiting, setup, order, heroesCast);
         warMachinesAct(setup);
+        updateGate(setup);
         roundStacks.forEach(Stack::endTurn);
+    }
+
+    /** Nach jedem Zug: Bewegung oder ein Gefallener auf dem Tor kann die Zugbrücke umstellen. */
+    private void updateGate(BattleSetup setup) {
+        Siege.@Nullable Gate changed = setup.updateGate();
+        if (changed != null) {
+            events.emit(new BattleEvent.Drawbridge(changed));
+        }
     }
 
     /**
@@ -167,6 +182,10 @@ public final class Battle {
         events.emit(new BattleEvent.HeroSpell(side, spell, cast.level(), setup.manaOf(side)));
         if (spell.kind() == Spell.Kind.SUMMON) {
             summon(setup, side, hero, cast);
+            return;
+        }
+        if (spell == Spell.EARTHQUAKE) {
+            earthquake(Objects.requireNonNull(setup.siege()), cast.level());
             return;
         }
         for (int i = 0; i < cast.affected().size(); i++) {
@@ -284,15 +303,109 @@ public final class Battle {
      */
     private void warMachinesAct(BattleSetup setup) {
         for (Side side : Side.values()) {
-            if (setup.warMachinesOf(side).contains(WarMachine.BALLISTA)) {
+            if (setup.hasWorking(side, WarMachine.BALLISTA)) {
                 fireBallista(setup, side);
             }
         }
         for (Side side : Side.values()) {
-            if (setup.bothAlive() && setup.warMachinesOf(side).contains(WarMachine.FIRST_AID_TENT)) {
+            if (setup.bothAlive() && setup.hasWorking(side, WarMachine.FIRST_AID_TENT)) {
                 tendWounded(setup, side);
             }
         }
+    }
+
+    /**
+     * Zu Rundenbeginn einer Belagerung handeln zuerst die Türme, dann das Katapult (heroes.thelazy.net,
+     * <em>Combat</em>). Ohne Belagerung zieht das keinen Zufallswert.
+     */
+    private void siegeEnginesAct(BattleSetup setup) {
+        Siege siege = setup.siege();
+        if (siege == null) {
+            return;
+        }
+        for (WallPart tower : ArrowTowers.standing(siege)) {
+            Stack target = setup.bothAlive() ? ArrowTowers.target(tower, siege, setup) : null;
+            if (target != null) {
+                towerShot(tower, siege, target);
+            }
+        }
+        if (setup.bothAlive() && setup.hasWorking(Side.ATTACKER, WarMachine.CATAPULT)) {
+            catapultShots(setup, siege);
+        }
+    }
+
+    private void towerShot(WallPart tower, Siege siege, Stack target) {
+        int damage = ArrowTowers.damage(tower, siege, rng);
+        int countBefore = target.getCount();
+        boolean rebirthUsedBefore = target.isRebirthUsed();
+        target.takeDamage(damage, Set.of());
+        emitRebirthIfFired(target, rebirthUsedBefore);
+        events.emit(new BattleEvent.TowerShot(tower, target.slot(), damage,
+                Math.max(0, countBefore - target.getCount()), snapshot(target)));
+    }
+
+    private void catapultShots(BattleSetup setup, Siege siege) {
+        Hero hero = setup.heroOf(Side.ATTACKER);
+        SkillLevel ballistics = hero == null ? SkillLevel.NONE : hero.levelOf(SecondarySkill.BALLISTICS);
+        for (int i = 0; i < Catapult.shots(ballistics); i++) {
+            Catapult.Shot shot = Catapult.fire(siege, ballistics, rng);
+            if (shot == null) {
+                return;
+            }
+            siege.damage(shot.hit(), shot.damage());
+            events.emit(new BattleEvent.CatapultShot(shot.aimed(), shot.hit(), shot.damage(), siege.health(shot.hit())));
+        }
+    }
+
+    private void earthquake(Siege siege, SkillLevel level) {
+        for (int i = 0; i < Earthquake.hits(level); i++) {
+            WallPart hit = Earthquake.strike(siege, rng);
+            if (hit == null) {
+                return;
+            }
+            events.emit(new BattleEvent.QuakeHit(hit, siege.health(hit)));
+        }
+    }
+
+    /** Ein Zyklop schießt auf die Befestigung, mit dem Ballistics-Grad seiner Art. */
+    private void wallShots(Stack shooter, Siege siege) {
+        SkillLevel ballistics = WallShots.ballistics(shooter);
+        shooter.useShot();
+        for (int i = 0; i < Catapult.shots(ballistics); i++) {
+            Catapult.Shot shot = Catapult.fire(siege, ballistics, rng);
+            if (shot == null) {
+                return;
+            }
+            siege.damage(shot.hit(), shot.damage());
+            events.emit(new BattleEvent.CatapultShot(shot.aimed(), shot.hit(), shot.damage(), siege.health(shot.hit()),
+                    shooter.slot()));
+        }
+    }
+
+    private static @Nullable SiegeSnapshot siegeSnapshot(@Nullable Siege siege) {
+        if (siege == null) {
+            return null;
+        }
+        List<SiegeSnapshot.Part> parts = new ArrayList<>();
+        for (WallPart part : WallPart.values()) {
+            Hex hex = part.hex();
+            parts.add(new SiegeSnapshot.Part(part, hex == null ? null : coord(hex), siege.health(part)));
+        }
+        return new SiegeSnapshot(siege.fortification(), siege.town(),
+                SiegeLayout.PERMANENT_WALL.stream().map(Battle::coord).toList(), parts,
+                siege.moat().stream().map(Battle::coord).toList());
+    }
+
+    private static HexCoord coord(Hex hex) {
+        return new HexCoord(hex.q(), hex.r());
+    }
+
+    private static List<StackSnapshot> machineSnapshots(BattleSetup setup) {
+        List<StackSnapshot> machines = new ArrayList<>();
+        for (Side side : Side.values()) {
+            setup.machinesOf(side).forEach(machine -> machines.add(snapshot(machine)));
+        }
+        return machines;
     }
 
     private void fireBallista(BattleSetup setup, Side side) {
@@ -402,6 +515,7 @@ public final class Battle {
                 if (activeStack.isAbleToAct() && setup.bothAlive()) {
                     actWithMorale(activeStack, setup);
                 }
+                updateGate(setup);
             }
             BattleLogger.logShortDelimiter();
         }
@@ -416,7 +530,7 @@ public final class Battle {
      * eine Armee mit Moral 0 den RNG-Strom bei gleichem Seed identisch.
      */
     private void actWithMorale(Stack activeStack, BattleSetup setup) {
-        Battlefield battlefield = setup.battlefield();
+        Battlefield battlefield = setup.battlefieldFor(activeStack.side());
         // Der Freeze-Wurf gehört vor die Entscheidung, nicht dahinter: in H3 friert die Kreatur
         // ein, bevor der Spieler überhaupt zwischen Angriff, Wait und Defend wählen darf.
         // Wer in Phase 1 gewartet hat, hat dort bereits gewürfelt — in der Late-Phase würde ein
@@ -425,6 +539,14 @@ public final class Battle {
             BattleLogger.logBadMorale(activeStack.getName());
             events.emit(new BattleEvent.BadMorale(activeStack.side(), activeStack.slot()));
             return;
+        }
+        Siege siege = setup.siege();
+        if (siege != null && !activeStack.hasWaitedThisTurn() && siege.isMoat(activeStack.position())) {
+            // Wer seinen Zug im Graben beginnt, nimmt erneut Schaden; wer aussetzt, nicht.
+            hazard(activeStack, siege.moatDamage(), false);
+            if (!activeStack.isAlive()) {
+                return;
+            }
         }
         Stack opponent = autoSolver.pickTarget(activeStack, setup.opponentsOf(activeStack), battlefield);
         if (opponent == null) {
@@ -453,8 +575,14 @@ public final class Battle {
      *         der Late-Phase erneut drankommt; {@code true}, wenn er sie verbraucht hat.
      */
     private boolean takeAction(Stack active, Stack opponent, BattleSetup setup) {
-        Battlefield battlefield = setup.battlefield();
+        Battlefield battlefield = setup.battlefieldFor(active.side());
         Action action = autoSolver.decide(active, opponent, battlefield);
+        if ((action instanceof Action.Move || action instanceof Action.Defend) && autoSolver.attacksWarMachines(active)) {
+            Action machineAttack = WarMachineTargeting.attack(active, setup);
+            if (machineAttack != null) {
+                action = machineAttack;
+            }
+        }
         switch (action) {
             case Action.Wait() -> {
                 if (active.hasWaitedThisTurn()) {
@@ -482,7 +610,7 @@ public final class Battle {
             case Action.MoveAndMelee(Hex destination, Stack target) ->
                     moveAndMelee(active, destination, target, setup);
             case Action.Melee(Stack target) -> meleeAttack(active, target, 0, setup);
-            case Action.Shoot(Stack target) -> shoot(active, target, setup);
+            case Action.Shoot(Stack target) -> shootCreatureOrWall(active, target, setup);
             case Action.Resurrect(Stack target) -> resurrect(active, target, setup);
             case Action.RaiseDemons(Stack corpse) -> raiseDemons(active, corpse, setup);
             case Action.CastSpell(Spell spell, Stack target) -> castSpell(active, spell, target, setup);
@@ -580,10 +708,14 @@ public final class Battle {
             emitDefend(active);
             return;
         }
-        Battlefield battlefield = setup.battlefield();
+        Battlefield battlefield = setup.battlefieldFor(active.side());
         Hex startPos = active.position();
-        int hexesMoved = startPos.distanceTo(destination);
         moveTo(active, destination, battlefield);
+        if (!active.isAlive() || !active.position().isAdjacent(target.position())) {
+            // Im Graben stecken geblieben oder auf dem Weg gefallen: kein Angriff mehr.
+            return;
+        }
+        int hexesMoved = startPos.distanceTo(active.position());
         meleeAttack(active, target, hexesMoved, setup);
         if (active.hasSpeciality(UnitSpeciality.MOVE_BACK) && active.isAlive()) {
             BattleLogger.logMoveBack(active.getName(), startPos.q(), startPos.r());
@@ -594,6 +726,16 @@ public final class Battle {
             active.moveTo(startPos);
             events.emit(new BattleEvent.MoveBack(active.side(), active.slot(),
                     startPos.q(), startPos.r(), backPath));
+        }
+    }
+
+    /** Ein Zyklop des Angreifers darf statt der Kreatur die Befestigung beschießen ({@link WallShots}). */
+    private void shootCreatureOrWall(Stack active, Stack target, BattleSetup setup) {
+        if (WallShots.possible(active, setup) && !hasAdjacentEnemy(active, setup)
+                && autoSolver.shootsWalls(active, setup)) {
+            wallShots(active, Objects.requireNonNull(setup.siege()));
+        } else {
+            shoot(active, target, setup);
         }
     }
 
@@ -649,17 +791,87 @@ public final class Battle {
                 return true;
             }
         }
-        return false;
+        return setup.machineAt(hex) != null || !setup.battlefieldFor(mover.side()).isPassable(hex);
     }
 
+    /**
+     * Bewegt den Stack. Bei einer Belagerung hält der Graben Bodentruppen auf dem ersten Grabenfeld
+     * des Wegs an (heroes.thelazy.net, <em>Moat</em>); danach folgen Graben- und Minenschaden.
+     */
     private void moveTo(Stack active, Hex destination, Battlefield battlefield) {
         Hex from = active.position();
-        List<HexCoord> path = battlefield.findPath(from, destination, active.unit().movement()).stream()
-                .map(h -> new HexCoord(h.q(), h.r())).toList();
-        BattleLogger.logMove(active.getName(), from.q(), from.r(), destination.q(), destination.r());
-        active.moveTo(destination);
+        Siege siege = currentSetup == null ? null : currentSetup.siege();
+        boolean ground = active.unit().movement() == Movement.GROUND;
+        List<Hex> walked = battlefield.findPath(from, destination, active.unit().movement());
+        if (siege != null && ground) {
+            walked = untilMoat(walked, siege);
+        }
+        Hex end = walked.isEmpty() ? destination : walked.getLast();
+        List<HexCoord> path = walked.stream().map(h -> new HexCoord(h.q(), h.r())).toList();
+        BattleLogger.logMove(active.getName(), from.q(), from.r(), end.q(), end.r());
+        active.moveTo(end);
         events.emit(new BattleEvent.Move(active.side(), active.slot(),
-                from.q(), from.r(), destination.q(), destination.r(), path));
+                from.q(), from.r(), end.q(), end.r(), path));
+        if (siege != null) {
+            siegeHazards(active, ground ? walked : List.of(end), siege);
+        }
+    }
+
+    /** Der Weg bis einschließlich des ersten Grabenfelds. */
+    private static List<Hex> untilMoat(List<Hex> path, Siege siege) {
+        for (int i = 0; i < path.size(); i++) {
+            if (siege.isMoat(path.get(i))) {
+                return path.subList(0, i + 1);
+            }
+        }
+        return path;
+    }
+
+    /** Minen auf den betretenen Feldern (nur Angreifer), dann der Graben am Ziel. */
+    private void siegeHazards(Stack active, List<Hex> entered, Siege siege) {
+        for (Hex hex : entered) {
+            if (active.side() == Side.ATTACKER && active.isAlive() && siege.triggerMine(hex)) {
+                hazard(active, mineDamage(active), true);
+            }
+        }
+        if (active.isAlive() && siege.isMoat(active.position())) {
+            hazard(active, siege.moatDamage(), false);
+        }
+    }
+
+    /**
+     * Landmine von Tower (SoD): 10 × Power des verteidigenden Helden plus 25/50/100 nach Fire
+     * Magic, mindestens 150. Gegen Feuer- und Zauberimmune wirkungslos.
+     */
+    private int mineDamage(Stack target) {
+        if (SpellResistance.isImmune(target, Spell.LAND_MINE)) {
+            return 0;
+        }
+        Hero defender = currentSetup == null ? null : currentSetup.heroOf(Side.DEFENDER);
+        if (defender == null) {
+            return 150;
+        }
+        int fire = SpellDamage.byLevel(defender.levelOf(SecondarySkill.FIRE_MAGIC), 25, 50, 100);
+        int bonus = defender.levelOf(SecondarySkill.FIRE_MAGIC) == SkillLevel.NONE ? 0 : fire;
+        return Math.max(150, 10 * defender.spellPower() + bonus);
+    }
+
+    /** Im Graben verliert ein Stack 3 Defense (heroes.thelazy.net, <em>Moat</em>). */
+    private int inMoat(Stack stack, int defense) {
+        Siege siege = currentSetup == null ? null : currentSetup.siege();
+        return siege != null && siege.isMoat(stack.position()) ? Math.max(0, defense - 3) : defense;
+    }
+
+    private void hazard(Stack target, int damage, boolean mine) {
+        if (damage <= 0) {
+            return;
+        }
+        int countBefore = target.getCount();
+        boolean rebirthUsedBefore = target.isRebirthUsed();
+        target.takeDamage(damage, Set.of());
+        emitRebirthIfFired(target, rebirthUsedBefore);
+        events.emit(new BattleEvent.MoatDamage(target.side(), target.slot(), damage,
+                Math.max(0, countBefore - target.getCount()), mine, snapshot(target)));
     }
 
     private void meleeAttack(Stack active, Stack passive, int hexesMoved, BattleSetup setup) {
@@ -671,7 +883,7 @@ public final class Battle {
                 dealt, countBeforeFirst - passive.getCount(), snapshot(passive)));
         applyFireShield(active, passive, dealt);
         applyMeleeSplash(active, passive, setup);
-        applyLifeDrain(active, dealt);
+        applyLifeDrain(active, passive, dealt);
         triggerRetaliation(active, passive, retaliationPercent);
         if (active.hasSpeciality(UnitSpeciality.TWO_BLOWS) && passive.isAlive() && active.isAlive()) {
             BattleLogger.logTwoBlows(active.getName());
@@ -683,13 +895,18 @@ public final class Battle {
                     passive.side(), passive.slot(), 0,
                     dealtSecond, countBeforeSecond - passive.getCount(), snapshot(passive)));
             applyFireShield(active, passive, dealtSecond);
-            applyLifeDrain(active, dealtSecond);
+            applyLifeDrain(active, passive, dealtSecond);
             triggerRetaliation(active, passive, 100);
+        }
+        if (passive.isWarMachine()) {
+            setup.machineHit(passive);
         }
     }
 
-    private void applyLifeDrain(Stack active, int dealt) {
-        if (dealt <= 0 || !active.isAlive() || !active.hasSpeciality(UnitSpeciality.LIFE_DRAIN)) {
+    /** Maschinen sind gegen Life Drain immun (heroes.thelazy.net, <em>War Machine</em>). */
+    private void applyLifeDrain(Stack active, Stack passive, int dealt) {
+        if (dealt <= 0 || passive.isWarMachine() || !active.isAlive()
+                || !active.hasSpeciality(UnitSpeciality.LIFE_DRAIN)) {
             return;
         }
         int healed = active.heal(dealt);
@@ -756,7 +973,7 @@ public final class Battle {
     private void applySplashHit(Stack active, Stack secondary, AttackType attackType) {
         secondary.wakeFromBlind();
         int currentDamage = active.calculateCurrentDamage(attackType, 0, rng);
-        int effectiveDefense = secondary.effectiveDefenseAgainst(active.getAttackerSpecialities());
+        int effectiveDefense = inMoat(secondary, secondary.effectiveDefenseAgainst(active.getAttackerSpecialities()));
         int boniMaliPercentage = active.calculateAttackBoniMaliPercentage(secondary, attackType, effectiveDefense);
         // Splash-Treffer sind normale Angriffe und bekommen dieselben Helden-Modifikatoren
         // wie das Hauptziel — sonst würde ein Cerberus mit Offense-Held nur beim Primary
@@ -851,13 +1068,12 @@ public final class Battle {
     }
 
     private void rangedAttack(Stack active, Stack passive, BattleSetup setup) {
-        Battlefield battlefield = setup.battlefield();
         int distance = active.position().distanceTo(passive.position());
-        boolean obstacleInLine = PathFinder.hasObstacleInLine(battlefield, active.position(), passive.position());
+        boolean behindWall = setup.shotCrossesWall(active, passive);
         BattleLogger.logShoot(active.getName(), passive.getName(), distance);
         int countBefore = passive.getCount();
         passive.wakeFromBlind();
-        int dealt = dealDamage(active, passive, AttackType.LONG_RANGE, 0, distance, obstacleInLine);
+        int dealt = dealDamage(active, passive, AttackType.LONG_RANGE, 0, distance, behindWall);
         events.emit(new BattleEvent.Shoot(active.side(), active.slot(),
                 passive.side(), passive.slot(), distance,
                 dealt, countBefore - passive.getCount(), snapshot(passive)));
@@ -867,15 +1083,18 @@ public final class Battle {
             BattleLogger.logTwoShots(active.getName());
             events.emit(new BattleEvent.TwoShots(active.side(), active.slot()));
             int distance2 = active.position().distanceTo(passive.position());
-            boolean obstacleInLine2 = PathFinder.hasObstacleInLine(battlefield, active.position(), passive.position());
+            boolean behindWall2 = setup.shotCrossesWall(active, passive);
             BattleLogger.logShoot(active.getName(), passive.getName(), distance2);
             int countBefore2 = passive.getCount();
-            int dealt2 = dealDamage(active, passive, AttackType.LONG_RANGE, 0, distance2, obstacleInLine2);
+            int dealt2 = dealDamage(active, passive, AttackType.LONG_RANGE, 0, distance2, behindWall2);
             events.emit(new BattleEvent.Shoot(active.side(), active.slot(),
                     passive.side(), passive.slot(), distance2,
                     dealt2, countBefore2 - passive.getCount(), snapshot(passive)));
             applyRangedSplash(active, passive, setup);
             active.useShot();
+        }
+        if (passive.isWarMachine()) {
+            setup.machineHit(passive);
         }
     }
 
@@ -934,7 +1153,7 @@ public final class Battle {
     }
 
     private int dealDamage(Stack active, Stack passive, AttackType attackType,
-                           int hexesMoved, int distance, boolean obstacleInLine) {
+                           int hexesMoved, int distance, boolean behindWall) {
         int currentDamage = active.calculateCurrentDamage(attackType, hexesMoved, rng);
         if (attackType == AttackType.LONG_RANGE) {
             Set<UnitSpeciality> attackerSpecs = active.getAttackerSpecialities();
@@ -942,12 +1161,14 @@ public final class Battle {
                 currentDamage = currentDamage / 2;
                 BattleLogger.logDistancePenalty(active.getName(), distance);
             }
-            if (obstacleInLine && !attackerSpecs.contains(UnitSpeciality.NO_OBSTACLE_PENALTY)) {
+            // Hindernis-Strafe nur über Stadtmauern (heroes.thelazy.net, Obstacle penalty).
+            // NO_OBSTACLE_PENALTY ist keine Angriffs-, sondern eine Sonderfähigkeit — also am Stack prüfen.
+            if (behindWall && !active.hasSpeciality(UnitSpeciality.NO_OBSTACLE_PENALTY)) {
                 currentDamage = currentDamage / 2;
                 BattleLogger.logObstaclePenalty(active.getName());
             }
         }
-        int effectiveDefense = passive.effectiveDefenseAgainst(active.getAttackerSpecialities());
+        int effectiveDefense = inMoat(passive, passive.effectiveDefenseAgainst(active.getAttackerSpecialities()));
         int boniMaliPercentage = active.calculateAttackBoniMaliPercentage(passive, attackType, effectiveDefense);
         int damagePercent = 100 + boniMaliPercentage;
         if (active.isLucky(rng)) {
@@ -964,7 +1185,8 @@ public final class Battle {
         passive.takeDamage(realDamage, active.getAttackerSpecialities());
         emitRebirthIfFired(passive, rebirthUsedBefore);
 
-        if (passive.isAlive()) {
+        // Maschinen sind gegen die Fähigkeiten nach dem Treffer immun (Death Stare, Petrify, Poison …).
+        if (passive.isAlive() && !passive.isWarMachine()) {
             doDeathStare(active, passive, attackType);
             doThunderbolts(active, passive, attackType);
             doPetrifying(active, passive);
@@ -978,7 +1200,7 @@ public final class Battle {
             } else {
                 BattleLogger.logLastUnitDead(passive.getName());
             }
-        } else {
+        } else if (!passive.isAlive()) {
             BattleLogger.logLastUnitDead(passive.getName());
         }
         return realDamage;

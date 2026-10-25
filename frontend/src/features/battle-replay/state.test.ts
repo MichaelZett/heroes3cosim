@@ -50,6 +50,55 @@ describe('reduceEvents', () => {
     expect(state!.stacks.size).toBe(2);
   });
 
+  it('places war machines on the grid and lets attacks destroy them', () => {
+    const ballista: StackSnapshot = {
+      side: 'DEFENDER',
+      slot: 20,
+      unitName: 'Ballista',
+      count: 1,
+      topHp: 250,
+      q: 15,
+      r: 3,
+    };
+    const events: BattleEvent[] = [
+      { ...start, warMachineStacks: [ballista] },
+      {
+        type: 'Melee',
+        actor: 'ATTACKER',
+        actorSlot: 0,
+        target: 'DEFENDER',
+        targetSlot: 20,
+        hexesMoved: 0,
+        damage: 250,
+        killed: 1,
+        targetAfter: { ...ballista, count: 0, topHp: 0 },
+      },
+    ];
+    expect(reduceEvents(events, 1)!.stacks.get(stackKey('DEFENDER', 20))?.unitName).toBe(
+      'Ballista',
+    );
+    expect(reduceEvents(events, 2)!.stacks.get(stackKey('DEFENDER', 20))?.count).toBe(0);
+  });
+
+  it('tracks the walls of a siege through catapult hits', () => {
+    const events: BattleEvent[] = [
+      {
+        ...start,
+        siege: {
+          fortification: 'FORT',
+          town: 'CASTLE',
+          permanentWall: [{ q: 14, r: 0 }],
+          parts: [{ part: 'GATE', hex: { q: 10, r: 5 }, health: 2 }],
+          moat: [],
+        },
+      },
+      { type: 'CatapultShot', aimed: 'GATE', hit: 'GATE', damage: 2, healthAfter: 0 },
+    ];
+    expect(reduceEvents(events, 1)!.siege!.parts[0].health).toBe(2);
+    expect(reduceEvents(events, 2)!.siege!.parts[0].health).toBe(0);
+    expect(reduceEvents([start], 1)!.siege).toBeNull();
+  });
+
   it('applies Move events to the actor position', () => {
     const events: BattleEvent[] = [
       start,

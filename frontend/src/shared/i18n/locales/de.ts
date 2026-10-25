@@ -86,6 +86,22 @@ export const de = {
     BALLISTA: 'Ballista',
     AMMO_CART: 'Munitionswagen',
     FIRST_AID_TENT: 'Sanitätszelt',
+    CATAPULT: 'Katapult',
+  },
+  fortification: {
+    FORT: 'Fort',
+    CITADEL: 'Citadel',
+    CASTLE: 'Castle',
+  },
+  wallPart: {
+    UPPER_WALL: 'obere Mauer',
+    MID_UPPER_WALL: 'Mauer über dem Tor',
+    MID_LOWER_WALL: 'Mauer unter dem Tor',
+    LOWER_WALL: 'untere Mauer',
+    GATE: 'Tor',
+    KEEP: 'Hauptturm',
+    UPPER_TOWER: 'oberer Turm',
+    LOWER_TOWER: 'unterer Turm',
   },
   spell: {
     BLESS: 'Bless',
@@ -179,6 +195,8 @@ export const de = {
     combatLog: 'Combat-Log',
     of: 'von {{total}}',
     fieldAria: 'Hex-Schlachtfeld',
+    moat: 'Graben',
+    wall: 'Mauer',
     waitingForReplay: 'Replay läuft gleich los…',
   },
   playback: {
@@ -226,6 +244,21 @@ export const de = {
       'Sanitätszelt des <actor>Angreifers</actor> heilt <target>{{target}}</target> um {{healed}} Lebenspunkte.',
     firstAid_defender:
       'Sanitätszelt des <actor>Verteidigers</actor> heilt <target>{{target}}</target> um {{healed}} Lebenspunkte.',
+    catapultShot:
+      'Katapult zielt auf {{aimed}} und trifft {{hit}}: {{damage}} Treffer, noch {{health}}.',
+    wallShot:
+      '<actor>{{shooter}}</actor> zielt auf {{aimed}} und trifft {{hit}}: {{damage}} Treffer, noch {{health}}.',
+    towerShot:
+      '{{tower}} trifft <target>{{target}}</target>: {{damage}} Schaden, {{killed}} getötet.',
+    moatDamage:
+      'Graben verletzt <target>{{target}}</target>: {{damage}} Schaden, {{killed}} getötet.',
+    quakeHit: 'Das Erdbeben trifft {{hit}}, noch {{health}}.',
+    drawbridge_CLOSED: 'Die Zugbrücke geht hoch.',
+    drawbridge_OPEN: 'Die Zugbrücke senkt sich.',
+    drawbridge_BLOCKED: 'Ein Stack vor dem Tor sperrt die Zugbrücke.',
+    drawbridge_DESTROYED: 'Die Zugbrücke ist zerstört.',
+    mineDamage:
+      'Landmine unter <target>{{target}}</target>: {{damage}} Schaden, {{killed}} getötet.',
     battleStartWarMachines:
       'Kriegsmaschinen: <actor>Angreifer {{attacker}}</actor>, <target>Verteidiger {{defender}}</target>.',
     heroSpell_attacker:
@@ -276,6 +309,10 @@ export const de = {
     mixedArmy: 'Gemischte Armeen',
   },
   army: {
+    siegeTitle: 'Belagerung',
+    siegeHint:
+      'Der Verteidiger steht in einer Stadt seiner Heldenfraktion: Mauern und Tor (Fort), dazu Hauptturm und Graben (Citadel), dazu zwei Türme und stärkere Mauern (Castle). Der Angreifer bringt ein Katapult mit.',
+    siegeNone: 'Keine — Feldschlacht',
     title: 'Armies vs Armies',
     subtitle:
       'Bis zu 7 Stacks pro Seite — wähle einen Faction-Preset oder stelle die Slots manuell zusammen.',

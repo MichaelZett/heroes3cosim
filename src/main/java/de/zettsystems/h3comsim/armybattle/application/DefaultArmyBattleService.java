@@ -9,12 +9,14 @@ import de.zettsystems.h3comsim.battle.domain.BattleResult;
 import de.zettsystems.h3comsim.battle.domain.BattleSetup;
 import de.zettsystems.h3comsim.battle.domain.Battlefield;
 import de.zettsystems.h3comsim.battle.domain.CollectedBonus;
+import de.zettsystems.h3comsim.battle.domain.Fortification;
 import de.zettsystems.h3comsim.battle.domain.Hero;
 import de.zettsystems.h3comsim.battle.domain.HeroCatalog;
 import de.zettsystems.h3comsim.battle.domain.HeroGrowth;
 import de.zettsystems.h3comsim.battle.domain.Hex;
 import de.zettsystems.h3comsim.battle.domain.ObstacleGenerator;
 import de.zettsystems.h3comsim.battle.domain.SecondarySkill;
+import de.zettsystems.h3comsim.battle.domain.Siege;
 import de.zettsystems.h3comsim.battle.domain.SkillLevel;
 import de.zettsystems.h3comsim.battle.domain.Stack;
 import de.zettsystems.h3comsim.battle.domain.StrategicAutoSolver;
@@ -43,12 +45,17 @@ public class DefaultArmyBattleService implements ArmyBattleService {
         List<Stack> attackerStacks = buildStacks(request.attacker(), Side.ATTACKER);
         List<Stack> defenderStacks = buildStacks(request.defender(), Side.DEFENDER);
 
-        Battlefield battlefield = buildBattlefield(attackerStacks.size(), defenderStacks.size(), seed);
+        Fortification fortification = request.fortification();
+        // Belagerungen haben im Spiel keine Felsen auf dem Feld.
+        Battlefield battlefield = fortification == null
+                ? buildBattlefield(attackerStacks.size(), defenderStacks.size(), seed)
+                : Battlefield.STANDARD;
         Hero attackerHero = resolveHero(request.attacker(), attackerStacks, growthRandom(seed, Side.ATTACKER));
         Hero defenderHero = resolveHero(request.defender(), defenderStacks, growthRandom(seed, Side.DEFENDER));
+        Siege siege = fortification == null ? null : new Siege(fortification, defenderHero.faction());
         BattleSetup setup = new BattleSetup(attackerStacks, defenderStacks, battlefield,
                 attackerHero, bonusOf(request.attacker()),
-                defenderHero, bonusOf(request.defender()))
+                defenderHero, bonusOf(request.defender()), siege)
                 .equip(Side.ATTACKER, Objects.requireNonNullElse(request.attacker().warMachines(), Set.of()))
                 .equip(Side.DEFENDER, Objects.requireNonNullElse(request.defender().warMachines(), Set.of()));
 

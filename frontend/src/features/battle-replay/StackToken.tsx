@@ -8,6 +8,8 @@ interface StackTokenProps {
   transitionMs: number;
 }
 
+const FIRST_MACHINE_SLOT = 20;
+
 const COLOR_FILL: Record<'amber' | 'blue', string> = {
   amber: 'rgb(245 158 11)',
   blue: 'rgb(59 130 246)',
@@ -27,13 +29,28 @@ export default function StackToken({ side, color, transitionMs }: Readonly<Stack
   const hpRatio = startTotalHp === 0 ? 0 : Math.max(0, Math.min(1, totalHp / startTotalHp));
   const barWidth = HEX_SIZE * 1.6;
   const barHeight = 4;
+  // Kriegsmaschinen stehen ab Slot 20 (Ballista, Ammo Cart, First Aid Tent).
+  const machine = side.slot >= FIRST_MACHINE_SLOT;
 
   return (
     <g
       style={{ transition: `transform ${transitionMs}ms ease-in-out` }}
       transform={`translate(${x}, ${y})`}
     >
-      <circle r={radius} fill={COLOR_FILL[color]} stroke={COLOR_RING[color]} strokeWidth={1.5} />
+      {machine ? (
+        <rect
+          x={-radius}
+          y={-radius}
+          width={radius * 2}
+          height={radius * 2}
+          rx={2}
+          fill={COLOR_FILL[color]}
+          stroke={COLOR_RING[color]}
+          strokeWidth={1.5}
+        />
+      ) : (
+        <circle r={radius} fill={COLOR_FILL[color]} stroke={COLOR_RING[color]} strokeWidth={1.5} />
+      )}
       <text
         textAnchor="middle"
         dominantBaseline="central"
@@ -41,8 +58,9 @@ export default function StackToken({ side, color, transitionMs }: Readonly<Stack
         fontWeight={700}
         fill="rgb(15 23 42)"
       >
-        {side.count}
+        {machine ? side.unitName.charAt(0) : side.count}
       </text>
+      {machine && <title>{side.unitName}</title>}
       <g transform={`translate(${-barWidth / 2}, ${radius + 2})`}>
         <rect width={barWidth} height={barHeight} fill="rgb(30 41 59)" rx={1} />
         <rect width={barWidth * hpRatio} height={barHeight} fill={COLOR_FILL[color]} rx={1} />

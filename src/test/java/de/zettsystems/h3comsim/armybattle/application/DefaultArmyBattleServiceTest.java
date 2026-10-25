@@ -4,6 +4,9 @@ import de.zettsystems.h3comsim.armybattle.values.ArmyBattleRequest;
 import de.zettsystems.h3comsim.armybattle.values.ArmyBattleSimulation;
 import de.zettsystems.h3comsim.armybattle.values.ArmySpec;
 import de.zettsystems.h3comsim.armybattle.values.StackSpec;
+import de.zettsystems.h3comsim.battle.domain.Faction;
+import de.zettsystems.h3comsim.battle.domain.Fortification;
+import de.zettsystems.h3comsim.battle.domain.WarMachine;
 import de.zettsystems.h3comsim.battle.domain.events.BattleEvent;
 import de.zettsystems.h3comsim.battle.domain.events.Winner;
 import org.junit.jupiter.api.Test;
@@ -46,6 +49,25 @@ class DefaultArmyBattleServiceTest {
 
         BattleEvent.BattleStart start = (BattleEvent.BattleStart) simulation.events().get(0);
         assertThat(start.stacks()).hasSize(14);
+    }
+
+    @Test
+    void a_siege_puts_the_defender_into_a_town_of_its_hero_without_rocks_and_with_a_catapult() {
+        ArmyBattleRequest request = new ArmyBattleRequest(
+                armyFromPreset("CASTLE"),
+                armyFromPreset("INFERNO"),
+                3L, Fortification.CASTLE);
+
+        ArmyBattleSimulation simulation = service.simulate(request, 3L);
+
+        BattleEvent.BattleStart start = (BattleEvent.BattleStart) simulation.events().get(0);
+        assertThat(start.obstacles()).isEmpty();
+        assertThat(start.siege()).isNotNull();
+        assertThat(start.siege().town()).isEqualTo(Faction.INFERNO);
+        assertThat(start.attackerWarMachines()).containsExactly(WarMachine.CATAPULT);
+        assertThat(simulation.events()).anyMatch(BattleEvent.TowerShot.class::isInstance);
+        assertThat(new ArmyBattleRequest(armyFromPreset("CASTLE"), armyFromPreset("CASTLE"), 3L).fortification())
+                .isNull();
     }
 
     @Test

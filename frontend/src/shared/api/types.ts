@@ -92,6 +92,45 @@ export type BattleEvent =
       /** Kriegsmaschinen beider Seiten. */
       attackerWarMachines?: WarMachine[];
       defenderWarMachines?: WarMachine[];
+      /** Die Kriegsmaschinen auf dem Feld, als Stacks ab Slot 20; angreifbar. */
+      warMachineStacks?: StackSnapshot[];
+      /** Die Befestigung bei einer Belagerung. */
+      siege?: SiegeSnapshot | null;
+    }
+  | {
+      type: 'CatapultShot';
+      aimed: WallPart;
+      hit: WallPart;
+      damage: number;
+      healthAfter: number;
+      /** Slot des schießenden Zyklopen; fehlt beim Katapult. */
+      shooterSlot?: number | null;
+    }
+  | {
+      type: 'TowerShot';
+      tower: WallPart;
+      targetSlot: number;
+      damage: number;
+      killed: number;
+      targetAfter: StackSnapshot;
+    }
+  | {
+      type: 'QuakeHit';
+      hit: WallPart;
+      healthAfter: number;
+    }
+  | {
+      type: 'Drawbridge';
+      state: Gate;
+    }
+  | {
+      type: 'MoatDamage';
+      side: Side;
+      slot: number;
+      damage: number;
+      killed: number;
+      mine: boolean;
+      targetAfter: StackSnapshot;
     }
   | {
       type: 'Move';
@@ -386,7 +425,38 @@ export type Spell =
   | 'VISIONS'
   | 'WATER_WALK';
 
-export type WarMachine = 'BALLISTA' | 'AMMO_CART' | 'FIRST_AID_TENT';
+export type WarMachine = 'BALLISTA' | 'AMMO_CART' | 'FIRST_AID_TENT' | 'CATAPULT';
+
+export type Fortification = 'FORT' | 'CITADEL' | 'CASTLE';
+
+/** Zustand der Zugbrücke. */
+export type Gate = 'CLOSED' | 'OPEN' | 'BLOCKED' | 'DESTROYED';
+
+export type WallPart =
+  | 'UPPER_WALL'
+  | 'MID_UPPER_WALL'
+  | 'MID_LOWER_WALL'
+  | 'LOWER_WALL'
+  | 'GATE'
+  | 'KEEP'
+  | 'UPPER_TOWER'
+  | 'LOWER_TOWER';
+
+export interface SiegePart {
+  part: WallPart;
+  /** Feld des Teils; null für den Hauptturm außerhalb des Felds. */
+  hex?: HexCoord | null;
+  health: number;
+}
+
+export interface SiegeSnapshot {
+  fortification: Fortification;
+  town: Faction;
+  permanentWall: HexCoord[];
+  parts: SiegePart[];
+  /** Grabenfelder, bei Tower die Landminen. */
+  moat: HexCoord[];
+}
 
 export type HeroClass =
   | 'KNIGHT'
@@ -477,6 +547,8 @@ export interface ArmyBattleRequest {
   attacker: ArmySpec;
   defender: ArmySpec;
   seed?: number | null;
+  /** Belagerung: Befestigung der Stadt des Verteidigers; null = Feldschlacht. */
+  fortification?: Fortification | null;
 }
 
 export interface ArmyBattleSimulation {

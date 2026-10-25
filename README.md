@@ -158,8 +158,45 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   heilt am Rundenende die oberste Kreatur des am stärksten verwundeten
   Stacks um 1–25 Lebenspunkte, mit First Aid bis 50/75/100. Der
   Munitionswagen gibt den Schützen unbegrenzt Schüsse. Die Maschinen
-  stehen nicht auf dem Feld und lassen sich nicht angreifen; das Katapult
-  fehlt, weil es nur bei Belagerungen zählt.
+  stehen am eigenen Rand (Reihen 1, 3 und 9, wie im Spiel), schlagen
+  nicht zurück und lassen sich zerstören: Ballista und Zelt hören dann auf,
+  nach dem Munitionswagen verbrauchen Schützen wieder Munition. Ein Stack,
+  der in seinem Zug keine Kreatur angreift, aber eine Maschine erreicht,
+  greift sie an, die teuerste zuerst. Im Spiegel-Duell mit allen drei
+  Maschinen auf beiden Seiten gewinnt das gegen „Maschinen stehen lassen"
+  0.559 (+4.4 σ) bei einer Wochenproduktion und 0.525 (+1.8 σ) bei vier.
+  Das Katapult gibt es nur bei Belagerungen, siehe unten.
+- **Belagerung** (heroes.thelazy.net, *Fortifications*, Felder wie in der
+  freien H3-Engine VCMI) — je Army-Battle wählbar: Der Verteidiger steht
+  in einer Stadt der Fraktion seines Helden, ohne Felsen auf dem Feld.
+  Fort baut Mauern und Tor: sechs unzerstörbare Mauerstücke, vier
+  Segmente mit 2 Treffern (mit Castle 3), das Tor mit 2. Mauern sperren
+  Bodentruppen; Flieger fliegen darüber, und ein Schuss von draußen über
+  eine stehende Mauer verliert die Hälfte (außer Magi). Die Zugbrücke
+  öffnet sich nur für den Verteidiger und bleibt unten, solange ein Stack
+  auf dem Tor steht — auch ein gefallener, dann kommen die Angreifer
+  hindurch. Ein Stack vor dem Tor sperrt sie für beide Seiten. Citadel fügt den Hauptturm und den Graben
+  hinzu, Castle zwei Seitentürme. Die Türme schießen zu Rundenbeginn,
+  Schaden für eine voll ausgebaute Stadt, ohne Defense des Ziels. Der
+  Graben hält Bodentruppen auf, nimmt ihnen 3 Defense und verletzt sie
+  beim Betreten und zu Beginn jedes Zugs dort (70, bei Dungeon, Inferno
+  und Fortress 90; Fortress zweireihig); Tower legt stattdessen
+  Landminen gegen Angreifer. Jeder angreifende Held bringt ein Katapult
+  mit, das nach den Türmen auf die Befestigung schießt — Zielwahl,
+  Trefferchancen und Schaden je Ballistics-Stufe nach den SoD-Werten.
+  Zyklopen schießen wie ein Katapult mit Basic Ballistics auf die Mauern,
+  Cyclops Kings mit Advanced, solange noch keine Bresche offen ist; der
+  Held kann Earthquake wirken (2/3/4 Treffer auf zufällige Teile). Ohne
+  Artillery wählt die Spiel-KI die Ziele der Türme, samt ihrem Fehler,
+  mit einem Schaden von 1 zu rechnen; mit Artillery zielt der Verteidiger
+  selbst. Der Verteidiger stellt ohne Tactics auf und hat keine Ballista.
+  Messung (`SiegeImpactTest`, Spiegel-Duell, Standardhelden, je 360
+  Kämpfe): Bei gleich großen Armeen gewinnt der Verteidiger im Fort
+  0.669, in Citadel und Castle immer. Mit doppelter Armee nimmt der
+  Angreifer ein Fort sicher ein, eine Citadel hält dann 0.149, eine
+  Castle 0.597, mit Expert Ballistics 0.300; mit vierfacher Armee fällt
+  jede Stadt. Die Mauerschüsse der Zyklopen bringen Stronghold mit
+  doppelter Armee gegen eine Citadel 0.630 statt 0.534 (je 540 Kämpfe).
 - **Tactics** (Manual S. 42) — hat ein Held die Fertigkeit auf höherer
   Stufe als der Gegner, stellt er vor Kampfbeginn in den ersten 3/5/7
   Spalten auf (ein, zwei, drei Grade Vorsprung). Die Nahkämpfer rücken in
@@ -195,8 +232,13 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Obstacles herum, zugbasierte Move-Sequenz pro Hex (Token wandert
   sichtbar Schritt für Schritt).
 - **Fernkampf** mit `shotsRemaining`, Nahkampf-Penalty bei Distanz 1,
-  ½-Schaden ab >10 Hex Distanz und nochmal ½ wenn ein Hindernis in der
-  Schusslinie liegt — beide negierbar durch entsprechende Marker.
+  ½-Schaden ab >10 Hex Distanz und nochmal ½, wenn der Schuss über eine
+  stehende Stadtmauer geht — beide negierbar durch entsprechende Marker.
+  Gewöhnliche Hindernisse halbieren nichts (heroes.thelazy.net, *Obstacle
+  penalty*). Bis Oktober 2026 galt die Strafe auch für Felsen; mit der
+  Korrektur gewinnen schützenlastige Armeen deutlich (Strategic, je 640
+  Kämpfe: Tower 371 → 445, Dungeon 395 → 456, Rampart 196 → 227 Siege),
+  Necropolis, Fortress und Stronghold verlieren 36–54 Siege.
 - **HTTP-API** über Spring Boot 4 mit
   [Swagger-UI](http://localhost:8080/swagger-ui.html): `GET /api/units`,
   `GET /api/factions`, `POST /api/battles/simulate` für einzelne Kämpfe,
@@ -418,15 +460,15 @@ zu lesen, nicht als universelle H3-Tier-Liste.
   `FriendlyFireDiagnosisTest`). Diese Zahlen stammen noch aus der Zeit,
   in der der Cerberus wahllos zwei Nachbarn traf, eigene eingeschlossen,
   und der Magog nur zwei statt aller sechs Felder ums Ziel.
-- **Helden, nächste Stufe**: Zauber im Matrix-Modus.
-  Bei den Kriegsmaschinen offen: angreifbare Maschinen auf dem Feld.
+- **Helden, nächste Stufe**: Zauber-Artefakte, Eagle Eye und die
+  Schul-Rabatte aus späteren Fassungen.
 - **Taktisches Warten ausbauen**: Nahkämpfer nutzen *Wait* bereits, wenn
   sie ihr Ziel diese Runde nicht erreichen — messbar stärker, aber der
   Gewinn kommt fast nur von Tower. Offen sind Schützen (warten, bis der
   eigene Tank die Splash-Zone geleert hat) und Flieger (warten, bis
   feststeht, wo der Gegner landet).
-- **Belagerung**: Mauern, Catapult, Wall-Penalty für Schützen — eigene
-  Battlefield-Variante mit Wall-Hexes.
+- **Belagerung, Rest**: Teleport über den Graben und eine Solver-Planung,
+  die den Graben mitdenkt.
 
 ## Quellen
 
