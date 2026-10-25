@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
@@ -139,6 +140,23 @@ class WarMachineOnFieldTest {
             assertThat(move.target().unit().name()).isEqualTo("Ballista");
             assertThat(move.destination().distanceTo(ballista)).isEqualTo(1);
         }
+    }
+
+    @Test
+    void machines_take_the_primary_skills_of_their_hero() {
+        Hero hero = HeroCatalog.SORSHA.withBuild(4, 6, Map.of());
+        BattleSetup setup = new BattleSetup(List.of(new Stack(UnitCatalog.PEASANT, 1, new Hex(0, 5), Side.ATTACKER, 0)),
+                List.of(new Stack(UnitCatalog.PEASANT, 1, new Hex(14, 5), Side.DEFENDER, 0)), FIELD, hero, null)
+                .equip(Side.ATTACKER, Set.of(WarMachine.BALLISTA, WarMachine.FIRST_AID_TENT))
+                .equip(Side.DEFENDER, Set.of(WarMachine.BALLISTA));
+
+        Stack ownBallista = setup.machineAt(new Hex(FIELD.leftmostQ(3), 3));
+        assertThat(ownBallista).isNotNull();
+        assertThat(ownBallista.getDefense()).isEqualTo(10 + hero.defense());
+        assertThat(setup.machineAt(new Hex(FIELD.leftmostQ(9), 9))).extracting(Stack::getDefense)
+                .isEqualTo(hero.defense());
+        assertThat(setup.machineAt(ENEMY_BALLISTA)).extracting(Stack::getDefense).as("ohne Helden").isEqualTo(10);
+        assertThat(hero.ballistaAttack()).isEqualTo(10 + hero.attack());
     }
 
     @Test

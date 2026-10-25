@@ -39,24 +39,24 @@ class WarMachineTest {
     }
 
     @Test
-    void the_ballista_scales_with_the_hero_attack_and_uses_its_own_attack_of_ten() {
-        // Kleinster Wurf 2 × (4 + 1) = 10; Attack 10 gegen Pikeman-Defense 5 → +25 % → 12.
+    void the_ballista_scales_with_the_hero_attack_twice() {
+        // Kleinster Wurf 2 × (4 + 1) = 10; Attack 10 + 4 gegen Pikeman-Defense 5 → +45 % → 14.
         List<BattleEvent.BallistaShot> shots = firstRoundShots(hero(4, Map.of()));
 
         assertThat(shots).hasSize(1);
-        assertThat(shots.getFirst().damage()).isEqualTo(12);
+        assertThat(shots.getFirst().damage()).isEqualTo(14);
         assertThat(shots.getFirst().doubled()).isFalse();
     }
 
     @Test
     void expert_artillery_fires_twice_and_always_doubles_the_base_damage() {
-        // 10 Grundschaden, +25 % Attack-Bonus und +100 % Artillery → 225 % → 22.
+        // 10 Grundschaden, +45 % Attack-Bonus und +100 % Artillery → 245 % → 24.
         List<BattleEvent.BallistaShot> shots =
                 firstRoundShots(hero(4, Map.of(SecondarySkill.ARTILLERY, SkillLevel.EXPERT)));
 
         assertThat(shots).hasSize(2);
         assertThat(shots).allSatisfy(shot -> {
-            assertThat(shot.damage()).isEqualTo(22);
+            assertThat(shot.damage()).isEqualTo(24);
             assertThat(shot.doubled()).isTrue();
         });
     }
@@ -73,9 +73,9 @@ class WarMachineTest {
 
     @Test
     void a_ballista_specialist_raises_the_ballista_attack_every_five_levels() {
-        // Torosar, Level 25: fünf Spannen → +25 % von 10 → 2.5, aufgerundet 3.
+        // Torosar, Level 25: fünf Spannen → +25 % von 10 → 2.5, aufgerundet 3; dazu seine Attack.
         Hero torosar = HeroCatalog.byName("Torosar").orElseThrow().withLevel(25);
-        assertThat(torosar.ballistaAttack()).isEqualTo(13);
+        assertThat(torosar.ballistaAttack()).isEqualTo(13 + torosar.attack());
         assertThat(torosar.specialty().effectiveInCombat()).isTrue();
     }
 

@@ -268,6 +268,7 @@ public final class Battle {
                     target.takeDamage(damage, Set.of());
                     killed = Math.max(0, countBefore - target.getCount());
                     emitRebirthIfFired(target, rebirthUsedBefore);
+                    setup.machineHit(target);
                 }
                 case INSTANT -> healed = applyInstantSpell(spell,
                         HeroSpellcasting.healing(hero, spell, cast.level(), target), target);
@@ -952,7 +953,8 @@ public final class Battle {
 
     /**
      * Liefert irgendeinen lebenden Stack auf {@code hex} (egal welche Seite, außer
-     * {@code active} selbst). Für H3-Friendly-Fire-Splash-Mechaniken.
+     * {@code active} selbst), auch eine stehende Kriegsmaschine. Für H3-Friendly-Fire-Splash-
+     * Mechaniken; Splash trifft Maschinen (heroes.thelazy.net, <em>War Machine</em>).
      */
     // s != active: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
     @SuppressWarnings("ReferenceEquality")
@@ -967,7 +969,7 @@ public final class Battle {
                 return s;
             }
         }
-        return null;
+        return setup.machineAt(hex);
     }
 
     private void applySplashHit(Stack active, Stack secondary, AttackType attackType) {
@@ -984,6 +986,9 @@ public final class Battle {
         int countBefore = secondary.getCount();
         BattleLogger.logAttack(active.getName(), secondary.getName());
         secondary.takeDamage(realDamage, active.getAttackerSpecialities());
+        if (currentSetup != null) {
+            currentSetup.machineHit(secondary);
+        }
         int killed = countBefore - secondary.getCount();
         if (attackType == AttackType.HAND_TO_HAND) {
             events.emit(new BattleEvent.Melee(active.side(), active.slot(),
@@ -1130,13 +1135,14 @@ public final class Battle {
     }
 
     /**
-     * DEATH_CLOUD: alle non-undead Stacks im 1-Hex-Radius, ohne Stück-Limit.
+     * DEATH_CLOUD: alle non-undead Stacks im 1-Hex-Radius, ohne Stück-Limit, keine Kriegsmaschinen.
      */
     private void applyDeathCloud(Stack active, Stack primary, BattleSetup setup) {
         boolean leftward = Hex.isLeftward(active.position(), primary.position());
         for (Hex neighbor : primary.position().neighbors(leftward)) {
             Stack collateral = collateralAt(active, neighbor, primary, setup);
-            if (collateral != null && !collateral.unit().isUndead()) {
+            // Kriegsmaschinen sind immun gegen die Todeswolke (heroes.thelazy.net, War Machine).
+            if (collateral != null && !collateral.unit().isUndead() && !collateral.isWarMachine()) {
                 applySplashHit(active, collateral, AttackType.LONG_RANGE);
             }
         }

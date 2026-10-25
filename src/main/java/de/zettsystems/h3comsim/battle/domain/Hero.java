@@ -312,9 +312,13 @@ public record Hero(
                 : base * specialty.skillFactorPerMille(SecondarySkill.FIRST_AID, level) / 1000;
     }
 
-    /** Attack der Ballista dieses Helden: 10 plus Ballista-Spezialität. */
+    /**
+     * Attack der Ballista dieses Helden: 10 plus seine Attack plus Ballista-Spezialität. Die
+     * Schadenstabelle auf heroes.thelazy.net (<em>War Machine</em>, SoD-Werte) rechnet so: bei
+     * Held-Attack 1 sind es 5 × 1.05 = 5.25 gegen Defense 10, bei 2 dann 7.5 × 1.10 = 8.25.
+     */
     public int ballistaAttack() {
-        return WarMachine.BALLISTA.attack() + specialty.ballistaAttackBonus(level);
+        return WarMachine.BALLISTA.attack() + attack + specialty.ballistaAttackBonus(level);
     }
 
     /** Attack-Aufschlag der Spezialität für diese Kreatur. */

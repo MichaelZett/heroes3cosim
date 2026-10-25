@@ -169,7 +169,10 @@ public class BattleSetup {
         warMachines.put(side, copy);
         Map<WarMachine, Stack> placed = new EnumMap<>(WarMachine.class);
         for (WarMachine machine : copy) {
-            placed.put(machine, new Stack(machine.unit(), 1, machine.hex(side, battlefield), side, machine.slot()));
+            Stack stack = new Stack(machine.unit(), 1, machine.hex(side, battlefield), side, machine.slot());
+            // Die Primärwerte des Helden gelten auch für seine Maschinen (siehe Hero#ballistaAttack).
+            stack.assignCommander(side == Side.ATTACKER ? attackerHero : defenderHero);
+            placed.put(machine, stack);
         }
         machineStacks.put(side, placed);
         if (copy.contains(WarMachine.AMMO_CART)) {
@@ -203,6 +206,18 @@ public class BattleSetup {
             }
         }
         return null;
+    }
+
+    /**
+     * Alles, was Flächenzauber und Chain Lightning treffen können: die lebenden Stacks beider
+     * Seiten und die stehenden Kriegsmaschinen (heroes.thelazy.net, <em>War Machine</em>).
+     */
+    public List<Stack> spellTargets() {
+        List<Stack> targets = new ArrayList<>(aliveStacks());
+        for (Side side : Side.values()) {
+            machinesOf(side).stream().filter(Stack::isAlive).forEach(targets::add);
+        }
+        return targets;
     }
 
     /** Die stehenden Maschinen der Gegenseite dieses Stacks. */

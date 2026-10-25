@@ -1,5 +1,7 @@
 package de.zettsystems.h3comsim.battle.domain;
 
+import java.util.EnumSet;
+import java.util.Set;
 import java.util.random.RandomGenerator;
 
 /**
@@ -15,6 +17,9 @@ import java.util.random.RandomGenerator;
  *   <li>Gegen Gedankenzauber: Giants und Titans (Manual S. 115), Elementare (AB-Manual), dazu
  *       nach SoD-Regel Untote und nicht lebende Kreaturen (Golems, Gargoyles).</li>
  *   <li>Troglodytes gegen Blind (Manual S. 89).</li>
+ *   <li>Kriegsmaschinen gegen alles außer den Schadenszaubern ohne Implosion, Death Ripple und
+ *       Destroy Undead und den Wirkungen, die heroes.thelazy.net (<em>War Machine</em>) als
+ *       wirksam listet.</li>
  * </ul>
  *
  * <p>Magieresistenz gilt nur gegen feindliche Zauber: Dwarves 20 %, Battle Dwarves 40 %
@@ -25,6 +30,15 @@ import java.util.random.RandomGenerator;
 final class SpellResistance {
 
     private static final int AURA_PERCENT = 20;
+
+    /** Was Kriegsmaschinen trifft (heroes.thelazy.net, <em>War Machine</em>). */
+    private static final Set<Spell> WAR_MACHINE_SPELLS = EnumSet.of(
+            Spell.MAGIC_ARROW, Spell.LIGHTNING_BOLT, Spell.ICE_BOLT, Spell.FIREBALL, Spell.INFERNO,
+            Spell.METEOR_SHOWER, Spell.FROST_RING, Spell.CHAIN_LIGHTNING, Spell.ARMAGEDDON,
+            Spell.CURE, Spell.ANTI_MAGIC, Spell.DISPEL, Spell.FORTUNE, Spell.MISFORTUNE, Spell.BLESS, Spell.CURSE,
+            Spell.SLAYER, Spell.PRAYER, Spell.PRECISION, Spell.SHIELD, Spell.STONE_SKIN, Spell.AIR_SHIELD,
+            Spell.MAGIC_MIRROR, Spell.PROTECTION_FROM_AIR, Spell.PROTECTION_FROM_EARTH, Spell.PROTECTION_FROM_FIRE,
+            Spell.PROTECTION_FROM_WATER, Spell.FIRE_SHIELD);
 
     private SpellResistance() {
     }
@@ -42,6 +56,9 @@ final class SpellResistance {
     }
 
     static boolean isImmune(Unit unit, Spell spell) {
+        if (WarMachine.isMachine(unit)) {
+            return !WAR_MACHINE_SPELLS.contains(spell);
+        }
         if (unit.hasSpeciality(UnitSpeciality.IMMUNE_TO_SPELLS)) {
             return true;
         }
