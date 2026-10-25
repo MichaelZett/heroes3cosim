@@ -104,7 +104,7 @@ class DoubleWideTest {
         long hitsOnDragon = events.subList(firstShot, Math.min(events.size(), firstShot + 4)).stream()
                 .filter(e -> e instanceof BattleEvent.Shoot shot && shot.target() == Side.ATTACKER
                         && shot.targetSlot() == 1).count();
-        assertThat(hitsOnDragon).as("einmal je Schuss, nicht je Feld").isEqualTo(1);
+        assertThat(hitsOnDragon).as("einmal je Schuss, nicht je Feld").isOne();
     }
 
     @Test
