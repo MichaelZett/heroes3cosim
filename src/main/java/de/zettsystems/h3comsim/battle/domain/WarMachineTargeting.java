@@ -21,27 +21,34 @@ final class WarMachineTargeting {
         if (active.isWarMachine()) {
             return null;
         }
-        List<Stack> machines = setup.enemyMachinesOf(active);
-        Action best = null;
-        int bestCost = -1;
-        int bestSteps = Integer.MAX_VALUE;
-        for (Stack machine : machines) {
-            int cost = machine.unit().cost();
-            if (active.position().distanceTo(machine.position()) == 1) {
-                if (cost > bestCost || (cost == bestCost && bestSteps > 0)) {
-                    best = new Action.Melee(machine);
-                    bestCost = cost;
-                    bestSteps = 0;
-                }
-                continue;
+        Approach best = null;
+        for (Stack machine : setup.enemyMachinesOf(active)) {
+            Approach approach = approach(active, machine, setup);
+            if (approach != null && (best == null || approach.betterThan(best))) {
+                best = approach;
             }
-            for (Hex landing : machine.position().neighbors()) {
-                int steps = stepsTo(active, landing, setup);
-                if (steps > 0 && (cost > bestCost || (cost == bestCost && steps < bestSteps))) {
-                    best = new Action.MoveAndMelee(landing, machine);
-                    bestCost = cost;
-                    bestSteps = steps;
-                }
+        }
+        return best == null ? null : best.action();
+    }
+
+    /** Ein Angriff auf eine Maschine: wie teuer sie ist und wie viele Schritte es braucht. */
+    private record Approach(Action action, int cost, int steps) {
+        boolean betterThan(Approach other) {
+            return cost > other.cost || (cost == other.cost && steps < other.steps);
+        }
+    }
+
+    /** Der kürzeste Angriff auf diese Maschine in diesem Zug, oder {@code null}. */
+    private static @Nullable Approach approach(Stack active, Stack machine, BattleSetup setup) {
+        int cost = machine.unit().cost();
+        if (active.position().distanceTo(machine.position()) == 1) {
+            return new Approach(new Action.Melee(machine), cost, 0);
+        }
+        Approach best = null;
+        for (Hex landing : machine.position().neighbors()) {
+            int steps = stepsTo(active, landing, setup);
+            if (steps > 0 && (best == null || steps < best.steps())) {
+                best = new Approach(new Action.MoveAndMelee(landing, machine), cost, steps);
             }
         }
         return best;

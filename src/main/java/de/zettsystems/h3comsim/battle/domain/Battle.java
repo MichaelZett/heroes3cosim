@@ -748,16 +748,11 @@ public final class Battle {
      */
     private void moveTo(Stack active, Hex destination, Battlefield battlefield) {
         Hex from = active.position();
-        List<Hex> walked = battlefield.findPath(from, destination, active.unit().movement());
         Siege siege = currentSetup == null ? null : currentSetup.siege();
         boolean ground = active.unit().movement() == Movement.GROUND;
+        List<Hex> walked = battlefield.findPath(from, destination, active.unit().movement());
         if (siege != null && ground) {
-            for (int i = 0; i < walked.size(); i++) {
-                if (siege.isMoat(walked.get(i))) {
-                    walked = walked.subList(0, i + 1);
-                    break;
-                }
-            }
+            walked = untilMoat(walked, siege);
         }
         Hex end = walked.isEmpty() ? destination : walked.getLast();
         List<HexCoord> path = walked.stream().map(h -> new HexCoord(h.q(), h.r())).toList();
@@ -766,14 +761,29 @@ public final class Battle {
         events.emit(new BattleEvent.Move(active.side(), active.slot(),
                 from.q(), from.r(), end.q(), end.r(), path));
         if (siege != null) {
-            for (Hex hex : ground ? walked : List.of(end)) {
-                if (active.side() == Side.ATTACKER && active.isAlive() && siege.triggerMine(hex)) {
-                    hazard(active, mineDamage(active), true);
-                }
+            siegeHazards(active, ground ? walked : List.of(end), siege);
+        }
+    }
+
+    /** Der Weg bis einschließlich des ersten Grabenfelds. */
+    private static List<Hex> untilMoat(List<Hex> path, Siege siege) {
+        for (int i = 0; i < path.size(); i++) {
+            if (siege.isMoat(path.get(i))) {
+                return path.subList(0, i + 1);
             }
-            if (active.isAlive() && siege.isMoat(end)) {
-                hazard(active, siege.moatDamage(), false);
+        }
+        return path;
+    }
+
+    /** Minen auf den betretenen Feldern (nur Angreifer), dann der Graben am Ziel. */
+    private void siegeHazards(Stack active, List<Hex> entered, Siege siege) {
+        for (Hex hex : entered) {
+            if (active.side() == Side.ATTACKER && active.isAlive() && siege.triggerMine(hex)) {
+                hazard(active, mineDamage(active), true);
             }
+        }
+        if (active.isAlive() && siege.isMoat(active.position())) {
+            hazard(active, siege.moatDamage(), false);
         }
     }
 

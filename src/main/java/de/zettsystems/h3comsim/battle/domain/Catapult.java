@@ -128,7 +128,12 @@ final class Catapult {
     static int damage(SkillLevel ballistics, RandomGenerator rng) {
         int roll = rng.nextInt(100);
         return switch (ballistics) {
-            case NONE -> roll < 10 ? 0 : roll < 70 ? 1 : 2;
+            case NONE -> {
+                if (roll < 10) {
+                    yield 0;
+                }
+                yield roll < 70 ? 1 : 2;
+            }
             case BASIC, ADVANCED -> roll < 50 ? 1 : 2;
             case EXPERT -> 2;
         };

@@ -96,6 +96,9 @@ public class BattleSetup {
      * Mauern ({@link Siege}). Tactics stellt dann nur der Angreifer auf — die Aufstellung des
      * Verteidigers würde seine Nahkämpfer über die Mauer schieben.
      */
+    // Je Seite Stacks, Held und Boni, dazu Feld und Belagerung: ein Parameterobjekt würde nur die
+    // Aufrufer verlängern, die Konstruktoren darüber decken die üblichen Fälle ab.
+    @SuppressWarnings("java:S107")
     public BattleSetup(List<Stack> attackerStacks, List<Stack> defenderStacks,
                        Battlefield battlefield,
                        @Nullable Hero attackerHero, CollectedBonus attackerBonus,
