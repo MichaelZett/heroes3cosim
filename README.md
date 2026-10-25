@@ -38,8 +38,9 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Cavaliers, Unicorns, Hydren und andere, Liste wie in VCMI) sowie
   Ballista, Sanitätszelt und Katapult belegen zwei Felder; das zweite
   liegt hinter dem Kopf, zum eigenen Rand hin. Nachbarschaft, Distanz,
-  Splash und Flächenzauber rechnen mit beiden Feldern, Landefelder
-  brauchen Platz für beide, am Rand rückt die Kreatur ein Feld vor. In
+  Splash und Flächenzauber rechnen mit beiden Feldern; Landefelder und
+  am Boden jeder Schritt des Wegs brauchen Platz für beide, am Rand rückt
+  die Kreatur ein Feld vor. In
   der Faction-Matrix mit dem Strategic-Solver verschiebt das vor allem
   Stronghold (0.32 → 0.64), Rampart (0.35 → 0.15) und Dungeon
   (0.71 → 0.54); mit dem Greedy-Solver ändert sich keine Fraktion um mehr
