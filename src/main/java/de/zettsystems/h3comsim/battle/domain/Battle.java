@@ -794,6 +794,10 @@ public final class Battle {
         List<Hex> walked = battlefield.findPath(from, destination, active.unit().movement());
         if (siege != null && ground) {
             walked = untilMoat(walked, siege);
+            if (currentSetup != null && stuckWithoutRoom(currentSetup, active, walked, destination)) {
+                return;
+            }
+            walked = currentSetup == null ? walked : whereItFits(currentSetup, active, walked, destination);
         }
         Hex end = walked.isEmpty() ? destination : walked.getLast();
         List<HexCoord> path = walked.stream().map(h -> new HexCoord(h.q(), h.r())).toList();
@@ -804,6 +808,24 @@ public final class Battle {
         if (siege != null) {
             siegeHazards(active, ground ? walked : List.of(end), siege);
         }
+    }
+
+    /**
+     * Bleibt ein Stack vor dem Ziel im Graben stehen, braucht auch sein Heck dort Platz: der Weg
+     * endet am letzten Feld davor, auf dem er passt.
+     */
+    static List<Hex> whereItFits(BattleSetup setup, Stack active, List<Hex> walked, Hex destination) {
+        List<Hex> path = walked;
+        while (!path.isEmpty() && !path.getLast().equals(destination) && !setup.fits(active, path.getLast())) {
+            path = path.subList(0, path.size() - 1);
+        }
+        return path;
+    }
+
+    /** Passt der Stack auf keinem Feld des gekürzten Wegs, bleibt er stehen. */
+    static boolean stuckWithoutRoom(BattleSetup setup, Stack active, List<Hex> walked, Hex destination) {
+        return !walked.isEmpty() && !walked.getLast().equals(destination)
+                && whereItFits(setup, active, walked, destination).isEmpty();
     }
 
     /** Der Weg bis einschließlich des ersten Grabenfelds. */

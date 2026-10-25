@@ -121,6 +121,24 @@ class DoubleWideTest {
         assertThat(setup.isFree(Stack.tailOf(wide, Side.ATTACKER))).isTrue();
     }
 
+    @Test
+    void a_walk_cut_short_in_the_moat_ends_where_the_tail_has_room() {
+        Stack behemoths = new Stack(UnitCatalog.BEHEMOTH, 1, new Hex(5, 5), Side.ATTACKER, 0);
+        Stack blocker = new Stack(UnitCatalog.PIKEMAN, 1, new Hex(7, 5), Side.ATTACKER, 1);
+        BattleSetup setup = new BattleSetup(List.of(behemoths, blocker),
+                List.of(new Stack(UnitCatalog.PEASANT, 1, new Hex(14, 5), Side.DEFENDER, 0)), FIELD);
+        List<Hex> walked = List.of(new Hex(6, 5), new Hex(7, 5), new Hex(8, 5));
+        Hex destination = new Hex(10, 5);
+
+        // Auf (8,5) läge das Heck auf den Pikenieren, auf (7,5) der Kopf: zurück bis (6,5).
+        assertThat(Battle.whereItFits(setup, behemoths, walked, destination)).containsExactly(new Hex(6, 5));
+        assertThat(Battle.stuckWithoutRoom(setup, behemoths, walked, destination)).isFalse();
+        assertThat(Battle.stuckWithoutRoom(setup, behemoths, List.of(new Hex(7, 5), new Hex(8, 5)), destination))
+                .isTrue();
+        assertThat(Battle.whereItFits(setup, behemoths, List.of(new Hex(9, 5), new Hex(10, 5)), destination))
+                .as("das Ziel selbst prüft die Engine vorher").hasSize(2);
+    }
+
     private static int indexOfFirstShotOnTarget(List<BattleEvent> events) {
         for (int i = 0; i < events.size(); i++) {
             if (events.get(i) instanceof BattleEvent.Shoot shot && shot.actor() == Side.ATTACKER
