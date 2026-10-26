@@ -257,6 +257,11 @@ export const en: Dictionary = {
     twoShots: '<actor>{{actor}}</actor> shoots a second time.',
     goodMorale: '<actor>{{actor}}</actor> has good morale and attacks again.',
     badMorale: '<actor>{{actor}}</actor> has bad morale and loses the action.',
+    fieldSpell: '{{spell}}: {{count}} hexes placed.',
+    fieldSpellRemoved: '{{spell}}: {{count}} hexes disappear.',
+    fieldTriggerQuicksand: '<target>{{target}}</target> is stuck in quicksand.',
+    fieldTriggerDamage:
+      '{{spell}} hits <target>{{target}}</target>: {{damage}} damage, {{killed}} killed.',
     fear: '<actor>{{actor}}</actor> freezes in fear and loses the action.',
     acidBreath:
       'The acid of <actor>{{actor}}</actor> corrodes <target>{{target}}</target>: −3 defense.',
@@ -301,9 +306,13 @@ export const en: Dictionary = {
     spellHitHealed: '{{spell}} heals <target>{{target}}</target> for {{healed}} health.',
     spellHitEffect: '{{spell}} takes effect on <target>{{target}}</target>.',
     spellHitResisted: '{{spell}} has no effect on <target>{{target}}</target>.',
+    spellHitSacrificed: '<target>{{target}}</target> is sacrificed: {{killed}} creatures.',
+    spellHitVanished: 'The clone <target>{{target}}</target> vanishes.',
     spellMirrored: 'Magic Mirror redirects the spell:',
     summon_attacker: 'The <actor>attacker</actor>’s hero summons {{count}} {{unit}}.',
     summon_defender: 'The <actor>defender</actor>’s hero summons {{count}} {{unit}}.',
+    clone_attacker: 'The <actor>attacker</actor>’s hero clones {{count}} {{unit}}.',
+    clone_defender: 'The <actor>defender</actor>’s hero clones {{count}} {{unit}}.',
     spellCast: '<actor>{{actor}}</actor> casts {{spell}} on <target>{{target}}</target>.',
     spellResisted:
       '<actor>{{actor}}</actor> casts {{spell}} on <target>{{target}}</target> — resisted.',

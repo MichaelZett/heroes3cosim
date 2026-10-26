@@ -44,6 +44,10 @@ public class BattleSetup {
     private final Map<Side, Map<WarMachine, Stack>> machineStacks = new EnumMap<>(Side.class);
     private boolean sodSpellCosts;
     private @Nullable Terrain terrain;
+    private final FieldEffects fieldEffects = new FieldEffects();
+    private @Nullable List<Set<Hex>> obstacleGroups;
+    private final Set<Hex> removedObstacles = new HashSet<>();
+    private int cachedEffectsVersion;
     private @Nullable MagicTerrain magicTerrain;
     private final Map<Side, Integer> mana = new EnumMap<>(Side.class);
     /** Je Seite die eine Elementar-Art, die beschworen werden darf, sobald die erste gerufen ist. */
@@ -321,19 +325,66 @@ public class BattleSetup {
     }
 
     private Battlefield fieldFor(Side side) {
-        if (siege == null) {
+        if (siege == null && fieldEffects.isEmpty() && removedObstacles.isEmpty()) {
             return battlefield;
         }
-        if (siegeFieldsVersion != siege.version()) {
+        int siegeVersion = siege == null ? 0 : siege.version();
+        if (siegeFieldsVersion != siegeVersion || cachedEffectsVersion != fieldEffects.version()) {
             siegeFields.clear();
-            siegeFieldsVersion = siege.version();
+            siegeFieldsVersion = siegeVersion;
+            cachedEffectsVersion = fieldEffects.version();
         }
         return siegeFields.computeIfAbsent(side, s -> {
             Set<Hex> blocked = new HashSet<>(battlefield.obstacles());
-            blocked.addAll(siege.blockedFor(s));
+            blocked.removeAll(removedObstacles);
+            if (siege != null) {
+                blocked.addAll(siege.blockedFor(s));
+            }
+            blocked.addAll(fieldEffects.blockedFor(s, seesHidden(s)));
             return battlefield.withObstacles(blocked);
         });
     }
+
+    /** Die Zauber-Felder (Fire Wall, Force Field, Quicksand, Land Mine). */
+    FieldEffects fieldEffects() {
+        return fieldEffects;
+    }
+
+    /**
+     * Sieht die Seite verborgene Felder der Gegenseite? Ja, wenn sie zu Kampfbeginn einen Stack auf
+     * seinem Heimatgelände hatte (heroes.thelazy.net, <em>Quicksand</em>, <em>Land Mine</em>).
+     */
+    final boolean seesHidden(Side side) {
+        return side(side).stream().anyMatch(Stack::onNativeTerrain);
+    }
+
+    /** Entfernt ein natürliches Hindernis (Remove Obstacle). */
+    void removeObstacle(Set<Hex> hexes) {
+        removedObstacles.addAll(hexes);
+        fieldEffects.touch();
+    }
+
+    /**
+     * Die Hindernisse, die Remove Obstacle als Ganzes entfernen kann; ohne Angabe ist jedes
+     * Hindernisfeld eines (zufällige Felsen).
+     */
+    public BattleSetup obstacleGroups(List<Set<Hex>> groups) {
+        this.obstacleGroups = groups.stream().map(Set::copyOf).toList();
+        return this;
+    }
+
+    List<Set<Hex>> obstacleGroups() {
+        List<Set<Hex>> groups = obstacleGroups;
+        return groups != null ? groups : battlefield.obstacles().stream().map(Set::of).toList();
+    }
+
+    /** Die Hindernisse, wie sie gerade stehen: ohne die entfernten. */
+    Set<Hex> standingObstacles() {
+        Set<Hex> standing = new HashSet<>(battlefield.obstacles());
+        standing.removeAll(removedObstacles);
+        return standing;
+    }
+
 
     /**
      * Führt die Zugbrücke nach dem Stand auf dem Feld nach; gefallene Stacks zählen mit.
@@ -499,7 +550,7 @@ public class BattleSetup {
      * H3, heroes.thelazy.net) und er nicht beschworen war.
      */
     boolean hasFreeCorpse(Stack stack) {
-        return !stack.isAlive() && stack.startCount() > 0 && !stack.isSummoned() && isFree(stack.position());
+        return !stack.isAlive() && stack.startCount() > 0 && stack.leavesCorpse() && isFree(stack.position());
     }
 
     boolean isFree(Hex hex) {
@@ -594,16 +645,25 @@ public class BattleSetup {
         return alive;
     }
 
+    /**
+     * Die lebenden Gegner dieses Stacks: wer nicht von derselben Seite gesteuert wird — ein
+     * hypnotisierter Stack wechselt die Seite (Hypnotize), behält aber seinen Platz in der Liste.
+     */
     public List<Stack> opponentsOf(Stack stack) {
-        List<Stack> opponents = stack.side() == Side.ATTACKER ? defenderStacks : attackerStacks;
-        List<Stack> alive = new ArrayList<>(opponents.size());
-        for (Stack s : opponents) {
-            if (s.isAlive()) {
-                alive.add(s);
+        Side controller = stack.controller();
+        List<Stack> first = stack.side() == Side.ATTACKER ? defenderStacks : attackerStacks;
+        List<Stack> second = stack.side() == Side.ATTACKER ? attackerStacks : defenderStacks;
+        List<Stack> alive = new ArrayList<>(first.size());
+        for (List<Stack> list : List.of(first, second)) {
+            for (Stack s : list) {
+                if (s.isAlive() && s.controller() != controller) {
+                    alive.add(s);
+                }
             }
         }
         return alive;
     }
+
 
     /**
      * Single-Battle-Convenience: liefert den ersten Attacker-Stack. Im Multi-Stack-Pfad

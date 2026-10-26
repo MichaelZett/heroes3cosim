@@ -62,9 +62,19 @@ final class HeroSpellcasting {
     /**
      * Ein Zauber und wen er trifft. {@code target} ist das gewählte Ziel bei Einzel- und
      * Kettenzaubern, bei Flächen- und Massenzaubern {@code null}; {@code affected} ist die
-     * Reihenfolge der Treffer (bei Chain Lightning die Sprungfolge).
+     * Reihenfolge der Treffer (bei Chain Lightning die Sprungfolge). {@code hexes} sind die Felder
+     * eines Feldzaubers (Fire Wall, Force Field, Remove Obstacle), sonst leer.
      */
-    record Cast(Spell spell, SkillLevel level, @Nullable Stack target, List<Stack> affected) {
+    record Cast(Spell spell, SkillLevel level, @Nullable Stack target, List<Stack> affected, List<Hex> hexes) {
+
+        Cast {
+            affected = List.copyOf(affected);
+            hexes = List.copyOf(hexes);
+        }
+
+        Cast(Spell spell, SkillLevel level, @Nullable Stack target, List<Stack> affected) {
+            this(spell, level, target, affected, List.of());
+        }
     }
 
     /** Wie {@link #decide(Hero, Side, int, BattleSetup, int)} in der ersten Runde. */
@@ -183,6 +193,12 @@ final class HeroSpellcasting {
                 casts.add(new Cast(spell, level, null, List.of()));
             }
             return casts;
+        }
+        if (ControlSpells.handles(spell)) {
+            return ControlSpells.candidates(hero, side, spell, level, setup);
+        }
+        if (FieldSpells.handles(spell)) {
+            return FieldSpells.candidates(side, spell, level, setup);
         }
         if (spell.kind() == Spell.Kind.OTHER) {
             return casts;
@@ -318,7 +334,7 @@ final class HeroSpellcasting {
      * Lebenspunkte, die {@code amount} dem Stack zurückgibt: höchstens, was ihm fehlt; ein ganz
      * gefallener Stack braucht mindestens eine ganze Kreatur ({@link Stack#heal}).
      */
-    private static int restorable(Stack s, int amount) {
+    static int restorable(Stack s, int amount) {
         if (!s.isAlive() && amount < s.unit().health()) {
             return 0;
         }
@@ -419,6 +435,12 @@ final class HeroSpellcasting {
         }
         if (spell == Spell.TELEPORT) {
             return Teleport.value(Objects.requireNonNull(cast.target()), setup);
+        }
+        if (ControlSpells.handles(spell)) {
+            return ControlSpells.value(hero, side, cast, setup);
+        }
+        if (FieldSpells.handles(spell)) {
+            return FieldSpells.value(hero, side, cast, setup);
         }
         double total = 0;
         for (int i = 0; i < cast.affected().size(); i++) {
@@ -670,7 +692,7 @@ final class HeroSpellcasting {
         return s.isAlive() ? (s.getCount() - 1) * s.unit().health() + s.getCurrentHealth() : 0;
     }
 
-    private static double costPerHealth(Stack s) {
+    static double costPerHealth(Stack s) {
         return (double) s.unit().cost() / s.unit().health();
     }
 

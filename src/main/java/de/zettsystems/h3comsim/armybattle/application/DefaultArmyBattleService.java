@@ -73,6 +73,9 @@ public class DefaultArmyBattleService implements ArmyBattleService {
                 .equip(Side.DEFENDER, machines(request.defender(), defenderHero))
                 .sodSpellCosts(Boolean.TRUE.equals(request.sodSpellCosts()))
                 .ground(terrain, request.magicTerrain());
+        if (siege == null && (terrain != null || request.magicTerrain() != null)) {
+            setup.obstacleGroups(obstacleGroups(battlefield, terrain, request.magicTerrain(), seed));
+        }
 
         ListEventCollector collector = new ListEventCollector();
         BattleResult result = new Battle(new Random(seed), new StrategicAutoSolver(), collector).simulate(setup);
@@ -175,6 +178,23 @@ public class DefaultArmyBattleService implements ArmyBattleService {
                     positions.get(slot), side, slot));
         }
         return stacks;
+    }
+
+    /**
+     * Die Hindernisse des Gelände-Satzes, die Remove Obstacle als Ganzes entfernt: derselbe Wurf wie
+     * in {@link #buildBattlefield}, ohne Klippen und ohne die Aufstellungsfelder.
+     */
+    private static List<Set<Hex>> obstacleGroups(Battlefield battlefield, @Nullable Terrain terrain,
+                                                 @Nullable MagicTerrain magic, long seed) {
+        List<Set<Hex>> groups = new ArrayList<>();
+        for (Set<Hex> group : TerrainObstacles.layout(terrain, magic, new Random(seed)).removable()) {
+            Set<Hex> standing = new HashSet<>(group);
+            standing.retainAll(battlefield.obstacles());
+            if (!standing.isEmpty()) {
+                groups.add(standing);
+            }
+        }
+        return groups;
     }
 
     private static Battlefield buildBattlefield(int attackerStacks, int defenderStacks, long seed,

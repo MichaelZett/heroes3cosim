@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import type { Spell } from '../../shared/api/types';
 import type { BattleState } from './state';
 import { fieldCells, gridDimensions, HEX_SIZE, hexToPixel } from './hex';
 import StackToken from './StackToken';
@@ -7,6 +8,14 @@ interface HexGridProps {
   state: BattleState;
   transitionMs: number;
 }
+
+/** Farben der Feldzauber im Gitter. */
+const FIELD_COLORS: Partial<Record<Spell, string>> = {
+  FIRE_WALL: 'rgb(234 88 12)',
+  FORCE_FIELD: 'rgb(56 189 248)',
+  QUICKSAND: 'rgb(161 98 7)',
+  LAND_MINE: 'rgb(220 38 38)',
+};
 
 export default function HexGrid({ state, transitionMs }: Readonly<HexGridProps>) {
   const { t } = useTranslation();
@@ -55,6 +64,24 @@ export default function HexGrid({ state, transitionMs }: Readonly<HexGridProps>)
             stroke="rgb(100 116 139)"
             strokeWidth={0.8}
           />
+        );
+      })}
+
+      {state.fieldEffects.map((mark) => {
+        const { x, y } = hexToPixel(mark.q, mark.r);
+        return (
+          <use
+            key={`field-${mark.q}-${mark.r}`}
+            href="#hex-cell"
+            x={x}
+            y={y}
+            fill={FIELD_COLORS[mark.spell] ?? 'rgb(100 116 139)'}
+            fillOpacity={0.55}
+            stroke="rgb(15 23 42)"
+            strokeWidth={0.5}
+          >
+            <title>{mark.spell}</title>
+          </use>
         );
       })}
 
