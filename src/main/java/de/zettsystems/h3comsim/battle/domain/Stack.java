@@ -340,11 +340,11 @@ public class Stack {
 
     /** Was Grund- und magisches Gelände diesem Stack geben — gesetzt von {@link BattleSetup}. */
     void assignGround(@Nullable Terrain terrain, @Nullable MagicTerrain magic) {
-        boolean cursed = magic == MagicTerrain.CURSED_GROUND;
-        nativeBonus = !cursed && !isWarMachine() && terrain != null && terrain == Terrain.nativeOf(unit.faction()) ? 1 : 0;
+        boolean onCursedGround = magic == MagicTerrain.CURSED_GROUND;
+        nativeBonus = !onCursedGround && !isWarMachine() && terrain != null && terrain == Terrain.nativeOf(unit.faction()) ? 1 : 0;
         terrainMorale = magic == null || isWarMachine() ? 0 : magic.moraleFor(unit.faction());
         terrainLuck = magic == null || isWarMachine() ? 0 : magic.luckFor(unit.faction());
-        cursedGround = cursed;
+        cursedGround = onCursedGround;
     }
 
     /** Kämpft der Stack auf seinem Heimatgelände (und nicht auf Cursed Ground)? */
