@@ -59,7 +59,9 @@ class HeroAndTownTest {
         ArmySpec both = new ArmySpec(PIKEMEN, "Crag Hack", 0, 0, 1, 0, 0, 0, 0, Map.of(), Set.of(), Set.of(),
                 false, true);
 
-        assertThatThrownBy(() -> service.simulate(new ArmyBattleRequest(both, new ArmySpec(PIKEMEN), SEED), SEED))
+        ArmyBattleRequest request = new ArmyBattleRequest(both, new ArmySpec(PIKEMEN), SEED);
+
+        assertThatThrownBy(() -> service.simulate(request, SEED))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("exclude");
     }
@@ -107,7 +109,9 @@ class HeroAndTownTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Town");
         assertThat(siege(new ArmySpec(PIKEMEN), garrison, Faction.FORTRESS).town()).isEqualTo(Faction.FORTRESS);
-        assertThatThrownBy(() -> siege(new ArmySpec(PIKEMEN), garrison, Faction.NEUTRAL))
+        ArmyBattleRequest neutralTown = new ArmyBattleRequest(new ArmySpec(PIKEMEN), garrison, SEED,
+                Fortification.FORT, Faction.NEUTRAL, null);
+        assertThatThrownBy(() -> service.simulate(neutralTown, SEED))
                 .isInstanceOf(ResponseStatusException.class);
     }
 
