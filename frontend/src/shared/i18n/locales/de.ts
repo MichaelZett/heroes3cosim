@@ -298,9 +298,13 @@ export const de = {
     spellHitHealed: '{{spell}} heilt <target>{{target}}</target> um {{healed}} Lebenspunkte.',
     spellHitEffect: '{{spell}} wirkt auf <target>{{target}}</target>.',
     spellHitResisted: '{{spell}} prallt an <target>{{target}}</target> ab.',
+    spellHitSacrificed: '<target>{{target}}</target> wird geopfert: {{killed}} Kreaturen.',
+    spellHitVanished: 'Der Klon <target>{{target}}</target> vergeht.',
     spellMirrored: 'Magic Mirror lenkt den Zauber um:',
     summon_attacker: 'Der Held des <actor>Angreifers</actor> beschwört {{count}} {{unit}}.',
     summon_defender: 'Der Held des <actor>Verteidigers</actor> beschwört {{count}} {{unit}}.',
+    clone_attacker: 'Der Held des <actor>Angreifers</actor> klont {{count}} {{unit}}.',
+    clone_defender: 'Der Held des <actor>Verteidigers</actor> klont {{count}} {{unit}}.',
     spellCast: '<actor>{{actor}}</actor> wirkt {{spell}} auf <target>{{target}}</target>.',
     spellResisted:
       '<actor>{{actor}}</actor> wirkt {{spell}} auf <target>{{target}}</target> — abgewehrt.',

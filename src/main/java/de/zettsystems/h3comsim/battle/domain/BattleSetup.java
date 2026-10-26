@@ -499,7 +499,7 @@ public class BattleSetup {
      * H3, heroes.thelazy.net) und er nicht beschworen war.
      */
     boolean hasFreeCorpse(Stack stack) {
-        return !stack.isAlive() && stack.startCount() > 0 && !stack.isSummoned() && isFree(stack.position());
+        return !stack.isAlive() && stack.startCount() > 0 && stack.leavesCorpse() && isFree(stack.position());
     }
 
     boolean isFree(Hex hex) {
@@ -594,16 +594,25 @@ public class BattleSetup {
         return alive;
     }
 
+    /**
+     * Die lebenden Gegner dieses Stacks: wer nicht von derselben Seite gesteuert wird — ein
+     * hypnotisierter Stack wechselt die Seite (Hypnotize), behält aber seinen Platz in der Liste.
+     */
     public List<Stack> opponentsOf(Stack stack) {
-        List<Stack> opponents = stack.side() == Side.ATTACKER ? defenderStacks : attackerStacks;
-        List<Stack> alive = new ArrayList<>(opponents.size());
-        for (Stack s : opponents) {
-            if (s.isAlive()) {
-                alive.add(s);
+        Side controller = stack.controller();
+        List<Stack> first = stack.side() == Side.ATTACKER ? defenderStacks : attackerStacks;
+        List<Stack> second = stack.side() == Side.ATTACKER ? attackerStacks : defenderStacks;
+        List<Stack> alive = new ArrayList<>(first.size());
+        for (List<Stack> list : List.of(first, second)) {
+            for (Stack s : list) {
+                if (s.isAlive() && s.controller() != controller) {
+                    alive.add(s);
+                }
             }
         }
         return alive;
     }
+
 
     /**
      * Single-Battle-Convenience: liefert den ersten Attacker-Stack. Im Multi-Stack-Pfad

@@ -184,6 +184,9 @@ final class HeroSpellcasting {
             }
             return casts;
         }
+        if (ControlSpells.handles(spell)) {
+            return ControlSpells.candidates(hero, side, spell, level, setup);
+        }
         if (spell.kind() == Spell.Kind.OTHER) {
             return casts;
         }
@@ -318,7 +321,7 @@ final class HeroSpellcasting {
      * Lebenspunkte, die {@code amount} dem Stack zurückgibt: höchstens, was ihm fehlt; ein ganz
      * gefallener Stack braucht mindestens eine ganze Kreatur ({@link Stack#heal}).
      */
-    private static int restorable(Stack s, int amount) {
+    static int restorable(Stack s, int amount) {
         if (!s.isAlive() && amount < s.unit().health()) {
             return 0;
         }
@@ -419,6 +422,9 @@ final class HeroSpellcasting {
         }
         if (spell == Spell.TELEPORT) {
             return Teleport.value(Objects.requireNonNull(cast.target()), setup);
+        }
+        if (ControlSpells.handles(spell)) {
+            return ControlSpells.value(hero, side, cast, setup);
         }
         double total = 0;
         for (int i = 0; i < cast.affected().size(); i++) {
@@ -670,7 +676,7 @@ final class HeroSpellcasting {
         return s.isAlive() ? (s.getCount() - 1) * s.unit().health() + s.getCurrentHealth() : 0;
     }
 
-    private static double costPerHealth(Stack s) {
+    static double costPerHealth(Stack s) {
         return (double) s.unit().cost() / s.unit().health();
     }
 

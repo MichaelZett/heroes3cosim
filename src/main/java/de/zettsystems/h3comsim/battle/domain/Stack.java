@@ -44,6 +44,11 @@ public class Stack {
     private boolean aged;
     private boolean rebirthUsed;
     private boolean summoned;
+    /** Clone: das Original; der Klon vergeht beim ersten Schaden, nach seiner letzten Runde oder mit dem Original. */
+    private @Nullable Stack cloneOf;
+    private int cloneLastRound;
+    /** Geopfert (Sacrifice) oder vergangener Klon: keine Leiche für Resurrection oder Pit Lords. */
+    private boolean corpseless;
     private boolean resurrectionUsed;
     private boolean demonsRaised;
     private boolean defending;
@@ -571,6 +576,11 @@ public class Stack {
     }
 
     public void takeDamage(int baseDamage, Set<UnitSpeciality> attackerSpecialities) {
+        if (cloneOf != null && baseDamage > 0) {
+            // Clone (heroes.thelazy.net): der Klon vergeht beim ersten Schaden, ohne Vergeltung.
+            vanish();
+            return;
+        }
         int realDamage = baseDamage;
         int hatePercent = hatePercent(attackerSpecialities);
         if (hatePercent > 0) {
@@ -831,6 +841,43 @@ public class Stack {
     /** Beschworen (Summon Elementals): verschwindet nach dem Kampf und zählt nicht als Überlebender. */
     public boolean isSummoned() {
         return summoned;
+    }
+
+    /** Macht den Stack zum Klon von {@code origin}, der nach Runde {@code lastRound} vergeht. */
+    void markClone(Stack origin, int lastRound) {
+        cloneOf = origin;
+        cloneLastRound = lastRound;
+        markSummoned();
+    }
+
+    public @Nullable Stack cloneOf() {
+        return cloneOf;
+    }
+
+    /** Vergeht der lebende Klon jetzt: Original gefallen oder (am Rundenende) seine Zeit um? */
+    boolean cloneEnds(int round, boolean roundEnd) {
+        Stack origin = cloneOf;
+        return origin != null && isAlive() && (!origin.isAlive() || (roundEnd && round >= cloneLastRound));
+    }
+
+    /** Der Stack verschwindet ganz, ohne Leiche (geopfert oder vergangener Klon). */
+    void vanish() {
+        aliveCount = 0;
+        topUnitCurrentHealth = 0;
+        corpseless = true;
+    }
+
+    /** Hinterlässt der gefallene Stack eine Leiche? Beschworene, Klone und Geopferte nicht. */
+    public boolean leavesCorpse() {
+        return !summoned && !corpseless;
+    }
+
+    /** Wer den Stack steuert: unter Hypnotize die Gegenseite, sonst die eigene. */
+    public Side controller() {
+        if (!spells.containsKey(Spell.HYPNOTIZE)) {
+            return side;
+        }
+        return side == Side.ATTACKER ? Side.DEFENDER : Side.ATTACKER;
     }
 
     void markSummoned() {

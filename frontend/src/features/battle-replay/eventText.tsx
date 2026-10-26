@@ -51,7 +51,11 @@ function spellHitKey(
   | 'events.spellHitResisted'
   | 'events.spellHitDamage'
   | 'events.spellHitHealed'
-  | 'events.spellHitEffect' {
+  | 'events.spellHitEffect'
+  | 'events.spellHitSacrificed'
+  | 'events.spellHitVanished' {
+  if (event.spell === 'CLONE') return 'events.spellHitVanished';
+  if (event.spell === 'SACRIFICE' && event.killed > 0) return 'events.spellHitSacrificed';
   if (event.resisted) return 'events.spellHitResisted';
   if (event.damage > 0) return 'events.spellHitDamage';
   if (event.healed > 0) return 'events.spellHitHealed';
@@ -290,7 +294,7 @@ export function EventText({ event, names }: Readonly<EventTextProps>) {
     case 'Summon':
       return (
         <Trans
-          i18nKey="events.summon"
+          i18nKey={event.spell === 'CLONE' ? 'events.clone' : 'events.summon'}
           values={{ count: event.count, unit: event.stack.unitName }}
           components={{ actor: sideSpan(event.actor) }}
           context={event.actor === 'ATTACKER' ? 'attacker' : 'defender'}

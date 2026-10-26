@@ -146,6 +146,7 @@ public final class Battle {
                 if (activeStack.isAbleToAct() && setup.bothAlive()) {
                     actWithMorale(activeStack, setup);
                 }
+                dispelClones(setup, false);
                 updateGate(setup);
                 if (activeStack.hasWaitedThisTurn()) {
                     waiting.add(activeStack);
@@ -155,6 +156,7 @@ public final class Battle {
         }
         runLatePhase(waiting, setup, order, heroesCast, roundStacks);
         warMachinesAct(setup);
+        dispelClones(setup, true);
         updateGate(setup);
         roundStacks.forEach(Stack::endTurn);
         // Zauber auf Maschinen (Bless auf der Ballista) laufen ab wie auf Kreaturen.
@@ -223,6 +225,10 @@ public final class Battle {
             teleport(setup, hero, active, cast.level());
             return;
         }
+        if (ControlSpells.handles(spell)) {
+            controlSpell(setup, side, hero, cast);
+            return;
+        }
         for (int i = 0; i < cast.affected().size(); i++) {
             Stack target = cast.affected().get(i);
             // Resurrection und Animate Dead holen auch ganz Gefallene zurück (Ziel geprüft in der Wahl).
@@ -265,6 +271,117 @@ public final class Battle {
             return HeroSpellcasting.mirrorPercent(mirror);
         }
         return target.hasSpeciality(UnitSpeciality.NATURAL_MAGIC_MIRROR) ? 20 : 0;
+    }
+
+    /** Clone, Sacrifice, Berserk und Hypnotize ({@link ControlSpells}). */
+    private void controlSpell(BattleSetup setup, Side side, Hero hero, HeroSpellcasting.Cast cast) {
+        Spell spell = cast.spell();
+        int power = hero.spellPower();
+        switch (spell) {
+            case CLONE -> {
+                Stack origin = cast.affected().getFirst();
+                Hex hex = setup.freeHexFor(side, origin.unit().doubleWide());
+                if (hex == null) {
+                    return;
+                }
+                Stack clone = new Stack(origin.unit(), origin.getCount(), hex, side, setup.nextSlot(side));
+                setup.addSummoned(clone);
+                clone.markClone(origin, round + Math.max(1, power) - 1);
+                joinedThisRound.add(clone);
+                BattleLogger.logSpell(hero.name(), spell, origin.getName());
+                events.emit(new BattleEvent.Summon(side, spell, clone.getCount(), snapshot(clone)));
+            }
+            case SACRIFICE -> {
+                Stack victim = cast.affected().get(0);
+                Stack receiver = cast.affected().get(1);
+                int amount = ControlSpells.sacrificeAmount(cast.level(), power, victim);
+                int sacrificed = victim.getCount();
+                victim.vanish();
+                events.emit(new BattleEvent.SpellHit(side, spell, victim.side(), victim.slot(), 0, sacrificed, 0,
+                        false, false, snapshot(victim)));
+                int healed = receiver.heal(amount);
+                BattleLogger.logSpell(hero.name(), spell, receiver.getName());
+                events.emit(new BattleEvent.SpellHit(side, spell, receiver.side(), receiver.slot(), 0, 0, healed,
+                        false, false, snapshot(receiver)));
+            }
+            case BERSERK, HYPNOTIZE -> {
+                for (Stack target : cast.affected()) {
+                    if (!target.isAlive()) {
+                        continue;
+                    }
+                    boolean works = SpellResistance.takesEffect(spell, target, setup, rng);
+                    if (works && spell == Spell.BERSERK) {
+                        target.removeSpells(s -> s == Spell.HYPNOTIZE);
+                        target.applySpell(spell, cast.level(), Integer.MAX_VALUE);
+                    } else if (works) {
+                        target.applySpell(spell, cast.level(), Math.max(1, power));
+                    }
+                    BattleLogger.logSpell(hero.name(), spell, target.getName());
+                    events.emit(new BattleEvent.SpellHit(side, spell, target.side(), target.slot(), 0, 0, 0,
+                            !works, false, snapshot(target)));
+                }
+            }
+            default -> throw new IllegalStateException(spell + " is no control spell");
+        }
+    }
+
+    /**
+     * Ein Stack unter Berserk greift den nächsten Stack an, gleich welcher Seite: ein Schütze schießt,
+     * sonst geht er hin und schlägt zu; reicht der Weg nicht, kommt er näher. Nach dem Angriff endet
+     * der Zauber (VCMI: bis zum eigenen Angriff).
+     */
+    private void berserkAction(Stack active, BattleSetup setup) {
+        Stack target = ControlSpells.nearestOther(active, setup);
+        if (target == null) {
+            emitDefend(active);
+            return;
+        }
+        if (active.canShoot()) {
+            shootCreatureOrWall(active, target, setup);
+        } else if (active.distanceTo(target) == 1) {
+            meleeAttack(active, target, 0, setup);
+        } else {
+            Battlefield battlefield = setup.battlefieldFor(active.side());
+            Hex best = null;
+            int bestSteps = Integer.MAX_VALUE;
+            for (Hex head : setup.attackHeads(active, target)) {
+                if (isHexBlocked(head, active, setup)) {
+                    continue;
+                }
+                int steps = active.unit().movement() == Movement.GROUND
+                        ? battlefield.pathFor(active, head).size() : active.position().distanceTo(head);
+                if (steps > 0 && steps < bestSteps) {
+                    best = head;
+                    bestSteps = steps;
+                }
+            }
+            if (best != null && bestSteps <= active.getSpeed() && !active.isBound()) {
+                moveAndMelee(active, best, target, setup);
+            } else if (!active.isBound()) {
+                Hex step = battlefield.moveToward(active, best != null ? best : target.position(), active.getSpeed());
+                if (step.equals(active.position()) || isHexBlocked(step, active, setup)) {
+                    emitDefend(active);
+                } else {
+                    moveTo(active, step, battlefield);
+                }
+                return;
+            } else {
+                emitDefend(active);
+                return;
+            }
+        }
+        active.removeSpells(s -> s == Spell.BERSERK);
+    }
+
+    /** Klone vergehen mit ihrem Original und am Ende ihrer letzten Runde. */
+    private void dispelClones(BattleSetup setup, boolean roundEnd) {
+        for (Stack stack : setup.aliveStacks()) {
+            if (stack.cloneEnds(round, roundEnd)) {
+                stack.vanish();
+                events.emit(new BattleEvent.SpellHit(stack.side(), Spell.CLONE, stack.side(), stack.slot(), 0, 0, 0,
+                        false, false, snapshot(stack)));
+            }
+        }
     }
 
     /** Frisch beschworene Stacks reihen sich in die laufende Runde ein. */
@@ -689,6 +806,10 @@ public final class Battle {
      *         der Late-Phase erneut drankommt; {@code true}, wenn er sie verbraucht hat.
      */
     private boolean takeAction(Stack active, Stack opponent, BattleSetup setup) {
+        if (active.hasSpell(Spell.BERSERK)) {
+            berserkAction(active, setup);
+            return true;
+        }
         if (faerieCasts(active, opponent, setup)) {
             active.removeSpells(s -> s == Spell.FRENZY);
             return true;

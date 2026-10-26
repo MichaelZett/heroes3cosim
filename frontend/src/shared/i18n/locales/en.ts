@@ -301,9 +301,13 @@ export const en: Dictionary = {
     spellHitHealed: '{{spell}} heals <target>{{target}}</target> for {{healed}} health.',
     spellHitEffect: '{{spell}} takes effect on <target>{{target}}</target>.',
     spellHitResisted: '{{spell}} has no effect on <target>{{target}}</target>.',
+    spellHitSacrificed: '<target>{{target}}</target> is sacrificed: {{killed}} creatures.',
+    spellHitVanished: 'The clone <target>{{target}}</target> vanishes.',
     spellMirrored: 'Magic Mirror redirects the spell:',
     summon_attacker: 'The <actor>attacker</actor>’s hero summons {{count}} {{unit}}.',
     summon_defender: 'The <actor>defender</actor>’s hero summons {{count}} {{unit}}.',
+    clone_attacker: 'The <actor>attacker</actor>’s hero clones {{count}} {{unit}}.',
+    clone_defender: 'The <actor>defender</actor>’s hero clones {{count}} {{unit}}.',
     spellCast: '<actor>{{actor}}</actor> casts {{spell}} on <target>{{target}}</target>.',
     spellResisted:
       '<actor>{{actor}}</actor> casts {{spell}} on <target>{{target}}</target> — resisted.',
