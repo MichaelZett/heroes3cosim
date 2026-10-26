@@ -15,12 +15,15 @@ import de.zettsystems.h3comsim.battle.domain.Hero;
 import de.zettsystems.h3comsim.battle.domain.HeroCatalog;
 import de.zettsystems.h3comsim.battle.domain.HeroGrowth;
 import de.zettsystems.h3comsim.battle.domain.Hex;
+import de.zettsystems.h3comsim.battle.domain.MagicTerrain;
 import de.zettsystems.h3comsim.battle.domain.ObstacleGenerator;
 import de.zettsystems.h3comsim.battle.domain.SecondarySkill;
 import de.zettsystems.h3comsim.battle.domain.Siege;
 import de.zettsystems.h3comsim.battle.domain.SkillLevel;
 import de.zettsystems.h3comsim.battle.domain.Stack;
 import de.zettsystems.h3comsim.battle.domain.StrategicAutoSolver;
+import de.zettsystems.h3comsim.battle.domain.Terrain;
+import de.zettsystems.h3comsim.battle.domain.TerrainObstacles;
 import de.zettsystems.h3comsim.battle.domain.Unit;
 import de.zettsystems.h3comsim.battle.domain.UnitCatalog;
 import de.zettsystems.h3comsim.battle.domain.WarMachine;
@@ -49,10 +52,6 @@ public class DefaultArmyBattleService implements ArmyBattleService {
         List<Stack> defenderStacks = buildStacks(request.defender(), Side.DEFENDER);
 
         Fortification fortification = request.fortification();
-        // Belagerungen haben im Spiel keine Felsen auf dem Feld.
-        Battlefield battlefield = fortification == null
-                ? buildBattlefield(attackerStacks.size(), defenderStacks.size(), seed)
-                : Battlefield.STANDARD;
         Hero attackerHero = resolveHero(request.attacker(), attackerStacks, growthRandom(seed, Side.ATTACKER));
         Hero defenderHero = resolveHero(request.defender(), defenderStacks, growthRandom(seed, Side.DEFENDER));
         Siege siege = null;
@@ -62,18 +61,37 @@ public class DefaultArmyBattleService implements ArmyBattleService {
             }
             siege = new Siege(fortification, town(request, defenderHero, defenderStacks));
         }
+        Terrain terrain = siege == null ? request.terrain() : siegeTerrain(request, siege);
+        // Belagerungen haben im Spiel keine Felsen auf dem Feld.
+        Battlefield battlefield = siege == null
+                ? buildBattlefield(attackerStacks.size(), defenderStacks.size(), seed, terrain, request.magicTerrain())
+                : Battlefield.STANDARD;
         BattleSetup setup = new BattleSetup(attackerStacks, defenderStacks, battlefield,
                 attackerHero, bonusOf(request.attacker()),
                 defenderHero, bonusOf(request.defender()), siege)
                 .equip(Side.ATTACKER, machines(request.attacker(), attackerHero))
                 .equip(Side.DEFENDER, machines(request.defender(), defenderHero))
-                .sodSpellCosts(Boolean.TRUE.equals(request.sodSpellCosts()));
+                .sodSpellCosts(Boolean.TRUE.equals(request.sodSpellCosts()))
+                .ground(terrain, request.magicTerrain());
 
         ListEventCollector collector = new ListEventCollector();
         BattleResult result = new Battle(new Random(seed), new StrategicAutoSolver(), collector).simulate(setup);
         return new ArmyBattleSimulation(result, collector.events(),
                 attackerHero == null ? null : HeroMapper.toDto(attackerHero),
                 defenderHero == null ? null : HeroMapper.toDto(defenderHero));
+    }
+
+    /**
+     * Eine Belagerung findet auf dem Heimatgelände der Stadt statt, nie auf magischem Gelände
+     * (heroes.thelazy.net, <em>Native terrain</em>).
+     */
+    private static Terrain siegeTerrain(ArmyBattleRequest request, Siege siege) {
+        Terrain own = Objects.requireNonNull(Terrain.nativeOf(siege.town()));
+        if (request.magicTerrain() != null || (request.terrain() != null && request.terrain() != own)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "A siege is fought on the native terrain of the town (" + own + "), without magical terrain");
+        }
+        return own;
     }
 
     /**
@@ -159,12 +177,15 @@ public class DefaultArmyBattleService implements ArmyBattleService {
         return stacks;
     }
 
-    private static Battlefield buildBattlefield(int attackerStacks, int defenderStacks, long seed) {
+    private static Battlefield buildBattlefield(int attackerStacks, int defenderStacks, long seed,
+                                                @Nullable Terrain terrain, @Nullable MagicTerrain magic) {
         // Obstacle-Layout aus separatem Seed-Strom ableiten, damit der Battle-RNG identische
         // Würfe liefert. Spawn-Hexen werden anschließend aus dem Obstacle-Set entfernt — sonst
-        // könnte ein Stack auf einem Hindernis landen.
-        Set<Hex> obstacles = new HashSet<>(
-                ObstacleGenerator.generate(Battlefield.STANDARD, new Random(seed)));
+        // könnte ein Stack auf einem Hindernis landen. Ohne Gelände zufällige Felsen, sonst der
+        // Hindernis-Satz des Geländes.
+        Set<Hex> obstacles = new HashSet<>(terrain == null && magic == null
+                ? ObstacleGenerator.generate(Battlefield.STANDARD, new Random(seed))
+                : TerrainObstacles.generate(terrain, magic, new Random(seed)));
         obstacles.removeAll(SpawnLayout.spawnHexesFor(attackerStacks, defenderStacks));
         return Battlefield.STANDARD.withObstacles(obstacles);
     }

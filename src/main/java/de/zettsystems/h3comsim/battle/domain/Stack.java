@@ -51,6 +51,13 @@ public class Stack {
     private @Nullable Hero commander;
     private int armyMorale;
     private int armyLuck;
+    /** +1 Attack, Defense und Speed auf dem Heimatgelände (siehe {@link Terrain}). */
+    private int nativeBonus;
+    /** Moral und Glück vom magischen Gelände (Holy Ground, Evil Fog, Clover Field). */
+    private int terrainMorale;
+    private int terrainLuck;
+    /** Cursed Ground: positive Moral und positives Glück fallen weg. */
+    private boolean cursedGround;
     private boolean unlimitedAmmo;
     private final Map<Spell, ActiveSpell> spells = new EnumMap<>(Spell.class);
     private int spellCastsLeft;
@@ -213,11 +220,11 @@ public class Stack {
     }
 
     /**
-     * Speed der Kreatur plus +1 durch einen Kreatur-Spezialisten ({@link HeroSpecialty}) und
-     * Haste (+3/5) bzw. Prayer (+2/4).
+     * Speed der Kreatur plus +1 auf dem Heimatgelände, +1 durch einen Kreatur-Spezialisten
+     * ({@link HeroSpecialty}) und Haste (+3/5) bzw. Prayer (+2/4).
      */
     public int getSpeed() {
-        int speed = unit.speed() + (commander == null ? 0 : commander.specialty().speedBonus(unit))
+        int speed = unit.speed() + nativeBonus + (commander == null ? 0 : commander.specialty().speedBonus(unit))
                 + spellPoints(Spell.HASTE, 3, 5, 5) + spellPoints(Spell.PRAYER, 2, 4, 4);
         ActiveSpell slow = spells.get(Spell.SLOW);
         // Slow (Manual S. 68): auf 25 % (Basic) bzw. 50 % der normalen Geschwindigkeit.
@@ -226,11 +233,11 @@ public class Stack {
 
     /**
      * Attack-Rating ohne die Zauber, die nur je Angriffsart oder Ziel greifen: Grundwert,
-     * Krankheit, Held und Spezialität, Weakness (−3/6), Prayer (+2/4) und Frenzy (+100/150/200 %
+     * Heimatgelände, Krankheit, Held und Spezialität, Weakness (−3/6), Prayer (+2/4) und Frenzy (+100/150/200 %
      * der Defense, Manual S. 75).
      */
     public int getAttack() {
-        int attack = unit.attack() - (diseased ? 2 : 0)
+        int attack = unit.attack() + nativeBonus - (diseased ? 2 : 0)
                 + (commander == null ? 0 : commander.attack() + commander.specialtyAttackBonus(unit))
                 - spellPoints(Spell.WEAKNESS, 3, 6, 6) + spellPoints(Spell.PRAYER, 2, 4, 4);
         ActiveSpell frenzy = spells.get(Spell.FRENZY);
@@ -274,7 +281,7 @@ public class Stack {
     }
 
     private int baseDefense() {
-        return unit.defense() - (diseased ? 2 : 0)
+        return unit.defense() + nativeBonus - (diseased ? 2 : 0)
                 + (commander == null ? 0 : commander.defense() + commander.specialtyDefenseBonus(unit));
     }
 
@@ -331,16 +338,35 @@ public class Stack {
         this.armyLuck = rating;
     }
 
+    /** Was Grund- und magisches Gelände diesem Stack geben — gesetzt von {@link BattleSetup}. */
+    void assignGround(@Nullable Terrain terrain, @Nullable MagicTerrain magic) {
+        boolean cursed = magic == MagicTerrain.CURSED_GROUND;
+        nativeBonus = !cursed && !isWarMachine() && terrain != null && terrain == Terrain.nativeOf(unit.faction()) ? 1 : 0;
+        terrainMorale = magic == null || isWarMachine() ? 0 : magic.moraleFor(unit.faction());
+        terrainLuck = magic == null || isWarMachine() ? 0 : magic.luckFor(unit.faction());
+        cursedGround = cursed;
+    }
+
+    /** Kämpft der Stack auf seinem Heimatgelände (und nicht auf Cursed Ground)? */
+    public boolean onNativeTerrain() {
+        return nativeBonus > 0;
+    }
+
     /**
-     * Glück dieses Stacks, 0..3. Halflinge haben unter einem Helden mindestens +1 (ohne Helden
-     * wirkt Glück in SoD gar nicht, auch nicht ihres).
+     * Glück dieses Stacks, 0..3, mit Clover Field. Halflinge haben unter einem Helden mindestens
+     * +1 (ohne Helden wirkt Glück in SoD gar nicht, auch nicht ihres); Cursed Ground nimmt jedes
+     * Glück.
      */
     public int getLuck() {
         ActiveSpell fortune = spells.get(Spell.FORTUNE);
         // Ein Fortune-Spezialist gibt immer +3 (amount), sonst +1/2.
         int fortuneLuck = fortune == null ? 0 : Math.max(fortune.byLevel(1, 2, 2), fortune.amount());
-        int luck = Math.clamp(armyLuck + fortuneLuck - spellValue(Spell.MISFORTUNE, 1, 2, 2),
+        int clover = commander == null ? 0 : terrainLuck;
+        int luck = Math.clamp(armyLuck + clover + fortuneLuck - spellValue(Spell.MISFORTUNE, 1, 2, 2),
                 ArmyLuck.MIN, ArmyLuck.MAX);
+        if (cursedGround) {
+            return 0;
+        }
         return commander != null && unit.hasSpeciality(UnitSpeciality.MINIMUM_LUCK_1) ? Math.max(1, luck) : luck;
     }
 
@@ -508,8 +534,8 @@ public class Stack {
     }
 
     /**
-     * Moral dieses Stacks: Armee-Rating plus individueller Bonus der Kreatur, gekappt auf
-     * [-3, +3] (Manual S. 43).
+     * Moral dieses Stacks: Armee-Rating plus individueller Bonus der Kreatur und Moral vom
+     * Gelände, gekappt auf [-3, +3] (Manual S. 43); Cursed Ground nimmt positive Moral.
      *
      * <p>Untote und Elementare stehen außerhalb: ihre Moral ist fest 0, „independent of their
      * army's morale rating". Ein Necropolis-Held mit Leadership hebt seine Skelette also nicht —
@@ -519,8 +545,9 @@ public class Stack {
         if (unit.hasFixedZeroMorale()) {
             return 0;
         }
-        return ArmyMorale.clamp(armyMorale + unit.morale() + spellValue(Spell.MIRTH, 1, 2, 2)
+        int morale = ArmyMorale.clamp(armyMorale + unit.morale() + terrainMorale + spellValue(Spell.MIRTH, 1, 2, 2)
                 - spellValue(Spell.SORROW, 1, 2, 2));
+        return cursedGround ? Math.min(0, morale) : morale;
     }
 
     /**

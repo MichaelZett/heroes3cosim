@@ -92,6 +92,28 @@ export const en: Dictionary = {
     FIRST_AID_TENT: 'First aid tent',
     CATAPULT: 'Catapult',
   },
+  terrain: {
+    DIRT: 'Dirt',
+    SAND: 'Sand',
+    GRASS: 'Grass',
+    SNOW: 'Snow',
+    SWAMP: 'Swamp',
+    ROUGH: 'Rough',
+    SUBTERRANEAN: 'Subterranean',
+    LAVA: 'Lava',
+  },
+  magicTerrain: {
+    MAGIC_PLAINS: 'Magic Plains (all spells expert)',
+    CURSED_GROUND:
+      'Cursed Ground (level 1 spells only, no native bonuses, no positive morale, no luck)',
+    ROCKLANDS: 'Rocklands (earth magic expert)',
+    FIERY_FIELDS: 'Fiery Fields (fire magic expert)',
+    LUCID_POOLS: 'Lucid Pools (water magic expert)',
+    MAGIC_CLOUDS: 'Magic Clouds (air magic expert)',
+    HOLY_GROUND: 'Holy Ground (good +1, evil −1 morale)',
+    EVIL_FOG: 'Evil Fog (evil +1, good −1 morale)',
+    CLOVER_FIELD: 'Clover Field (Stronghold, Fortress, Conflux +2 luck)',
+  },
   fortification: {
     FORT: 'Fort',
     CITADEL: 'Citadel',
@@ -215,6 +237,7 @@ export const en: Dictionary = {
   events: {
     battleStart:
       'Battle begins: <actor>{{attacker}}</actor> ({{attackerCount}}×) vs. <target>{{defender}}</target> ({{defenderCount}}×).',
+    battleStartTerrain: 'Terrain: {{terrain}}.',
     battleStartHeroes:
       'Heroes: <actor>{{attackerHero}}</actor> vs. <target>{{defenderHero}}</target>.',
     battleStartLuck:
@@ -325,6 +348,13 @@ export const en: Dictionary = {
     town: 'Town',
     townHint: 'Decides moat and tower damage.',
     townDefault: '— town of the hero, else main faction of the garrison —',
+    terrainTitle: 'Terrain',
+    terrainHint:
+      'Creatures on their native terrain get +1 attack, defense and speed; obstacles come from the set of the terrain. A siege is always fought on the native terrain of the town.',
+    terrainNone: '— no terrain (no native bonuses, random rocks) —',
+    magicTerrain: 'Magical terrain',
+    magicTerrainNone: '— no magical terrain —',
+    terrainSiege: 'In a siege the native terrain of the town applies.',
     rulesTitle: 'Rules',
     sodSpellCosts: 'Spell costs from Shadow of Death',
     sodSpellCostsHint:

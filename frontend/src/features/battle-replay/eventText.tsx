@@ -80,6 +80,19 @@ export function EventText({ event, names }: Readonly<EventTextProps>) {
             }}
             components={{ actor: sideSpan('ATTACKER'), target: sideSpan('DEFENDER') }}
           />
+          {(event.terrain || event.magicTerrain) && (
+            <>
+              {' '}
+              {t('events.battleStartTerrain', {
+                terrain: [
+                  event.terrain ? t(`terrain.${event.terrain}`) : null,
+                  event.magicTerrain ? t(`magicTerrain.${event.magicTerrain}`) : null,
+                ]
+                  .filter(Boolean)
+                  .join(', '),
+              })}
+            </>
+          )}
           {(event.attackerHero || event.defenderHero) && (
             <>
               {' '}

@@ -110,7 +110,7 @@ class HeroAndTownTest {
                 .hasMessageContaining("Town");
         assertThat(siege(new ArmySpec(PIKEMEN), garrison, Faction.FORTRESS).town()).isEqualTo(Faction.FORTRESS);
         ArmyBattleRequest neutralTown = new ArmyBattleRequest(new ArmySpec(PIKEMEN), garrison, SEED,
-                Fortification.FORT, Faction.NEUTRAL, null);
+                Fortification.FORT, Faction.NEUTRAL, null, null, null);
         assertThatThrownBy(() -> service.simulate(neutralTown, SEED))
                 .isInstanceOf(ResponseStatusException.class);
     }
@@ -121,7 +121,7 @@ class HeroAndTownTest {
 
     private SiegeSnapshot siege(ArmySpec attacker, ArmySpec defender, @Nullable Faction town) {
         ArmyBattleSimulation simulation = service.simulate(
-                new ArmyBattleRequest(attacker, defender, SEED, Fortification.CITADEL, town, null), SEED);
+                new ArmyBattleRequest(attacker, defender, SEED, Fortification.CITADEL, town, null, null, null), SEED);
         return Objects.requireNonNull(start(simulation).siege());
     }
 

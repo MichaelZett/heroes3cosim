@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Faction, Fortification, StackSpec } from '../../shared/api/types';
+import type {
+  Faction,
+  Fortification,
+  MagicTerrain,
+  StackSpec,
+  Terrain,
+} from '../../shared/api/types';
 import { DEFAULT_BUILD, type HeroBuild } from './heroBuild';
 
 /**
@@ -26,6 +32,10 @@ export interface ArmyConfigForm {
   fortification?: Fortification | null;
   /** Stadt des Verteidigers; null = Backend-Default (Held, sonst Hauptfraktion der Garnison). */
   town?: Faction | null;
+  /** Grundgelände der Feldschlacht; null = ohne Gelände. */
+  terrain?: Terrain | null;
+  /** Magisches Gelände der Feldschlacht. */
+  magicTerrain?: MagicTerrain | null;
   /** Zauberkosten nach Shadow of Death statt nach dem RoE-Manual. */
   sodSpellCosts?: boolean;
 }
@@ -53,6 +63,8 @@ const DEFAULT_FORM: ArmyConfigForm = {
   seedText: '',
   fortification: null,
   town: null,
+  terrain: null,
+  magicTerrain: null,
   sodSpellCosts: false,
 };
 

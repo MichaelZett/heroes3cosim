@@ -17,10 +17,33 @@ import type {
   FactionPresetDto,
   Fortification,
   HeroDto,
+  MagicTerrain,
   StackSpec,
+  Terrain,
 } from '../../shared/api/types';
 
 const FORTIFICATIONS: Fortification[] = ['FORT', 'CITADEL', 'CASTLE'];
+const TERRAINS: Terrain[] = [
+  'GRASS',
+  'DIRT',
+  'LAVA',
+  'SUBTERRANEAN',
+  'ROUGH',
+  'SAND',
+  'SNOW',
+  'SWAMP',
+];
+const MAGIC_TERRAINS: MagicTerrain[] = [
+  'MAGIC_PLAINS',
+  'CURSED_GROUND',
+  'ROCKLANDS',
+  'FIERY_FIELDS',
+  'LUCID_POOLS',
+  'MAGIC_CLOUDS',
+  'HOLY_GROUND',
+  'EVIL_FOG',
+  'CLOVER_FIELD',
+];
 const TOWNS: Faction[] = [
   'CASTLE',
   'RAMPART',
@@ -76,6 +99,8 @@ export default function ArmyConfigPage() {
       seed: seedNum !== null && Number.isFinite(seedNum) ? seedNum : null,
       fortification: form.fortification ?? null,
       town: form.fortification ? (form.town ?? null) : null,
+      terrain: form.fortification ? null : (form.terrain ?? null),
+      magicTerrain: form.fortification ? null : (form.magicTerrain ?? null),
       sodSpellCosts: form.sodSpellCosts ?? false,
     });
   }
@@ -228,6 +253,49 @@ export default function ArmyConfigPage() {
           )}
           {siegeWithoutHero && (
             <p className="mt-3 text-sm text-red-400">{t('army.siegeNeedsHero')}</p>
+          )}
+        </section>
+
+        <section className="rounded-lg border border-slate-800 bg-slate-900 p-6">
+          <h2 className="text-lg font-semibold text-slate-100">{t('army.terrainTitle')}</h2>
+          <p className="mt-1 text-sm text-slate-400">{t('army.terrainHint')}</p>
+          {form.fortification ? (
+            <p className="mt-4 text-sm text-slate-300">{t('army.terrainSiege')}</p>
+          ) : (
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <select
+                aria-label={t('army.terrainTitle')}
+                className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-amber-500 focus:outline-none"
+                value={form.terrain ?? ''}
+                onChange={(e) =>
+                  setForm({ terrain: e.target.value === '' ? null : (e.target.value as Terrain) })
+                }
+              >
+                <option value="">{t('army.terrainNone')}</option>
+                {TERRAINS.map((terrain) => (
+                  <option key={terrain} value={terrain}>
+                    {t(`terrain.${terrain}`)}
+                  </option>
+                ))}
+              </select>
+              <select
+                aria-label={t('army.magicTerrain')}
+                className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-amber-500 focus:outline-none"
+                value={form.magicTerrain ?? ''}
+                onChange={(e) =>
+                  setForm({
+                    magicTerrain: e.target.value === '' ? null : (e.target.value as MagicTerrain),
+                  })
+                }
+              >
+                <option value="">{t('army.magicTerrainNone')}</option>
+                {MAGIC_TERRAINS.map((magic) => (
+                  <option key={magic} value={magic}>
+                    {t(`magicTerrain.${magic}`)}
+                  </option>
+                ))}
+              </select>
+            </div>
           )}
         </section>
 

@@ -248,6 +248,29 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   ausgerüstet, je 1440 Kämpfe): Ballista 0.601, mit Expert Artillery
   0.840, Zelt mit Expert First Aid 0.904, alle drei 0.862.
   Das Katapult gibt es nur bei Belagerungen, siehe unten.
+- **Gelände** (heroes.thelazy.net, *Terrain* und *Native terrain*;
+  Boni und Hindernisse wie in VCMI) — je Army-Battle wählbar: eines der
+  acht Grundgelände (Erde, Sand, Gras, Schnee, Sumpf, Ödland, Untergrund,
+  Lava) und darüber ein magisches Gelände. Kreaturen auf ihrem
+  Heimatgelände bekommen +1 Angriff, Verteidigung und Speed (Castle,
+  Rampart und Conflux Gras, Tower Schnee, Inferno Lava, Necropolis Erde,
+  Dungeon Untergrund, Stronghold Ödland, Fortress Sumpf; neutrale
+  Kreaturen keins). Die Hindernisse kommen aus dem Satz des Geländes:
+  5–12 Felder, mit 40 % zuerst ein großes Hindernis an fester Stelle, die
+  beiden Aufstellungsspalten bleiben frei. Magische Gelände: Magic Plains
+  (alle Zauber auf Expert, auch die der Kreaturen), Rocklands, Fiery
+  Fields, Lucid Pools und Magic Clouds (Zauber ihrer Schule auf Expert),
+  Cursed Ground (Helden nur Zauber der Stufe 1, Kreaturen gar keine, keine
+  Heimatboni, keine positive Moral, kein Glück), Holy Ground und Evil Fog
+  (gute bzw. böse Kreaturen +1 Moral, die anderen −1) und Clover Field
+  (Stronghold, Fortress und Conflux +2 Glück). Eine Belagerung findet
+  immer auf dem Heimatgelände der Stadt statt. Ohne Angabe bleibt das Feld
+  wie bisher ohne Gelände: keine Heimatboni, zufällig verteilte Felsen.
+  Gemessen (Strategic, Wochenproduktion mit Standardhelden, 12 Seeds je
+  Paarung): auf dem eigenen Gelände gewinnen Fortress 0.23 → 0.53,
+  Stronghold 0.52 → 0.68, Rampart 0.26 → 0.41, Inferno 0.20 → 0.36,
+  Necropolis 0.24 → 0.34, Dungeon 0.61 → 0.71; Castle, Tower und Conflux
+  liegen schon oben und gewinnen wenig dazu.
 - **Belagerung** (heroes.thelazy.net, *Fortifications*, Felder wie in der
   freien H3-Engine VCMI) — je Army-Battle wählbar: Der Verteidiger steht
   in einer Stadt, ohne Felsen auf dem Feld. Die Stadt ist frei wählbar;
@@ -546,10 +569,6 @@ zu lesen, nicht als universelle H3-Tier-Liste.
 
 Damit sich jede Schlacht abbilden lässt, die das Spiel kennt, fehlen noch:
 
-- **Gelände** — der Heimatgelände-Bonus der Kreaturen und die
-  Sonderschlachtfelder (Cursed Ground, Holy Ground, Magic Plains, Evil
-  Fog, Fiery Fields, Lucid Pools, Magic Clouds, Rocklands, Clover Field)
-  mit ihren Wirkungen; die Hindernisse je Geländeart.
 - **Die übrigen Kampfzauber** — Berserk, Hypnotize, Clone, Sacrifice,
   Fire Wall, Force Field (auch auf dem Feld vor dem Tor), Quicksand, Land
   Mine und Remove Obstacle.
@@ -562,7 +581,7 @@ Bewusst nicht abgebildet, weil es nichts am Kampf selbst ändert:
 Rückzug und Kapitulation, die Abenteuerkarte (Bewegung, Logistics,
 Pathfinding, Scouting …), alles nach dem Kampf (Necromancy, Eagle Eye,
 Erfahrung), Abenteuer-Zauber und die Inhalte späterer Erweiterungen
-(Kanone, Commander). Zweifeldrige Kreaturen drehen sich nicht um, wenn
+(Kanone, Commander). Seeschlachten auf dem Schiffsdeck fehlen. Zweifeldrige Kreaturen drehen sich nicht um, wenn
 sie rückwärts gehen — wie in VCMI; eine Regel, nach der sich dabei ihre
 Felder änderten, ist nicht belegt. Der Verteidiger einer Stadt steht wie
 im Spiel immer rechts.
