@@ -57,7 +57,8 @@ public class DefaultArmyBattleService implements ArmyBattleService {
                 attackerHero, bonusOf(request.attacker()),
                 defenderHero, bonusOf(request.defender()), siege)
                 .equip(Side.ATTACKER, Objects.requireNonNullElse(request.attacker().warMachines(), Set.of()))
-                .equip(Side.DEFENDER, Objects.requireNonNullElse(request.defender().warMachines(), Set.of()));
+                .equip(Side.DEFENDER, Objects.requireNonNullElse(request.defender().warMachines(), Set.of()))
+                .sodSpellCosts(Boolean.TRUE.equals(request.sodSpellCosts()));
 
         ListEventCollector collector = new ListEventCollector();
         BattleResult result = new Battle(new Random(seed), new StrategicAutoSolver(), collector).simulate(setup);

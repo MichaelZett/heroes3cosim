@@ -157,6 +157,11 @@ public record Hero(
         return spell.heroCastable() && spell.level() <= maxSpellLevel();
     }
 
+    /** Beherrscht der Held eine Schule des Zaubers, auf welcher Stufe auch immer? */
+    public boolean knowsSchoolOf(Spell spell) {
+        return spell.schools().stream().anyMatch(school -> levelOf(schoolSkill(school)) != SkillLevel.NONE);
+    }
+
     /**
      * Stufe, mit der der Held den Zauber wirkt: die Fertigkeit seiner Schule (bei Magic Arrow die
      * beste der vier). Ohne die Fertigkeit wirkt er auf Basic (Manual S. 35: die Fertigkeit hebt

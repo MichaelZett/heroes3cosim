@@ -125,13 +125,20 @@ final class HeroSpellcasting {
 
     /**
      * Mana-Kosten für diese Seite: Magi im eigenen Heer −2, Pegasi beim Gegner +2, mindestens 1.
-     * Teleport kostet je nach Water Magic des Helden 15/12/6/3.
+     * Teleport kostet je nach Water Magic des Helden 15/12/6/3; mit SoD-Kosten
+     * ({@link BattleSetup#sodSpellCosts()}) wird ein Zauber billiger, sobald der Held seine Schule
+     * beherrscht ({@link SodSpellCosts}).
      */
     static int cost(Spell spell, Side side, BattleSetup setup) {
         Hero hero = setup.heroOf(side);
-        int cost = spell == Spell.TELEPORT && hero != null
-                ? Teleport.cost(hero.levelOf(SecondarySkill.WATER_MAGIC))
-                : spell.cost();
+        int cost;
+        if (spell == Spell.TELEPORT && hero != null) {
+            cost = Teleport.cost(hero.levelOf(SecondarySkill.WATER_MAGIC));
+        } else if (setup.sodSpellCosts() && hero != null && hero.knowsSchoolOf(spell)) {
+            cost = SodSpellCosts.reduced(spell);
+        } else {
+            cost = spell.cost();
+        }
         if (anyAlive(setup.stacksOf(side), UnitSpeciality.SPELL_COST_REDUCTION)) {
             cost -= COST_MODIFIER;
         }
@@ -491,7 +498,8 @@ final class HeroSpellcasting {
         }
         int bonus = hero.specialty().spellEffectBonus(spell, hero.level(), s.unit());
         if (s.isWarMachine()) {
-            return BallistaSpells.gainPercent(spell, level, bonus) / 100 * BallistaSpells.roundValue(s, setup) * rounds;
+            return BallistaSpells.gainPercent(spell, level, bonus, s, setup) / 100
+                    * BallistaSpells.roundValue(s, setup) * rounds;
         }
         double gain = gainPercent(spell, level, bonus, s, setup);
         return gain <= 0 ? 0 : gain / 100 * ROUND_SHARE * stackValue(s) * rounds;

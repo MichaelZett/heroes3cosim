@@ -61,6 +61,7 @@ export default function ArmyConfigPage() {
       },
       seed: seedNum !== null && Number.isFinite(seedNum) ? seedNum : null,
       fortification: form.fortification ?? null,
+      sodSpellCosts: form.sodSpellCosts ?? false,
     });
   }
 
@@ -174,6 +175,22 @@ export default function ArmyConfigPage() {
                 </option>
               ))}
             </select>
+          </label>
+        </section>
+
+        <section className="rounded-lg border border-slate-800 bg-slate-900 p-6">
+          <h2 className="text-lg font-semibold text-slate-100">{t('army.rulesTitle')}</h2>
+          <label className="mt-4 flex items-start gap-3">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 accent-amber-500"
+              checked={form.sodSpellCosts ?? false}
+              onChange={(e) => setForm({ sodSpellCosts: e.target.checked })}
+            />
+            <span className="text-slate-100">
+              {t('army.sodSpellCosts')}
+              <span className="block text-sm text-slate-400">{t('army.sodSpellCostsHint')}</span>
+            </span>
           </label>
         </section>
 

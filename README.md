@@ -12,10 +12,11 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
 
 ## Was drin ist
 
-- **Vollständiger SoD-Kreaturenkatalog** — alle 126 Einheiten der neun
-  Fraktionen (Castle, Rampart, Tower, Inferno, Necropolis, Dungeon,
-  Stronghold, Fortress, Conflux) inklusive Upgrade-Varianten, Stats aus
-  dem RoE-Manual.
+- **Kreaturenkatalog** — alle 126 Einheiten der neun Fraktionen (Castle,
+  Rampart, Tower, Inferno, Necropolis, Dungeon, Stronghold, Fortress,
+  Conflux) inklusive Upgrade-Varianten, Stats aus dem RoE-Manual, dazu der
+  Peasant. Die übrigen neutralen Kreaturen aus Armageddon's Blade fehlen
+  noch (siehe „Was noch fehlt").
 - **Engine-evaluierte Spezialfähigkeiten** unter anderem No Retaliation,
   Two Blows / Two Shots, Good Morale (Minotaur), Good Army Morale
   (Angel/Arch Angel), Death Stare, Thunderbolts,
@@ -62,11 +63,16 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   ohne Auswahl den Standardhelden der Fraktion, die den größten Goldwert
   der Armee stellt (Sorsha, Jenova, Neela, Nymus, Tamika, Damacon, Crag
   Hack, Tazar, Fiur). Angriffs- und Verteidigungswert des Helden werden
-  auf jede Kreatur addiert (Manual S. 33). Dazu wirken sechs
-  Sekundärfertigkeiten: Offense (+10/20/30 % Nahkampfschaden), Archery
+  auf jede Kreatur addiert (Manual S. 33). Im Kampf wirken die
+  Sekundärfertigkeiten Offense (+10/20/30 % Nahkampfschaden), Archery
   (+10/25/50 % Fernkampf), Armorer (−5/10/15 % erlittener Schaden),
-  Leadership (+1/2/3 Moral), Luck (+1/2/3 Glück) und Tactics (siehe
-  unten). Je Armee einstellbar ist, was der Held unterwegs gesammelt hat:
+  Leadership (+1/2/3 Moral), Luck (+1/2/3 Glück), Tactics, Artillery,
+  Ballistics und First Aid (siehe unten) sowie Wisdom, die vier
+  Magieschulen, Sorcery, Intelligence und Resistance (siehe Heldenzauber).
+  Die übrigen (Logistics, Pathfinding, Scouting, Navigation, Estates,
+  Diplomacy, Learning, Mysticism, Scholar, Eagle Eye, Necromancy) wirken
+  auf der Abenteuerkarte oder nach dem Kampf und sind hier ohne Effekt.
+  Je Armee einstellbar ist, was der Held unterwegs gesammelt hat:
   Level (1..99), zusätzliche Attack-/Defense-Punkte, gelernte oder
   verbesserte Fertigkeiten (höchstens acht) sowie Glück und Moral aus
   Artefakten, Gebäuden und Abenteuer-Orten, dazu Power, Knowledge und
@@ -159,8 +165,13 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   zwei Runden; im Spiegel-Duell schlägt das die frühere Annahme von vier
   Runden auf allen gemessenen Leveln mit 0.52–0.56. Bei knappem Mana zählt, wie oft sich ein Zauber in
   den restlichen Runden noch bezahlen lässt — zweimal Magic Arrow schlägt
-  dann einmal Lightning Bolt. Die Mana-Kosten folgen dem RoE-Manual, ohne
-  die Rabatte der Schul-Fertigkeiten aus späteren Fassungen; Magi und
+  dann einmal Lightning Bolt. Ohne Kampfwirkung und deshalb nie gewählt sind
+  bisher Berserk, Hypnotize, Clone, Sacrifice, Fire Wall, Force Field,
+  Quicksand, Land Mine und Remove Obstacle (siehe „Was noch fehlt"), dazu
+  die Abenteuer-Zauber. Die Mana-Kosten folgen dem RoE-Manual; wahlweise
+  gelten die Kosten aus Shadow of Death, nach denen ein Zauber billiger
+  wird, sobald der Held seine Schule auf irgendeiner Stufe beherrscht
+  (etwa Haste 5 statt 6, Fireball 12 statt 15); Magi und
   Arch Magi senken die Kosten der eigenen Zauber um 2, Pegasi heben die
   des Gegners um 2.
 - **Kreatur-Zauber** (Werte aus der Spell Reference des Manuals) —
@@ -187,9 +198,11 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Advanced einen zweiten Schuss und 50/75/100 % Chance auf doppelten
   Grundschaden, Ballista-Spezialisten heben ihren Attack. Bless und Curse
   setzen den Grundschaden der Ballista auf das Maximum bzw. Minimum,
-  Precision und Prayer heben ihre Attack; der Held legt sie auf die eigene
-  bzw. Curse auf die gegnerische Ballista, wenn das mehr bringt als ein
-  anderes Ziel (bewertet am Schaden der Ballista; im Duell neutral, 0.503).
+  Precision und Prayer heben ihre Attack, Slayer gegen seine Ziele um 8,
+  Fortune und Misfortune ändern das Glück ihrer Schüsse; der Held legt
+  sie auf die eigene bzw. Curse und Misfortune auf die gegnerische
+  Ballista, wenn das mehr bringt als ein anderes Ziel (bewertet am Schaden
+  der Ballista; im Duell neutral, 0.503).
   Das Sanitätszelt
   heilt am Rundenende die oberste Kreatur des am stärksten verwundeten
   Stacks um 1–25 Lebenspunkte, mit First Aid bis 50/75/100. Der
@@ -224,7 +237,9 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Schaden für eine voll ausgebaute Stadt, ohne Defense des Ziels. Der
   Graben hält Bodentruppen auf, nimmt ihnen 3 Defense und verletzt sie
   beim Betreten und zu Beginn jedes Zugs dort (70, bei Dungeon, Inferno
-  und Fortress 90; Fortress zweireihig); Tower legt stattdessen
+  und Fortress 90; Fortress zweireihig). Gibt es zum Ziel einen Weg ohne
+  Graben, den der Stack in diesem Zug schafft — etwa durch das offene oder
+  zerstörte Tor —, nimmt er ihn (wie in VCMI, wo Grabenfelder anhalten); Tower legt stattdessen
   Landminen gegen Angreifer. Jeder angreifende Held bringt ein Katapult
   mit, das nach den Türmen auf die Befestigung schießt — Zielwahl,
   Trefferchancen und Schaden je Ballistics-Stufe nach den SoD-Werten.
@@ -309,8 +324,10 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   „Anomalien" (Truppen, die mehrheitlich gegen die nächstniedrigere
   Tier-Klasse verlieren).
 - **Army-vs-Army-Modus** — bis zu 7 Stacks pro Seite auf einer
-  Spawn-Spalte (Reihen `{0, 2, 4, 5, 6, 8, 10}`), Move-Order über alle
-  14 Stacks per Speed → Side → Slot sortiert. Hartkodierte
+  Spawn-Spalte (Reihen `{0, 2, 4, 5, 6, 8, 10}`), Zugreihenfolge wie im
+  Rundenablauf beschrieben. Jede Armee führt ein Held (ohne Auswahl der
+  Standardheld ihrer Fraktion); Armeen ohne Helden gibt es bisher nur im
+  Einzelkampf. Hartkodierte
   Wochenproduktions-Presets pro Faction (CASTLE, RAMPART, …, CONFLUX)
   als Default-Composition, frei überstellbar via 7-Slot-Editor.
   **Taktische Aufstellung statt Slot-Direct**: `SpawnLayout`
@@ -412,7 +429,10 @@ Feature-first nach Konvention `<fachlich>.<technisch>` mit
   `Battlefield`, `PathFinder`, `ObstacleGenerator`, `BattleSetup`
   mit `List<Stack>` pro Seite, `Battle.simulate(...)` als
   Orchestrator, `AutoSolver`-Interface plus zwei Implementierungen
-  (`GreedyAutoSolver`, `StrategicAutoSolver` mit `RoundPlan`).
+  (`GreedyAutoSolver`, `StrategicAutoSolver` mit `RoundPlan`), Helden
+  und Zauber (`Hero`, `HeroCatalog`, `HeroSpellcasting`, `Spell`),
+  Kriegsmaschinen (`WarMachine`, `BallistaSpells`) und Belagerung
+  (`Siege`, `SiegeLayout`, `Catapult`, `ArrowTowers`).
   Event-Records unter `battle.domain.events`.
 - **`singlebattle`** — Ausprägung „ein Stack gegen einen Stack".
   `BattleSimulationService` + `BattleController`
@@ -429,9 +449,10 @@ Feature-first nach Konvention `<fachlich>.<technisch>` mit
   statisches Resource gebündelt. Feature-Buckets: `battle-config`,
   `battle-replay`, `matrix-experiment`, `army-config`.
 
-## Erste Erkenntnisse aus der Matrix-Auswertung
+## Erste Erkenntnisse aus der Einheiten-Matrix
 
-Vier vergleichbare Läufe gegen denselben Pool (63 Upgrade-Einheiten,
+Die Einheiten-Matrix vergleicht einzelne Stacks ohne Helden und ohne
+Zauber. Vier vergleichbare Läufe gegen denselben Pool (63 Upgrade-Einheiten,
 9 Fraktionen × 7 Tiers, 20 Seeds, je Match-up beide Rollen → ≈ 78 k
 Sims pro Modus). Faction-Win-Rate gemittelt über alle Unit-vs-Unit-
 Match-ups:
@@ -482,12 +503,11 @@ Match-ups:
 
 **Modell-Grenzen, die diese Zahlen verzerren**:
 
-- Keine Heldenzauber → Necropolis (Animate Dead), Tower (Magi-Casts),
-  Conflux (Spell-Imm./Fire-Imm.), Black Dragon (Spell-Imm.) verlieren
-  ihren H3-Hauptvorteil.
-- Von den Hero-Skills wirken Offense, Archery, Armorer, Leadership, Luck,
-  Tactics, Artillery und First Aid; Necromancy, Logistics und Sorcery
-  nicht.
+- Keine Helden und keine Heldenzauber (beides gibt es nur im
+  Army-Battle) → Necropolis (Animate Dead), Tower (Magi-Casts), Conflux
+  (Spell-Imm./Fire-Imm.), Black Dragon (Spell-Imm.) verlieren ihren
+  H3-Hauptvorteil.
+- Necromancy wirkt erst nach dem Kampf und ist nicht abgebildet.
 - Im Single-Battle-Modus fehlen die Multi-Stack-AoE-Effekte (Cerberus,
   Fire-Breath, Magog Splash, Lich Death Cloud) — die werden erst im
   Army-vs-Army-Modus aktiv.
@@ -495,34 +515,36 @@ Match-ups:
 Die Werte sind also als „unter spell-/hero-freien 1-vs-1-Bedingungen"
 zu lesen, nicht als universelle H3-Tier-Liste.
 
-## Was als nächstes kommt
+## Was noch fehlt
 
-- **Strategischer Solver — Feintuning**: Fortress und Inferno bleiben am
-  unteren Ende, Conflux dominiert. Offen sind Sticky-Target für
-  Multi-Stack-Schützen, Anti-IMPACT_DAMAGE-Defense und eine Aufstellung,
-  die ohne Tank-Pattern auskommt (`SpawnLayout` setzt Schützen noch in
-  die Ecken, damit Tanks sie decken können).
-- **Friendly-Fire-Awareness**. Fire Breath, Magog-Fireball und Death
-  Cloud treffen beide Seiten, die Three-Headed Attack des Cerberus nur
-  Gegner. Die Ziel-Wahl der AoE-Schützen rechnet
-  das inzwischen mit (Netto-Splash plus Veto gegen Eigentor-Ziele), ebenso
-  die Lande-Hex-Wahl der Flieger. Gemessener Eigenschaden über 810
-  Battles: 10234 → 6077, Infernos Ø-Win-Rate 0.29 → 0.38 (gemessen mit
-  80 Sims je Match-up; inzwischen 0.42, weil das taktische Warten
-  zusätzlich wirkt)
-  (`build/reports/friendly-fire.md`, erzeugt vom
-  `FriendlyFireDiagnosisTest`). Diese Zahlen stammen noch aus der Zeit,
-  in der der Cerberus wahllos zwei Nachbarn traf, eigene eingeschlossen,
-  und der Magog nur zwei statt aller sechs Felder ums Ziel.
-- **Helden, nächste Stufe**: Zauber-Artefakte, Eagle Eye und die
-  Schul-Rabatte aus späteren Fassungen.
-- **Taktisches Warten ausbauen**: Nahkämpfer nutzen *Wait* bereits, wenn
-  sie ihr Ziel diese Runde nicht erreichen — messbar stärker, aber der
-  Gewinn kommt fast nur von Tower. Offen sind Schützen (warten, bis ein
-  eigener Nahkämpfer die Splash-Zone geleert hat) und Flieger (warten, bis
-  feststeht, wo der Gegner landet).
-- **Belagerung, Rest**: Wegsuche, die das offene Tor dem Graben vorzieht,
-  und das Spiegelbild für einen Verteidiger auf der linken Seite.
+Damit sich jede Schlacht abbilden lässt, die das Spiel kennt, fehlen noch:
+
+- **Armeen ohne Helden und freie Stadtwahl** — neutrale Monster und
+  Garnisonen im Army-Battle; die Stadt einer Belagerung unabhängig vom
+  Helden wählbar, auch ohne Verteidiger-Held.
+- **Neutrale Kreaturen** aus Armageddon's Blade (Halfling, Rogue, Boar,
+  Mummy, Nomad, Sharpshooter, Troll, Gold und Diamond Golem, Enchanter,
+  Faerie, Rust, Crystal und Azure Dragon) mit ihren Fähigkeiten.
+- **Gelände** — der Heimatgelände-Bonus der Kreaturen und die
+  Sonderschlachtfelder (Cursed Ground, Holy Ground, Magic Plains, Evil
+  Fog, Fiery Fields, Lucid Pools, Magic Clouds, Rocklands, Clover Field)
+  mit ihren Wirkungen; die Hindernisse je Geländeart.
+- **Die übrigen Kampfzauber** — Berserk, Hypnotize, Clone, Sacrifice,
+  Fire Wall, Force Field (auch auf dem Feld vor dem Tor), Quicksand, Land
+  Mine und Remove Obstacle.
+- **Artefakte** mit Auswahl je Held: Primärwerte, Glück und Moral, die
+  Zauber-Artefakte (Tomes, Orbs, Recanter's Cloak, Pendants) und die
+  übrigen kampfwirksamen.
+- **Kreaturenbanken** mit ihrer eigenen Aufstellung (optional).
+
+Bewusst nicht abgebildet, weil es nichts am Kampf selbst ändert:
+Rückzug und Kapitulation, die Abenteuerkarte (Bewegung, Logistics,
+Pathfinding, Scouting …), alles nach dem Kampf (Necromancy, Eagle Eye,
+Erfahrung), Abenteuer-Zauber und die Inhalte späterer Erweiterungen
+(Kanone, Commander). Zweifeldrige Kreaturen drehen sich nicht um, wenn
+sie rückwärts gehen — wie in VCMI; eine Regel, nach der sich dabei ihre
+Felder änderten, ist nicht belegt. Der Verteidiger einer Stadt steht wie
+im Spiel immer rechts.
 
 ## Quellen
 

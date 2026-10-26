@@ -100,6 +100,24 @@ class SiegeTest {
         assertThat(castle.damage(WallPart.GATE, 1)).as("schon zerstört").isFalse();
     }
 
+    @Test
+    void ground_troops_walk_around_the_moat_through_the_broken_gate_when_they_can() {
+        Stack minotaurs = new Stack(UnitCatalog.MINOTAUR_KING, 5, new Hex(6, 4), Side.ATTACKER, 0);
+        Stack pikemen = new Stack(UnitCatalog.PIKEMAN, 5, new Hex(6, 4), Side.ATTACKER, 0);
+        BattleSetup setup = siege(Fortification.CITADEL, minotaurs,
+                new Stack(UnitCatalog.PEASANT, 1, new Hex(14, 9), Side.DEFENDER, 0));
+        Siege siege = Objects.requireNonNull(setup.siege());
+        siege.damage(WallPart.GATE, 9);
+        Battlefield field = setup.battlefieldFor(Side.ATTACKER);
+        List<Hex> shortest = field.pathFor(minotaurs, SiegeLayout.GATE_INNER);
+        assertThat(shortest).as("der kürzeste Weg streift den Graben").anyMatch(siege::isMoat);
+
+        List<Hex> dry = Battle.aroundMoat(minotaurs, SiegeLayout.GATE_INNER, field, shortest, siege);
+        assertThat(dry).noneMatch(siege::isMoat).hasSameSizeAs(shortest).endsWith(SiegeLayout.GATE_INNER);
+        // Schafft der Stack den trockenen Weg nicht in einem Zug, bleibt es beim kürzesten.
+        assertThat(Battle.aroundMoat(pikemen, SiegeLayout.GATE_INNER, field, shortest, siege)).isEqualTo(shortest);
+    }
+
     private static BattleSetup siege(Fortification fortification, Stack attacker, Stack defender) {
         return new BattleSetup(List.of(attacker), List.of(defender), FIELD, null, CollectedBonus.NONE, null,
                 CollectedBonus.NONE, new Siege(fortification, Faction.CASTLE));

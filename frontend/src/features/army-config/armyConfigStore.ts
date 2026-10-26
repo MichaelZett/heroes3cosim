@@ -21,6 +21,8 @@ export interface ArmyConfigForm {
   seedText: string;
   /** Belagerung: Befestigung der Stadt des Verteidigers; null = Feldschlacht. */
   fortification?: Fortification | null;
+  /** Zauberkosten nach Shadow of Death statt nach dem RoE-Manual. */
+  sodSpellCosts?: boolean;
 }
 
 export interface ArmyConfigStore {
@@ -43,6 +45,7 @@ const DEFAULT_FORM: ArmyConfigForm = {
   defenderBuild: DEFAULT_BUILD,
   seedText: '',
   fortification: null,
+  sodSpellCosts: false,
 };
 
 function withUpdatedSlot(
