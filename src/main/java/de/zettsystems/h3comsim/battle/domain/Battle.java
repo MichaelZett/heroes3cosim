@@ -242,14 +242,29 @@ public final class Battle {
      * @return der neue Empfänger, oder {@code null}, wenn der Zauber sein Ziel trifft
      */
     private @Nullable Stack mirrored(BattleSetup setup, Side side, HeroSpellcasting.Cast cast, Stack target) {
-        ActiveSpell mirror = target.activeSpell(Spell.MAGIC_MIRROR);
-        if (mirror == null || target.side() == side || cast.target() == null
-                || !HeroSpellcasting.singleTarget(cast.spell())
-                || rng.nextInt(100) >= HeroSpellcasting.mirrorPercent(mirror)) {
+        return cast.target() == null ? null : mirrored(setup, side, cast.spell(), target);
+    }
+
+    /**
+     * Wie oben für einen Zauber auf genau dieses Ziel. Faerie Dragons tragen den Spiegel auf Basic
+     * (20 %) dauerhaft; ein stärker gewirkter Spiegel geht vor.
+     */
+    private @Nullable Stack mirrored(BattleSetup setup, Side side, Spell spell, Stack target) {
+        int percent = mirrorPercent(target);
+        if (percent == 0 || target.side() == side || !HeroSpellcasting.singleTarget(spell)
+                || rng.nextInt(100) >= percent) {
             return null;
         }
         List<Stack> casters = setup.stacksOf(side).stream().filter(Stack::isAlive).toList();
         return casters.isEmpty() ? null : casters.get(rng.nextInt(casters.size()));
+    }
+
+    private static int mirrorPercent(Stack target) {
+        ActiveSpell mirror = target.activeSpell(Spell.MAGIC_MIRROR);
+        if (mirror != null) {
+            return HeroSpellcasting.mirrorPercent(mirror);
+        }
+        return target.hasSpeciality(UnitSpeciality.NATURAL_MAGIC_MIRROR) ? 20 : 0;
     }
 
     /** Frisch beschworene Stacks reihen sich in die laufende Runde ein. */
@@ -587,6 +602,41 @@ public final class Battle {
     }
 
     /**
+     * Was zu Beginn des Zugs passiert, bevor der Stack wählt: Enchanters zaubern, dann Furcht vor
+     * Azure Dragons und der Wurf auf schlechte Moral.
+     *
+     * @return {@code true}, wenn der Stack seine Aktion verliert oder der Kampf vorbei ist
+     */
+    private boolean losesTurnAtStart(Stack activeStack, BattleSetup setup) {
+        if (activeStack.hasSpeciality(UnitSpeciality.ENCHANTER_SPELLS) && CreatureSpellcasting.enchanterCastsIn(round)) {
+            enchant(activeStack, setup);
+            if (!setup.bothAlive()) {
+                return true;
+            }
+        }
+        if (fearsAzureDragons(activeStack, setup) && rng.nextInt(100) < 10) {
+            BattleLogger.logFear(activeStack.getName());
+            events.emit(new BattleEvent.Fear(activeStack.side(), activeStack.slot()));
+            return true;
+        }
+        if (activeStack.freezes(rng)) {
+            BattleLogger.logBadMorale(activeStack.getName());
+            events.emit(new BattleEvent.BadMorale(activeStack.side(), activeStack.slot()));
+            return true;
+        }
+        return false;
+    }
+
+    /** Steht auf der Gegenseite ein Azure Dragon, dem dieser Stack nicht widersteht? */
+    private static boolean fearsAzureDragons(Stack active, BattleSetup setup) {
+        if (active.isWarMachine() || active.unit().isUndead() || active.hasSpeciality(UnitSpeciality.FEAR)) {
+            return false;
+        }
+        return setup.opponentsOf(active).stream()
+                .anyMatch(s -> s.isAlive() && s.hasSpeciality(UnitSpeciality.FEAR));
+    }
+
+    /**
      * Reguläre Aktion eines Stacks, eingerahmt von den beiden Moral-Würfen (Manual S. 43):
      * negative Moral kann die Aktion davor kosten, positive kann eine zweite dahinter setzen.
      *
@@ -600,9 +650,7 @@ public final class Battle {
         // ein, bevor der Spieler überhaupt zwischen Angriff, Wait und Defend wählen darf.
         // Wer in Phase 1 gewartet hat, hat dort bereits gewürfelt — in der Late-Phase würde ein
         // zweiter Wurf dem Warten eine doppelte Einfrier-Chance aufbürden.
-        if (!activeStack.hasWaitedThisTurn() && activeStack.freezes(rng)) {
-            BattleLogger.logBadMorale(activeStack.getName());
-            events.emit(new BattleEvent.BadMorale(activeStack.side(), activeStack.slot()));
+        if (!activeStack.hasWaitedThisTurn() && losesTurnAtStart(activeStack, setup)) {
             return;
         }
         Siege siege = setup.siege();
@@ -640,6 +688,10 @@ public final class Battle {
      *         der Late-Phase erneut drankommt; {@code true}, wenn er sie verbraucht hat.
      */
     private boolean takeAction(Stack active, Stack opponent, BattleSetup setup) {
+        if (faerieCasts(active, opponent, setup)) {
+            active.removeSpells(s -> s == Spell.FRENZY);
+            return true;
+        }
         Battlefield battlefield = setup.battlefieldFor(active.side());
         Action action = autoSolver.decide(active, opponent, battlefield);
         if ((action instanceof Action.Move || action instanceof Action.Defend) && autoSolver.attacksWarMachines(active)) {
@@ -714,6 +766,87 @@ public final class Battle {
             return;
         }
         applyCreatureSpell(caster, cast);
+    }
+
+    /**
+     * Faerie Dragons greifen mit Zaubern an, solange sie Würfe haben; ist das Ziel gegen den
+     * vorbereiteten immun, handeln sie normal, also im Nahkampf (heroes.thelazy.net).
+     */
+    private boolean faerieCasts(Stack active, Stack opponent, BattleSetup setup) {
+        if (!active.hasSpeciality(UnitSpeciality.FAERIE_SPELLS) || active.spellCastsLeft() == 0) {
+            return false;
+        }
+        Spell spell = CreatureSpellcasting.faerieSpell(rng);
+        if (SpellResistance.isImmune(opponent, spell)) {
+            return false;
+        }
+        faerieCast(active, spell, opponent, setup);
+        return true;
+    }
+
+    /**
+     * Angriffszauber eines Faerie-Dragon-Stacks: Advanced mit Power 5 je Drache, ohne Sorcery und
+     * Spezialität. Einzelziele kann Magic Mirror umlenken, Flächen gehen auf den besten Mittelpunkt
+     * um das Ziel, Chain Lightning springt wie beim Helden.
+     */
+    private void faerieCast(Stack caster, Spell spell, Stack target, BattleSetup setup) {
+        caster.useSpellCast();
+        int power = CreatureSpellcasting.FAERIE_POWER_PER_DRAGON * caster.getCount();
+        int base = SpellDamage.base(spell, CreatureSpellcasting.FAERIE_LEVEL, power);
+        List<Stack> affected = switch (spell) {
+            case FIREBALL, FROST_RING, INFERNO, METEOR_SHOWER -> HeroSpellcasting.inArea(spell,
+                    CreatureSpellcasting.areaCenter(caster, spell, target, setup), setup);
+            case CHAIN_LIGHTNING -> HeroSpellcasting.chain(target, 5, setup);
+            default -> List.of(target);
+        };
+        BattleLogger.logSpell(caster.getName(), spell, target.getName());
+        events.emit(new BattleEvent.SpellCast(caster.side(), caster.slot(), spell,
+                target.side(), target.slot(), false, snapshot(target)));
+        for (int i = 0; i < affected.size(); i++) {
+            Stack aimed = affected.get(i);
+            if (!aimed.isAlive()) {
+                continue;
+            }
+            Stack reflectedTo = mirrored(setup, caster.side(), spell, aimed);
+            Stack hit = reflectedTo == null ? aimed : reflectedTo;
+            boolean works = SpellResistance.takesEffect(spell, hit, setup, rng);
+            int damage = 0;
+            int killed = 0;
+            if (works) {
+                damage = SpellDamage.toTarget(spell, spell == Spell.CHAIN_LIGHTNING ? base >> i : base, null, hit);
+                int countBefore = hit.getCount();
+                boolean rebirthUsedBefore = hit.isRebirthUsed();
+                hit.takeDamage(damage, Set.of());
+                killed = Math.max(0, countBefore - hit.getCount());
+                emitRebirthIfFired(hit, rebirthUsedBefore);
+                setup.machineHit(hit);
+            }
+            events.emit(new BattleEvent.SpellHit(caster.side(), spell, hit.side(), hit.slot(), damage, killed, 0,
+                    !works, reflectedTo != null, snapshot(hit)));
+        }
+    }
+
+    /**
+     * Enchanters zu Beginn ihres Zugs in jeder dritten Runde: ein zufälliger Massenzauber auf
+     * Expert, drei Runden lang — nützliche auf alle eigenen, Slow und Weakness auf alle gegnerischen
+     * Stacks. Verbraucht die Aktion nicht.
+     */
+    private void enchant(Stack caster, BattleSetup setup) {
+        Spell spell = CreatureSpellcasting.enchanterSpell(caster, setup, rng);
+        List<Stack> targets = (spell.beneficial() ? setup.stacksOf(caster.side()) : setup.opponentsOf(caster))
+                .stream().filter(Stack::isAlive).toList();
+        BattleLogger.logSpell(caster.getName(), spell, "alle");
+        for (Stack target : targets) {
+            boolean works = SpellResistance.takesEffect(spell, target, setup, rng);
+            if (works && spell == Spell.CURE) {
+                target.removeSpells(s -> !s.beneficial());
+                target.healTop(CreatureSpellcasting.ENCHANTER_POWER * 5 + 30);
+            } else if (works) {
+                target.applySpell(spell, CreatureSpellcasting.ENCHANTER_LEVEL, CreatureSpellcasting.ENCHANTER_ROUNDS);
+            }
+            events.emit(new BattleEvent.SpellCast(caster.side(), caster.slot(), spell,
+                    target.side(), target.slot(), !works, snapshot(target)));
+        }
     }
 
     private void applyCreatureSpell(Stack caster, CreatureSpellcasting.Cast cast) {
@@ -1364,6 +1497,7 @@ public final class Battle {
             doThunderbolts(active, passive, attackType);
             doPetrifying(active, passive);
             doCursing(active, passive);
+            doAcidBreath(active, passive);
             doPoisoning(active, passive);
             doDiseasing(active, passive);
             doAging(active, passive);
@@ -1506,12 +1640,38 @@ public final class Battle {
     }
 
     private void doCursing(Stack active, Stack target) {
-        if (active.hasSpeciality(UnitSpeciality.CURSING) && rng.nextInt(100) < 20) {
+        int chance = curseChance(active.unit());
+        if (chance > 0 && rng.nextInt(100) < chance) {
             target.curse();
             BattleLogger.logCurse(active.getName(), target.getName());
             events.emit(new BattleEvent.Cursing(active.side(), active.slot(),
                     target.side(), target.slot()));
         }
+    }
+
+    /** Black/Dread Knight 20 %, Mummy 25 %. */
+    private static int curseChance(Unit unit) {
+        if (unit.hasSpeciality(UnitSpeciality.CURSING)) {
+            return 20;
+        }
+        return unit.hasSpeciality(UnitSpeciality.CURSING_25) ? 25 : 0;
+    }
+
+    private void doAcidBreath(Stack active, Stack target) {
+        if (!active.hasSpeciality(UnitSpeciality.ACID_BREATH)) {
+            return;
+        }
+        target.corrode();
+        int damage = rng.nextInt(100) < 20 ? 25 * active.getCount() : 0;
+        int countBefore = target.getCount();
+        if (damage > 0) {
+            boolean rebirthUsedBefore = target.isRebirthUsed();
+            target.takeDamage(damage, Set.of());
+            emitRebirthIfFired(target, rebirthUsedBefore);
+        }
+        BattleLogger.logAcidBreath(active.getName(), target.getName(), damage);
+        events.emit(new BattleEvent.AcidBreath(active.side(), active.slot(), target.side(), target.slot(),
+                damage, countBefore - target.getCount(), snapshot(target)));
     }
 
     private void doPoisoning(Stack active, Stack target) {

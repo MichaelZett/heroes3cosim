@@ -273,6 +273,17 @@ export type BattleEvent =
     }
   | { type: 'Petrifying'; actor: Side; actorSlot: number; target: Side; targetSlot: number }
   | { type: 'Cursing'; actor: Side; actorSlot: number; target: Side; targetSlot: number }
+  | {
+      type: 'AcidBreath';
+      actor: Side;
+      actorSlot: number;
+      target: Side;
+      targetSlot: number;
+      damage: number;
+      killed: number;
+      targetAfter: StackSnapshot;
+    }
+  | { type: 'Fear'; actor: Side; actorSlot: number }
   | { type: 'Poisoning'; actor: Side; actorSlot: number; target: Side; targetSlot: number }
   | { type: 'Diseasing'; actor: Side; actorSlot: number; target: Side; targetSlot: number }
   | { type: 'Aging'; actor: Side; actorSlot: number; target: Side; targetSlot: number }

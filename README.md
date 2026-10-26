@@ -14,13 +14,31 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
 
 - **Kreaturenkatalog** — alle 126 Einheiten der neun Fraktionen (Castle,
   Rampart, Tower, Inferno, Necropolis, Dungeon, Stronghold, Fortress,
-  Conflux) inklusive Upgrade-Varianten, Stats aus dem RoE-Manual, dazu der
-  Peasant. Die übrigen neutralen Kreaturen aus Armageddon's Blade fehlen
-  noch (siehe „Was noch fehlt").
+  Conflux) inklusive Upgrade-Varianten, Stats aus dem RoE-Manual, dazu die
+  15 neutralen Kreaturen (Peasant und die aus Armageddon's Blade, Werte von
+  heroes.thelazy.net, Fähigkeiten wie in VCMI, siehe unten).
+- **Neutrale Kreaturen** — Halfling (schießt, unter einem Helden Glück
+  mindestens +1), Rogue, Boar, Mummy (untot, 25 % Chance auf Curse),
+  Nomad, Sharpshooter (keine Distanz- und Mauerstrafe), Troll
+  (Regeneration), Gold und Diamond Golem (Zauberschaden −85 / −95 %),
+  Enchanter (schießt, keine Mauer- und Nahkampfstrafe, in der ersten und
+  jeder dritten Runde ein zufälliger Massenzauber auf Expert — Haste,
+  Bless, Stone Skin, Cure, Bloodlust, Slow, Weakness, Air Shield —, ohne
+  die Aktion zu verbrauchen), Faerie Dragon (greift bis zu fünfmal mit
+  einem zufälligen Angriffszauber an, Advanced mit Power 5 je Drache;
+  ist das Ziel immun, im Nahkampf; dauerhaft Magic Mirror auf Basic),
+  Rust Dragon (Atem; Säure: −3 Defense je Biss, bis Kampfende und
+  stapelbar, 20 % Chance auf 25 Schaden je Drache), Crystal Dragon (20 %
+  Magieresistenz) und Azure Dragon (Atem, immun gegen Zauber der Stufen
+  1–3, Furcht: ein lebender Gegner setzt zu Beginn seines Zugs mit 10 %
+  aus). Neutrale Drachen zählen für Slayer als Drachen. Nicht im Kampf
+  wirken Spionage (Rogue), Kristallerzeugung (Crystal Dragon) und Sand
+  ohne Malus (Nomad, kommt mit dem Gelände).
 - **Engine-evaluierte Spezialfähigkeiten** unter anderem No Retaliation,
   Two Blows / Two Shots, Good Morale (Minotaur), Good Army Morale
   (Angel/Arch Angel), Death Stare, Thunderbolts,
-  Petryfying (Medusa/Scorpicore), Cursing, Poisonous, Diseases, Aging,
+  Petryfying (Medusa/Scorpicore), Cursing (Black/Dread Knight 20 %, auf
+  Advanced: 80 % des Mindestschadens minus 1), Poisonous, Diseases, Aging,
   Death Blow, Hass (Angel/Devil, Titan/Black Dragon, Genie/Efreet je
   +50 %, Elementare gegen ihr Gegenelement +100 %), Impact Damage
   (Cavalier-Jousting, wirkungslos gegen Pikeniere und Hellebardiere),
@@ -528,9 +546,6 @@ zu lesen, nicht als universelle H3-Tier-Liste.
 
 Damit sich jede Schlacht abbilden lässt, die das Spiel kennt, fehlen noch:
 
-- **Neutrale Kreaturen** aus Armageddon's Blade (Halfling, Rogue, Boar,
-  Mummy, Nomad, Sharpshooter, Troll, Gold und Diamond Golem, Enchanter,
-  Faerie, Rust, Crystal und Azure Dragon) mit ihren Fähigkeiten.
 - **Gelände** — der Heimatgelände-Bonus der Kreaturen und die
   Sonderschlachtfelder (Cursed Ground, Holy Ground, Magic Plains, Evil
   Fog, Fiery Fields, Lucid Pools, Magic Clouds, Rocklands, Clover Field)

@@ -3,8 +3,11 @@ package de.zettsystems.h3comsim.battle.domain;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.random.RandomGenerator;
 
 /**
@@ -13,6 +16,11 @@ import java.util.random.RandomGenerator;
  * heroes.thelazy.net „at advanced level with a spell power of 6", dreimal pro Kampf, und das
  * Zaubern verbraucht ihre Aktion. Die Dauer ist damit 6 Runden („1
  * Round/Power", Manual S. 64 ff.).
+ *
+ * <p>Die neutralen Zauberer folgen eigenen Regeln (heroes.thelazy.net): Faerie Dragons greifen
+ * mit einem zufälligen Angriffszauber an, solange sie Würfe haben und das Ziel nicht immun ist,
+ * sonst im Nahkampf; Enchanters wirken in jeder dritten Runde zu Beginn ihres Zugs einen
+ * zufälligen Massenzauber, ohne ihre Aktion herzugeben.
  *
  * <p>Wann gezaubert wird, ist eine Solver-Entscheidung: hier nur, wenn der Stack in diesem Zug
  * keinen Gegner angreifen kann — eine Aktion für einen Zauber herzugeben, während ein Angriff
@@ -30,13 +38,115 @@ final class CreatureSpellcasting {
             Spell.FORTUNE, Spell.PRECISION, Spell.AIR_SHIELD, Spell.MIRTH, Spell.COUNTERSTRIKE,
             Spell.FIRE_SHIELD, Spell.FRENZY, Spell.PRAYER, Spell.SLAYER);
 
+    /** Faerie Dragon (heroes.thelazy.net): fünf Zauber pro Kampf, Advanced, Power 5 je Drache. */
+    static final int FAERIE_CASTS = 5;
+    static final int FAERIE_POWER_PER_DRAGON = 5;
+    static final SkillLevel FAERIE_LEVEL = SkillLevel.ADVANCED;
+
+    /** Die Zauber der Faerie Dragons mit ihren Wahrscheinlichkeiten in Prozent (heroes.thelazy.net). */
+    private static final Map<Spell, Integer> FAERIE_WEIGHTS = weights(
+            Spell.MAGIC_ARROW, 10, Spell.ICE_BOLT, 22, Spell.LIGHTNING_BOLT, 22, Spell.FIREBALL, 21,
+            Spell.FROST_RING, 10, Spell.INFERNO, 5, Spell.METEOR_SHOWER, 5, Spell.CHAIN_LIGHTNING, 5);
+
+    /**
+     * Die Massenzauber der Enchanters mit ihren Gewichten aus VCMI ({@code neutral.json}); die
+     * Anteile stimmen mit der Tabelle auf heroes.thelazy.net überein (dort Stone Skin verschrieben).
+     */
+    private static final Map<Spell, Integer> ENCHANTER_WEIGHTS = weights(
+            Spell.HASTE, 15, Spell.BLESS, 15, Spell.STONE_SKIN, 15, Spell.CURE, 10, Spell.BLOODLUST, 5,
+            Spell.SLOW, 10, Spell.WEAKNESS, 4, Spell.AIR_SHIELD, 10);
+
+    /** Enchanter: Expert, drei Runden, alle drei Runden. Power 3 passt zur Dauer (Cure heilt 45). */
+    static final SkillLevel ENCHANTER_LEVEL = SkillLevel.EXPERT;
+    static final int ENCHANTER_ROUNDS = 3;
+    static final int ENCHANTER_POWER = 3;
+
     private CreatureSpellcasting() {
     }
 
     static int castsFor(Unit unit) {
+        if (unit.hasSpeciality(UnitSpeciality.FAERIE_SPELLS)) {
+            return FAERIE_CASTS;
+        }
         return unit.hasSpeciality(UnitSpeciality.CASTS_BLOODLUST)
                 || unit.hasSpeciality(UnitSpeciality.CASTS_RANDOM_BENEFICIAL)
                 || unit.hasSpeciality(UnitSpeciality.CASTS_PROTECTION) ? CASTS_PER_BATTLE : 0;
+    }
+
+    /** Der Zauber, den ein Faerie-Dragon-Stack in diesem Zug vorbereitet. */
+    static Spell faerieSpell(RandomGenerator rng) {
+        return draw(FAERIE_WEIGHTS, rng);
+    }
+
+    /**
+     * Der Massenzauber eines Enchanter-Stacks; Air Shield nur, wenn ein Gegner noch schießen kann
+     * (heroes.thelazy.net).
+     */
+    static Spell enchanterSpell(Stack caster, BattleSetup setup, RandomGenerator rng) {
+        boolean enemyShoots = setup.opponentsOf(caster).stream().anyMatch(o -> o.isAlive() && o.canShoot());
+        Map<Spell, Integer> weights = new LinkedHashMap<>(ENCHANTER_WEIGHTS);
+        if (!enemyShoots) {
+            weights.remove(Spell.AIR_SHIELD);
+        }
+        return draw(weights, rng);
+    }
+
+    /** Zaubert der Enchanter in dieser Runde (ab 0 gezählt)? In der ersten und dann jeder dritten. */
+    static boolean enchanterCastsIn(int round) {
+        return round % ENCHANTER_ROUNDS == 0;
+    }
+
+    /**
+     * Wohin ein Flächenzauber des Faerie Dragon geht: unter den Feldern des Ziels und ihren
+     * Nachbarn das mit dem größten Goldwert getroffener Gegner abzüglich eigener Verluste.
+     */
+    static Hex areaCenter(Stack caster, Spell spell, Stack target, BattleSetup setup) {
+        Hex best = target.position();
+        long bestValue = Long.MIN_VALUE;
+        for (Hex own : target.hexes()) {
+            List<Hex> candidates = new ArrayList<>(own.neighbors());
+            candidates.addFirst(own);
+            for (Hex center : candidates) {
+                if (!setup.battlefield().contains(center)) {
+                    continue;
+                }
+                long value = areaValue(caster, spell, center, setup);
+                if (value > bestValue) {
+                    best = center;
+                    bestValue = value;
+                }
+            }
+        }
+        return best;
+    }
+
+    private static long areaValue(Stack caster, Spell spell, Hex center, BattleSetup setup) {
+        long value = 0;
+        for (Stack hit : HeroSpellcasting.inArea(spell, center, setup)) {
+            long worth = (long) hit.getCount() * hit.unit().cost();
+            value += hit.side() == caster.side() ? -worth : worth;
+        }
+        return value;
+    }
+
+    private static Spell draw(Map<Spell, Integer> weights, RandomGenerator rng) {
+        int total = weights.values().stream().mapToInt(Integer::intValue).sum();
+        int roll = rng.nextInt(total);
+        for (Map.Entry<Spell, Integer> entry : weights.entrySet()) {
+            roll -= entry.getValue();
+            if (roll < 0) {
+                return entry.getKey();
+            }
+        }
+        throw new IllegalStateException("weights exhausted");
+    }
+
+    private static Map<Spell, Integer> weights(Object... pairs) {
+        Map<Spell, Integer> weights = new LinkedHashMap<>();
+        for (int i = 0; i < pairs.length; i += 2) {
+            weights.put((Spell) pairs[i], (Integer) pairs[i + 1]);
+        }
+        return Collections.unmodifiableMap(weights);
     }
 
     /** Der feste Zauber dieser Kreatur, oder {@code null} für Master Genies und Nicht-Zauberer. */

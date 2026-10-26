@@ -1,5 +1,7 @@
 package de.zettsystems.h3comsim.battle.domain;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Schaden der Heldenzauber (Manual, Spell Reference S. 64–79) und seine Modifikatoren.
  *
@@ -43,19 +45,28 @@ final class SpellDamage {
         };
     }
 
-    /** Schaden auf ein Ziel, ausgehend vom (bei Chain Lightning schon halbierten) Grundschaden. */
-    static int toTarget(Spell spell, int baseDamage, Hero caster, Stack target) {
+    /**
+     * Schaden auf ein Ziel, ausgehend vom (bei Chain Lightning schon halbierten) Grundschaden;
+     * {@code caster} ist {@code null}, wenn eine Kreatur zaubert (Faerie Dragon).
+     */
+    static int toTarget(Spell spell, int baseDamage, @Nullable Hero caster, Stack target) {
         if (SpellResistance.isImmune(target, spell)) {
             return 0;
         }
         long damage = baseDamage;
-        damage = damage * (100 + caster.sorceryPercent()) / 100;
-        damage = damage * (100 + caster.specialty().spellEffectPercent(spell, caster.level(), target.unit())) / 100;
+        if (caster != null) {
+            damage = damage * (100 + caster.sorceryPercent()) / 100;
+            damage = damage * (100 + caster.specialty().spellEffectPercent(spell, caster.level(), target.unit())) / 100;
+        }
         damage = damage * target.spellDamagePercent(spell.school()) / 100;
         if (target.hasSpeciality(UnitSpeciality.SPELL_DAMAGE_HALVED)) {
             damage = damage / 2;
         } else if (target.hasSpeciality(UnitSpeciality.SPELL_DAMAGE_QUARTERED)) {
             damage = damage / 4;
+        } else if (target.hasSpeciality(UnitSpeciality.SPELL_DAMAGE_REDUCED_85)) {
+            damage = damage * 15 / 100;
+        } else if (target.hasSpeciality(UnitSpeciality.SPELL_DAMAGE_REDUCED_95)) {
+            damage = damage * 5 / 100;
         }
         return (int) (damage * elementalPercent(spell, target.unit()) / 100);
     }

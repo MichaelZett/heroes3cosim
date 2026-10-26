@@ -17,6 +17,9 @@ public enum UnitSpeciality {
     PETRYFYING(AFTER_ATTACK),
     POISONOUS(AFTER_ATTACK),
     CURSING(AFTER_ATTACK),
+    /** Mummy (heroes.thelazy.net): 25 % Chance auf Curse (Advanced, 3 Runden); Black und Dread
+     *  Knight ({@link #CURSING}) haben 20 %. */
+    CURSING_25(AFTER_ATTACK),
     DISEASES(AFTER_ATTACK),
     AGING(AFTER_ATTACK),
     DEATH_BLOW(AFTER_ATTACK),
@@ -125,6 +128,31 @@ public enum UnitSpeciality {
     SPELL_DAMAGE_HALVED(DEFENSE),
     /** Iron Golem (Manual S. 113): ein Viertel des Zauberschadens. */
     SPELL_DAMAGE_QUARTERED(DEFENSE),
+    /** Gold Golem (heroes.thelazy.net): Zauberschaden um 85 % gemindert. */
+    SPELL_DAMAGE_REDUCED_85(DEFENSE),
+    /** Diamond Golem (heroes.thelazy.net): Zauberschaden um 95 % gemindert. */
+    SPELL_DAMAGE_REDUCED_95(DEFENSE),
+    /** Mummy: untot, ohne zu Necropolis zu gehören (VCMI {@code UNDEAD}). */
+    UNDEAD(SPECIAL),
+    /** Rust Dragon (heroes.thelazy.net, <em>Acid Breath</em>): nach jedem Angriff −3 Defense am
+     *  Ziel, dauerhaft und stapelbar (VCMI {@code acidBreath}), dazu 20 % Chance auf 25 Schaden
+     *  je Drache. */
+    ACID_BREATH(AFTER_ATTACK),
+    /** Azure Dragon (heroes.thelazy.net, <em>Fear</em>): zu Beginn des Zugs eines gegnerischen
+     *  Stacks 10 % Chance, dass er vor Furcht aussetzt — einmal, gleich wie viele Azure Dragons.
+     *  Immun sind Untote und Azure Dragons selbst. */
+    FEAR(SPECIAL),
+    /** Faerie Dragon (heroes.thelazy.net): greift mit Angriffszaubern an, höchstens fünfmal pro
+     *  Kampf, Advanced, Spell Power 5 je Drache; Regeln in {@link CreatureSpellcasting}. */
+    FAERIE_SPELLS(SPECIAL),
+    /** Faerie Dragon: dauerhaft Magic Mirror auf Basic (20 %). */
+    NATURAL_MAGIC_MIRROR(DEFENSE),
+    /** Enchanter (heroes.thelazy.net): alle drei Runden ein zufälliger Massenzauber auf Expert,
+     *  drei Runden lang, ohne die Aktion zu verbrauchen; Regeln in {@link CreatureSpellcasting}. */
+    ENCHANTER_SPELLS(SPECIAL),
+    /** Halfling (heroes.thelazy.net): Glück mindestens +1 — aber wie bei allen Kreaturen nur
+     *  unter einem Helden (SoD). */
+    MINIMUM_LUCK_1(SPECIAL),
     /** Cyclops und Cyclops King: schießen in einer Belagerung auf die Mauern (WallShots). */
     ATTACKS_WALLS(SPECIAL),
 

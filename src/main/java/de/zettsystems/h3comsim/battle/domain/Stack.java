@@ -33,6 +33,8 @@ public class Stack {
     private boolean petrified;
     private int petrifiedCounter;
     private boolean cursed;
+    /** Wie oft ein Rust Dragon das Ziel mit Säure getroffen hat; jeder Treffer −3 Defense. */
+    private int acidHits;
     private int cursedCounter;
     private boolean poisoned;
     private int poisonedCounter;
@@ -277,8 +279,8 @@ public class Stack {
     }
 
     /**
-     * Defense-Rating mit Stone Skin (+3/6), Prayer (+2/4) und Disrupting Ray (−3/4/5 je Wurf,
-     * stapelbar, Manual S. 65); Frenzy setzt sie auf 0.
+     * Defense-Rating mit Stone Skin (+3/6), Prayer (+2/4), Disrupting Ray (−3/4/5 je Wurf,
+     * stapelbar, Manual S. 65) und Säureatem (−3 je Treffer); Frenzy setzt sie auf 0.
      */
     public int getDefense() {
         if (spells.containsKey(Spell.FRENZY)) {
@@ -286,7 +288,7 @@ public class Stack {
         }
         ActiveSpell ray = spells.get(Spell.DISRUPTING_RAY);
         int base = baseDefense() + spellPoints(Spell.STONE_SKIN, 3, 6, 6) + spellPoints(Spell.PRAYER, 2, 4, 4)
-                - (ray == null ? 0 : ray.amount());
+                - (ray == null ? 0 : ray.amount()) - 3 * acidHits;
         base = Math.max(0, base);
         if (defending) {
             // H3-Defend laut RoE-Manual S. 47: +20 % auf die Defense-Rating bis Rundenende.
@@ -329,13 +331,17 @@ public class Stack {
         this.armyLuck = rating;
     }
 
-    /** Glück dieses Stacks, 0..3. Keine Kreatur im Katalog hat eigenes Glück. */
+    /**
+     * Glück dieses Stacks, 0..3. Halflinge haben unter einem Helden mindestens +1 (ohne Helden
+     * wirkt Glück in SoD gar nicht, auch nicht ihres).
+     */
     public int getLuck() {
         ActiveSpell fortune = spells.get(Spell.FORTUNE);
         // Ein Fortune-Spezialist gibt immer +3 (amount), sonst +1/2.
         int fortuneLuck = fortune == null ? 0 : Math.max(fortune.byLevel(1, 2, 2), fortune.amount());
-        return Math.clamp(armyLuck + fortuneLuck - spellValue(Spell.MISFORTUNE, 1, 2, 2),
+        int luck = Math.clamp(armyLuck + fortuneLuck - spellValue(Spell.MISFORTUNE, 1, 2, 2),
                 ArmyLuck.MIN, ArmyLuck.MAX);
+        return commander != null && unit.hasSpeciality(UnitSpeciality.MINIMUM_LUCK_1) ? Math.max(1, luck) : luck;
     }
 
     /**
@@ -390,10 +396,11 @@ public class Stack {
         ActiveSpell bless = spells.get(Spell.BLESS);
         ActiveSpell curseSpell = spells.get(Spell.CURSE);
         int baseValue;
-        if (curseSpell != null && curseSpell.level() != SkillLevel.BASIC) {
-            // Curse ab Advanced (Manual S. 72): 80 % des Mindestschadens minus 1.
+        if (cursed || (curseSpell != null && curseSpell.level() != SkillLevel.BASIC)) {
+            // Curse ab Advanced (Manual S. 72): 80 % des Mindestschadens minus 1. Der Fluch von
+            // Black/Dread Knight und Mummy wirkt auf Advanced (heroes.thelazy.net).
             baseValue = Math.max(1, (unit.minDamage() + bonus) * 80 / 100 - 1);
-        } else if (cursed || curseSpell != null) {
+        } else if (curseSpell != null) {
             baseValue = unit.minDamage() + bonus;
         } else if (bless != null) {
             // Bless (Manual S. 76): maximaler Schaden, ab Advanced +1; ein Bless-Spezialist legt
@@ -838,6 +845,11 @@ public class Stack {
     public void petrify() {
         petrified = true;
         petrifiedCounter = 3;
+    }
+
+    /** Säureatem des Rust Dragon: −3 Defense bis zum Ende des Kampfs, stapelbar. */
+    void corrode() {
+        acidHits++;
     }
 
     public void curse() {

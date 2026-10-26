@@ -74,6 +74,14 @@ public final class BattleLogger {
         LOG.debug("Stack von {} verflucht Stack von {}.", currentAttacker, currentDefender);
     }
 
+    static void logAcidBreath(String attackerName, String defenderName, int damage) {
+        LOG.debug("Stack von {} ätzt Stack von {}: −3 Defense, {} Schaden.", attackerName, defenderName, damage);
+    }
+
+    static void logFear(String name) {
+        LOG.debug("Stack von {} erstarrt vor Furcht.", name);
+    }
+
     static void logPetrifying(String attackerName, String defenderName) {
         LOG.debug("Stack von {} versteinert Stack von {}.", attackerName, defenderName);
     }

@@ -20,6 +20,7 @@ import static de.zettsystems.h3comsim.battle.domain.Faction.STRONGHOLD;
 import static de.zettsystems.h3comsim.battle.domain.Faction.TOWER;
 import static de.zettsystems.h3comsim.battle.domain.Movement.FLYING;
 import static de.zettsystems.h3comsim.battle.domain.Movement.GROUND;
+import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.ACID_BREATH;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.AGING;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.AIR_HATE;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.AIR_RACE;
@@ -38,6 +39,7 @@ import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.CASTS_WEAKNES
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.COUNTERSTRIKE_TWICE;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.COUNTERSTRIKE_UNLIMITED;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.CURSING;
+import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.CURSING_25;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.DEATH_BLOW;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.DEATH_CLOUD;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.DEATH_STARE;
@@ -52,6 +54,9 @@ import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.EARTH_RACE;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.EFREET_HATE;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.EFREET_RACE;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.ELEMENTAL_RACE;
+import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.ENCHANTER_SPELLS;
+import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.FAERIE_SPELLS;
+import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.FEAR;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.FIRE_BREATH;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.FIRE_HATE;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.FIRE_RACE;
@@ -76,8 +81,11 @@ import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.MAGIC_RESISTA
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.MAGIC_RESISTANCE_AURA;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.MANA_CHANNEL;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.MANA_DRAIN;
+import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.MINIMUM_LUCK_1;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.MOVE_BACK;
+import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.NATURAL_MAGIC_MIRROR;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.NON_LIVING;
+import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.NO_DISTANCE_PENALTY;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.NO_HAND_TO_HAND_PENALTY;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.NO_OBSTACLE_PENALTY;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.NO_RETALIATION;
@@ -91,6 +99,8 @@ import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.SPELL_COST_IN
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.SPELL_COST_REDUCTION;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.SPELL_DAMAGE_HALVED;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.SPELL_DAMAGE_QUARTERED;
+import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.SPELL_DAMAGE_REDUCED_85;
+import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.SPELL_DAMAGE_REDUCED_95;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.SPLASH_SHOT;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.TELEPORT_NO_COST;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.THREE_HEADED_ATTACK;
@@ -99,6 +109,7 @@ import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.TITAN_HATE;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.TITAN_RACE;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.TWO_BLOWS;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.TWO_SHOTS;
+import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.UNDEAD;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.WATER_HATE;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpeciality.WATER_RACE;
 
@@ -111,12 +122,14 @@ public final class UnitCatalog {
     public static final Unit ARCH_ANGEL = upgrade("Arch Angel", new Stats(30, 30, 250, 18), melee(50, 50), FLYING, CASTLE, 7, 5000, RESURRECTION, GOOD_ARMY_MORALE, DEVIL_HATE, ANGEL_RACE);
     public static final Unit ARCH_DEVIL = upgrade("Arch Devil", new Stats(26, 28, 200, 17), melee(30, 40), FLYING, INFERNO, 7, 4500, NO_RETALIATION, ANGEL_HATE, DEVIL_RACE, TELEPORT_NO_COST, LOWERS_ENEMY_LUCK);
     public static final Unit ARCH_MAGI = upgrade("Arch Magi", new Stats(12, 9, 30, 7), ranged(7, 9, 24), GROUND, TOWER, 4, 350, NO_OBSTACLE_PENALTY, SPELL_COST_REDUCTION, NO_HAND_TO_HAND_PENALTY);
+    public static final Unit AZURE_DRAGON = basic("Azure Dragon", new Stats(50, 50, 1000, 19), melee(70, 80), FLYING, NEUTRAL, 7, 30000, FIRE_BREATH, FEAR, IMMUNE_TO_SPELLS_BELOW_4);
     public static final Unit BASILISK = basic("Basilisk", new Stats(11, 11, 35, 5), melee(6, 10), GROUND, FORTRESS, 4, 325, PETRYFYING);
     public static final Unit BATTLE_DWARF = upgrade("Battle Dwarf", new Stats(7, 7, 20, 5), melee(2, 4), GROUND, RAMPART, 2, 150, MAGIC_RESISTANCE_40);
     public static final Unit BEHEMOTH = basic("Behemoth", new Stats(17, 17, 160, 6), melee(30, 50), GROUND, STRONGHOLD, 7, 1500, DEFENSE_REDUCTION_40);
     public static final Unit BEHOLDER = basic("Beholder", new Stats(9, 7, 22, 5), ranged(3, 5, 12), GROUND, DUNGEON, 3, 250, NO_HAND_TO_HAND_PENALTY);
     public static final Unit BLACK_DRAGON = upgrade("Black Dragon", new Stats(25, 25, 300, 15), melee(40, 50), FLYING, DUNGEON, 7, 4000, IMMUNE_TO_SPELLS, TITAN_HATE, FIRE_BREATH, BLACK_DRAGON_RACE);
     public static final Unit BLACK_KNIGHT = basic("Black Knight", new Stats(16, 16, 120, 7), melee(15, 30), GROUND, NECROPOLIS, 6, 1200, CURSING);
+    public static final Unit BOAR = basic("Boar", new Stats(6, 5, 15, 6), melee(2, 3), GROUND, NEUTRAL, 2, 150);
     public static final Unit BONE_DRAGON = basic("Bone Dragon", new Stats(17, 15, 150, 9), melee(25, 50), FLYING, NECROPOLIS, 7, 1800, LOWERS_ENEMY_MORALE);
     public static final Unit CAVALIER = basic("Cavalier", new Stats(15, 15, 100, 7), melee(15, 25), GROUND, CASTLE, 6, 1000, IMPACT_DAMAGE);
     public static final Unit CENTAUR = basic("Centaur", new Stats(5, 3, 8, 6), melee(2, 3), GROUND, RAMPART, 1, 70);
@@ -125,20 +138,24 @@ public final class UnitCatalog {
     public static final Unit CHAMPION = upgrade("Champion", new Stats(16, 16, 100, 9), melee(20, 25), GROUND, CASTLE, 6, 1200, IMPACT_DAMAGE);
     public static final Unit CHAOS_HYDRA = upgrade("Chaos Hydra", new Stats(18, 20, 250, 7), melee(25, 45), GROUND, FORTRESS, 7, 3500, NO_RETALIATION, ATTACKS_ALL_ADJACENT);
     public static final Unit CRUSADER = upgrade("Crusader", new Stats(12, 12, 35, 6), melee(7, 10), GROUND, CASTLE, 4, 400, TWO_BLOWS);
+    public static final Unit CRYSTAL_DRAGON = basic("Crystal Dragon", new Stats(40, 40, 800, 16), melee(60, 75), GROUND, NEUTRAL, 7, 20000, MAGIC_RESISTANCE_20);
     public static final Unit CYCLOPS = basic("Cyclops", new Stats(15, 12, 70, 6), ranged(16, 20, 16), GROUND, STRONGHOLD, 6, 750, ATTACKS_WALLS);
     public static final Unit CYCLOPS_KING = upgrade("Cyclops King", new Stats(17, 13, 70, 8), ranged(16, 20, 24), GROUND, STRONGHOLD, 6, 1100, ATTACKS_WALLS);
     public static final Unit DEMON = basic("Demon", new Stats(10, 10, 35, 5), melee(7, 9), GROUND, INFERNO, 4, 250);
     public static final Unit DENDROID_GUARD = basic("Dendroid Guard", new Stats(9, 12, 55, 3), melee(10, 14), GROUND, RAMPART, 5, 350, BINDS);
     public static final Unit DENDROID_SOLDIER = upgrade("Dendroid Soldier", new Stats(9, 12, 65, 4), melee(10, 14), GROUND, RAMPART, 5, 425, BINDS);
     public static final Unit DEVIL = basic("Devil", new Stats(19, 21, 160, 11), melee(30, 40), FLYING, INFERNO, 7, 2700, NO_RETALIATION, ANGEL_HATE, DEVIL_RACE, TELEPORT_NO_COST, LOWERS_ENEMY_LUCK);
+    public static final Unit DIAMOND_GOLEM = basic("Diamond Golem", new Stats(13, 12, 60, 5), melee(10, 14), GROUND, NEUTRAL, 6, 750, NON_LIVING, SPELL_DAMAGE_REDUCED_95);
     public static final Unit DRAGON_FLY = upgrade("Dragon Fly", new Stats(6, 8, 20, 13), melee(2, 5), FLYING, FORTRESS, 3, 240, DISPELS_BENEFICIAL, CASTS_WEAKNESS);
     public static final Unit DREAD_KNIGHT = upgrade("Dread Knight", new Stats(18, 18, 120, 9), melee(15, 30), GROUND, NECROPOLIS, 6, 1500, DEATH_BLOW, CURSING);
     public static final Unit DWARF = basic("Dwarf", new Stats(6, 7, 20, 3), melee(2, 4), GROUND, RAMPART, 2, 120, MAGIC_RESISTANCE_20);
     public static final Unit EARTH_ELEMENTAL = basic("Earth Elemental", new Stats(10, 10, 40, 4), melee(4, 8), GROUND, CONFLUX, 5, 400, ELEMENTAL_RACE, AIR_HATE, EARTH_RACE);
     public static final Unit EFREET = basic("Efreet", new Stats(16, 12, 90, 9), melee(16, 24), FLYING, INFERNO, 6, 900, IMMUNE_TO_FIRE_SPELLS, GENIE_HATE, EFREET_RACE);
     public static final Unit EFREET_SULTAN = upgrade("Efreet Sultan", new Stats(16, 14, 90, 13), melee(16, 24), FLYING, INFERNO, 6, 1100, FIRE_SHIELD, IMMUNE_TO_FIRE_SPELLS, GENIE_HATE, EFREET_RACE);
+    public static final Unit ENCHANTER = basic("Enchanter", new Stats(17, 12, 30, 9), ranged(14, 14, 32), GROUND, NEUTRAL, 6, 750, NO_OBSTACLE_PENALTY, NO_HAND_TO_HAND_PENALTY, ENCHANTER_SPELLS);
     public static final Unit ENERGY_ELEMENTAL = upgrade("Energy Elemental", new Stats(12, 8, 35, 8), melee(4, 6), FLYING, CONFLUX, 4, 400, ELEMENTAL_RACE, IMMUNE_TO_FIRE_SPELLS, WATER_HATE, FIRE_RACE, CASTS_PROTECTION);
     public static final Unit EVIL_EYE = upgrade("Evil Eye", new Stats(10, 8, 22, 7), ranged(3, 5, 24), GROUND, DUNGEON, 3, 280, NO_HAND_TO_HAND_PENALTY);
+    public static final Unit FAERIE_DRAGON = basic("Faerie Dragon", new Stats(20, 20, 500, 15), melee(20, 30), FLYING, NEUTRAL, 7, 10000, FAERIE_SPELLS, NATURAL_MAGIC_MIRROR);
     public static final Unit FAMILIAR = upgrade("Familiar", new Stats(4, 4, 4, 7), melee(1, 2), GROUND, INFERNO, 1, 60, MANA_CHANNEL);
     public static final Unit FIREBIRD = basic("Firebird", new Stats(18, 18, 150, 15), melee(30, 40), FLYING, CONFLUX, 7, 1500, IMMUNE_TO_FIRE_SPELLS, FIRE_BREATH);
     public static final Unit FIRE_ELEMENTAL = basic("Fire Elemental", new Stats(10, 8, 35, 6), melee(4, 6), GROUND, CONFLUX, 4, 350, ELEMENTAL_RACE, IMMUNE_TO_FIRE_SPELLS, WATER_HATE, FIRE_RACE);
@@ -150,6 +167,7 @@ public final class UnitCatalog {
     public static final Unit GOBLIN = basic("Goblin", new Stats(4, 2, 5, 5), melee(1, 2), GROUND, STRONGHOLD, 1, 40);
     public static final Unit GOG = basic("Gog", new Stats(6, 4, 13, 4), ranged(2, 4, 12), GROUND, INFERNO, 2, 125);
     public static final Unit GOLD_DRAGON = upgrade("Gold Dragon", new Stats(27, 27, 250, 16), melee(40, 50), FLYING, RAMPART, 7, 4000, IMMUNE_TO_SPELLS_BELOW_5, FIRE_BREATH);
+    public static final Unit GOLD_GOLEM = basic("Gold Golem", new Stats(11, 12, 50, 5), melee(8, 10), GROUND, NEUTRAL, 5, 500, NON_LIVING, SPELL_DAMAGE_REDUCED_85);
     public static final Unit GORGON = basic("Gorgon", new Stats(10, 14, 70, 5), melee(12, 16), GROUND, FORTRESS, 5, 525);
     public static final Unit GRAND_ELF = upgrade("Grand Elf", new Stats(9, 5, 15, 7), ranged(3, 5, 24), GROUND, RAMPART, 3, 250, TWO_SHOTS);
     public static final Unit GREATER_BASILISK = upgrade("Greater Basilisk", new Stats(12, 12, 40, 7), melee(6, 10), GROUND, FORTRESS, 4, 400, PETRYFYING);
@@ -157,6 +175,7 @@ public final class UnitCatalog {
     public static final Unit GREMLIN = basic("Gremlin", new Stats(3, 3, 4, 4), melee(1, 2), GROUND, TOWER, 1, 30);
     public static final Unit GRIFFIN = basic("Griffin", new Stats(8, 8, 25, 6), melee(3, 6), FLYING, CASTLE, 3, 200, COUNTERSTRIKE_TWICE);
     public static final Unit HALBERDIER = upgrade("Halberdier", new Stats(6, 5, 10, 5), melee(2, 3), GROUND, CASTLE, 1, 75, JOUSTING_IMMUNE);
+    public static final Unit HALFLING = basic("Halfling", new Stats(4, 2, 4, 5), ranged(1, 3, 24), GROUND, NEUTRAL, 1, 40, MINIMUM_LUCK_1);
     public static final Unit HARPY = basic("Harpy", new Stats(6, 5, 14, 6), melee(1, 4), FLYING, DUNGEON, 2, 130, MOVE_BACK);
     public static final Unit HARPY_HAG = upgrade("Harpy Hag", new Stats(6, 6, 14, 9), melee(1, 4), FLYING, DUNGEON, 2, 170, MOVE_BACK, NO_RETALIATION);
     public static final Unit HELL_HOUND = basic("Hell Hound", new Stats(10, 6, 25, 7), melee(2, 7), GROUND, INFERNO, 3, 200);
@@ -184,8 +203,10 @@ public final class UnitCatalog {
     public static final Unit MINOTAUR = basic("Minotaur", new Stats(14, 12, 50, 6), melee(12, 20), GROUND, DUNGEON, 5, 500, GOOD_MORALE);
     public static final Unit MINOTAUR_KING = upgrade("Minotaur King", new Stats(15, 15, 50, 8), melee(12, 20), GROUND, DUNGEON, 5, 575, GOOD_MORALE);
     public static final Unit MONK = basic("Monk", new Stats(12, 7, 30, 5), ranged(10, 12, 12), GROUND, CASTLE, 5, 400);
+    public static final Unit MUMMY = basic("Mummy", new Stats(7, 7, 30, 5), melee(3, 5), GROUND, NEUTRAL, 3, 300, UNDEAD, CURSING_25);
     public static final Unit NAGA = basic("Naga", new Stats(16, 13, 110, 5), melee(20, 20), GROUND, TOWER, 6, 1100, NO_RETALIATION);
     public static final Unit NAGA_QUEEN = upgrade("Naga Queen", new Stats(16, 13, 110, 7), melee(30, 30), GROUND, TOWER, 6, 1600, NO_RETALIATION);
+    public static final Unit NOMAD = basic("Nomad", new Stats(9, 8, 30, 7), melee(2, 6), GROUND, NEUTRAL, 3, 200);
     public static final Unit OBSIDIAN_GARGOYLE = upgrade("Obsidian Gargoyle", new Stats(7, 7, 16, 9), melee(2, 3), FLYING, TOWER, 2, 160, NON_LIVING);
     public static final Unit OGRE = basic("Ogre", new Stats(13, 7, 40, 4), melee(6, 12), GROUND, STRONGHOLD, 4, 300);
     public static final Unit OGRE_MAGI = upgrade("Ogre Magi", new Stats(13, 7, 60, 5), melee(6, 12), GROUND, STRONGHOLD, 4, 400, CASTS_BLOODLUST);
@@ -202,9 +223,12 @@ public final class UnitCatalog {
     public static final Unit PSYCHIC_ELEMENTAL = basic("Psychic Elemental", new Stats(15, 13, 75, 7), melee(10, 20), GROUND, CONFLUX, 6, 750, ELEMENTAL_RACE, NO_RETALIATION, ATTACKS_ALL_ADJACENT);
     public static final Unit RED_DRAGON = basic("Red Dragon", new Stats(19, 19, 180, 11), melee(40, 50), FLYING, DUNGEON, 7, 2500, IMMUNE_TO_SPELLS_BELOW_4, FIRE_BREATH);
     public static final Unit ROC = basic("Roc", new Stats(13, 11, 60, 7), melee(11, 15), FLYING, STRONGHOLD, 5, 600);
+    public static final Unit ROGUE = basic("Rogue", new Stats(8, 3, 10, 6), melee(2, 4), GROUND, NEUTRAL, 2, 100);
     public static final Unit ROYAL_GRIFFIN = upgrade("Royal Griffin", new Stats(9, 9, 25, 9), melee(3, 6), FLYING, CASTLE, 3, 240, COUNTERSTRIKE_UNLIMITED);
+    public static final Unit RUST_DRAGON = basic("Rust Dragon", new Stats(30, 30, 750, 17), melee(50, 50), FLYING, NEUTRAL, 7, 15000, FIRE_BREATH, ACID_BREATH);
     public static final Unit SCORPICORE = upgrade("Scorpicore", new Stats(16, 14, 80, 11), melee(14, 20), FLYING, DUNGEON, 6, 1050, PETRYFYING);
     public static final Unit SERPENT_FLY = basic("Serpent Fly", new Stats(6, 8, 20, 9), melee(2, 5), FLYING, FORTRESS, 3, 220, DISPELS_BENEFICIAL);
+    public static final Unit SHARPSHOOTER = basic("Sharpshooter", new Stats(12, 10, 15, 9), ranged(8, 10, 32), GROUND, NEUTRAL, 4, 400, NO_DISTANCE_PENALTY, NO_OBSTACLE_PENALTY);
     public static final Unit SILVER_PEGASUS = upgrade("Silver Pegasus", new Stats(9, 10, 30, 12), melee(5, 9), FLYING, RAMPART, 4, 275, SPELL_COST_INCREASE);
     public static final Unit SKELETON = basic("Skeleton", new Stats(5, 4, 6, 4), melee(1, 3), GROUND, NECROPOLIS, 1, 60);
     public static final Unit SKELETON_WARRIOR = upgrade("Skeleton Warrior", new Stats(6, 6, 6, 5), melee(1, 3), GROUND, NECROPOLIS, 1, 70);
@@ -216,6 +240,7 @@ public final class UnitCatalog {
     public static final Unit THUNDERBIRD = upgrade("Thunderbird", new Stats(13, 11, 60, 11), melee(11, 15), FLYING, STRONGHOLD, 5, 700, THUNDERBOLTS);
     public static final Unit TITAN = upgrade("Titan", new Stats(24, 24, 300, 11), ranged(40, 60, 24), GROUND, TOWER, 7, 5000, NO_HAND_TO_HAND_PENALTY, TITAN_RACE, IMMUNE_TO_MIND_SPELLS, BLACK_DRAGON_HATE);
     public static final Unit TROGLODYTE = basic("Troglodyte", new Stats(4, 3, 5, 4), melee(1, 3), GROUND, DUNGEON, 1, 50, IMMUNE_TO_BLIND);
+    public static final Unit TROLL = basic("Troll", new Stats(14, 7, 40, 7), melee(10, 15), GROUND, NEUTRAL, 5, 500, REGENERATION);
     public static final Unit UNICORN = basic("Unicorn", new Stats(15, 14, 90, 7), melee(18, 22), GROUND, RAMPART, 6, 850, BLINDING, MAGIC_RESISTANCE_AURA);
     public static final Unit VAMPIRE = basic("Vampire", new Stats(10, 9, 30, 6), melee(5, 8), FLYING, NECROPOLIS, 4, 360, NO_RETALIATION);
     public static final Unit VAMPIRE_LORD = upgrade("Vampire Lord", new Stats(10, 10, 40, 9), melee(5, 8), FLYING, NECROPOLIS, 4, 500, NO_RETALIATION, LIFE_DRAIN);
@@ -233,31 +258,31 @@ public final class UnitCatalog {
     public static final Unit ZOMBIE = upgrade("Zombie", new Stats(5, 5, 20, 4), melee(2, 3), GROUND, NECROPOLIS, 2, 125, DISEASES);
 
     private static final List<Unit> ALL = List.of(
-            AIR_ELEMENTAL, ANCIENT_BEHEMOTH, ANGEL, ARCHER, ARCH_ANGEL, ARCH_DEVIL, ARCH_MAGI,
-            BASILISK, BATTLE_DWARF, BEHEMOTH, BEHOLDER, BLACK_DRAGON, BLACK_KNIGHT, BONE_DRAGON,
-            CAVALIER, CENTAUR, CENTAUR_CAPTAIN, CERBERUS, CHAMPION, CHAOS_HYDRA, CRUSADER,
+            AIR_ELEMENTAL, ANCIENT_BEHEMOTH, ANGEL, ARCHER, ARCH_ANGEL, ARCH_DEVIL, ARCH_MAGI, AZURE_DRAGON,
+            BASILISK, BATTLE_DWARF, BEHEMOTH, BEHOLDER, BLACK_DRAGON, BLACK_KNIGHT, BOAR, BONE_DRAGON,
+            CAVALIER, CENTAUR, CENTAUR_CAPTAIN, CERBERUS, CHAMPION, CHAOS_HYDRA, CRUSADER, CRYSTAL_DRAGON,
             CYCLOPS, CYCLOPS_KING,
-            DEMON, DENDROID_GUARD, DENDROID_SOLDIER, DEVIL, DRAGON_FLY, DREAD_KNIGHT, DWARF,
-            EARTH_ELEMENTAL, EFREET, EFREET_SULTAN, ENERGY_ELEMENTAL, EVIL_EYE,
-            FAMILIAR, FIREBIRD, FIRE_ELEMENTAL,
-            GENIE, GHOST_DRAGON, GIANT, GNOLL, GNOLL_MARAUDER, GOBLIN, GOG, GOLD_DRAGON, GORGON,
+            DEMON, DENDROID_GUARD, DENDROID_SOLDIER, DEVIL, DIAMOND_GOLEM, DRAGON_FLY, DREAD_KNIGHT, DWARF,
+            EARTH_ELEMENTAL, EFREET, EFREET_SULTAN, ENCHANTER, ENERGY_ELEMENTAL, EVIL_EYE,
+            FAERIE_DRAGON, FAMILIAR, FIREBIRD, FIRE_ELEMENTAL,
+            GENIE, GHOST_DRAGON, GIANT, GNOLL, GNOLL_MARAUDER, GOBLIN, GOG, GOLD_DRAGON, GOLD_GOLEM, GORGON,
             GRAND_ELF, GREATER_BASILISK, GREEN_DRAGON, GREMLIN, GRIFFIN,
-            HALBERDIER, HARPY, HARPY_HAG, HELL_HOUND, HOBGOBLIN, HORNED_DEMON, HYDRA,
+            HALBERDIER, HALFLING, HARPY, HARPY_HAG, HELL_HOUND, HOBGOBLIN, HORNED_DEMON, HYDRA,
             ICE_ELEMENTAL, IMP, INFERNAL_TROGLODYTE, IRON_GOLEM,
             LICH, LIZARDMAN, LIZARD_WARRIOR,
-            MAGI, MAGIC_ELEMENTAL, MAGMA_ELEMENTAL, MAGOG, MANTICORE, MARKSMAN,
-            MASTER_GENIE, MASTER_GREMLIN, MEDUSA, MEDUSA_QUEEN,
-            MIGHTY_GORGON, MINOTAUR, MINOTAUR_KING, MONK,
-            NAGA, NAGA_QUEEN,
+            MAGI, MAGIC_ELEMENTAL, MAGMA_ELEMENTAL, MAGOG, MANTICORE, MARKSMAN, MASTER_GENIE, MASTER_GREMLIN,
+            MEDUSA, MEDUSA_QUEEN, MIGHTY_GORGON, MINOTAUR, MINOTAUR_KING, MONK, MUMMY,
+            NAGA, NAGA_QUEEN, NOMAD,
             OBSIDIAN_GARGOYLE, OGRE, OGRE_MAGI, ORC, ORC_CHIEFTAIN,
             PEASANT, PEGASUS, PHOENIX, PIKEMAN, PIT_FIEND, PIT_LORD, PIXIE, POWER_LICH, PSYCHIC_ELEMENTAL,
-            RED_DRAGON, ROC, ROYAL_GRIFFIN,
-            SCORPICORE, SERPENT_FLY, SILVER_PEGASUS, SKELETON, SKELETON_WARRIOR, SPRITE,
+            RED_DRAGON, ROC, ROGUE, ROYAL_GRIFFIN, RUST_DRAGON,
+            SCORPICORE, SERPENT_FLY, SHARPSHOOTER, SILVER_PEGASUS, SKELETON, SKELETON_WARRIOR, SPRITE,
             STONE_GARGOYLE, STONE_GOLEM, STORM_ELEMENTAL, SWORDSMAN,
-            THUNDERBIRD, TITAN, TROGLODYTE,
-            UNICORN, VAMPIRE, VAMPIRE_LORD,
-            WALKING_DEAD, WAR_UNICORN, WATER_ELEMENTAL, WIGHT, WOLF_RAIDER, WOLF_RIDER, WOOD_ELF,
-            WRAITH, WYVERN, WYVERN_MONARCH,
+            THUNDERBIRD, TITAN, TROGLODYTE, TROLL,
+            UNICORN,
+            VAMPIRE, VAMPIRE_LORD,
+            WALKING_DEAD, WAR_UNICORN, WATER_ELEMENTAL, WIGHT, WOLF_RAIDER, WOLF_RIDER, WOOD_ELF, WRAITH,
+            WYVERN, WYVERN_MONARCH,
             ZEALOT, ZOMBIE);
 
     private static final Map<String, Unit> BY_NAME = ALL.stream()
