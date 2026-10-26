@@ -14,7 +14,8 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.random.RandomGenerator;
 
-@Slf4j
+// Kampfmeldungen gehören ins Combat-Log (logback.xml: battle.log, DEBUG), nicht ins App-Log.
+@Slf4j(topic = "de.zettsystems.h3comsim.battle.domain.BattleLogger")
 public class Stack {
 
     /** Nicht final: Ein gefallener Stack kann als Dämonen zurückkehren ({@link #riseAs}). */
@@ -408,17 +409,17 @@ public class Stack {
         }
         if (unit.hasPenality(usedAttackType)) {
             baseValue = (int) Math.round(0.5 * baseValue);
-            LOG.info("Stack von {} hat Nachteil, halbiert also den Schaden.", getName());
+            LOG.debug("Stack von {} hat Nachteil, halbiert also den Schaden.", getName());
         }
         if (unit.hasSpeciality(UnitSpeciality.DEATH_BLOW) && rng.nextInt(1, 101) <= 20) {
             baseValue = baseValue * 2;
-            LOG.info("Stack von {} nutzt Death Blow, verdoppelt also den Schaden.", getName());
+            LOG.debug("Stack von {} nutzt Death Blow, verdoppelt also den Schaden.", getName());
         }
         if (unit.hasSpeciality(UnitSpeciality.IMPACT_DAMAGE) && hexesMoved > 0) {
             // H3 Jousting: +5 % pro Hex Bewegung, gedeckelt bei +50 %.
             int bonusPercent = Math.min(50, hexesMoved * 5);
             baseValue = (int) Math.round(baseValue * (1.0 + bonusPercent / 100.0));
-            LOG.info("Stack von {} bekommt {}% Jousting-Bonus durch {} Hex Bewegung.",
+            LOG.debug("Stack von {} bekommt {}% Jousting-Bonus durch {} Hex Bewegung.",
                     getName(), bonusPercent, hexesMoved);
         }
         return baseValue * aliveCount;
@@ -540,7 +541,7 @@ public class Stack {
         int hatePercent = hatePercent(attackerSpecialities);
         if (hatePercent > 0) {
             realDamage = (int) Math.round(realDamage * (100 + hatePercent) / 100.0);
-            LOG.info("Stack von {} wird vom Gegner gehasst, bekommt {} % mehr Schaden.", getName(), hatePercent);
+            LOG.debug("Stack von {} wird vom Gegner gehasst, bekommt {} % mehr Schaden.", getName(), hatePercent);
         }
         if (petrified) {
             applyDamage((int) Math.round(0.5 * realDamage));
@@ -831,7 +832,7 @@ public class Stack {
         aliveCount = restored;
         topUnitCurrentHealth = unit.health();
         rebirthUsed = true;
-        LOG.info("{} wird durch Wiedergeburt mit {} Einheiten zurueckgebracht.", getName(), restored);
+        LOG.debug("{} wird durch Wiedergeburt mit {} Einheiten zurueckgebracht.", getName(), restored);
     }
 
     public void petrify() {
@@ -900,15 +901,15 @@ public class Stack {
 
     public boolean isAbleToAct() {
         if (!isAlive()) {
-            LOG.info("Stack von {} ist bereits tot und macht nichts.", getName());
+            LOG.debug("Stack von {} ist bereits tot und macht nichts.", getName());
             return false;
         }
         if (petrified) {
-            LOG.info("Stack von {} ist versteinert und macht nichts.", getName());
+            LOG.debug("Stack von {} ist versteinert und macht nichts.", getName());
             return false;
         }
         if (spells.containsKey(Spell.BLIND)) {
-            LOG.info("Stack von {} ist geblendet und macht nichts.", getName());
+            LOG.debug("Stack von {} ist geblendet und macht nichts.", getName());
             return false;
         }
         return true;
@@ -928,32 +929,32 @@ public class Stack {
                 }
             }
         }
-        LOG.info("Stack von {} erhaelt {} Schaden. {} wurden getoetet.",
+        LOG.debug("Stack von {} erhaelt {} Schaden. {} wurden getoetet.",
                 getName(), damage, countBefore - aliveCount);
     }
 
     private void uncurse() {
         cursed = false;
         cursedCounter = 0;
-        LOG.info("{} wurde entflucht.", getName());
+        LOG.debug("{} wurde entflucht.", getName());
     }
 
     private void unpetrify() {
         petrified = false;
         petrifiedCounter = 0;
-        LOG.info("{} wurde entsteinert.", getName());
+        LOG.debug("{} wurde entsteinert.", getName());
     }
 
     private void unpoison() {
         poisoned = false;
         poisonedCounter = 0;
-        LOG.info("{} ist nicht mehr vergiftet.", getName());
+        LOG.debug("{} ist nicht mehr vergiftet.", getName());
     }
 
     private void undisease() {
         diseased = false;
         diseasedCounter = 0;
-        LOG.info("{} ist nicht mehr krank.", getName());
+        LOG.debug("{} ist nicht mehr krank.", getName());
     }
 
     private void applyPoisonTick() {
@@ -961,7 +962,7 @@ public class Stack {
             return;
         }
         int loss = unit.health() / 2;
-        LOG.info("{} verliert {} Gesundheit durch Gift.", getName(), loss);
+        LOG.debug("{} verliert {} Gesundheit durch Gift.", getName(), loss);
         applyDamage(loss);
     }
 }

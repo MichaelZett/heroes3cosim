@@ -137,7 +137,8 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   einzelnes Ziel mit 20/30/40 % auf einen zufälligen Stack des Zaubernden
   um. Summon Elementals ruft Power × 2/3/4 Elementare als neuen Stack an
   den eigenen Rand (eine Art je Kampf, dieselbe Art erneut verstärkt ihn);
-  er handelt ab der nächsten Runde und zählt am Ende nicht als
+  er handelt noch in derselben Runde, sobald die Zugreihenfolge ihn
+  erreicht (wie in VCMI), und zählt am Ende nicht als
   Überlebender. Bleiben einer Seite nur Beschworene, verliert sie — haben
   beide nur noch Beschworene oder gar nichts, verlieren beide. Die Art
   wählt der Held nach Goldwert abzüglich dessen, was der gegnerische Held
@@ -184,7 +185,12 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   (Attack des Helden + 1) mit Attack 10 plus der Attack des Helden; alle
   Maschinen bekommen Attack und Defense ihres Helden. Artillery gibt ab
   Advanced einen zweiten Schuss und 50/75/100 % Chance auf doppelten
-  Grundschaden, Ballista-Spezialisten heben ihren Attack. Das Sanitätszelt
+  Grundschaden, Ballista-Spezialisten heben ihren Attack. Bless und Curse
+  setzen den Grundschaden der Ballista auf das Maximum bzw. Minimum,
+  Precision und Prayer heben ihre Attack; der Held legt sie auf die eigene
+  bzw. Curse auf die gegnerische Ballista, wenn das mehr bringt als ein
+  anderes Ziel (bewertet am Schaden der Ballista; im Duell neutral, 0.503).
+  Das Sanitätszelt
   heilt am Rundenende die oberste Kreatur des am stärksten verwundeten
   Stacks um 1–25 Lebenspunkte, mit First Aid bis 50/75/100. Der
   Munitionswagen gibt den Schützen unbegrenzt Schüsse. Die Maschinen
@@ -241,7 +247,11 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Stufe als der Gegner, stellt er vor Kampfbeginn in den ersten 3/5/7
   Spalten auf (ein, zwei, drei Grade Vorsprung). Die Nahkämpfer rücken in
   ihrer Reihe an die vorderste freie Zelle vor, höchstens fünf Spalten
-  tief; die Schützen bleiben am Rand.
+  tief. Die Schützen rücken mit, wenn die Zone fünf Spalten erreicht —
+  dann trifft ihr erster Schuss ohne Distanzstrafe; bei drei Spalten
+  bleiben sie am Rand. Im Spiegel-Duell gewinnt die Tactics-Seite damit
+  0.555/0.588/0.555 (Basic/Advanced/Expert, je 1440 Kämpfe), mit Schützen
+  am Rand 0.555/0.528/0.530.
 - **Moral** (Manual S. 43) — jede Armee hat ein Rating, das sich aus ihrer
   Zusammenstellung ergibt: +1, wenn alle Kreaturen aus derselben Stadt
   stammen (außer Necropolis), −1 für Untote unter Lebenden, −1 je

@@ -212,7 +212,13 @@ final class HeroSpellcasting {
                 }
             }
             default -> {
-                List<Stack> targets = spell.beneficial() ? own : enemies;
+                List<Stack> targets = new ArrayList<>(spell.beneficial() ? own : enemies);
+                if (BallistaSpells.SPELLS.contains(spell)) {
+                    Stack ballista = setup.working(spell.beneficial() ? side : other(side), WarMachine.BALLISTA);
+                    if (ballista != null) {
+                        targets.add(ballista);
+                    }
+                }
                 if (spell.massAtExpert() && level == SkillLevel.EXPERT) {
                     casts.add(new Cast(spell, level, null, targets));
                 } else {
@@ -484,6 +490,9 @@ final class HeroSpellcasting {
             return protectionValue(spell, level, s, setup) * rounds;
         }
         int bonus = hero.specialty().spellEffectBonus(spell, hero.level(), s.unit());
+        if (s.isWarMachine()) {
+            return BallistaSpells.gainPercent(spell, level, bonus) / 100 * BallistaSpells.roundValue(s, setup) * rounds;
+        }
         double gain = gainPercent(spell, level, bonus, s, setup);
         return gain <= 0 ? 0 : gain / 100 * ROUND_SHARE * stackValue(s) * rounds;
     }

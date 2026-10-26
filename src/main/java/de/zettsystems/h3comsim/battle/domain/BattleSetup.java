@@ -212,6 +212,12 @@ public class BattleSetup {
         return stack != null && stack.isAlive();
     }
 
+    /** Die stehende Maschine dieser Art auf dieser Seite, oder {@code null}. */
+    public @Nullable Stack working(Side side, WarMachine machine) {
+        Stack stack = machineStacks.getOrDefault(side, Map.of()).get(machine);
+        return stack != null && stack.isAlive() ? stack : null;
+    }
+
     /** Die stehende Maschine auf diesem Feld, oder {@code null}. */
     public @Nullable Stack machineAt(Hex hex) {
         for (Map<WarMachine, Stack> placed : machineStacks.values()) {
