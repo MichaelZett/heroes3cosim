@@ -1,5 +1,7 @@
 package de.zettsystems.h3comsim.battle.domain;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
@@ -432,6 +434,16 @@ public final class HeroCatalog {
      * hat.
      */
     public static Hero defaultForArmy(List<Stack> stacks) {
+        Faction dominant = dominantFaction(stacks);
+        return dominant == null ? SORSHA : defaultFor(dominant).orElseThrow();
+    }
+
+    /**
+     * Die Fraktion, die den größten Goldwert (Anzahl × Kosten) der Armee stellt; bei Gleichstand
+     * die in {@link Faction} zuerst stehende. Neutrale zählen nicht, eine rein neutrale Armee hat
+     * keine ({@code null}).
+     */
+    public static @Nullable Faction dominantFaction(List<Stack> stacks) {
         Map<Faction, Long> value = new EnumMap<>(Faction.class);
         for (Stack stack : stacks) {
             Faction faction = stack.unit().faction();
@@ -447,6 +459,6 @@ public final class HeroCatalog {
                 best = entry.getValue();
             }
         }
-        return dominant == null ? SORSHA : defaultFor(dominant).orElseThrow();
+        return dominant;
     }
 }

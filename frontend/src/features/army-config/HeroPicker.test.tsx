@@ -38,6 +38,44 @@ describe('HeroPicker', () => {
     expect(onChange).toHaveBeenCalledWith(null);
   });
 
+  it('offers fighting without a hero only when the caller supports it', async () => {
+    const onWithoutHero = vi.fn();
+    const onChange = vi.fn();
+    render(
+      <HeroPicker
+        heroes={TEST_HEROES}
+        selectedName="Tazar"
+        onChange={onChange}
+        onWithoutHero={onWithoutHero}
+      />,
+    );
+
+    expect(screen.getAllByRole('option')).toHaveLength(TEST_HEROES.length + 2);
+    await userEvent.selectOptions(
+      screen.getByRole('combobox'),
+      screen.getByRole('option', { name: /Ohne Helden/ }),
+    );
+
+    expect(onWithoutHero).toHaveBeenCalled();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('shows what an army without a hero loses instead of hero details', () => {
+    render(
+      <HeroPicker
+        heroes={TEST_HEROES}
+        selectedName="Crag Hack"
+        onChange={vi.fn()}
+        withoutHero
+        onWithoutHero={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('combobox')).toHaveValue('<without>');
+    expect(screen.getByText(/keine Kriegsmaschinen/)).toBeInTheDocument();
+    expect(screen.queryByText(/\+4/)).not.toBeInTheDocument();
+  });
+
   it('shows the effect of the selected hero on the whole army', () => {
     render(<HeroPicker heroes={TEST_HEROES} selectedName="Crag Hack" onChange={vi.fn()} />);
 

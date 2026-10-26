@@ -355,6 +355,8 @@ export interface ArmySpec {
   spells?: Spell[];
   /** Zufaelliger Aufstieg bis heroLevel nach den Regeln des Spiels. */
   randomGrowth?: boolean;
+  /** Armee ohne Helden (neutrale Monster, Garnison); schliesst heroName aus. */
+  withoutHero?: boolean;
 }
 
 export type Spell =
@@ -552,6 +554,8 @@ export interface ArmyBattleRequest {
   seed?: number | null;
   /** Belagerung: Befestigung der Stadt des Verteidigers; null = Feldschlacht. */
   fortification?: Fortification | null;
+  /** Stadt des Verteidigers; null = Fraktion seines Helden, ohne Helden Hauptfraktion der Garnison. */
+  town?: Faction | null;
   /** Zauberkosten nach Shadow of Death: beherrschte Schule macht Zauber billiger. */
   sodSpellCosts?: boolean | null;
 }
@@ -559,9 +563,9 @@ export interface ArmyBattleRequest {
 export interface ArmyBattleSimulation {
   result: BattleResult;
   events: BattleEvent[];
-  /** Die Helden, wie sie gekaempft haben (nach Aufbau und Aufstieg). */
-  attackerHero?: HeroDto;
-  defenderHero?: HeroDto;
+  /** Die Helden, wie sie gekaempft haben (nach Aufbau und Aufstieg); null ohne Helden. */
+  attackerHero?: HeroDto | null;
+  defenderHero?: HeroDto | null;
 }
 
 export interface FactionPresetDto {

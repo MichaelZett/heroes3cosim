@@ -135,7 +135,7 @@ public sealed interface BattleEvent {
             @Schema(description = "Alle initialen Stacks beider Seiten (Army-Battle). Single-Battle: zwei Snapshots — Slot 0 Attacker + Slot 0 Defender.") List<StackSnapshot> stacks,
             @Schema(description = "Moral-Rating der Angreifer-Armee (Manual S. 43): Stadt-Typen, Untoten-Mischung, Leadership des Helden und Angel-Bonus zusammengerechnet. Untote und Elementare bleiben davon unberührt und haben immer Moral 0.", example = "1") int attackerMorale,
             @Schema(description = "Moral-Rating der Verteidiger-Armee, analog zu `attackerMorale`.", example = "0") int defenderMorale,
-            @Schema(description = "Held der Angreifer-Armee. Im Army-Battle immer gesetzt (ohne Auswahl der Standardheld), im Single-Battle null.", example = "Crag Hack", nullable = true) @Nullable String attackerHero,
+            @Schema(description = "Held der Angreifer-Armee. Im Army-Battle ohne Auswahl der Standardheld, null bei einer Armee ohne Helden und im Single-Battle.", example = "Crag Hack", nullable = true) @Nullable String attackerHero,
             @Schema(description = "Held der Verteidiger-Armee, analog zu `attackerHero`.", example = "Tazar", nullable = true) @Nullable String defenderHero,
             @Schema(description = "Glücks-Rating der Angreifer-Armee (Manual S. 44), 0..3: Luck-Fertigkeit des Helden plus gesammeltes Glück, minus eins gegen Devils. Ohne Helden 0.", example = "1") int attackerLuck,
             @Schema(description = "Glücks-Rating der Verteidiger-Armee, analog zu `attackerLuck`.", example = "0") int defenderLuck,

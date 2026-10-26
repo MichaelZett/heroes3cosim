@@ -98,7 +98,7 @@ class SiegeImpactTest {
                         List<StackSpec> stronger = preset.stacks().stream()
                                 .map(spec -> new StackSpec(spec.unitName(), spec.count() * strength)).toList();
                         ArmySpec attacker = new ArmySpec(stronger, null, null, null, null, null, null, null,
-                                null, skills, null, null, null);
+                                null, skills, null, null, null, null);
                         ArmySpec defender = new ArmySpec(preset.stacks(), null);
                         ArmyBattleSimulation sim = service.simulate(
                                 new ArmyBattleRequest(attacker, defender, seed, level), seed);

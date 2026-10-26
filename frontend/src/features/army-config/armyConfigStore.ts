@@ -12,15 +12,20 @@ export interface ArmyConfigForm {
   attackerStacks: StackSpec[];
   /** Held der Angreifer-Armee; null = Standardheld der Hauptfraktion. */
   attackerHeroName: string | null;
+  /** Armee ohne Helden (neutrale Monster, Garnison). */
+  attackerWithoutHero?: boolean;
   /** Level, Punkte, Fertigkeiten und gesammelte Boni des Angreifer-Helden. */
   attackerBuild: HeroBuild;
   defenderFaction: Faction | null;
   defenderStacks: StackSpec[];
   defenderHeroName: string | null;
+  defenderWithoutHero?: boolean;
   defenderBuild: HeroBuild;
   seedText: string;
   /** Belagerung: Befestigung der Stadt des Verteidigers; null = Feldschlacht. */
   fortification?: Fortification | null;
+  /** Stadt des Verteidigers; null = Backend-Default (Held, sonst Hauptfraktion der Garnison). */
+  town?: Faction | null;
   /** Zauberkosten nach Shadow of Death statt nach dem RoE-Manual. */
   sodSpellCosts?: boolean;
 }
@@ -38,13 +43,16 @@ const DEFAULT_FORM: ArmyConfigForm = {
   attackerFaction: null,
   attackerStacks: EMPTY_SLOTS,
   attackerHeroName: null,
+  attackerWithoutHero: false,
   attackerBuild: DEFAULT_BUILD,
   defenderFaction: null,
   defenderStacks: EMPTY_SLOTS,
   defenderHeroName: null,
+  defenderWithoutHero: false,
   defenderBuild: DEFAULT_BUILD,
   seedText: '',
   fortification: null,
+  town: null,
   sodSpellCosts: false,
 };
 

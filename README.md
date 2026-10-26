@@ -59,10 +59,10 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   (siehe unten).
 - **Helden** — alle 144 Helden aus RoE und Armageddon's Blade (18
   Klassen, je Fraktion 16) mit ihren Startfertigkeiten; die Primärwerte
-  hängen an der Klasse. Im Army-Battle führt jede Armee einen Helden:
-  ohne Auswahl den Standardhelden der Fraktion, die den größten Goldwert
-  der Armee stellt (Sorsha, Jenova, Neela, Nymus, Tamika, Damacon, Crag
-  Hack, Tazar, Fiur). Angriffs- und Verteidigungswert des Helden werden
+  hängen an der Klasse. Im Army-Battle führt ohne Auswahl der
+  Standardheld der Fraktion, die den größten Goldwert der Armee stellt
+  (Sorsha, Jenova, Neela, Nymus, Tamika, Damacon, Crag Hack, Tazar,
+  Fiur); „ohne Helden“ lässt eine Armee führerlos kämpfen (siehe unten). Angriffs- und Verteidigungswert des Helden werden
   auf jede Kreatur addiert (Manual S. 33). Im Kampf wirken die
   Sekundärfertigkeiten Offense (+10/20/30 % Nahkampfschaden), Archery
   (+10/25/50 % Fernkampf), Armorer (−5/10/15 % erlittener Schaden),
@@ -78,6 +78,13 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Artefakten, Gebäuden und Abenteuer-Orten, dazu Power, Knowledge und
   das Zauberbuch (siehe Heldenzauber). Single Battle und
   Einheiten-Matrix bleiben ohne Helden.
+- **Armeen ohne Helden** — neutrale Monster und Garnisonen. Ohne Helden
+  gibt es kein Glück (in SoD wirkt es nur unter einem Helden,
+  heroes.thelazy.net, *Luck*), keine Zauber, kein Tactics, keine
+  Kriegsmaschinen und keine gesammelten Boni; die Moral aus der
+  Zusammenstellung wirkt. Eine Stadt greift nur ein Held an: Belagerungen
+  brauchen einen angreifenden Helden, verteidigen darf die Garnison
+  allein.
 - **Zufälliger Aufstieg**: Statt den Helden von Hand auszubauen, lässt er
   sich je Armee zufällig auf das gewählte Level bringen, reproduzierbar
   über den Seed. Jeder Aufstieg zieht den Primärwert nach den
@@ -225,7 +232,10 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Das Katapult gibt es nur bei Belagerungen, siehe unten.
 - **Belagerung** (heroes.thelazy.net, *Fortifications*, Felder wie in der
   freien H3-Engine VCMI) — je Army-Battle wählbar: Der Verteidiger steht
-  in einer Stadt der Fraktion seines Helden, ohne Felsen auf dem Feld.
+  in einer Stadt, ohne Felsen auf dem Feld. Die Stadt ist frei wählbar;
+  ohne Angabe die Fraktion seines Helden, bei einer Garnison ohne Helden
+  ihre Hauptfraktion (nach Goldwert). Ohne Verteidiger-Helden schießen
+  die Türme nach der KI des Spiels, Landminen machen 150 Schaden.
   Fort baut Mauern und Tor: sechs unzerstörbare Mauerstücke, vier
   Segmente mit 2 Treffern (mit Castle 3), das Tor mit 2. Mauern sperren
   Bodentruppen; Flieger fliegen darüber, und ein Schuss von draußen über
@@ -326,8 +336,7 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
 - **Army-vs-Army-Modus** — bis zu 7 Stacks pro Seite auf einer
   Spawn-Spalte (Reihen `{0, 2, 4, 5, 6, 8, 10}`), Zugreihenfolge wie im
   Rundenablauf beschrieben. Jede Armee führt ein Held (ohne Auswahl der
-  Standardheld ihrer Fraktion); Armeen ohne Helden gibt es bisher nur im
-  Einzelkampf. Hartkodierte
+  Standardheld ihrer Fraktion) oder kämpft ohne Helden. Hartkodierte
   Wochenproduktions-Presets pro Faction (CASTLE, RAMPART, …, CONFLUX)
   als Default-Composition, frei überstellbar via 7-Slot-Editor.
   **Taktische Aufstellung statt Slot-Direct**: `SpawnLayout`
@@ -519,9 +528,6 @@ zu lesen, nicht als universelle H3-Tier-Liste.
 
 Damit sich jede Schlacht abbilden lässt, die das Spiel kennt, fehlen noch:
 
-- **Armeen ohne Helden und freie Stadtwahl** — neutrale Monster und
-  Garnisonen im Army-Battle; die Stadt einer Belagerung unabhängig vom
-  Helden wählbar, auch ohne Verteidiger-Held.
 - **Neutrale Kreaturen** aus Armageddon's Blade (Halfling, Rogue, Boar,
   Mummy, Nomad, Sharpshooter, Troll, Gold und Diamond Golem, Enchanter,
   Faerie, Rust, Crystal und Azure Dragon) mit ihren Fähigkeiten.

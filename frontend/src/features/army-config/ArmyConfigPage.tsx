@@ -12,6 +12,7 @@ import HeroBonusPicker from './HeroBonusPicker';
 import HeroPicker from './HeroPicker';
 import SlotEditor from './SlotEditor';
 import type {
+  ArmySpec,
   Faction,
   FactionPresetDto,
   Fortification,
@@ -20,6 +21,17 @@ import type {
 } from '../../shared/api/types';
 
 const FORTIFICATIONS: Fortification[] = ['FORT', 'CITADEL', 'CASTLE'];
+const TOWNS: Faction[] = [
+  'CASTLE',
+  'RAMPART',
+  'TOWER',
+  'INFERNO',
+  'NECROPOLIS',
+  'DUNGEON',
+  'STRONGHOLD',
+  'FORTRESS',
+  'CONFLUX',
+];
 
 export default function ArmyConfigPage() {
   const navigate = useNavigate();
@@ -49,20 +61,33 @@ export default function ArmyConfigPage() {
     if (attackerStacks.length === 0 || defenderStacks.length === 0) return;
     const seedNum = form.seedText.trim() === '' ? null : Number(form.seedText);
     simulate.mutate({
-      attacker: {
-        stacks: attackerStacks,
-        heroName: form.attackerHeroName,
-        ...buildSpec(form.attackerBuild, heroByName(form.attackerHeroName)),
-      },
-      defender: {
-        stacks: defenderStacks,
-        heroName: form.defenderHeroName,
-        ...buildSpec(form.defenderBuild, heroByName(form.defenderHeroName)),
-      },
+      attacker: armySpec(
+        attackerStacks,
+        form.attackerWithoutHero ?? false,
+        form.attackerHeroName,
+        form.attackerBuild,
+      ),
+      defender: armySpec(
+        defenderStacks,
+        form.defenderWithoutHero ?? false,
+        form.defenderHeroName,
+        form.defenderBuild,
+      ),
       seed: seedNum !== null && Number.isFinite(seedNum) ? seedNum : null,
       fortification: form.fortification ?? null,
+      town: form.fortification ? (form.town ?? null) : null,
       sodSpellCosts: form.sodSpellCosts ?? false,
     });
+  }
+
+  function armySpec(
+    stacks: StackSpec[],
+    withoutHero: boolean,
+    heroName: string | null,
+    build: HeroBuild,
+  ): ArmySpec {
+    if (withoutHero) return { stacks, withoutHero: true };
+    return { stacks, heroName, ...buildSpec(build, heroByName(heroName)) };
   }
 
   function rollSeed() {
@@ -76,8 +101,8 @@ export default function ArmyConfigPage() {
     const heroName = preset.heroName ?? null;
     setForm(
       side === 'attacker'
-        ? { attackerStacks: padded, attackerHeroName: heroName }
-        : { defenderStacks: padded, defenderHeroName: heroName },
+        ? { attackerStacks: padded, attackerHeroName: heroName, attackerWithoutHero: false }
+        : { defenderStacks: padded, defenderHeroName: heroName, defenderWithoutHero: false },
     );
   }
 
@@ -98,7 +123,8 @@ export default function ArmyConfigPage() {
 
   const attackerReady = trimEmpty(form.attackerStacks).length > 0;
   const defenderReady = trimEmpty(form.defenderStacks).length > 0;
-  const submitDisabled = !attackerReady || !defenderReady || simulate.isPending;
+  const siegeWithoutHero = !!form.fortification && (form.attackerWithoutHero ?? false);
+  const submitDisabled = !attackerReady || !defenderReady || siegeWithoutHero || simulate.isPending;
 
   return (
     <main className="mx-auto max-w-6xl p-8">
@@ -128,7 +154,9 @@ export default function ArmyConfigPage() {
             onSlotChange={(slot, patch) => updateStack('attacker', slot, patch)}
             heroes={heroes}
             heroName={form.attackerHeroName}
-            onHeroChange={(name) => setForm({ attackerHeroName: name })}
+            onHeroChange={(name) => setForm({ attackerHeroName: name, attackerWithoutHero: false })}
+            withoutHero={form.attackerWithoutHero ?? false}
+            onWithoutHero={() => setForm({ attackerHeroName: null, attackerWithoutHero: true })}
             build={{ ...DEFAULT_BUILD, ...form.attackerBuild }}
             onBuildChange={(patch) =>
               setForm({ attackerBuild: { ...DEFAULT_BUILD, ...form.attackerBuild, ...patch } })
@@ -146,7 +174,9 @@ export default function ArmyConfigPage() {
             onSlotChange={(slot, patch) => updateStack('defender', slot, patch)}
             heroes={heroes}
             heroName={form.defenderHeroName}
-            onHeroChange={(name) => setForm({ defenderHeroName: name })}
+            onHeroChange={(name) => setForm({ defenderHeroName: name, defenderWithoutHero: false })}
+            withoutHero={form.defenderWithoutHero ?? false}
+            onWithoutHero={() => setForm({ defenderHeroName: null, defenderWithoutHero: true })}
             build={{ ...DEFAULT_BUILD, ...form.defenderBuild }}
             onBuildChange={(patch) =>
               setForm({ defenderBuild: { ...DEFAULT_BUILD, ...form.defenderBuild, ...patch } })
@@ -176,6 +206,29 @@ export default function ArmyConfigPage() {
               ))}
             </select>
           </label>
+          {form.fortification && (
+            <label className="mt-4 block">
+              <span className="text-sm text-slate-400">{t('army.townHint')}</span>
+              <select
+                aria-label={t('army.town')}
+                className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-amber-500 focus:outline-none"
+                value={form.town ?? ''}
+                onChange={(e) =>
+                  setForm({ town: e.target.value === '' ? null : (e.target.value as Faction) })
+                }
+              >
+                <option value="">{t('army.townDefault')}</option>
+                {TOWNS.map((f) => (
+                  <option key={f} value={f}>
+                    {t(`faction.${f}`)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          {siegeWithoutHero && (
+            <p className="mt-3 text-sm text-red-400">{t('army.siegeNeedsHero')}</p>
+          )}
         </section>
 
         <section className="rounded-lg border border-slate-800 bg-slate-900 p-6">
@@ -258,6 +311,8 @@ interface SideColumnProps {
   heroes: HeroDto[];
   heroName: string | null;
   onHeroChange: (name: string | null) => void;
+  withoutHero: boolean;
+  onWithoutHero: () => void;
   build: HeroBuild;
   onBuildChange: (patch: Partial<HeroBuild>) => void;
 }
@@ -279,15 +334,19 @@ function SideColumn(props: Readonly<SideColumnProps>) {
         heroes={props.heroes}
         selectedName={props.heroName}
         onChange={props.onHeroChange}
+        withoutHero={props.withoutHero}
+        onWithoutHero={props.onWithoutHero}
       />
-      <HeroBonusPicker
-        value={props.build}
-        startSkills={selectedHero?.skills ?? {}}
-        basePower={selectedHero?.power ?? 0}
-        baseKnowledge={selectedHero?.knowledge ?? 0}
-        startSpells={selectedHero?.spells ?? []}
-        onChange={props.onBuildChange}
-      />
+      {!props.withoutHero && (
+        <HeroBonusPicker
+          value={props.build}
+          startSkills={selectedHero?.skills ?? {}}
+          basePower={selectedHero?.power ?? 0}
+          baseKnowledge={selectedHero?.knowledge ?? 0}
+          startSpells={selectedHero?.spells ?? []}
+          onChange={props.onBuildChange}
+        />
+      )}
       <div className="space-y-1.5">
         {SLOTS.map((slot) => (
           <SlotEditor

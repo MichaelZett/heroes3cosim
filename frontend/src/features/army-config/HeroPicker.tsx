@@ -65,23 +65,36 @@ function specialtyText(specialty: HeroSpecialtyDto, t: TFunction): string {
   });
 }
 
+/** Wert der Option „ohne Helden“; kein Heldenname kann so lauten. */
+const WITHOUT_HERO = '<without>';
+
 interface HeroPickerProps {
   heroes: HeroDto[];
   selectedName: string | null;
   onChange: (name: string | null) => void;
+  /** Die Armee kaempft ohne Helden (neutrale Monster, Garnison). */
+  withoutHero?: boolean;
+  /** Ohne Rueckruf gibt es die Option „ohne Helden“ nicht. */
+  onWithoutHero?: () => void;
 }
 
 /**
- * Auswahl des Helden, der diese Armee fuehrt. Jede Armee hat einen Helden: die leere Auswahl
- * ueberlaesst ihn dem Backend, das den Standardhelden der Fraktion mit dem groessten Goldwert
- * nimmt.
+ * Auswahl des Helden, der diese Armee fuehrt. Die leere Auswahl ueberlaesst ihn dem Backend, das
+ * den Standardhelden der Fraktion mit dem groessten Goldwert nimmt; „ohne Helden“ laesst die
+ * Armee fuehrerlos kaempfen.
  *
  * Angezeigt werden Angriff und Verteidigung, Power und Knowledge fuer die Zauber sowie die
  * Fertigkeiten, die auf die Kreaturen wirken.
  */
-export default function HeroPicker({ heroes, selectedName, onChange }: Readonly<HeroPickerProps>) {
+export default function HeroPicker({
+  heroes,
+  selectedName,
+  onChange,
+  withoutHero = false,
+  onWithoutHero,
+}: Readonly<HeroPickerProps>) {
   const { t } = useTranslation();
-  const current = heroes.find((h) => h.name === selectedName) ?? null;
+  const current = withoutHero ? null : (heroes.find((h) => h.name === selectedName) ?? null);
   const skillText = current
     ? DAMAGE_SKILLS.flatMap((skill) => {
         const level = current.skills[skill];
@@ -101,10 +114,14 @@ export default function HeroPicker({ heroes, selectedName, onChange }: Readonly<
         <span className="text-sm text-slate-400">{t('army.hero')}</span>
         <select
           className="mt-1 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-amber-500 focus:outline-none"
-          value={selectedName ?? ''}
-          onChange={(e) => onChange(e.target.value === '' ? null : e.target.value)}
+          value={withoutHero ? WITHOUT_HERO : (selectedName ?? '')}
+          onChange={(e) => {
+            if (e.target.value === WITHOUT_HERO) onWithoutHero?.();
+            else onChange(e.target.value === '' ? null : e.target.value);
+          }}
         >
           <option value="">{t('army.heroNone')}</option>
+          {onWithoutHero && <option value={WITHOUT_HERO}>{t('army.heroWithout')}</option>}
           {groupByFaction(heroes).map(([faction, group]) => (
             <optgroup key={faction} label={t(`faction.${faction}`)}>
               {group.map((hero) => (
@@ -116,6 +133,7 @@ export default function HeroPicker({ heroes, selectedName, onChange }: Readonly<
           ))}
         </select>
       </label>
+      {withoutHero && <p className="mt-2 text-xs text-slate-400">{t('army.heroWithoutHint')}</p>}
       {current && (
         <>
           <p className="mt-2 text-xs text-amber-300/80">

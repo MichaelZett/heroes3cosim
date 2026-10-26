@@ -312,8 +312,12 @@ export const de = {
   army: {
     siegeTitle: 'Belagerung',
     siegeHint:
-      'Der Verteidiger steht in einer Stadt seiner Heldenfraktion: Mauern und Tor (Fort), dazu Hauptturm und Graben (Citadel), dazu zwei Türme und stärkere Mauern (Castle). Der Angreifer bringt ein Katapult mit.',
+      'Der Verteidiger steht in einer Stadt: Mauern und Tor (Fort), dazu Hauptturm und Graben (Citadel), dazu zwei Türme und stärkere Mauern (Castle). Der Angreifer bringt ein Katapult mit.',
     siegeNone: 'Keine — Feldschlacht',
+    siegeNeedsHero: 'Eine Stadt greift nur ein Held an — wähle für den Angreifer einen Helden.',
+    town: 'Stadt',
+    townHint: 'Bestimmt Graben und Turmschaden.',
+    townDefault: '— Stadt des Helden, sonst Hauptfraktion der Garnison —',
     rulesTitle: 'Regeln',
     sodSpellCosts: 'Zauberkosten nach Shadow of Death',
     sodSpellCostsHint:
@@ -330,6 +334,10 @@ export const de = {
     slotEmpty: '— leer —',
     hero: 'Held',
     heroNone: '— Standardheld der Hauptfraktion —',
+    heroWithout: 'Ohne Helden (neutrale Monster, Garnison)',
+    heroWithoutHint:
+      'Ohne Helden kein Glück, keine Zauber, kein Tactics und keine Kriegsmaschinen; die Moral der Zusammenstellung wirkt.',
+    heroWithoutSummary: 'Ohne Helden',
     heroEffect: '+{{attack}} Angriff / +{{defense}} Verteidigung auf jede Einheit dieser Armee',
     heroPending: 'Helden werden geladen …',
     heroSkillOFFENSE: 'Angriff',
