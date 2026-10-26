@@ -230,6 +230,11 @@ export const de = {
     twoShots: '<actor>{{actor}}</actor> schießt ein zweites Mal.',
     goodMorale: '<actor>{{actor}}</actor> hat gute Moral und greift erneut an.',
     badMorale: '<actor>{{actor}}</actor> hat schlechte Moral und verliert die Aktion.',
+    fear: '<actor>{{actor}}</actor> erstarrt vor Furcht und verliert die Aktion.',
+    acidBreath:
+      'Die Säure von <actor>{{actor}}</actor> zersetzt <target>{{target}}</target>: −3 Verteidigung.',
+    acidBreathDamage:
+      'Die Säure von <actor>{{actor}}</actor> zersetzt <target>{{target}}</target>: −3 Verteidigung, {{damage}} Schaden, {{killed}} getötet.',
     tacticsPhase_attacker:
       '<actor>Angreifer</actor> stellt mit Tactics in den ersten {{columns}} Spalten auf.',
     tacticsPhase_defender:

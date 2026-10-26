@@ -45,6 +45,8 @@ import java.util.List;
         @JsonSubTypes.Type(value = BattleEvent.Thunderbolts.class, name = "Thunderbolts"),
         @JsonSubTypes.Type(value = BattleEvent.Petrifying.class, name = "Petrifying"),
         @JsonSubTypes.Type(value = BattleEvent.Cursing.class, name = "Cursing"),
+        @JsonSubTypes.Type(value = BattleEvent.AcidBreath.class, name = "AcidBreath"),
+        @JsonSubTypes.Type(value = BattleEvent.Fear.class, name = "Fear"),
         @JsonSubTypes.Type(value = BattleEvent.Poisoning.class, name = "Poisoning"),
         @JsonSubTypes.Type(value = BattleEvent.Diseasing.class, name = "Diseasing"),
         @JsonSubTypes.Type(value = BattleEvent.Aging.class, name = "Aging"),
@@ -75,7 +77,8 @@ import java.util.List;
                 BattleEvent.SpellCast.class, BattleEvent.Dispel.class,
                 BattleEvent.HeroSpell.class, BattleEvent.SpellHit.class, BattleEvent.Summon.class,
                 BattleEvent.MoveBack.class, BattleEvent.DeathStare.class, BattleEvent.Thunderbolts.class,
-                BattleEvent.Petrifying.class, BattleEvent.Cursing.class, BattleEvent.Poisoning.class,
+                BattleEvent.Petrifying.class, BattleEvent.Cursing.class, BattleEvent.AcidBreath.class,
+                BattleEvent.Fear.class, BattleEvent.Poisoning.class,
                 BattleEvent.Diseasing.class, BattleEvent.Aging.class, BattleEvent.Bind.class, BattleEvent.FireShield.class,
                 BattleEvent.Rebirth.class, BattleEvent.Resurrection.class, BattleEvent.RaiseDemons.class,
                 BattleEvent.BattleEnd.class
@@ -112,6 +115,8 @@ import java.util.List;
                 @DiscriminatorMapping(value = "Thunderbolts", schema = BattleEvent.Thunderbolts.class),
                 @DiscriminatorMapping(value = "Petrifying", schema = BattleEvent.Petrifying.class),
                 @DiscriminatorMapping(value = "Cursing", schema = BattleEvent.Cursing.class),
+                @DiscriminatorMapping(value = "AcidBreath", schema = BattleEvent.AcidBreath.class),
+                @DiscriminatorMapping(value = "Fear", schema = BattleEvent.Fear.class),
                 @DiscriminatorMapping(value = "Poisoning", schema = BattleEvent.Poisoning.class),
                 @DiscriminatorMapping(value = "Diseasing", schema = BattleEvent.Diseasing.class),
                 @DiscriminatorMapping(value = "Aging", schema = BattleEvent.Aging.class),
@@ -361,7 +366,7 @@ public sealed interface BattleEvent {
     @Schema(name = "SpellHit",
             description = "Wirkung eines Heldenzaubers auf einen Stack: Schaden, Heilung oder ein liegender Zauber. `resisted` = immun oder durch Magieresistenz abgewehrt, `reflected` = von Magic Mirror auf einen Stack des Zaubernden umgelenkt.")
     record SpellHit(
-            @Schema(description = "Seite des zaubernden Helden") Side actor,
+            @Schema(description = "Seite des Zaubernden: Held oder Faerie Dragons") Side actor,
             @Schema(description = "Zauber") Spell spell,
             @Schema(description = "Seite des Ziels") Side target,
             @Schema(description = "Slot des Ziels") int targetSlot,
@@ -431,6 +436,25 @@ public sealed interface BattleEvent {
             @Schema(description = "Slot des Auslösers") int actorSlot,
             @Schema(description = "Versteinerte Seite") Side target,
             @Schema(description = "Slot des Ziels") int targetSlot) implements BattleEvent {
+    }
+
+    @Schema(name = "AcidBreath",
+            description = "Säureatem eines Rust Dragon: das Ziel verliert dauerhaft 3 Defense, mit 20 % Chance dazu 25 Schaden je Drache.")
+    record AcidBreath(
+            @Schema(description = "Seite der Drachen") Side actor,
+            @Schema(description = "Slot der Drachen") int actorSlot,
+            @Schema(description = "Getroffene Seite") Side target,
+            @Schema(description = "Slot des Ziels") int targetSlot,
+            @Schema(description = "Zusätzlicher Schaden, 0 ohne Säureschaden") int damage,
+            @Schema(description = "Getötete Kreaturen") int killed,
+            @Schema(description = "Ziel danach") StackSnapshot targetAfter) implements BattleEvent {
+    }
+
+    @Schema(name = "Fear",
+            description = "Ein Stack erstarrt vor den Azure Dragons der Gegenseite und verliert seine Aktion.")
+    record Fear(
+            @Schema(description = "Seite des Stacks") Side actor,
+            @Schema(description = "Slot des Stacks") int actorSlot) implements BattleEvent {
     }
 
     @Schema(name = "Cursing",

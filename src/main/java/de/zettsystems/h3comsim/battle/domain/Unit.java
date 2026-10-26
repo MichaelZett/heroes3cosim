@@ -28,6 +28,7 @@ public record Unit(
             "Wolf Rider", "Wolf Raider", "Roc", "Thunderbird", "Behemoth", "Ancient Behemoth",
             "Basilisk", "Greater Basilisk", "Gorgon", "Mighty Gorgon", "Wyvern", "Wyvern Monarch",
             "Hydra", "Chaos Hydra", "Water Elemental", "Ice Elemental", "Firebird", "Phoenix",
+            "Boar", "Nomad", "Faerie Dragon", "Rust Dragon", "Crystal Dragon", "Azure Dragon",
             "Ballista", "First Aid Tent", "Catapult");
 
     public Unit {
@@ -129,10 +130,11 @@ public record Unit(
 
     /**
      * Undead-Klassifikation für engine-seitige Immunitäten (z.B. DEATH_CLOUD-Splash
-     * überspringt Undead — Manual S. 101). H3 RoE: alle Necropolis-Creatures sind Undead.
+     * überspringt Undead — Manual S. 101). Alle Necropolis-Kreaturen sind untot, dazu die
+     * neutrale Mummy.
      */
     public boolean isUndead() {
-        return faction == Faction.NECROPOLIS;
+        return faction == Faction.NECROPOLIS || specialities.contains(UnitSpeciality.UNDEAD);
     }
 
     public boolean hasPenality(AttackType usedAttackType) {

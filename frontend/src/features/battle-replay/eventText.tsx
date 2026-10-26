@@ -391,6 +391,27 @@ export function EventText({ event, names }: Readonly<EventTextProps>) {
           components={{ actor: sideSpan(event.actor) }}
         />
       );
+    case 'Fear':
+      return (
+        <Trans
+          i18nKey="events.fear"
+          values={{ actor: sideName(event.actor, event.actorSlot ?? 0, names) }}
+          components={{ actor: sideSpan(event.actor) }}
+        />
+      );
+    case 'AcidBreath':
+      return (
+        <Trans
+          i18nKey={event.damage > 0 ? 'events.acidBreathDamage' : 'events.acidBreath'}
+          values={{
+            actor: sideName(event.actor, event.actorSlot ?? 0, names),
+            target: sideName(event.target, event.targetSlot ?? 0, names),
+            damage: event.damage,
+            killed: event.killed,
+          }}
+          components={{ actor: sideSpan(event.actor), target: sideSpan(event.target) }}
+        />
+      );
     case 'BadMorale':
       return (
         <Trans

@@ -234,6 +234,11 @@ export const en: Dictionary = {
     twoShots: '<actor>{{actor}}</actor> shoots a second time.',
     goodMorale: '<actor>{{actor}}</actor> has good morale and attacks again.',
     badMorale: '<actor>{{actor}}</actor> has bad morale and loses the action.',
+    fear: '<actor>{{actor}}</actor> freezes in fear and loses the action.',
+    acidBreath:
+      'The acid of <actor>{{actor}}</actor> corrodes <target>{{target}}</target>: −3 defense.',
+    acidBreathDamage:
+      'The acid of <actor>{{actor}}</actor> corrodes <target>{{target}}</target>: −3 defense, {{damage}} damage, {{killed}} killed.',
     tacticsPhase_attacker:
       '<actor>Attacker</actor> arranges troops with Tactics within the first {{columns}} columns.',
     tacticsPhase_defender:
