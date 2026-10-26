@@ -37,6 +37,8 @@ public final class Battle {
     private @Nullable BattleSetup currentSetup;
     /** Laufende Runde ab 0, für die Mana-Einteilung der Helden. */
     private int round;
+    /** Wer sich in diesem Zug schon an einer Feuerwand verbrannt hat. */
+    private final Set<Stack> burnedThisTurn = new HashSet<>();
     private final List<Stack> joinedThisRound = new ArrayList<>();
     /** Dauer der Zauber, die Unicorns und Dragon Flies beim Angriff auslösen (heroes.thelazy.net). */
     private static final int PROC_ROUNDS = 3;
@@ -146,6 +148,7 @@ public final class Battle {
                 if (activeStack.isAbleToAct() && setup.bothAlive()) {
                     actWithMorale(activeStack, setup);
                 }
+                fireWallAtTurnEnd(activeStack, setup);
                 dispelClones(setup, false);
                 updateGate(setup);
                 if (activeStack.hasWaitedThisTurn()) {
@@ -157,6 +160,7 @@ public final class Battle {
         runLatePhase(waiting, setup, order, heroesCast, roundStacks);
         warMachinesAct(setup);
         dispelClones(setup, true);
+        expireFieldEffects(setup);
         updateGate(setup);
         roundStacks.forEach(Stack::endTurn);
         // Zauber auf Maschinen (Bless auf der Ballista) laufen ab wie auf Kreaturen.
@@ -228,6 +232,13 @@ public final class Battle {
         if (ControlSpells.handles(spell)) {
             controlSpell(setup, side, hero, cast);
             return;
+        }
+        if (FieldSpells.handles(spell)) {
+            fieldSpell(setup, side, hero, cast);
+            return;
+        }
+        if (spell == Spell.DISPEL && cast.level() == SkillLevel.EXPERT) {
+            clearFieldEffects(setup, side, spell, setup.fieldEffects().patches());
         }
         for (int i = 0; i < cast.affected().size(); i++) {
             Stack target = cast.affected().get(i);
@@ -371,6 +382,175 @@ public final class Battle {
             }
         }
         active.removeSpells(s -> s == Spell.BERSERK);
+    }
+
+    /**
+     * Fire Wall, Force Field, Quicksand, Land Mine und Remove Obstacle ({@link FieldSpells}). Der
+     * Schaden von Fire Wall und Minen wird beim Auslösen gerechnet, mit Sorcery des Zaubernden.
+     */
+    private void fieldSpell(BattleSetup setup, Side side, Hero hero, HeroSpellcasting.Cast cast) {
+        Spell spell = cast.spell();
+        FieldEffects field = setup.fieldEffects();
+        List<Hex> hexes = switch (spell) {
+            case FIRE_WALL, FORCE_FIELD -> cast.hexes();
+            case QUICKSAND, LAND_MINE -> randomFreeHexes(setup, FieldSpells.patches(cast.level()));
+            case REMOVE_OBSTACLE -> {
+                removeObstacle(setup, side, cast.hexes());
+                yield List.of();
+            }
+            default -> throw new IllegalStateException(spell + " is no field spell");
+        };
+        if (hexes.isEmpty()) {
+            return;
+        }
+        int damage = spell == Spell.FIRE_WALL || spell == Spell.LAND_MINE
+                ? SpellDamage.base(spell, cast.level(), hero.spellPower()) : 0;
+        int lastRound = spell == Spell.FIRE_WALL || spell == Spell.FORCE_FIELD ? round + 1 : Integer.MAX_VALUE;
+        field.add(kindOf(spell), hexes, side, damage, lastRound, hero);
+        events.emit(new BattleEvent.FieldSpell(side, spell, coords(hexes), false));
+    }
+
+    private static FieldEffects.Kind kindOf(Spell spell) {
+        return switch (spell) {
+            case FIRE_WALL -> FieldEffects.Kind.FIRE_WALL;
+            case FORCE_FIELD -> FieldEffects.Kind.FORCE_FIELD;
+            case QUICKSAND -> FieldEffects.Kind.QUICKSAND;
+            default -> FieldEffects.Kind.LAND_MINE;
+        };
+    }
+
+    private static Spell spellOf(FieldEffects.Kind kind) {
+        return switch (kind) {
+            case FIRE_WALL -> Spell.FIRE_WALL;
+            case FORCE_FIELD -> Spell.FORCE_FIELD;
+            case QUICKSAND -> Spell.QUICKSAND;
+            case LAND_MINE -> Spell.LAND_MINE;
+        };
+    }
+
+    private List<Hex> randomFreeHexes(BattleSetup setup, int count) {
+        List<Hex> free = new ArrayList<>(FieldSpells.freeHexes(setup));
+        List<Hex> chosen = new ArrayList<>(count);
+        while (chosen.size() < count && !free.isEmpty()) {
+            chosen.add(free.remove(rng.nextInt(free.size())));
+        }
+        return chosen;
+    }
+
+    /** Remove Obstacle: Zauber-Felder auf den Feldern, sonst das natürliche Hindernis. */
+    private void removeObstacle(BattleSetup setup, Side side, List<Hex> hexes) {
+        List<FieldEffects.Patch> patches = setup.fieldEffects().patches().stream()
+                .filter(p -> hexes.contains(p.hex())).toList();
+        if (!patches.isEmpty()) {
+            clearFieldEffects(setup, side, Spell.REMOVE_OBSTACLE, patches);
+            return;
+        }
+        setup.removeObstacle(Set.copyOf(hexes));
+        events.emit(new BattleEvent.FieldSpell(side, Spell.REMOVE_OBSTACLE, coords(hexes), true));
+    }
+
+    private void clearFieldEffects(BattleSetup setup, Side side, Spell spell, List<FieldEffects.Patch> patches) {
+        if (patches.isEmpty()) {
+            return;
+        }
+        setup.fieldEffects().removeAll(patches);
+        events.emit(new BattleEvent.FieldSpell(side, spell, coords(patches.stream().map(FieldEffects.Patch::hex).toList()),
+                true));
+    }
+
+    private static List<HexCoord> coords(List<Hex> hexes) {
+        return hexes.stream().map(h -> new HexCoord(h.q(), h.r())).toList();
+    }
+
+    /**
+     * Was beim Gehen über Zauber-Felder passiert: Quicksand hält einen Bodenstack auf dem ersten Feld
+     * an, das er nicht kennt. Flieger sind dagegen immun und betreten nur ihr Ziel.
+     */
+    private List<Hex> untilQuicksand(Stack active, List<Hex> walked) {
+        if (currentSetup == null || active.unit().movement() != Movement.GROUND) {
+            return walked;
+        }
+        FieldEffects field = currentSetup.fieldEffects();
+        for (int i = 0; i < walked.size(); i++) {
+            if (field.at(walked.get(i), FieldEffects.Kind.QUICKSAND) != null) {
+                return walked.subList(0, i + 1);
+            }
+        }
+        return walked;
+    }
+
+    /** Minen der Gegenseite, Feuerwände und Treibsand auf den betretenen Feldern. */
+    private void fieldHazards(Stack active, List<Hex> entered) {
+        if (currentSetup == null || currentSetup.fieldEffects().isEmpty()) {
+            return;
+        }
+        FieldEffects field = currentSetup.fieldEffects();
+        boolean burned = false;
+        for (Hex hex : entered) {
+            if (!active.isAlive()) {
+                return;
+            }
+            FieldEffects.Patch mine = field.at(hex, FieldEffects.Kind.LAND_MINE);
+            if (mine != null && mine.owner() != active.side()) {
+                field.remove(mine);
+                trigger(active, Spell.LAND_MINE, hex,
+                        SpellDamage.toTarget(Spell.LAND_MINE, mine.damage(), mine.caster(), active));
+            }
+            FieldEffects.Patch wall = field.at(hex, FieldEffects.Kind.FIRE_WALL);
+            if (wall != null && !burned) {
+                burned = true;
+                burnedThisTurn.add(active);
+                trigger(active, Spell.FIRE_WALL, hex,
+                        SpellDamage.toTarget(Spell.FIRE_WALL, wall.damage(), wall.caster(), active));
+            }
+        }
+        FieldEffects.Patch sand = field.at(active.position(), FieldEffects.Kind.QUICKSAND);
+        if (sand != null && active.isAlive() && active.unit().movement() == Movement.GROUND) {
+            field.reveal(sand);
+            trigger(active, Spell.QUICKSAND, active.position(), 0);
+        }
+    }
+
+    /** Wer seinen Zug in einer Feuerwand beendet, ohne sich auf diesem Weg schon verbrannt zu haben, brennt. */
+    private void fireWallAtTurnEnd(Stack active, BattleSetup setup) {
+        if (!active.isAlive() || burnedThisTurn.remove(active) || setup.fieldEffects().isEmpty()) {
+            return;
+        }
+        for (Hex hex : active.hexes()) {
+            FieldEffects.Patch wall = setup.fieldEffects().at(hex, FieldEffects.Kind.FIRE_WALL);
+            if (wall != null) {
+                trigger(active, Spell.FIRE_WALL, hex,
+                        SpellDamage.toTarget(Spell.FIRE_WALL, wall.damage(), wall.caster(), active));
+                return;
+            }
+        }
+    }
+
+    private void trigger(Stack target, Spell spell, Hex hex, int damage) {
+        int countBefore = target.getCount();
+        if (damage > 0) {
+            boolean rebirthUsedBefore = target.isRebirthUsed();
+            target.takeDamage(damage, Set.of());
+            emitRebirthIfFired(target, rebirthUsedBefore);
+        }
+        events.emit(new BattleEvent.FieldTrigger(target.side(), target.slot(), spell, new HexCoord(hex.q(), hex.r()), damage,
+                Math.max(0, countBefore - target.getCount()), snapshot(target)));
+    }
+
+    /** Fire Wall und Force Field verschwinden nach ihrer zweiten Runde. */
+    private void expireFieldEffects(BattleSetup setup) {
+        List<FieldEffects.Patch> ending = setup.fieldEffects().patches().stream()
+                .filter(p -> p.lastRound() < Integer.MAX_VALUE && round >= p.lastRound()).toList();
+        for (FieldEffects.Kind kind : FieldEffects.Kind.values()) {
+            for (Side owner : Side.values()) {
+                List<Hex> hexes = ending.stream().filter(p -> p.kind() == kind && p.owner() == owner)
+                        .map(FieldEffects.Patch::hex).toList();
+                if (!hexes.isEmpty()) {
+                    events.emit(new BattleEvent.FieldSpell(owner, spellOf(kind), coords(hexes), true));
+                }
+            }
+        }
+        setup.fieldEffects().expire(round);
     }
 
     /** Klone vergehen mit ihrem Original und am Ende ihrer letzten Runde. */
@@ -712,6 +892,8 @@ public final class Battle {
                 if (activeStack.isAbleToAct() && setup.bothAlive()) {
                     actWithMorale(activeStack, setup);
                 }
+                fireWallAtTurnEnd(activeStack, setup);
+                dispelClones(setup, false);
                 updateGate(setup);
             }
             BattleLogger.logShortDelimiter();
@@ -1133,6 +1315,7 @@ public final class Battle {
             }
             walked = currentSetup == null ? walked : whereItFits(currentSetup, active, walked, destination);
         }
+        walked = untilQuicksand(active, walked);
         Hex end = walked.isEmpty() ? destination : walked.getLast();
         List<HexCoord> path = walked.stream().map(h -> new HexCoord(h.q(), h.r())).toList();
         BattleLogger.logMove(active.getName(), from.q(), from.r(), end.q(), end.r());
@@ -1142,6 +1325,7 @@ public final class Battle {
         if (siege != null) {
             siegeHazards(active, ground ? walked : List.of(end), siege);
         }
+        fieldHazards(active, ground ? walked : List.of(end));
     }
 
     /**

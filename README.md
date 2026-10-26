@@ -117,9 +117,8 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   sie öffnet, höchstens bis zur Gildenstufe der Stadt (Castle 4,
   Stronghold und Fortress 3); Tower hat die Library und lehrt je Stufe
   einen Zauber mehr. Die Zauber jeder Stufe werden wie im Spiel
-  gewichtet ausgelost, Abenteuer- und Spezialzauber (Fly, Town Portal,
-  Berserk …) eingeschlossen — sie stehen im Buch, wirken im Kampf aber
-  nicht. Might-Helden ohne Start-Zauber
+  gewichtet ausgelost, Abenteuerzauber (Fly, Town Portal …) eingeschlossen —
+  sie stehen im Buch, wirken im Kampf aber nicht. Might-Helden ohne Start-Zauber
   bleiben ohne Buch. Das Ergebnis zeigt die Auswertung je Seite an.
 - **Spezialfähigkeiten** der Helden in der SoD-Fassung: Kreatur-
   Spezialisten geben ihren Kreaturen (Basis- und Ausbaustufe) +1 Speed und
@@ -190,10 +189,32 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   zwei Runden; im Spiegel-Duell schlägt das die frühere Annahme von vier
   Runden auf allen gemessenen Leveln mit 0.52–0.56. Bei knappem Mana zählt, wie oft sich ein Zauber in
   den restlichen Runden noch bezahlen lässt — zweimal Magic Arrow schlägt
-  dann einmal Lightning Bolt. Ohne Kampfwirkung und deshalb nie gewählt sind
-  bisher Berserk, Hypnotize, Clone, Sacrifice, Fire Wall, Force Field,
-  Quicksand, Land Mine und Remove Obstacle (siehe „Was noch fehlt"), dazu
-  die Abenteuer-Zauber. Die Mana-Kosten folgen dem RoE-Manual; wahlweise
+  dann einmal Lightning Bolt. Ohne Kampfwirkung und deshalb nie gewählt
+  sind nur die Abenteuer-Zauber.
+- **Kontroll- und Feldzauber** (heroes.thelazy.net; Reichweiten, Formen und
+  Dauer wie in VCMI): Clone (Kopie eines eigenen Stacks der Stufe 1–5/6/7,
+  eine Runde je Spell Power, vergeht beim ersten Schaden oder mit dem
+  Original), Sacrifice (ein eigener Stack wird ohne Leiche geopfert, ein
+  anderer bekommt (Power + Lebenspunkte des Geopferten + 3/6/10) × Anzahl
+  Lebenspunkte zurück), Berserk (ein Stack, auf Advanced/Expert alle im
+  Radius 1/2, auch eigene; der nächste Zug geht gegen den nächsten Stack,
+  gleich welcher Seite), Hypnotize (ein gegnerischer Stack unter
+  10/20/50 + 25 × Power vollen Lebenspunkten kämpft eine Runde je Power für
+  den Zaubernden), Fire Wall (2/3 Felder, verbrennt mit 10/20/50 + 10 ×
+  Power, wer hindurchgeht oder darin stehen bleibt, zwei Runden), Force
+  Field (2/3 unpassierbare Felder, zwei Runden), Quicksand (4/6/8
+  zufällige Felder, halten Bodentruppen an, für den Gegner unsichtbar),
+  Land Mine (4/6/8 Felder, 25/50/100 + 10 × Power Schaden für Gegner, nicht
+  gegen einen Gegner auf seinem Heimatgelände) und Remove Obstacle (ein
+  Hindernis, ab Advanced auch Fire Wall, auf Expert alle Zauber-Felder;
+  Klippen bleiben). Expert Dispel räumt alle Zauber-Felder ab. Die Wahl
+  setzt Wände auf den Weg gegnerischer Bodentruppen und rechnet mit der
+  Chance, dass sie in Treibsand oder Minen treten. Gemessen (ein Held mit
+  Expert Wisdom und allen Schulen auf Expert, Power 7, nur dieser eine
+  Zauber, gegen dieselbe Armee ohne Zauber, je Fraktion im Spiegel, 216
+  Kämpfe): Clone 0.95, Berserk 0.94, Hypnotize 0.89, Land Mine 0.89, Fire
+  Wall 0.78, Sacrifice 0.60; Force Field, Quicksand und Remove Obstacle um
+  0.5 — auf offenem Feld kostet der Umweg selten eine Runde. Die Mana-Kosten folgen dem RoE-Manual; wahlweise
   gelten die Kosten aus Shadow of Death, nach denen ein Zauber billiger
   wird, sobald der Held seine Schule auf irgendeiner Stufe beherrscht
   (etwa Haste 5 statt 6, Fireball 12 statt 15); Magi und
@@ -569,9 +590,6 @@ zu lesen, nicht als universelle H3-Tier-Liste.
 
 Damit sich jede Schlacht abbilden lässt, die das Spiel kennt, fehlen noch:
 
-- **Die übrigen Kampfzauber** — Berserk, Hypnotize, Clone, Sacrifice,
-  Fire Wall, Force Field (auch auf dem Feld vor dem Tor), Quicksand, Land
-  Mine und Remove Obstacle.
 - **Artefakte** mit Auswahl je Held: Primärwerte, Glück und Moral, die
   Zauber-Artefakte (Tomes, Orbs, Recanter's Cloak, Pendants) und die
   übrigen kampfwirksamen.

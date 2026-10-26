@@ -286,6 +286,17 @@ export type BattleEvent =
       targetAfter: StackSnapshot;
     }
   | { type: 'Fear'; actor: Side; actorSlot: number }
+  | { type: 'FieldSpell'; actor: Side; spell: Spell; hexes: HexCoord[]; removed: boolean }
+  | {
+      type: 'FieldTrigger';
+      side: Side;
+      slot: number;
+      spell: Spell;
+      hex: HexCoord;
+      damage: number;
+      killed: number;
+      targetAfter: StackSnapshot;
+    }
   | { type: 'Poisoning'; actor: Side; actorSlot: number; target: Side; targetSlot: number }
   | { type: 'Diseasing'; actor: Side; actorSlot: number; target: Side; targetSlot: number }
   | { type: 'Aging'; actor: Side; actorSlot: number; target: Side; targetSlot: number }

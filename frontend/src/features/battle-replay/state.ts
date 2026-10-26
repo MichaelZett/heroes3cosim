@@ -3,6 +3,7 @@ import type {
   HexCoord,
   SiegeSnapshot,
   Side,
+  Spell,
   StackSnapshot,
   WallPart,
 } from '../../shared/api/types';
@@ -25,6 +26,8 @@ export interface BattleState {
   width: number;
   height: number;
   obstacles: readonly HexCoord[];
+  /** Felder der Feldzauber (Fire Wall, Force Field, Quicksand, Land Mine), wie sie gerade liegen. */
+  fieldEffects: readonly FieldMark[];
   /** Befestigung bei einer Belagerung, mit den Treffern nach den bisherigen Katapultschüssen. */
   siege: SiegeSnapshot | null;
   /** Schlüssel: `${side}-${slot}`. Quelle der Wahrheit für alle Stacks. */
@@ -33,6 +36,35 @@ export interface BattleState {
   attacker: SideState;
   /** Convenience: Slot-0 Defender. */
   defender: SideState;
+}
+
+export interface FieldMark {
+  q: number;
+  r: number;
+  spell: Spell;
+}
+
+function hexKey(hex: HexCoord): string {
+  return `${hex.q},${hex.r}`;
+}
+
+/** Feldzauber setzen und entfernen; Remove Obstacle ohne Zauber-Feld nimmt ein Hindernis weg. */
+function applyField(
+  event: BattleEvent,
+  marks: Map<string, FieldMark>,
+  removedObstacles: Set<string>,
+): void {
+  if (event.type === 'FieldTrigger') {
+    if (event.spell === 'LAND_MINE') marks.delete(hexKey(event.hex));
+    return;
+  }
+  if (event.type !== 'FieldSpell') return;
+  for (const hex of event.hexes) {
+    const key = hexKey(hex);
+    if (!event.removed) marks.set(key, { q: hex.q, r: hex.r, spell: event.spell });
+    else if (marks.has(key)) marks.delete(key);
+    else if (event.spell === 'REMOVE_OBSTACLE') removedObstacles.add(key);
+  }
 }
 
 export function stackKey(side: Side, slot: number): string {
@@ -128,6 +160,7 @@ function applyEvent(stacks: Map<string, SideState>, event: BattleEvent): void {
     case 'TowerShot':
     case 'MoatDamage':
     case 'AcidBreath':
+    case 'FieldTrigger':
       snapshotInto(stacks, event.targetAfter);
       return;
     default:
@@ -160,10 +193,13 @@ export function reduceEvents(events: readonly BattleEvent[], cursor: number): Ba
   const stacks = initialStacks(start);
   const wallHealth = new Map<WallPart, number>();
   for (const part of start.siege?.parts ?? []) wallHealth.set(part.part, part.health);
+  const marks = new Map<string, FieldMark>();
+  const removedObstacles = new Set<string>();
   const end = Math.min(cursor, events.length);
   for (let i = 1; i < end; i++) {
     const event = events[i];
     if (event.type === 'CatapultShot') wallHealth.set(event.hit, event.healthAfter);
+    applyField(event, marks, removedObstacles);
     applyEvent(stacks, event);
   }
   const siege = start.siege
@@ -181,7 +217,8 @@ export function reduceEvents(events: readonly BattleEvent[], cursor: number): Ba
   return {
     width: start.battlefieldWidth,
     height: start.battlefieldHeight,
-    obstacles: start.obstacles ?? [],
+    obstacles: (start.obstacles ?? []).filter((o) => !removedObstacles.has(hexKey(o))),
+    fieldEffects: [...marks.values()],
     siege,
     stacks,
     attacker,

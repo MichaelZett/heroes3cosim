@@ -408,6 +408,28 @@ export function EventText({ event, names }: Readonly<EventTextProps>) {
           components={{ actor: sideSpan(event.actor) }}
         />
       );
+    case 'FieldSpell':
+      return t(event.removed ? 'events.fieldSpellRemoved' : 'events.fieldSpell', {
+        spell: t(`spell.${event.spell}`),
+        count: event.hexes.length,
+      });
+    case 'FieldTrigger':
+      return (
+        <Trans
+          i18nKey={
+            event.spell === 'QUICKSAND'
+              ? 'events.fieldTriggerQuicksand'
+              : 'events.fieldTriggerDamage'
+          }
+          values={{
+            target: sideName(event.side, event.slot, names),
+            spell: t(`spell.${event.spell}`),
+            damage: event.damage,
+            killed: event.killed,
+          }}
+          components={{ target: sideSpan(event.side) }}
+        />
+      );
     case 'Fear':
       return (
         <Trans

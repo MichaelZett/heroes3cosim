@@ -62,9 +62,19 @@ final class HeroSpellcasting {
     /**
      * Ein Zauber und wen er trifft. {@code target} ist das gewählte Ziel bei Einzel- und
      * Kettenzaubern, bei Flächen- und Massenzaubern {@code null}; {@code affected} ist die
-     * Reihenfolge der Treffer (bei Chain Lightning die Sprungfolge).
+     * Reihenfolge der Treffer (bei Chain Lightning die Sprungfolge). {@code hexes} sind die Felder
+     * eines Feldzaubers (Fire Wall, Force Field, Remove Obstacle), sonst leer.
      */
-    record Cast(Spell spell, SkillLevel level, @Nullable Stack target, List<Stack> affected) {
+    record Cast(Spell spell, SkillLevel level, @Nullable Stack target, List<Stack> affected, List<Hex> hexes) {
+
+        Cast {
+            affected = List.copyOf(affected);
+            hexes = List.copyOf(hexes);
+        }
+
+        Cast(Spell spell, SkillLevel level, @Nullable Stack target, List<Stack> affected) {
+            this(spell, level, target, affected, List.of());
+        }
     }
 
     /** Wie {@link #decide(Hero, Side, int, BattleSetup, int)} in der ersten Runde. */
@@ -186,6 +196,9 @@ final class HeroSpellcasting {
         }
         if (ControlSpells.handles(spell)) {
             return ControlSpells.candidates(hero, side, spell, level, setup);
+        }
+        if (FieldSpells.handles(spell)) {
+            return FieldSpells.candidates(hero, side, spell, level, setup);
         }
         if (spell.kind() == Spell.Kind.OTHER) {
             return casts;
@@ -425,6 +438,9 @@ final class HeroSpellcasting {
         }
         if (ControlSpells.handles(spell)) {
             return ControlSpells.value(hero, side, cast, setup);
+        }
+        if (FieldSpells.handles(spell)) {
+            return FieldSpells.value(hero, side, cast, setup);
         }
         double total = 0;
         for (int i = 0; i < cast.affected().size(); i++) {

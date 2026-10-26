@@ -49,6 +49,8 @@ import java.util.List;
         @JsonSubTypes.Type(value = BattleEvent.Cursing.class, name = "Cursing"),
         @JsonSubTypes.Type(value = BattleEvent.AcidBreath.class, name = "AcidBreath"),
         @JsonSubTypes.Type(value = BattleEvent.Fear.class, name = "Fear"),
+        @JsonSubTypes.Type(value = BattleEvent.FieldSpell.class, name = "FieldSpell"),
+        @JsonSubTypes.Type(value = BattleEvent.FieldTrigger.class, name = "FieldTrigger"),
         @JsonSubTypes.Type(value = BattleEvent.Poisoning.class, name = "Poisoning"),
         @JsonSubTypes.Type(value = BattleEvent.Diseasing.class, name = "Diseasing"),
         @JsonSubTypes.Type(value = BattleEvent.Aging.class, name = "Aging"),
@@ -80,7 +82,8 @@ import java.util.List;
                 BattleEvent.HeroSpell.class, BattleEvent.SpellHit.class, BattleEvent.Summon.class,
                 BattleEvent.MoveBack.class, BattleEvent.DeathStare.class, BattleEvent.Thunderbolts.class,
                 BattleEvent.Petrifying.class, BattleEvent.Cursing.class, BattleEvent.AcidBreath.class,
-                BattleEvent.Fear.class, BattleEvent.Poisoning.class,
+                BattleEvent.Fear.class, BattleEvent.FieldSpell.class, BattleEvent.FieldTrigger.class,
+                BattleEvent.Poisoning.class,
                 BattleEvent.Diseasing.class, BattleEvent.Aging.class, BattleEvent.Bind.class, BattleEvent.FireShield.class,
                 BattleEvent.Rebirth.class, BattleEvent.Resurrection.class, BattleEvent.RaiseDemons.class,
                 BattleEvent.BattleEnd.class
@@ -119,6 +122,8 @@ import java.util.List;
                 @DiscriminatorMapping(value = "Cursing", schema = BattleEvent.Cursing.class),
                 @DiscriminatorMapping(value = "AcidBreath", schema = BattleEvent.AcidBreath.class),
                 @DiscriminatorMapping(value = "Fear", schema = BattleEvent.Fear.class),
+                @DiscriminatorMapping(value = "FieldSpell", schema = BattleEvent.FieldSpell.class),
+                @DiscriminatorMapping(value = "FieldTrigger", schema = BattleEvent.FieldTrigger.class),
                 @DiscriminatorMapping(value = "Poisoning", schema = BattleEvent.Poisoning.class),
                 @DiscriminatorMapping(value = "Diseasing", schema = BattleEvent.Diseasing.class),
                 @DiscriminatorMapping(value = "Aging", schema = BattleEvent.Aging.class),
@@ -452,6 +457,30 @@ public sealed interface BattleEvent {
             @Schema(description = "Zusätzlicher Schaden, 0 ohne Säureschaden") int damage,
             @Schema(description = "Getötete Kreaturen") int killed,
             @Schema(description = "Ziel danach") StackSnapshot targetAfter) implements BattleEvent {
+    }
+
+    @Schema(name = "FieldSpell",
+            description = "Ein Feldzauber wird gesetzt oder verschwindet: Fire Wall, Force Field, Quicksand, Land Mine; bei Remove Obstacle die entfernten Felder.")
+    record FieldSpell(
+            @Schema(description = "Seite des Zaubernden") Side actor,
+            @Schema(description = "Zauber") Spell spell,
+            @Schema(description = "Betroffene Felder") List<HexCoord> hexes,
+            @Schema(description = "Verschwunden (abgelaufen, entfernt) statt gesetzt") boolean removed) implements BattleEvent {
+        public FieldSpell {
+            hexes = List.copyOf(hexes);
+        }
+    }
+
+    @Schema(name = "FieldTrigger",
+            description = "Ein Stack tritt auf ein Zauber-Feld: Feuerwand oder Mine verletzen ihn, Treibsand hält ihn an.")
+    record FieldTrigger(
+            @Schema(description = "Seite des Stacks") Side side,
+            @Schema(description = "Slot des Stacks") int slot,
+            @Schema(description = "Zauber des Felds") Spell spell,
+            @Schema(description = "Das ausgelöste Feld") HexCoord hex,
+            @Schema(description = "Schaden, 0 bei Treibsand") int damage,
+            @Schema(description = "Getötete Kreaturen") int killed,
+            @Schema(description = "Stack danach") StackSnapshot targetAfter) implements BattleEvent {
     }
 
     @Schema(name = "Fear",

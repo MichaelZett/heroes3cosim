@@ -26,8 +26,10 @@ final class SpellDamage {
             case LIGHTNING_BOLT -> power * 25 + byLevel(level, 10, 20, 50);
             case ICE_BOLT -> power * 20 + byLevel(level, 10, 20, 50);
             case DEATH_RIPPLE -> power * 5 + byLevel(level, 10, 20, 30);
-            case DESTROY_UNDEAD -> power * 10 + byLevel(level, 10, 20, 50);
+            // Fire Wall wie Destroy Undead (heroes.thelazy.net, SoD-Werte).
+            case DESTROY_UNDEAD, FIRE_WALL -> power * 10 + byLevel(level, 10, 20, 50);
             case FIREBALL, FROST_RING -> power * 10 + byLevel(level, 15, 30, 60);
+            case LAND_MINE -> power * 10 + byLevel(level, 25, 50, 100);
             case CHAIN_LIGHTNING -> power * 40 + byLevel(level, 25, 50, 100);
             case METEOR_SHOWER -> power * 25 + byLevel(level, 25, 50, 100);
             case INFERNO -> power * 10 + byLevel(level, 20, 40, 80);

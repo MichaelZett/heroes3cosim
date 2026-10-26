@@ -257,6 +257,11 @@ export const en: Dictionary = {
     twoShots: '<actor>{{actor}}</actor> shoots a second time.',
     goodMorale: '<actor>{{actor}}</actor> has good morale and attacks again.',
     badMorale: '<actor>{{actor}}</actor> has bad morale and loses the action.',
+    fieldSpell: '{{spell}}: {{count}} hexes placed.',
+    fieldSpellRemoved: '{{spell}}: {{count}} hexes disappear.',
+    fieldTriggerQuicksand: '<target>{{target}}</target> is stuck in quicksand.',
+    fieldTriggerDamage:
+      '{{spell}} hits <target>{{target}}</target>: {{damage}} damage, {{killed}} killed.',
     fear: '<actor>{{actor}}</actor> freezes in fear and loses the action.',
     acidBreath:
       'The acid of <actor>{{actor}}</actor> corrodes <target>{{target}}</target>: −3 defense.',

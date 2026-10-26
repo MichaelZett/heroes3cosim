@@ -188,11 +188,25 @@ public final class TerrainObstacles {
     private TerrainObstacles() {
     }
 
+    /** Die blockierten Felder und die einzeln entfernbaren Hindernisse (ohne Klippen). */
+    public record Layout(Set<Hex> blocked, List<Set<Hex>> removable) {
+        public Layout {
+            blocked = Set.copyOf(blocked);
+            removable = List.copyOf(removable);
+        }
+    }
+
     /** Die blockierten Felder für ein Gelände; ohne Grund- und magisches Gelände keine. */
     public static Set<Hex> generate(@Nullable Terrain terrain, @Nullable MagicTerrain magic, RandomGenerator rng) {
+        return layout(terrain, magic, rng).blocked();
+    }
+
+    /** Wie {@link #generate}, dazu die Hindernisse, die Remove Obstacle als Ganzes wegnimmt. */
+    public static Layout layout(@Nullable Terrain terrain, @Nullable MagicTerrain magic, RandomGenerator rng) {
         List<Obstacle> absolutes = ALL.stream().filter(o -> o.absolute() && o.fits(terrain, magic)).toList();
         List<Obstacle> usual = ALL.stream().filter(o -> !o.absolute() && o.fits(terrain, magic)).toList();
         Set<Integer> blocked = new HashSet<>();
+        List<Set<Hex>> removable = new ArrayList<>();
         int tilesToBlock = rng.nextInt(5, 13);
         if (!absolutes.isEmpty() && rng.nextInt(100) < 40) {
             Obstacle cliff = absolutes.get(rng.nextInt(absolutes.size()));
@@ -210,10 +224,12 @@ public final class TerrainObstacles {
             if (positions.isEmpty()) {
                 break;
             }
-            blocked.addAll(obstacle.blockedAt(positions.get(rng.nextInt(positions.size()))));
+            List<Integer> placed = obstacle.blockedAt(positions.get(rng.nextInt(positions.size())));
+            blocked.addAll(placed);
+            removable.add(placed.stream().map(SiegeLayout::h3).collect(Collectors.toUnmodifiableSet()));
             tilesToBlock -= obstacle.tiles().size();
         }
-        return blocked.stream().map(SiegeLayout::h3).collect(Collectors.toUnmodifiableSet());
+        return new Layout(blocked.stream().map(SiegeLayout::h3).collect(Collectors.toUnmodifiableSet()), removable);
     }
 
     private static boolean valid(Obstacle obstacle, int position, Set<Integer> blocked) {
