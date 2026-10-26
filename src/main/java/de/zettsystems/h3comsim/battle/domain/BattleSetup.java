@@ -42,6 +42,7 @@ public class BattleSetup {
     private final Map<Side, Set<WarMachine>> warMachines = new EnumMap<>(Side.class);
     /** Die Maschinen als Stacks auf dem Feld; nicht Teil der Armeelisten. */
     private final Map<Side, Map<WarMachine, Stack>> machineStacks = new EnumMap<>(Side.class);
+    private boolean sodSpellCosts;
     private final Map<Side, Integer> mana = new EnumMap<>(Side.class);
     /** Je Seite die eine Elementar-Art, die beschworen werden darf, sobald die erste gerufen ist. */
     private final Map<Side, Unit> summonedKind = new EnumMap<>(Side.class);
@@ -188,6 +189,8 @@ public class BattleSetup {
             Stack stack = new Stack(machine.unit(), 1, machine.hex(side, battlefield), side, machine.slot());
             // Die Primärwerte des Helden gelten auch für seine Maschinen (siehe Hero#ballistaAttack).
             stack.assignCommander(side == Side.ATTACKER ? attackerHero : defenderHero);
+            // Die Ballista schießt mit dem Glück der Armee (Fortune/Misfortune auf ihr verschieben es).
+            stack.assignArmyLuck(side == Side.ATTACKER ? attackerLuck : defenderLuck);
             placed.put(machine, stack);
         }
         machineStacks.put(side, placed);
@@ -199,6 +202,19 @@ public class BattleSetup {
     /** Kriegsmaschinen dieser Seite, leer ohne {@link #equip} — auch die schon zerstörten. */
     public Set<WarMachine> warMachinesOf(Side side) {
         return Collections.unmodifiableSet(warMachines.getOrDefault(side, EnumSet.noneOf(WarMachine.class)));
+    }
+
+    /**
+     * Zauberkosten nach Shadow of Death statt nach dem RoE-Manual ({@link SodSpellCosts}). Gilt für
+     * beide Seiten; ohne Aufruf RoE.
+     */
+    public BattleSetup sodSpellCosts(boolean sod) {
+        this.sodSpellCosts = sod;
+        return this;
+    }
+
+    public boolean sodSpellCosts() {
+        return sodSpellCosts;
     }
 
     /** Die Maschinen dieser Seite als Stacks auf dem Feld, auch die zerstörten. */

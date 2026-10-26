@@ -8,7 +8,8 @@ import java.util.random.RandomGenerator;
 /**
  * Zauber auf der Ballista (heroes.thelazy.net, <em>War Machine</em>): Bless und Curse setzen ihren
  * Grundschaden (2–3) auf das Maximum bzw. Minimum, Precision und Prayer heben ihre Attack wie bei
- * einem Schützen. Glückszauber und Slayer wirken laut Liste auch, sind hier nicht abgebildet.
+ * einem Schützen, Slayer gegen seine Ziele um 8; Fortune und Misfortune ändern das Glück ihrer
+ * Schüsse.
  *
  * <p>In der Zauberwahl zählt ein solcher Zauber, was er am Schaden der Ballista ändert, nicht ihren
  * Goldwert: erwarteter Schaden je Runde mal Goldwert je Lebenspunkt der Gegner, über die
@@ -16,8 +17,14 @@ import java.util.random.RandomGenerator;
  */
 final class BallistaSpells {
 
-    /** Die Zauber, die die Wahl auf die eigene (Bless, Precision, Prayer) bzw. gegnerische Ballista (Curse) legt. */
-    static final Set<Spell> SPELLS = Set.of(Spell.BLESS, Spell.CURSE, Spell.PRECISION, Spell.PRAYER);
+    /**
+     * Die Zauber, die die Wahl auf die eigene (Bless, Precision, Prayer, Slayer, Fortune) bzw.
+     * gegnerische Ballista (Curse, Misfortune) legt.
+     */
+    static final Set<Spell> SPELLS = Set.of(Spell.BLESS, Spell.CURSE, Spell.PRECISION, Spell.PRAYER,
+            Spell.SLAYER, Spell.FORTUNE, Spell.MISFORTUNE);
+
+    private static final int SLAYER_ATTACK = 8;
 
     private static final double AVERAGE_ROLL = 2.5;
 
@@ -39,12 +46,22 @@ final class BallistaSpells {
         return rng.nextInt(unit.minDamage(), unit.maxDamage() + 1);
     }
 
-    /** Zusätzliche Attack durch Precision (+3/6) und Prayer (+2/4). */
-    static int attackBonus(@Nullable Stack ballista) {
+    /** Zusätzliche Attack durch Precision (+3/6), Prayer (+2/4) und Slayer (+8 gegen seine Ziele). */
+    static int attackBonus(@Nullable Stack ballista, Stack target) {
         if (ballista == null) {
             return 0;
         }
-        return points(ballista.activeSpell(Spell.PRECISION), 3, 6) + points(ballista.activeSpell(Spell.PRAYER), 2, 4);
+        int bonus = points(ballista.activeSpell(Spell.PRECISION), 3, 6) + points(ballista.activeSpell(Spell.PRAYER), 2, 4);
+        ActiveSpell slayer = ballista.activeSpell(Spell.SLAYER);
+        if (slayer != null && Stack.isSlayerTarget(target.unit(), slayer.level())) {
+            bonus += SLAYER_ATTACK + slayer.amount();
+        }
+        return bonus;
+    }
+
+    /** Glück der Schüsse: das der Armee, mit Fortune und Misfortune auf der Ballista. */
+    static int luck(@Nullable Stack ballista, int armyLuck) {
+        return ballista == null ? armyLuck : ballista.getLuck();
     }
 
     private static int points(@Nullable ActiveSpell active, int basic, int higher) {
@@ -52,7 +69,7 @@ final class BallistaSpells {
     }
 
     /** Um wie viel Prozent der Zauber den Schaden der Ballista ändert (Curse als Verlust positiv). */
-    static double gainPercent(Spell spell, SkillLevel level, int bonus) {
+    static double gainPercent(Spell spell, SkillLevel level, int bonus, Stack ballista, BattleSetup setup) {
         Unit unit = WarMachine.BALLISTA.unit();
         return switch (spell) {
             case BLESS -> 100.0 * ((unit.maxDamage() + SpellDamage.byLevel(level, 0, 1, 1)) * (100 + bonus) / 100.0
@@ -61,8 +78,29 @@ final class BallistaSpells {
                     : Math.max(1, unit.minDamage() * 80 / 100 - 1))) / AVERAGE_ROLL;
             case PRECISION -> 5.0 * (SpellDamage.byLevel(level, 3, 6, 6) + bonus);
             case PRAYER -> 5.0 * (SpellDamage.byLevel(level, 2, 4, 4) + bonus);
+            case SLAYER -> 5.0 * (SLAYER_ATTACK + bonus) * slayerShare(level, ballista, setup);
+            // Wie bei Kreaturen: je Glückspunkt rund 4 % mehr Schaden (Chance 1/24 auf doppelten Grundschaden).
+            case FORTUNE -> 4.0 * Math.min(ArmyLuck.MAX - ballista.getLuck(),
+                    Math.max(SpellDamage.byLevel(level, 1, 2, 2), bonus));
+            case MISFORTUNE -> 4.0 * Math.min(ballista.getLuck() - ArmyLuck.MIN, SpellDamage.byLevel(level, 1, 2, 2));
             default -> 0;
         };
+    }
+
+    /** Anteil der Lebenspunkte der Gegner, auf die Slayer auf dieser Stufe wirkt. */
+    private static double slayerShare(SkillLevel level, Stack ballista, BattleSetup setup) {
+        double all = 0;
+        double hit = 0;
+        for (Stack enemy : setup.stacksOf(HeroSpellcasting.other(ballista.side()))) {
+            if (enemy.isAlive()) {
+                int hp = HeroSpellcasting.totalHealth(enemy);
+                all += hp;
+                if (Stack.isSlayerTarget(enemy.unit(), level)) {
+                    hit += hp;
+                }
+            }
+        }
+        return all == 0 ? 0 : hit / all;
     }
 
     /**

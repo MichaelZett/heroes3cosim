@@ -552,6 +552,8 @@ export interface ArmyBattleRequest {
   seed?: number | null;
   /** Belagerung: Befestigung der Stadt des Verteidigers; null = Feldschlacht. */
   fortification?: Fortification | null;
+  /** Zauberkosten nach Shadow of Death: beherrschte Schule macht Zauber billiger. */
+  sodSpellCosts?: boolean | null;
 }
 
 export interface ArmyBattleSimulation {

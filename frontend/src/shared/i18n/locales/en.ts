@@ -316,6 +316,10 @@ export const en: Dictionary = {
     siegeHint:
       'The defender holds a town of the faction of the defending hero: walls and gate (Fort), plus keep and moat (Citadel), plus two towers and stronger walls (Castle). The attacker brings a catapult.',
     siegeNone: 'None — open field',
+    rulesTitle: 'Rules',
+    sodSpellCosts: 'Spell costs from Shadow of Death',
+    sodSpellCostsHint:
+      'If a hero knows the school of a spell (at any level), the spell costs less, e.g. Haste 5 instead of 6. Unchecked, the costs from the RoE manual apply.',
     title: 'Armies vs Armies',
     subtitle: 'Up to 7 stacks per side — pick a faction preset or compose the slots manually.',
     attacker: 'Attacker army',

@@ -20,10 +20,20 @@ public record ArmyBattleRequest(
 
         @Schema(description = "Belagerung: Befestigung der Stadt des Verteidigers (FORT, CITADEL, CASTLE). Die Stadt ist die Fraktion seines Helden. Bei null eine Feldschlacht.",
                 example = "CASTLE", nullable = true)
-        @Nullable Fortification fortification) {
+        @Nullable Fortification fortification,
+
+        @Schema(description = "Zauberkosten nach Shadow of Death: beherrscht ein Held die Schule eines Zaubers (gleich auf welcher Stufe), kostet der Zauber weniger, etwa Haste 5 statt 6. Bei null oder false gelten die Kosten des RoE-Manuals.",
+                example = "false", nullable = true)
+        @Nullable Boolean sodSpellCosts) {
 
     /** Feldschlacht ohne Belagerung. */
     public ArmyBattleRequest(ArmySpec attacker, ArmySpec defender, @Nullable Long seed) {
         this(attacker, defender, seed, null);
+    }
+
+    /** Mit oder ohne Belagerung, Zauberkosten nach RoE. */
+    public ArmyBattleRequest(ArmySpec attacker, ArmySpec defender, @Nullable Long seed,
+                             @Nullable Fortification fortification) {
+        this(attacker, defender, seed, fortification, null);
     }
 }

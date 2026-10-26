@@ -314,6 +314,10 @@ export const de = {
     siegeHint:
       'Der Verteidiger steht in einer Stadt seiner Heldenfraktion: Mauern und Tor (Fort), dazu Hauptturm und Graben (Citadel), dazu zwei Türme und stärkere Mauern (Castle). Der Angreifer bringt ein Katapult mit.',
     siegeNone: 'Keine — Feldschlacht',
+    rulesTitle: 'Regeln',
+    sodSpellCosts: 'Zauberkosten nach Shadow of Death',
+    sodSpellCostsHint:
+      'Beherrscht ein Held die Schule eines Zaubers (gleich auf welcher Stufe), kostet der Zauber weniger, etwa Haste 5 statt 6. Ohne Haken gelten die Kosten des RoE-Handbuchs.',
     title: 'Armies vs Armies',
     subtitle:
       'Bis zu 7 Stacks pro Seite — wähle einen Faction-Preset oder stelle die Slots manuell zusammen.',

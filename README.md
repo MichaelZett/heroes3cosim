@@ -168,8 +168,10 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   dann einmal Lightning Bolt. Ohne Kampfwirkung und deshalb nie gewählt sind
   bisher Berserk, Hypnotize, Clone, Sacrifice, Fire Wall, Force Field,
   Quicksand, Land Mine und Remove Obstacle (siehe „Was noch fehlt"), dazu
-  die Abenteuer-Zauber. Die Mana-Kosten folgen dem RoE-Manual, ohne
-  die Rabatte der Schul-Fertigkeiten aus späteren Fassungen; Magi und
+  die Abenteuer-Zauber. Die Mana-Kosten folgen dem RoE-Manual; wahlweise
+  gelten die Kosten aus Shadow of Death, nach denen ein Zauber billiger
+  wird, sobald der Held seine Schule auf irgendeiner Stufe beherrscht
+  (etwa Haste 5 statt 6, Fireball 12 statt 15); Magi und
   Arch Magi senken die Kosten der eigenen Zauber um 2, Pegasi heben die
   des Gegners um 2.
 - **Kreatur-Zauber** (Werte aus der Spell Reference des Manuals) —
@@ -196,9 +198,11 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Advanced einen zweiten Schuss und 50/75/100 % Chance auf doppelten
   Grundschaden, Ballista-Spezialisten heben ihren Attack. Bless und Curse
   setzen den Grundschaden der Ballista auf das Maximum bzw. Minimum,
-  Precision und Prayer heben ihre Attack; der Held legt sie auf die eigene
-  bzw. Curse auf die gegnerische Ballista, wenn das mehr bringt als ein
-  anderes Ziel (bewertet am Schaden der Ballista; im Duell neutral, 0.503).
+  Precision und Prayer heben ihre Attack, Slayer gegen seine Ziele um 8,
+  Fortune und Misfortune ändern das Glück ihrer Schüsse; der Held legt
+  sie auf die eigene bzw. Curse und Misfortune auf die gegnerische
+  Ballista, wenn das mehr bringt als ein anderes Ziel (bewertet am Schaden
+  der Ballista; im Duell neutral, 0.503).
   Das Sanitätszelt
   heilt am Rundenende die oberste Kreatur des am stärksten verwundeten
   Stacks um 1–25 Lebenspunkte, mit First Aid bis 50/75/100. Der
@@ -233,7 +237,9 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Schaden für eine voll ausgebaute Stadt, ohne Defense des Ziels. Der
   Graben hält Bodentruppen auf, nimmt ihnen 3 Defense und verletzt sie
   beim Betreten und zu Beginn jedes Zugs dort (70, bei Dungeon, Inferno
-  und Fortress 90; Fortress zweireihig); Tower legt stattdessen
+  und Fortress 90; Fortress zweireihig). Gibt es zum Ziel einen Weg ohne
+  Graben, den der Stack in diesem Zug schafft — etwa durch das offene oder
+  zerstörte Tor —, nimmt er ihn (wie in VCMI, wo Grabenfelder anhalten); Tower legt stattdessen
   Landminen gegen Angreifer. Jeder angreifende Held bringt ein Katapult
   mit, das nach den Türmen auf die Befestigung schießt — Zielwahl,
   Trefferchancen und Schaden je Ballistics-Stufe nach den SoD-Werten.
@@ -529,17 +535,16 @@ Damit sich jede Schlacht abbilden lässt, die das Spiel kennt, fehlen noch:
 - **Artefakte** mit Auswahl je Held: Primärwerte, Glück und Moral, die
   Zauber-Artefakte (Tomes, Orbs, Recanter's Cloak, Pendants) und die
   übrigen kampfwirksamen.
-- **Kleinere Regeln** — zweifeldrige Kreaturen drehen sich um, wenn sie
-  rückwärts gehen; Fortune, Misfortune und Slayer auf der Ballista; ein
-  Verteidiger auf der linken Seite; die Rabatte der Schul-Fertigkeiten
-  aus SoD als Option.
 - **Kreaturenbanken** mit ihrer eigenen Aufstellung (optional).
 
 Bewusst nicht abgebildet, weil es nichts am Kampf selbst ändert:
 Rückzug und Kapitulation, die Abenteuerkarte (Bewegung, Logistics,
 Pathfinding, Scouting …), alles nach dem Kampf (Necromancy, Eagle Eye,
 Erfahrung), Abenteuer-Zauber und die Inhalte späterer Erweiterungen
-(Kanone, Commander).
+(Kanone, Commander). Zweifeldrige Kreaturen drehen sich nicht um, wenn
+sie rückwärts gehen — wie in VCMI; eine Regel, nach der sich dabei ihre
+Felder änderten, ist nicht belegt. Der Verteidiger einer Stadt steht wie
+im Spiel immer rechts.
 
 ## Quellen
 

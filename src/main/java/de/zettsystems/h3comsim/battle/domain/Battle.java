@@ -12,6 +12,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
@@ -517,8 +518,8 @@ public final class Battle {
         Stack ballista = setup.working(side, WarMachine.BALLISTA);
         int base = BallistaSpells.roll(ballista, rng) * (heroAttack + 1);
         int attack = (hero == null ? WarMachine.BALLISTA.attack() : hero.ballistaAttack())
-                + BallistaSpells.attackBonus(ballista);
-        int luck = setup.luckOf(side);
+                + BallistaSpells.attackBonus(ballista, target);
+        int luck = BallistaSpells.luck(ballista, setup.luckOf(side));
         boolean lucky = luck > 0 && rng.nextInt(1000) < ArmyMorale.triggerChancePerMille(luck);
         int chance = hero == null ? 0 : hero.artilleryDoubleDamagePercent();
         boolean doubled = chance >= 100 || (chance > 0 && rng.nextInt(100) < chance);
@@ -869,6 +870,7 @@ public final class Battle {
         boolean ground = active.unit().movement() == Movement.GROUND;
         List<Hex> walked = battlefield.pathFor(active, destination);
         if (siege != null && ground) {
+            walked = aroundMoat(active, destination, battlefield, walked, siege);
             walked = untilMoat(walked, siege);
             if (currentSetup != null && stuckWithoutRoom(currentSetup, active, walked, destination)) {
                 return;
@@ -902,6 +904,21 @@ public final class Battle {
     static boolean stuckWithoutRoom(BattleSetup setup, Stack active, List<Hex> walked, Hex destination) {
         return !walked.isEmpty() && !walked.getLast().equals(destination)
                 && whereItFits(setup, active, walked, destination).isEmpty();
+    }
+
+    /**
+     * Ein Grabenfeld hält an (VCMI: „Stopper“) — gibt es zum Ziel einen Weg ohne Graben, den der
+     * Stack in diesem Zug schafft, nimmt er ihn, etwa durch das offene Tor.
+     */
+    static List<Hex> aroundMoat(Stack active, Hex destination, Battlefield battlefield, List<Hex> path,
+                                        Siege siege) {
+        if (path.stream().noneMatch(siege::isMoat) || siege.isMoat(destination)) {
+            return path;
+        }
+        Set<Hex> blocked = new HashSet<>(battlefield.obstacles());
+        siege.moat().stream().filter(siege::isMoat).forEach(blocked::add);
+        List<Hex> dry = battlefield.withObstacles(blocked).pathFor(active, destination);
+        return !dry.isEmpty() && dry.size() <= active.getSpeed() ? dry : path;
     }
 
     /** Der Weg bis einschließlich des ersten Grabenfelds. */
