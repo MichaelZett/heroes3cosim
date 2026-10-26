@@ -47,8 +47,8 @@ public final class SpawnLayout {
      *   <li>Reihen werden nach Distanz zur Mitte sortiert — die äußersten zuerst.</li>
      *   <li>Schützen ({@link AttackType#LONG_RANGE}) bekommen die äußersten Reihen, sortiert
      *       nach {@link Unit#health()} aufsteigend (Tiebreak: Original-Slot). Begründung:
-     *       Ecken haben strukturell weniger Adjazenz-Hexen und sind durch eine Tank-Wall
-     *       vollständig abdeckbar — der zerbrechlichste Schütze profitiert davon am meisten;
+     *       Ecken haben strukturell weniger Adjazenz-Hexen, bieten also weniger
+     *       Angriffsfläche — der zerbrechlichste Schütze profitiert davon am meisten;
      *       robuste Schützen wie Titan oder Arch Magi stehen weiter innen und können sich im
      *       Notfall im Nahkampf wehren.</li>
      *   <li>Melees werden nach Speed absteigend sortiert (Tiebreak: Original-Slot) und auf

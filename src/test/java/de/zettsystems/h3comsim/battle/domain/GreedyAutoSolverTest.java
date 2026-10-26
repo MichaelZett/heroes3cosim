@@ -290,10 +290,8 @@ class GreedyAutoSolverTest {
     }
 
     @Test
-    void without_tactical_wait_or_for_the_strategic_solver_the_charge_is_not_postponed() {
+    void without_tactical_wait_the_charge_is_not_postponed() {
         assertThat(decideCharge(new GreedyAutoSolver(false), loneChargeSetup(40)))
-                .isInstanceOf(Action.MoveAndMelee.class);
-        assertThat(decideCharge(new GreedyAutoSolver(true, false), loneChargeSetup(40)))
                 .isInstanceOf(Action.MoveAndMelee.class);
     }
 

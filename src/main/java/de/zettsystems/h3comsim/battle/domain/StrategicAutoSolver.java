@@ -12,31 +12,36 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Team-koordinierter Multi-Stack-Solver. Pro Runde wird ein {@link RoundPlan} berechnet, der
- * Schützen-Schutz, Focus-Fire und AoE-Targeting in die Stack-Entscheidungen einbringt.
+ * Team-koordinierter Multi-Stack-Solver. Pro Runde wird ein {@link RoundPlan} mit einem
+ * Focus-Fire-Ziel je Seite berechnet; den Rest der Entscheidung trifft {@link GreedyAutoSolver}.
  *
- * <p>Drei Optimierungen gegenüber {@link GreedyAutoSolver}:
+ * <p>Vorrang in der Ziel-Wahl:
  * <ol>
- *   <li><strong>Tank-Pattern (A)</strong>: bei {@link TeamStance#RANGED_DOMINANT} positioniert
- *       sich jeder eigene Nahkämpfer zwischen dem nächsten Threat und dem bedrohtesten eigenen
- *       Schützen, statt vorzustürmen.</li>
+ *   <li><strong>Engagement</strong>: Ein Schütze mit Gegner daneben kann nicht schießen und
+ *       schlägt den Nachbarn. Ein Nahkämpfer bleibt nicht kleben, wenn er ein lohnenderes Ziel
+ *       diese Runde erreicht.</li>
+ *   <li><strong>Flieger auf Schützen (E)</strong>: ein ungedeckter gegnerischer Schütze in
+ *       Reichweite.</li>
  *   <li><strong>AoE-aware Target-Pick (B)</strong>: Schützen mit
- *       {@link UnitSpeciality#SPLASH_SHOT} / {@link UnitSpeciality#DEATH_CLOUD} bevorzugen
- *       Gegner mit den meisten adjazenten Verbündeten; Nahkämpfer mit
- *       {@link UnitSpeciality#FIRE_BREATH} bevorzugen Inline-Paare.</li>
- *   <li><strong>Focus-Fire (C)</strong>: ohne lokales Engagement zielen alle eigenen Stacks
- *       auf denselben vom Plan gewählten {@code focusTarget} — gefährlichster Gegner gewichtet
- *       nach Specials.</li>
+ *       {@link UnitSpeciality#SPLASH_SHOT} / {@link UnitSpeciality#DEATH_CLOUD} maximieren den
+ *       Netto-Splash; Nahkämpfer mit {@link UnitSpeciality#FIRE_BREATH} bevorzugen Inline-Paare.</li>
+ *   <li><strong>Focus-Fire (C)</strong>: das vom Plan gewählte Ziel, für Schützen immer, für
+ *       Nahkämpfer nur, wenn sie es diese Runde angreifen können.</li>
+ *   <li>sonst Greedy.</li>
  * </ol>
+ *
+ * <p>Früher gab es zusätzlich ein Tank-Pattern (Nahkämpfer decken die eigenen Schützen), den
+ * Fokus auch auf unerreichbare Ziele und für jeden den Zwang, den Nachbarn zu schlagen. Mit
+ * zweifeldrigen Kreaturen verlor jedes davon im direkten Duell gegen dieselbe Fassung ohne
+ * (0.469, 0.458, 0.480; je 6480 Kämpfe). Ohne alle drei und mit Greedys Warten vor ungedeckten
+ * Anläufen gewinnt der Solver 0.619 gegen die alte Fassung und 0.580 gegen Greedy; die alte
+ * verlor gegen Greedy mit 0.397.
  *
  * <p>Stateful: speichert den Plan + Setup-Referenz zwischen {@link #planRound(BattleSetup)} und
  * den nachfolgenden {@link #pickTarget}/{@link #decide}-Aufrufen. Pro {@link Battle} eine
  * eigene Instanz verwenden.
  */
 public final class StrategicAutoSolver implements AutoSolver {
-
-    private static final double DOMINANCE_THRESHOLD = 1.2;
-    private static final int SHOT_HORIZON = 4;
 
     private final GreedyAutoSolver greedy;
 
@@ -46,7 +51,7 @@ public final class StrategicAutoSolver implements AutoSolver {
 
     /** @see GreedyAutoSolver#GreedyAutoSolver(boolean) */
     public StrategicAutoSolver(boolean tacticalWait) {
-        this.greedy = new GreedyAutoSolver(tacticalWait, false);
+        this.greedy = new GreedyAutoSolver(tacticalWait);
     }
 
     private RoundPlan plan = RoundPlan.EMPTY;
@@ -71,20 +76,25 @@ public final class StrategicAutoSolver implements AutoSolver {
         if (alive.isEmpty()) {
             return null;
         }
-        // Engagement-Override: ein adjazenter Gegner zwingt zum Nahkampf.
-        Stack adjacent = alive.stream()
-                .filter(o -> active.distanceTo(o) == 1)
-                .min(Comparator.comparingInt(Stack::slot))
-                .orElse(null);
-        if (adjacent != null) {
-            return adjacent;
+        // Engagement: Ein Schütze mit Gegner daneben kann nicht schießen. Ein Nahkämpfer prüft
+        // erst die lohnenderen Ziele; Greedy fällt am Ende ohnehin auf den Nachbarn zurück.
+        if (active.canShoot()) {
+            Stack adjacent = alive.stream()
+                    .filter(o -> active.distanceTo(o) == 1)
+                    .min(Comparator.comparingInt(Stack::slot))
+                    .orElse(null);
+            if (adjacent != null) {
+                return adjacent;
+            }
         }
 
         Stack chosen = pickBySpeciality(active, alive, battlefield);
         if (chosen == null) {
-            // (C) Focus-Fire: Team-Plan vorgeben lassen, sonst Greedy.
+            // (C) Focus-Fire: Team-Plan vorgeben lassen, sofern das Ziel diese Runde angreifbar
+            // ist, sonst Greedy. Ein Nahkämpfer, der dem Fokus hinterherläuft, fehlt vorne.
             Stack focus = plan.focusOf(active.side());
             chosen = focus != null && focus.isAlive() && alive.contains(focus)
+                    && (active.canShoot() || canAttackThisTurn(active, focus, battlefield))
                     ? focus
                     : greedy.pickTarget(active, opponents, battlefield);
         }
@@ -177,30 +187,11 @@ public final class StrategicAutoSolver implements AutoSolver {
 
     @Override
     public Action decide(Stack active, Stack opponent, Battlefield battlefield) {
-        // Sonderaktionen vor allem anderen: ein Arch Angel, der lieber Tank spielt, verschenkt
+        // Sonderaktionen vor allem anderen: ein Arch Angel, der lieber angreift, verschenkt
         // seinen einzigen Wurf.
         Action special = GreedyAutoSolver.specialAction(active, opponent, currentSetup);
         if (special != null) {
             return special;
-        }
-        // (A) Tank-Pattern: positionieren statt chargen, wenn eigene Schützen Schutz brauchen.
-        // Aktiviert sich bei RANGED_DOMINANT (alle Schützen schutzwürdig) und bei BALANCED
-        // mit Rand-Schützen — siehe RoundPlan.hasTankDuty / StrategicAutoSolver#buildPlan.
-        if (plan.hasTankDuty(active.side())
-                && isTankCandidate(active)
-                && !active.canShoot()
-                && active.distanceTo(opponent) > 1) {
-            // Tank steht schon adjacent zu einem eigenen Schützen → Position halten und
-            // Defend (+20 % Defense) statt überflüssig auf einen anderen Adjacent zu wandern.
-            // Ein zweiter Tank, der noch im Anflug ist, findet via findTankPosition trotzdem
-            // den verbleibenden freien Adjacent.
-            if (isAdjacentToOwnProtectedShooter(active)) {
-                return new Action.Defend();
-            }
-            Hex tankSpot = findTankPosition(active, battlefield);
-            if (tankSpot != null && !tankSpot.equals(active.position())) {
-                return new Action.Move(tankSpot);
-            }
         }
         // Flieger umfliegen Tank-Walls: Greedy.decide hat dafür eine eigene findFlyerLanding-
         // Heuristik (greedy.currentSetup wird via planRound-Delegate gesetzt). Strategic
@@ -213,53 +204,7 @@ public final class StrategicAutoSolver implements AutoSolver {
     // ------------------------------------------------------------------ //
 
     private static RoundPlan buildPlan(BattleSetup setup) {
-        Map<Side, TeamStance> stance = stances(setup);
-        return new RoundPlan(stance, focusTargets(setup), protectedShooters(setup, stance));
-    }
-
-    /**
-     * Aggregierte Feuerkraft einer Seite, getrennt nach Fernkampf und Nahkampf.
-     */
-    private record SidePower(double ranged, double melee) {
-    }
-
-    private static SidePower powerOf(BattleSetup setup, Side side) {
-        double ranged = 0;
-        double melee = 0;
-        for (Stack s : setup.stacksOf(side)) {
-            if (!s.isAlive()) {
-                continue;
-            }
-            double avgDmg = (s.unit().minDamage() + s.unit().maxDamage()) / 2.0;
-            double basePower = avgDmg * s.getCount();
-            if (s.canShoot()) {
-                ranged += basePower * Math.min(s.shotsRemaining(), SHOT_HORIZON);
-            } else {
-                melee += basePower;
-            }
-        }
-        return new SidePower(ranged, melee);
-    }
-
-    private static Map<Side, TeamStance> stances(BattleSetup setup) {
-        // Side hat genau zwei Werte — direkt paaren statt über eine Zwischen-Map, deren
-        // get() für NullAway nullable wäre.
-        SidePower attacker = powerOf(setup, Side.ATTACKER);
-        SidePower defender = powerOf(setup, Side.DEFENDER);
-        Map<Side, TeamStance> stance = new EnumMap<>(Side.class);
-        stance.put(Side.ATTACKER, stanceFor(attacker, defender));
-        stance.put(Side.DEFENDER, stanceFor(defender, attacker));
-        return stance;
-    }
-
-    private static TeamStance stanceFor(SidePower mine, SidePower theirs) {
-        if (mine.ranged() > 0 && mine.ranged() > theirs.ranged() * DOMINANCE_THRESHOLD) {
-            return TeamStance.RANGED_DOMINANT;
-        }
-        if (mine.melee() > theirs.melee() * DOMINANCE_THRESHOLD) {
-            return TeamStance.MELEE_DOMINANT;
-        }
-        return TeamStance.BALANCED;
+        return new RoundPlan(focusTargets(setup));
     }
 
     private static Map<Side, Stack> focusTargets(BattleSetup setup) {
@@ -273,41 +218,6 @@ public final class StrategicAutoSolver implements AutoSolver {
                     .ifPresent(best -> focus.put(side, best));
         }
         return focus;
-    }
-
-    private static Set<Stack> protectedShooters(BattleSetup setup, Map<Side, TeamStance> stance) {
-        // LinkedHashSet → deterministische Iteration im Tank-Pattern: Setup-Reihenfolge =
-        // Slot-Reihenfolge ist die einzige Quelle stabiler Reihenfolge (Stack.hashCode() ist
-        // Identity-basiert und damit run-spezifisch).
-        Set<Stack> protect = new LinkedHashSet<>();
-        int lastRow = setup.battlefield().height() - 1;
-        for (Side side : Side.values()) {
-            TeamStance st = stance.get(side);
-            if (st == TeamStance.MELEE_DOMINANT) {
-                // Charge-Modus überwiegt — keine Tank-Aufträge, sonst zieht ein Melee Truppen
-                // ab, die im Sturm gebraucht werden.
-                continue;
-            }
-            for (Stack s : setup.stacksOf(side)) {
-                if (s.isAlive() && s.canShoot() && needsTankCover(s, st, lastRow)) {
-                    protect.add(s);
-                }
-            }
-        }
-        return protect;
-    }
-
-    /**
-     * RANGED_DOMINANT: alle Schützen werden geschützt (klassisches Tank-Pattern). Sonst
-     * (BALANCED): nur strukturell verwundbare Schützen am Rand — sie haben weniger
-     * Adjazenz-Hexen, sodass 1–2 Tanks die Front komplett dichtmachen.
-     */
-    private static boolean needsTankCover(Stack shooter, @Nullable TeamStance stance, int lastRow) {
-        if (stance == TeamStance.RANGED_DOMINANT) {
-            return true;
-        }
-        int r = shooter.position().r();
-        return r == 0 || r == lastRow;
     }
 
     private static double focusScore(Stack enemy) {
@@ -479,117 +389,21 @@ public final class StrategicAutoSolver implements AutoSolver {
     }
 
     // ------------------------------------------------------------------ //
-    // Tank-Pattern
+    // Reichweite
     // ------------------------------------------------------------------ //
 
-    /**
-     * Nur „langsame, schwache" Stacks dürfen Tank-Babysitter sein — High-Damage- oder
-     * High-Mobility-Attacker (Black Dragon, Champion, Vampire Lord, Cerberus etc.)
-     * sollen chargen, nicht vor Schützen kleben. Heuristik: Tier ≤ 5 UND keine
-     * aggressiven Specials. Schützen werden ohnehin nicht durch diese Methode geprüft —
-     * sie bekommen via {@link #decide} keinen Tank-Pattern-Pfad.
-     */
-    private static boolean isTankCandidate(Stack stack) {
-        Unit u = stack.unit();
-        if (u.hasSpeciality(UnitSpeciality.MOVE_BACK)) {
-            return false;
+    /** Ob {@code active} {@code target} diese Runde im Nahkampf erreicht (oder schon daneben steht). */
+    private boolean canAttackThisTurn(Stack active, Stack target, Battlefield bf) {
+        BattleSetup setup = currentSetup;
+        if (setup == null || active.distanceTo(target) == 1) {
+            return true;
         }
-        if (u.hasSpeciality(UnitSpeciality.IMPACT_DAMAGE)) {
-            return false;
-        }
-        if (u.hasSpeciality(UnitSpeciality.FIRE_BREATH)) {
-            return false;
-        }
-        if (u.hasSpeciality(UnitSpeciality.THREE_HEADED_ATTACK)) {
-            return false;
-        }
-        if (u.hasSpeciality(UnitSpeciality.TELEPORT_NO_COST)) {
-            return false;
-        }
-        if (u.hasSpeciality(UnitSpeciality.LIFE_DRAIN)) {
-            return false;
-        }
-        if (u.hasSpeciality(UnitSpeciality.NO_RETALIATION)) {
-            return false;
-        }
-        return u.tier() <= 5;
-    }
-
-    private boolean isAdjacentToOwnProtectedShooter(Stack active) {
-        Side mySide = active.side();
-        for (Stack shooter : plan.protectedShooters()) {
-            if (shooter.side() != mySide || !shooter.isAlive()) {
-                continue;
-            }
-            if (active.distanceTo(shooter) == 1) {
+        for (Hex head : setup.attackHeads(active, target)) {
+            if (isReachableLandingSpot(active, head, bf, setup)) {
                 return true;
             }
         }
         return false;
-    }
-
-    private @Nullable Hex findTankPosition(Stack active, Battlefield battlefield) {
-        BattleSetup setup = currentSetup;
-        if (setup == null) {
-            return null;
-        }
-        Side mySide = active.side();
-        // Slot-sortiert iterieren — RoundPlan.protectedShooters ist nach Set.copyOf nicht mehr
-        // stabil, wir brauchen aber deterministische Wahl bei mehreren gleich-bedrohten Schützen.
-        List<Stack> myShooters = plan.protectedShooters().stream()
-                .filter(s -> s.side() == mySide && s.isAlive())
-                .sorted(Comparator.comparingInt(Stack::slot))
-                .toList();
-        // null, sobald eine der beiden Listen leer ist — dann gibt es nichts zu decken.
-        ThreatenedShooter threatened = mostThreatened(myShooters, setup.opponentsOf(active));
-        if (threatened == null) {
-            return null;
-        }
-        return tankSpotFor(active, threatened, battlefield, setup);
-    }
-
-    /**
-     * Der am dichtesten bedrängte eigene Schütze samt des Gegners, der ihn bedrängt.
-     */
-    private record ThreatenedShooter(Stack shooter, Stack threat) {
-    }
-
-    private static @Nullable ThreatenedShooter mostThreatened(List<Stack> shooters, List<Stack> enemies) {
-        ThreatenedShooter best = null;
-        int minDist = Integer.MAX_VALUE;
-        for (Stack shooter : shooters) {
-            for (Stack enemy : enemies) {
-                int d = shooter.distanceTo(enemy);
-                if (d < minDist) {
-                    minDist = d;
-                    best = new ThreatenedShooter(shooter, enemy);
-                }
-            }
-        }
-        return best;
-    }
-
-    /**
-     * Bevorzugt der Hex zwischen Schütze und Bedrohung, sonst irgendein freier Adjacent.
-     */
-    private static @Nullable Hex tankSpotFor(Stack active, ThreatenedShooter threatened,
-                                             Battlefield battlefield, BattleSetup setup) {
-        Stack shooter = threatened.shooter();
-        Hex threat = threatened.threat().nearestHexTo(shooter.position());
-        Hex shooterPos = shooter.nearestHexTo(threat);
-        Hex preferred = adjacentTowards(shooterPos, threat);
-        if (!shooter.occupies(preferred) && isReachableLandingSpot(active, preferred, battlefield, setup)) {
-            return preferred;
-        }
-        boolean leftward = Hex.isLeftward(shooterPos, threat);
-        for (Hex own : shooter.hexes()) {
-            for (Hex neighbor : own.neighbors(leftward)) {
-                if (!shooter.occupies(neighbor) && isReachableLandingSpot(active, neighbor, battlefield, setup)) {
-                    return neighbor;
-                }
-            }
-        }
-        return null;
     }
 
     /**
@@ -655,19 +469,6 @@ public final class StrategicAutoSolver implements AutoSolver {
         }
         List<Hex> path = bf.pathFor(active, hex);
         return !path.isEmpty() && path.size() <= active.getSpeed();
-    }
-
-    private static Hex adjacentTowards(Hex from, Hex to) {
-        Hex best = from;
-        int bestDist = Integer.MAX_VALUE;
-        for (Hex n : from.neighbors(Hex.isLeftward(from, to))) {
-            int d = n.distanceTo(to);
-            if (d < bestDist) {
-                bestDist = d;
-                best = n;
-            }
-        }
-        return best;
     }
 
     private static Side opposite(Side side) {

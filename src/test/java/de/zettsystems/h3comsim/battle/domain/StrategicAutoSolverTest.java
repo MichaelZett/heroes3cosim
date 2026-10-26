@@ -4,8 +4,6 @@ import de.zettsystems.h3comsim.battle.domain.events.Side;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -13,40 +11,6 @@ class StrategicAutoSolverTest {
 
     private final StrategicAutoSolver solver = new StrategicAutoSolver();
     private final Battlefield battlefield = Battlefield.STANDARD;
-
-    @Test
-    void ranged_dominant_side_protects_shooters_via_stance() {
-        // Attacker: 1 Halberdier (Tank) + 1 Marksman + 1 Zealot (zwei Schützen → Ranged-Power).
-        // Defender: 1 Pikeman (Melee only).
-        Stack hal = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(0, 4), Side.ATTACKER, 0);
-        Stack mark = new Stack(UnitCatalog.MARKSMAN, 9, new Hex(0, 5), Side.ATTACKER, 1);
-        Stack zealot = new Stack(UnitCatalog.ZEALOT, 3, new Hex(0, 6), Side.ATTACKER, 2);
-        Stack pikeman = new Stack(UnitCatalog.PIKEMAN, 14, new Hex(14, 5), Side.DEFENDER, 0);
-        BattleSetup setup = new BattleSetup(List.of(hal, mark, zealot), List.of(pikeman), battlefield);
-
-        solver.planRound(setup);
-
-        assertThat(solver.currentPlan().stanceOf(Side.ATTACKER)).isEqualTo(TeamStance.RANGED_DOMINANT);
-        assertThat(solver.currentPlan().protectedShooters()).containsExactlyInAnyOrder(mark, zealot);
-    }
-
-    @Test
-    void melee_dominant_side_charges_via_stance() {
-        // Attacker: 3 Melee-Stacks ohne Schützen. Defender: 1 schwacher Schütze.
-        Stack hal = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(0, 4), Side.ATTACKER, 0);
-        Stack crusader = new Stack(UnitCatalog.CRUSADER, 4, new Hex(0, 5), Side.ATTACKER, 1);
-        Stack archAngel = new Stack(UnitCatalog.ARCH_ANGEL, 1, new Hex(0, 6), Side.ATTACKER, 2);
-        Stack marksman = new Stack(UnitCatalog.MARKSMAN, 1, new Hex(14, 5), Side.DEFENDER, 0);
-        BattleSetup setup = new BattleSetup(List.of(hal, crusader, archAngel), List.of(marksman), battlefield);
-
-        solver.planRound(setup);
-
-        assertThat(solver.currentPlan().stanceOf(Side.ATTACKER)).isEqualTo(TeamStance.MELEE_DOMINANT);
-        // Defender mit einsamem Marksman ist seinerseits RANGED_DOMINANT — der Set enthält ihn.
-        // Wichtig ist nur: Attacker hat keine Schützen drin (er chargt geschlossen).
-        assertThat(solver.currentPlan().protectedShooters())
-                .noneMatch(s -> s.side() == Side.ATTACKER);
-    }
 
     @Test
     void focus_target_picks_highest_threat_enemy() {
@@ -100,55 +64,43 @@ class StrategicAutoSolverTest {
     }
 
     @Test
-    void tank_defends_when_already_adjacent_to_protected_shooter() {
-        // Marksman auf (0, 0), Halberdier (Tank) steht bereits adjacent auf (1, 0).
-        // Stance RANGED_DOMINANT → hasTankDuty=true. Erwartung: Defend (+30 % Defense)
-        // statt redundantem Move zu einer anderen Adjacent-Position des Schützen.
-        Stack mark = new Stack(UnitCatalog.MARKSMAN, 9, new Hex(0, 0), Side.ATTACKER, 0);
-        Stack hal = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(1, 0), Side.ATTACKER, 1);
-        Stack threat = new Stack(UnitCatalog.PIKEMAN, 14, new Hex(10, 5), Side.DEFENDER, 0);
-        BattleSetup setup = new BattleSetup(List.of(mark, hal), List.of(threat), battlefield);
+    void an_engaged_shooter_strikes_its_neighbour_instead_of_the_focus() {
+        Stack marksmen = new Stack(UnitCatalog.MARKSMAN, 9, new Hex(5, 5), Side.ATTACKER, 0);
+        Stack pikemen = new Stack(UnitCatalog.PIKEMAN, 2, new Hex(6, 5), Side.DEFENDER, 0);
+        Stack angels = new Stack(UnitCatalog.ARCH_ANGEL, 1, new Hex(14, 7), Side.DEFENDER, 1);
+        BattleSetup setup = new BattleSetup(List.of(marksmen), List.of(pikemen, angels), battlefield);
         solver.planRound(setup);
-        assertThat(solver.currentPlan().stanceOf(Side.ATTACKER)).isEqualTo(TeamStance.RANGED_DOMINANT);
+        assertThat(solver.currentPlan().focusOf(Side.ATTACKER)).isSameAs(angels);
 
-        Action action = solver.decide(hal, threat, battlefield);
-
-        assertThat(action).isInstanceOf(Action.Defend.class);
+        assertThat(solver.pickTarget(marksmen, setup.opponentsOf(marksmen), battlefield)).isSameAs(pikemen);
     }
 
     @Test
-    void ranged_dominant_melee_tank_moves_towards_shooter_lane() {
-        // Attacker: Marksman (Schütze) hinten + Halberdier (Tank, kann sich bewegen).
-        // Defender: schneller Pikeman, der den Marksman bedroht.
-        Stack hal = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(3, 5), Side.ATTACKER, 0);
-        Stack mark = new Stack(UnitCatalog.MARKSMAN, 9, new Hex(0, 5), Side.ATTACKER, 1);
-        Stack zealot = new Stack(UnitCatalog.ZEALOT, 3, new Hex(0, 6), Side.ATTACKER, 2);
-        Stack threat = new Stack(UnitCatalog.PIKEMAN, 14, new Hex(8, 5), Side.DEFENDER, 0);
-        BattleSetup setup = new BattleSetup(List.of(hal, mark, zealot), List.of(threat), battlefield);
+    void a_walker_only_follows_the_focus_it_can_strike_this_turn() {
+        // Halberdiere (Speed 5): die Arch Angels ganz hinten sind der Fokus, aber unerreichbar.
+        Stack hal = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(2, 5), Side.ATTACKER, 0);
+        Stack pikemen = new Stack(UnitCatalog.PIKEMAN, 14, new Hex(7, 5), Side.DEFENDER, 0);
+        Stack angels = new Stack(UnitCatalog.ARCH_ANGEL, 1, new Hex(14, 7), Side.DEFENDER, 1);
+        BattleSetup setup = new BattleSetup(List.of(hal), List.of(pikemen, angels), battlefield);
         solver.planRound(setup);
+        assertThat(solver.currentPlan().focusOf(Side.ATTACKER)).isSameAs(angels);
 
-        Action action = solver.decide(hal, threat, battlefield);
+        assertThat(solver.pickTarget(hal, setup.opponentsOf(hal), battlefield)).isSameAs(pikemen);
 
-        // Tank soll sich bewegen statt direkt anzugreifen — Move-Aktion, kein MoveAndMelee.
-        assertThat(action).isInstanceOf(Action.Move.class);
+        // Steht der Fokus in Reichweite, gilt er.
+        angels.moveTo(new Hex(5, 3));
+        assertThat(solver.pickTarget(hal, setup.opponentsOf(hal), battlefield)).isSameAs(angels);
     }
 
     @Test
-    void balanced_stance_when_neither_side_dominates() {
-        // Spiegel-Armeen: identische Schützen+Tank-Mischung beider Seiten.
-        // Keiner überschreitet DOMINANCE_THRESHOLD (1.2) → beide BALANCED.
-        Stack halA = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(0, 4), Side.ATTACKER, 0);
-        Stack markA = new Stack(UnitCatalog.MARKSMAN, 9, new Hex(0, 5), Side.ATTACKER, 1);
-        Stack halD = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(14, 4), Side.DEFENDER, 0);
-        Stack markD = new Stack(UnitCatalog.MARKSMAN, 9, new Hex(14, 5), Side.DEFENDER, 1);
-        BattleSetup setup = new BattleSetup(List.of(halA, markA), List.of(halD, markD), battlefield);
-
+    void an_engaged_walker_leaves_its_neighbour_for_a_focus_in_reach() {
+        Stack hal = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(5, 5), Side.ATTACKER, 0);
+        Stack pikemen = new Stack(UnitCatalog.PIKEMAN, 2, new Hex(6, 5), Side.DEFENDER, 0);
+        Stack angels = new Stack(UnitCatalog.ARCH_ANGEL, 1, new Hex(7, 3), Side.DEFENDER, 1);
+        BattleSetup setup = new BattleSetup(List.of(hal), List.of(pikemen, angels), battlefield);
         solver.planRound(setup);
 
-        assertThat(solver.currentPlan().stanceOf(Side.ATTACKER)).isEqualTo(TeamStance.BALANCED);
-        assertThat(solver.currentPlan().stanceOf(Side.DEFENDER)).isEqualTo(TeamStance.BALANCED);
-        // Tank-Pattern greift nur bei RANGED_DOMINANT → bei BALANCED kein Schutzauftrag.
-        assertThat(solver.currentPlan().protectedShooters()).isEmpty();
+        assertThat(solver.pickTarget(hal, setup.opponentsOf(hal), battlefield)).isSameAs(angels);
     }
 
     @Test
@@ -186,74 +138,20 @@ class StrategicAutoSolverTest {
     }
 
     @Test
-    void tank_pattern_skips_blocked_preferred_spot() {
-        // Marksman (einziger Schütze → unstrittig "most threatened") auf (3,5),
-        // Threat auf (10,5) → preferred Tank-Spot = (4,5).
-        // Swordsman als Melee-Blocker auf (4,5) — Tank-Halberdier muss auf einen anderen
-        // Marksman-Nachbarn ausweichen. (Blocker MUSS Melee sein, sonst tritt er selbst
-        // als Schütze in die Threat-Auswahl und verfälscht die Tank-Position.)
-        Stack hal = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(0, 5), Side.ATTACKER, 0);
-        Stack mark = new Stack(UnitCatalog.MARKSMAN, 9, new Hex(3, 5), Side.ATTACKER, 1);
-        Stack blocker = new Stack(UnitCatalog.SWORDSMAN, 10, new Hex(4, 5), Side.ATTACKER, 2);
-        Stack threat = new Stack(UnitCatalog.PIKEMAN, 14, new Hex(10, 5), Side.DEFENDER, 0);
-        BattleSetup setup = new BattleSetup(List.of(hal, mark, blocker), List.of(threat), battlefield);
-        solver.planRound(setup);
-
-        Action action = solver.decide(hal, threat, battlefield);
-
-        assertThat(action).isInstanceOf(Action.Move.class);
-        Hex destination = ((Action.Move) action).destination();
-        assertThat(destination)
-                .isNotEqualTo(new Hex(4, 5))
-                .isNotEqualTo(blocker.position());
-        // Ziel muss adjazent zum geschützten Marksman sein (Tank-Position).
-        assertThat(destination.distanceTo(mark.position())).isEqualTo(1);
-    }
-
-    @Test
-    void tank_pattern_without_alive_shooters_delegates_to_greedy_charge() {
-        // RANGED_DOMINANT Plan; danach stirbt der einzige Schütze → myShooters leer →
-        // findTankPosition liefert null → Greedy übernimmt und zieht Richtung Gegner.
-        Stack hal = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(3, 5), Side.ATTACKER, 0);
-        Stack mark = new Stack(UnitCatalog.MARKSMAN, 9, new Hex(0, 5), Side.ATTACKER, 1);
-        Stack threat = new Stack(UnitCatalog.PIKEMAN, 14, new Hex(10, 5), Side.DEFENDER, 0);
-        BattleSetup setup = new BattleSetup(List.of(hal, mark), List.of(threat), battlefield);
-        solver.planRound(setup);
-        assertThat(solver.currentPlan().stanceOf(Side.ATTACKER)).isEqualTo(TeamStance.RANGED_DOMINANT);
-
-        mark.loseTopCreatures(mark.getCount());
-        // Späte Rundenphase: die Verzögerung ist verbraucht, der Tank muss ziehen. In Phase 1
-        // würde Greedy hier warten, weil der Pikeman diese Runde nicht erreichbar ist.
-        hal.markWaited();
-
-        Action action = solver.decide(hal, threat, battlefield);
-
-        // Greedy bewegt sich Richtung Pikeman (östlich), nicht Richtung Marksman-Lane (westlich).
-        Hex destination = switch (action) {
-            case Action.Move m -> m.destination();
-            case Action.MoveAndMelee mm -> mm.destination();
-            default -> throw new AssertionError("expected Move/MoveAndMelee, got " + action);
-        };
-        assertThat(destination.distanceTo(threat.position()))
-                .isLessThan(hal.position().distanceTo(threat.position()));
-    }
-
-    @Test
     void plan_round_refreshes_setup_and_focus() {
-        // Erst Setup A → Focus = Pikemen (einziger Feind, Attacker BALANCED).
+        // Erst Setup A → Focus = Pikemen (einziger Feind).
         Stack halA = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(0, 5), Side.ATTACKER, 0);
         Stack pikemenA = new Stack(UnitCatalog.PIKEMAN, 14, new Hex(14, 5), Side.DEFENDER, 0);
         BattleSetup setupA = new BattleSetup(List.of(halA), List.of(pikemenA), battlefield);
         solver.planRound(setupA);
         assertThat(solver.currentPlan().focusOf(Side.ATTACKER)).isSameAs(pikemenA);
 
-        // Setup B → andere Stacks, andere Stance (Marksman → RANGED_DOMINANT für Attacker).
+        // Setup B → andere Stacks.
         Stack markB = new Stack(UnitCatalog.MARKSMAN, 9, new Hex(0, 5), Side.ATTACKER, 0);
         Stack pikemenB = new Stack(UnitCatalog.PIKEMAN, 14, new Hex(14, 5), Side.DEFENDER, 0);
         BattleSetup setupB = new BattleSetup(List.of(markB), List.of(pikemenB), battlefield);
         solver.planRound(setupB);
 
-        assertThat(solver.currentPlan().stanceOf(Side.ATTACKER)).isEqualTo(TeamStance.RANGED_DOMINANT);
         // Focus zeigt auf den NEUEN Pikeman, nicht den aus Setup A.
         assertThat(solver.currentPlan().focusOf(Side.ATTACKER)).isSameAs(pikemenB);
         assertThat(solver.currentPlan().focusOf(Side.ATTACKER)).isNotSameAs(pikemenA);
@@ -272,112 +170,6 @@ class StrategicAutoSolverTest {
         solver.planRound(setup);
 
         assertThat(solver.currentPlan().focusOf(Side.ATTACKER)).isSameAs(vampires);
-    }
-
-    @Test
-    void two_tanks_form_complete_wall_in_front_of_corner_shooter() {
-        // Marksman im Eck (3,0) — strukturell nur 3 Nachbarn auf dem Feld: (4,0), (2,1), (3,1).
-        // 3 Tanks sollten alle drei besetzen → komplette Wall.
-        // Stance ist RANGED_DOMINANT, weil der einzige Schütze auf Attacker-Seite steht.
-        // Hier verifizieren wir nur, dass die bestehende Tank-Heuristik die Tanks tatsächlich
-        // koordiniert und nicht alle auf denselben preferred Spot schickt.
-        Stack mark = new Stack(UnitCatalog.MARKSMAN, 9, new Hex(3, 0), Side.ATTACKER, 0);
-        Stack hal = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(2, 2), Side.ATTACKER, 1);
-        Stack sword = new Stack(UnitCatalog.SWORDSMAN, 10, new Hex(1, 4), Side.ATTACKER, 2);
-        Stack pike = new Stack(UnitCatalog.PIKEMAN, 10, new Hex(1, 3), Side.ATTACKER, 3);
-        Stack threat = new Stack(UnitCatalog.PIKEMAN, 14, new Hex(8, 5), Side.DEFENDER, 0);
-        BattleSetup setup = new BattleSetup(List.of(mark, hal, sword, pike), List.of(threat), battlefield);
-        solver.planRound(setup);
-        assertThat(solver.currentPlan().stanceOf(Side.ATTACKER)).isEqualTo(TeamStance.RANGED_DOMINANT);
-
-        // Tank A entscheidet, bewegt sich → blockiert seinen Hex für Tank B.
-        Action actA = solver.decide(hal, threat, battlefield);
-        Hex destA = ((Action.Move) actA).destination();
-        hal.moveTo(destA);
-
-        Action actB = solver.decide(sword, threat, battlefield);
-        Hex destB = ((Action.Move) actB).destination();
-        sword.moveTo(destB);
-
-        Action actC = solver.decide(pike, threat, battlefield);
-        Hex destC = ((Action.Move) actC).destination();
-
-        assertThat(List.of(destA, destB, destC)).allSatisfy(
-                dest -> assertThat(dest.distanceTo(mark.position())).isEqualTo(1));
-        assertThat(Set.of(destA, destB, destC)).hasSize(3);
-        // Vollständige Wall: kein Nachbar des Schützen auf dem Feld ist mehr frei.
-        Set<Hex> stillFreeAdjacents = mark.position().neighbors().stream()
-                .filter(battlefield::isPassable)
-                .filter(h -> !h.equals(destA) && !h.equals(destB) && !h.equals(destC))
-                .collect(Collectors.toSet());
-        assertThat(stillFreeAdjacents).isEmpty();
-    }
-
-    @Test
-    void balanced_stance_still_protects_corner_shooter_via_tank_duty() {
-        // Spiegel-Setup: beide Seiten haben Marksman + 2 Tanks → BALANCED-Stance.
-        // Trotz BALANCED soll der Tank den Eck-Schützen (r=0) decken, weil dieser strukturell
-        // verwundbar ist (nur 3 Nachbarn auf dem Feld). Trigger: RoundPlan.hasTankDuty.
-        // Randzellen der Reihen 0/2/4, Verteidiger gespiegelt.
-        Stack mark = new Stack(UnitCatalog.MARKSMAN, 9, new Hex(3, 0), Side.ATTACKER, 0);
-        Stack hal = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(2, 2), Side.ATTACKER, 1);
-        Stack sword = new Stack(UnitCatalog.SWORDSMAN, 10, new Hex(1, 4), Side.ATTACKER, 2);
-        Stack enemyMark = new Stack(UnitCatalog.MARKSMAN, 9, new Hex(16, 0), Side.DEFENDER, 0);
-        Stack enemyHal = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(15, 2), Side.DEFENDER, 1);
-        Stack enemySword = new Stack(UnitCatalog.SWORDSMAN, 10, new Hex(14, 4), Side.DEFENDER, 2);
-        BattleSetup setup = new BattleSetup(
-                List.of(mark, hal, sword),
-                List.of(enemyMark, enemyHal, enemySword),
-                battlefield);
-        solver.planRound(setup);
-        assertThat(solver.currentPlan().stanceOf(Side.ATTACKER)).isEqualTo(TeamStance.BALANCED);
-        assertThat(solver.currentPlan().hasTankDuty(Side.ATTACKER)).isTrue();
-        assertThat(solver.currentPlan().protectedShooters()).contains(mark);
-
-        Action actA = solver.decide(hal, enemyHal, battlefield);
-        Hex destA = ((Action.Move) actA).destination();
-        hal.moveTo(destA);
-
-        Action actB = solver.decide(sword, enemyHal, battlefield);
-        Hex destB = ((Action.Move) actB).destination();
-
-        // Beide Tanks adjacent zum Eck-Marksman.
-        assertThat(destA.distanceTo(mark.position())).isEqualTo(1);
-        assertThat(destB.distanceTo(mark.position())).isEqualTo(1);
-        assertThat(destA).isNotEqualTo(destB);
-    }
-
-    @Test
-    void melee_dominant_side_still_charges_even_with_edge_shooter() {
-        // Sicherheitstest: bei MELEE_DOMINANT bleibt Charge-Modus, auch wenn ein Schütze
-        // zufällig am Rand sitzt. Sonst würden Tanks aus dem Sturm abgezogen.
-        // Defender hat starke Schützen-Power, damit Attacker trotz seines Mini-Archers nicht
-        // selbst RANGED_DOMINANT kippt — Attacker bleibt klar MELEE_DOMINANT.
-        Stack hal = new Stack(UnitCatalog.HALBERDIER, 14, new Hex(0, 4), Side.ATTACKER, 0);
-        Stack crusader = new Stack(UnitCatalog.CRUSADER, 4, new Hex(0, 5), Side.ATTACKER, 1);
-        Stack archAngel = new Stack(UnitCatalog.ARCH_ANGEL, 1, new Hex(0, 6), Side.ATTACKER, 2);
-        Stack weakArcher = new Stack(UnitCatalog.ARCHER, 1, new Hex(0, 0), Side.ATTACKER, 3);
-        Stack threat = new Stack(UnitCatalog.PIKEMAN, 14, new Hex(14, 5), Side.DEFENDER, 0);
-        Stack enemyShooters = new Stack(UnitCatalog.MARKSMAN, 14, new Hex(14, 4), Side.DEFENDER, 1);
-        BattleSetup setup = new BattleSetup(
-                List.of(hal, crusader, archAngel, weakArcher),
-                List.of(threat, enemyShooters), battlefield);
-        solver.planRound(setup);
-        assertThat(solver.currentPlan().stanceOf(Side.ATTACKER)).isEqualTo(TeamStance.MELEE_DOMINANT);
-        assertThat(solver.currentPlan().hasTankDuty(Side.ATTACKER)).isFalse();
-        // Späte Rundenphase — sonst verschiebt Greedy den nicht erreichbaren Charge per Wait.
-        hal.markWaited();
-
-        Action act = solver.decide(hal, threat, battlefield);
-
-        Hex dest = switch (act) {
-            case Action.Move m -> m.destination();
-            case Action.MoveAndMelee mm -> mm.destination();
-            default -> throw new AssertionError("expected Move/MoveAndMelee, got " + act);
-        };
-        // Charge: Tank bewegt sich Richtung Gegner, nicht zum schwachen Eck-Archer.
-        assertThat(dest.distanceTo(threat.position()))
-                .isLessThan(hal.position().distanceTo(threat.position()));
     }
 
     @Test
@@ -459,23 +251,5 @@ class StrategicAutoSolverTest {
 
         assertThat(setup.attackHeads(dragon, marksman)).isEmpty();
         assertThat(solver.decide(dragon, marksman, battlefield)).isNotInstanceOf(Action.MoveAndMelee.class);
-    }
-
-    @Test
-    void symmetric_shooter_armies_stay_balanced_with_no_protect_orders() {
-        // Beide Seiten haben identische Ranged-Power. Mathematisch unmöglich, dass beide
-        // gleichzeitig RANGED_DOMINANT sind (würde A > A × 1.44 erfordern) → BALANCED beide
-        // → keine Tank-Aufträge, weil niemand klar dominiert.
-        Stack markA = new Stack(UnitCatalog.MARKSMAN, 9, new Hex(0, 4), Side.ATTACKER, 0);
-        Stack zealotA = new Stack(UnitCatalog.ZEALOT, 3, new Hex(0, 6), Side.ATTACKER, 1);
-        Stack markD = new Stack(UnitCatalog.MARKSMAN, 9, new Hex(14, 4), Side.DEFENDER, 0);
-        Stack zealotD = new Stack(UnitCatalog.ZEALOT, 3, new Hex(14, 6), Side.DEFENDER, 1);
-        BattleSetup setup = new BattleSetup(List.of(markA, zealotA), List.of(markD, zealotD), battlefield);
-
-        solver.planRound(setup);
-
-        assertThat(solver.currentPlan().stanceOf(Side.ATTACKER)).isEqualTo(TeamStance.BALANCED);
-        assertThat(solver.currentPlan().stanceOf(Side.DEFENDER)).isEqualTo(TeamStance.BALANCED);
-        assertThat(solver.currentPlan().protectedShooters()).isEmpty();
     }
 }
