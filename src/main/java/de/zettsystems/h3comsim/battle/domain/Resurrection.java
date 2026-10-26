@@ -33,6 +33,8 @@ final class Resurrection {
         return target != caster
                 && target.side() == caster.side()
                 && target.unit().isResurrectable()
+                && !setup.creatureMagicBlocked()
+                && !SpellResistance.isImmune(target, Spell.RESURRECTION)
                 && (target.isAlive() ? target.missingHealth() > 0 : setup.hasFreeCorpse(target));
     }
 

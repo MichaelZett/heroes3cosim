@@ -109,7 +109,7 @@ final class HeroSpellcasting {
             if (cost > mana || !castable(spell, setup)) {
                 continue;
             }
-            int casts = Math.min(roundsLeft, mana / cost);
+            int casts = cost == 0 ? roundsLeft : Math.min(roundsLeft, mana / cost);
             List<Cast> candidates = spell == Spell.TELEPORT
                     ? teleportCandidates(hero, side, active, setup)
                     : candidates(hero, side, spell, setup);
@@ -129,9 +129,13 @@ final class HeroSpellcasting {
         return MagicTerrain.heroLevel(setup.magicTerrain(), spell, hero.castLevel(spell));
     }
 
-    /** Auf Cursed Ground wirken Helden nur Zauber der Stufe 1 (heroes.thelazy.net, SoD). */
+    /**
+     * Auf Cursed Ground wirken Helden nur Zauber der Stufe 1 (heroes.thelazy.net, SoD); Recanter's
+     * Cloak und Orb of Inhibition sperren Zauber für beide Helden ({@link BattleSetup#maxHeroSpellLevel()}).
+     */
     static boolean castable(Spell spell, BattleSetup setup) {
-        return setup.magicTerrain() != MagicTerrain.CURSED_GROUND || spell.level() <= 1;
+        return (setup.magicTerrain() != MagicTerrain.CURSED_GROUND || spell.level() <= 1)
+                && spell.level() <= setup.maxHeroSpellLevel();
     }
 
     /** Teleport nur für den Stack am Zug, und nur, wenn er dabei neben einen Gegner kommt. */
@@ -165,7 +169,8 @@ final class HeroSpellcasting {
         if (anyAlive(setup.stacksOf(other(side)), UnitSpeciality.SPELL_COST_INCREASE)) {
             cost += COST_MODIFIER;
         }
-        return Math.max(1, cost);
+        // Titan's Lightning Bolt kostet nichts (heroes.thelazy.net), alle übrigen mindestens 1.
+        return spell == Spell.TITANS_LIGHTNING_BOLT ? 0 : Math.max(1, cost);
     }
 
     private static boolean anyAlive(List<Stack> stacks, UnitSpeciality speciality) {
@@ -182,7 +187,7 @@ final class HeroSpellcasting {
             // Auch gegnerische Kriegsmaschinen sind Ziele, außer für Implosion.
             enemies = new ArrayList<>(enemies);
             for (Stack machine : setup.machinesOf(other(side))) {
-                if (machine.isAlive() && !SpellResistance.isImmune(machine, spell)) {
+                if (machine.isAlive() && !SpellResistance.isImmune(machine, spell, side, setup)) {
                     enemies.add(machine);
                 }
             }
@@ -236,7 +241,7 @@ final class HeroSpellcasting {
             }
             case DEATH_RIPPLE, DESTROY_UNDEAD, ARMAGEDDON -> {
                 List<Stack> hit = setup.spellTargets().stream()
-                        .filter(s -> !SpellResistance.isImmune(s.unit(), spell))
+                        .filter(s -> !SpellResistance.isImmune(s, spell, side, setup))
                         .filter(s -> spell == Spell.ARMAGEDDON
                                 || (spell == Spell.DESTROY_UNDEAD) == s.unit().isUndead())
                         .toList();
@@ -335,7 +340,7 @@ final class HeroSpellcasting {
      * gefallener Stack braucht mindestens eine ganze Kreatur ({@link Stack#heal}).
      */
     static int restorable(Stack s, int amount) {
-        if (!s.isAlive() && amount < s.unit().health()) {
+        if (!s.isAlive() && amount < s.maxHealth()) {
             return 0;
         }
         return Math.min(amount, s.missingHealth());
@@ -460,7 +465,7 @@ final class HeroSpellcasting {
             return dispelValue(s, side, setup);
         }
         double value = switch (spell.kind()) {
-            case DAMAGE -> damageValue(hero, spell, baseDamage(cast, hero.spellPower(), index), s);
+            case DAMAGE -> damageValue(hero, side, spell, baseDamage(cast, hero.spellPower(), index), s, setup);
             case INSTANT -> instantValue(hero, spell, cast.level(), s);
             case EFFECT -> effectValue(hero, spell, cast.level(), s, setup);
             case SUMMON, OTHER -> 0;
@@ -468,24 +473,24 @@ final class HeroSpellcasting {
         return (s.side() == side ? -1 : 1) * (spell.beneficial() ? -1 : 1) * value;
     }
 
-    /** Chance, dass der Zauber auf dem Stack wirkt: 0 bei Immunität, sonst gegen die Resistenz. */
-    static double successChance(Spell spell, Stack target, BattleSetup setup) {
-        if (SpellResistance.isImmune(target, spell)) {
+    /**
+     * Chance, dass der Zauber dieser Seite auf dem Stack wirkt: 0 bei Immunität, sonst gegen die
+     * Resistenz; Dispel auf eigene Stacks würfelt nicht.
+     */
+    static double successChance(Spell spell, Stack target, Side casterSide, BattleSetup setup) {
+        if (SpellResistance.isImmune(target, spell, casterSide, setup)) {
             return 0;
         }
-        return spell.beneficial() ? 1 : (100 - SpellResistance.resistancePercent(target, setup)) / 100.0;
-    }
-
-    /** Wie {@link #successChance(Spell, Stack, BattleSetup)}; Dispel auf eigene Stacks würfelt nicht. */
-    static double successChance(Spell spell, Stack target, Side casterSide, BattleSetup setup) {
-        if (spell == Spell.DISPEL && target.side() == casterSide) {
-            return SpellResistance.isImmune(target, spell) ? 0 : 1;
+        if (spell.beneficial() || (spell == Spell.DISPEL && target.side() == casterSide)) {
+            return 1;
         }
-        return successChance(spell, target, setup);
+        return (100 - SpellResistance.resistancePercent(target, casterSide, setup)) / 100.0;
     }
 
-    private static double damageValue(Hero caster, Spell spell, int baseDamage, Stack s) {
-        return Math.min(SpellDamage.toTarget(spell, baseDamage, caster, s), totalHealth(s)) * costPerHealth(s);
+    private static double damageValue(Hero caster, Side casterSide, Spell spell, int baseDamage, Stack s,
+                                      BattleSetup setup) {
+        return Math.min(SpellDamage.toTarget(spell, baseDamage, caster, s, casterSide, setup), totalHealth(s))
+                * costPerHealth(s);
     }
 
     /**
@@ -523,8 +528,7 @@ final class HeroSpellcasting {
         if (spell != Spell.DISRUPTING_RAY && s.hasSpell(spell)) {
             return 0;
         }
-        int power = hero.spellPower();
-        int rounds = Math.min(spell == Spell.DISRUPTING_RAY ? EXPECTED_ROUNDS : power, EXPECTED_ROUNDS);
+        int rounds = Math.min(spell == Spell.DISRUPTING_RAY ? EXPECTED_ROUNDS : hero.spellDuration(), EXPECTED_ROUNDS);
         if (spell == Spell.ANTI_MAGIC || spell == Spell.MAGIC_MIRROR || protectedSchool(spell) != null) {
             return protectionValue(spell, level, s, setup) * rounds;
         }
@@ -596,13 +600,13 @@ final class HeroSpellcasting {
             }
             SkillLevel level = castLevel(foe, spell, setup);
             double harm = switch (spell.kind()) {
-                case DAMAGE -> damageValue(foe, spell, SpellDamage.base(spell, level, foe.spellPower()), s);
+                case DAMAGE -> damageValue(foe, enemy, spell, SpellDamage.base(spell, level, foe.spellPower()), s, setup);
                 case EFFECT -> Math.max(0, gainPercent(spell, level,
                         foe.specialty().spellEffectBonus(spell, foe.level(), s.unit()), s, setup))
                         / 100 * ROUND_SHARE * stackValue(s);
                 case INSTANT, SUMMON, OTHER -> 0;
             };
-            worst = Math.max(worst, harm * successChance(spell, s, setup));
+            worst = Math.max(worst, harm * successChance(spell, s, enemy, setup));
         }
         return worst;
     }
@@ -689,11 +693,11 @@ final class HeroSpellcasting {
     }
 
     static int totalHealth(Stack s) {
-        return s.isAlive() ? (s.getCount() - 1) * s.unit().health() + s.getCurrentHealth() : 0;
+        return s.isAlive() ? (s.getCount() - 1) * s.maxHealth() + s.getCurrentHealth() : 0;
     }
 
     static double costPerHealth(Stack s) {
-        return (double) s.unit().cost() / s.unit().health();
+        return (double) s.unit().cost() / s.maxHealth();
     }
 
     static double stackValue(Stack s) {

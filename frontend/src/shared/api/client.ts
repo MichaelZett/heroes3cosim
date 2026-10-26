@@ -1,5 +1,6 @@
 import type {
   ArmyBattleRequest,
+  ArtifactDto,
   ArmyBattleSimulation,
   ArmyPresetsResponse,
   BattleConfigRequest,
@@ -36,6 +37,9 @@ export const api = {
   },
   listHeroes(): Promise<HeroDto[]> {
     return jsonFetch<HeroDto[]>('/heroes');
+  },
+  listArtifacts(): Promise<ArtifactDto[]> {
+    return jsonFetch<ArtifactDto[]>('/artifacts');
   },
   simulateBattle(request: BattleConfigRequest): Promise<BattleSimulationDto> {
     return jsonFetch<BattleSimulationDto>('/battles/simulate', {

@@ -1,4 +1,5 @@
 import type {
+  ArtifactDto,
   BattleEvent,
   BattleSimulationDto,
   Faction,
@@ -10,6 +11,62 @@ import type {
 } from '../shared/api/types';
 
 export const TEST_FACTIONS: Faction[] = ['CASTLE', 'RAMPART', 'TOWER'];
+
+function artifact(
+  overrides: Partial<ArtifactDto> & Pick<ArtifactDto, 'id' | 'name' | 'kind'>,
+): ArtifactDto {
+  return {
+    rarity: 'TREASURE',
+    value: 1000,
+    attack: 0,
+    defense: 0,
+    power: 0,
+    knowledge: 0,
+    components: [],
+    blocks: [],
+    effects: [],
+    ...overrides,
+  };
+}
+
+export const TEST_ARTIFACTS: ArtifactDto[] = [
+  artifact({
+    id: 'SWORD_OF_HELLFIRE',
+    name: 'Sword of Hellfire',
+    kind: 'WEAPON',
+    value: 6000,
+    attack: 6,
+  }),
+  artifact({
+    id: 'HELM_OF_CHAOS',
+    name: 'Helm of Chaos',
+    kind: 'HELMET',
+    value: 4000,
+    knowledge: 3,
+  }),
+  artifact({
+    id: 'CLOVER_OF_FORTUNE',
+    name: 'Clover of Fortune',
+    kind: 'MISC',
+    effects: [{ type: 'LUCK', value: 1, school: null, spells: [], level: null }],
+  }),
+  artifact({ id: 'RING_OF_VITALITY', name: 'Ring of Vitality', kind: 'RING', value: 5000 }),
+  artifact({ id: 'RING_OF_LIFE', name: 'Ring of Life', kind: 'RING', value: 5000 }),
+  artifact({ id: 'VIAL_OF_LIFEBLOOD', name: 'Vial of Lifeblood', kind: 'MISC', value: 10000 }),
+  artifact({
+    id: 'ELIXIR_OF_LIFE',
+    name: 'Elixir of Life',
+    kind: 'MISC',
+    rarity: 'RELIC',
+    value: 20000,
+    components: ['VIAL_OF_LIFEBLOOD', 'RING_OF_VITALITY', 'RING_OF_LIFE'],
+    blocks: ['RING', 'RING'],
+    effects: [
+      { type: 'HEALTH', value: 4, school: null, spells: [], level: null },
+      { type: 'SPELL_IMMUNITY', value: null, school: null, spells: ['CURSE'], level: null },
+    ],
+  }),
+];
 
 function specialty(overrides: Partial<HeroSpecialtyDto>): HeroSpecialtyDto {
   return {

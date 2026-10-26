@@ -1,5 +1,7 @@
 package de.zettsystems.h3comsim.battle.domain;
 
+import de.zettsystems.h3comsim.battle.domain.events.Side;
+
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.random.RandomGenerator;
@@ -45,14 +47,38 @@ final class SpellResistance {
 
     /**
      * Wie {@link #isImmune(Unit, Spell)}, dazu Anti-Magic auf dem Stack (Manual S. 70): Basic lässt
-     * nur noch Zauber der Stufen 4 und 5 durch, Advanced nur Stufe 5, Expert gar keine.
+     * nur noch Zauber der Stufen 4 und 5 durch, Advanced nur Stufe 5, Expert gar keine — und die
+     * Immunitäten aus den Artefakten des Helden ({@link Equipment#grantsImmunity}).
      */
     static boolean isImmune(Stack target, Spell spell) {
+        return isImmune(target, spell, false);
+    }
+
+    /**
+     * Wie {@link #isImmune(Stack, Spell)} für einen Zauber dieser Seite: Orb of Vulnerability
+     * hebt die natürlichen Immunitäten auf ({@link BattleSetup#negatesImmunities}), nicht aber die
+     * aus Artefakten, die der Untoten, Elementare und nicht lebenden Kreaturen gegen
+     * Gedankenzauber und die der Kriegsmaschinen.
+     */
+    static boolean isImmune(Stack target, Spell spell, Side caster, BattleSetup setup) {
+        return isImmune(target, spell, setup.negatesImmunities(caster, target.side()));
+    }
+
+    private static boolean isImmune(Stack target, Spell spell, boolean negated) {
         ActiveSpell antiMagic = target.activeSpell(Spell.ANTI_MAGIC);
         if (antiMagic != null && spell.level() <= antiMagic.byLevel(3, 4, 5)) {
             return true;
         }
-        return isImmune(target.unit(), spell);
+        Hero hero = target.commander();
+        if (hero != null && hero.artifacts().grantsImmunity(spell)) {
+            return true;
+        }
+        Unit unit = target.unit();
+        if (negated) {
+            return WarMachine.isMachine(unit) ? !WAR_MACHINE_SPELLS.contains(spell)
+                    : (spell.mind() && (unit.isUndead() || !unit.isLiving()));
+        }
+        return isImmune(unit, spell);
     }
 
     static boolean isImmune(Unit unit, Spell spell) {
@@ -86,9 +112,14 @@ final class SpellResistance {
 
     /**
      * Chance in Prozent, einen feindlichen Zauber abzuwehren: eigene Resistenz, Unicorn-Aura und
-     * die Resistance-Fertigkeit des eigenen Helden, als unabhängige Chancen verrechnet.
+     * die Resistance-Fertigkeit des eigenen Helden samt Artefakten, als unabhängige Chancen
+     * verrechnet. Mit Orb of Vulnerability keine (heroes.thelazy.net: auch Resistance und die
+     * Artefakte zählen dann nicht).
      */
-    static int resistancePercent(Stack target, BattleSetup setup) {
+    static int resistancePercent(Stack target, Side caster, BattleSetup setup) {
+        if (setup.negatesImmunities(caster, target.side())) {
+            return 0;
+        }
         Hero hero = target.commander();
         int skill = hero == null ? 0 : hero.resistancePercent();
         return combine(creatureResistancePercent(target, setup), skill);
@@ -126,14 +157,14 @@ final class SpellResistance {
      * Wirkt der Zauber? Immunität schließt ihn aus; ein feindlicher Zauber kann zusätzlich an der
      * Resistenz scheitern.
      */
-    static boolean takesEffect(Spell spell, Stack target, BattleSetup setup, RandomGenerator rng) {
-        if (isImmune(target, spell)) {
+    static boolean takesEffect(Spell spell, Side caster, Stack target, BattleSetup setup, RandomGenerator rng) {
+        if (isImmune(target, spell, caster, setup)) {
             return false;
         }
         if (spell.beneficial()) {
             return true;
         }
-        int resistance = resistancePercent(target, setup);
+        int resistance = resistancePercent(target, caster, setup);
         return resistance == 0 || rng.nextInt(100) >= resistance;
     }
 }

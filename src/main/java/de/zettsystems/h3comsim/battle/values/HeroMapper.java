@@ -1,5 +1,6 @@
 package de.zettsystems.h3comsim.battle.values;
 
+import de.zettsystems.h3comsim.battle.domain.Artifact;
 import de.zettsystems.h3comsim.battle.domain.Hero;
 import de.zettsystems.h3comsim.battle.domain.HeroSpecialty;
 
@@ -22,7 +23,8 @@ public final class HeroMapper {
                 hero.skills(),
                 toDto(hero.specialty()),
                 hero.level(),
-                List.copyOf(hero.spells()));
+                List.copyOf(hero.spells()),
+                hero.artifacts().artifacts().stream().map(Artifact::displayName).toList());
     }
 
     static HeroSpecialtyDto toDto(HeroSpecialty specialty) {

@@ -3,6 +3,7 @@ package de.zettsystems.h3comsim.battle.domain;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -43,7 +44,8 @@ public record Hero(
         Map<SecondarySkill, SkillLevel> skills,
         HeroSpecialty specialty,
         int level,
-        Set<Spell> spells
+        Set<Spell> spells,
+        Equipment artifacts
 ) {
     public Hero {
         Objects.requireNonNull(name, "name");
@@ -51,6 +53,7 @@ public record Hero(
         Objects.requireNonNull(faction, "faction");
         Objects.requireNonNull(skills, "skills");
         Objects.requireNonNull(specialty, "specialty");
+        Objects.requireNonNull(artifacts, "artifacts");
         if (level < 1) {
             throw new IllegalArgumentException("level must be at least 1, was " + level);
         }
@@ -76,10 +79,18 @@ public record Hero(
         this(name, heroClass, faction, attack, defense, power, knowledge, skills, specialty, level, Set.of());
     }
 
+    /** Held ohne Artefakte. */
+    public Hero(String name, HeroClass heroClass, Faction faction, int attack, int defense,
+                int power, int knowledge, Map<SecondarySkill, SkillLevel> skills,
+                HeroSpecialty specialty, int level, Set<Spell> spells) {
+        this(name, heroClass, faction, attack, defense, power, knowledge, skills, specialty, level, spells,
+                Equipment.NONE);
+    }
+
     /** Derselbe Held auf einem anderen Level. */
     public Hero withLevel(int newLevel) {
         return new Hero(name, heroClass, faction, attack, defense, power, knowledge, skills,
-                specialty, newLevel, spells);
+                specialty, newLevel, spells, artifacts);
     }
 
     /**
@@ -99,7 +110,64 @@ public record Hero(
             merged.add(spell);
         }
         return new Hero(name, heroClass, faction, attack, defense, power, knowledge, skills,
-                specialty, level, merged);
+                specialty, level, merged, artifacts);
+    }
+
+    /**
+     * Derselbe Held mit diesen Artefakten statt der bisherigen. Ihre Primärwerte kommen auf die
+     * des Helden ({@link #attack()} usw.), ihre Zauber in sein Zauberbuch ({@link #spells()}).
+     */
+    public Hero withArtifacts(Equipment equipment) {
+        return new Hero(name, heroClass, faction, attack, defense, power, knowledge, skills, specialty, level,
+                spells, equipment);
+    }
+
+    /** Attack mit Artefakten, nicht unter 0. */
+    @Override
+    public int attack() {
+        return Math.max(0, attack + artifacts.stats().attack());
+    }
+
+    /** Defense mit Artefakten, nicht unter 0. */
+    @Override
+    public int defense() {
+        return Math.max(0, defense + artifacts.stats().defense());
+    }
+
+    /** Power mit Artefakten, nicht unter 0. */
+    @Override
+    public int power() {
+        return Math.max(0, power + artifacts.stats().power());
+    }
+
+    /** Knowledge mit Artefakten, nicht unter 0. */
+    @Override
+    public int knowledge() {
+        return Math.max(0, knowledge + artifacts.stats().knowledge());
+    }
+
+    /**
+     * Zauberbuch mit den Zaubern der Artefakte: Tomes geben alle Zauber ihrer Schule,
+     * Spellbinder's Hat alle der Stufe 5, beides ohne Rücksicht auf Wisdom (heroes.thelazy.net).
+     */
+    @Override
+    public Set<Spell> spells() {
+        if (artifacts.isEmpty()) {
+            return spells;
+        }
+        Set<Spell> all = EnumSet.noneOf(Spell.class);
+        all.addAll(spells);
+        artifacts.effects(ArtifactEffect.GrantsSpell.class).forEach(granted -> all.add(granted.spell()));
+        Set<MagicSchool> tomes = EnumSet.noneOf(MagicSchool.class);
+        artifacts.effects(ArtifactEffect.SchoolSpells.class).forEach(tome -> tomes.add(tome.school()));
+        Set<Integer> levels = new HashSet<>();
+        artifacts.effects(ArtifactEffect.LevelSpells.class).forEach(hat -> levels.add(hat.level()));
+        for (Spell spell : Spell.values()) {
+            if (spell.learnable() && (tomes.contains(spell.school()) || levels.contains(spell.level()))) {
+                all.add(spell);
+            }
+        }
+        return Collections.unmodifiableSet(all);
     }
 
     /** Höchstens acht Sekundärfertigkeiten je Held (Manual S. 35). */
@@ -107,7 +175,7 @@ public record Hero(
 
     /**
      * Derselbe Held mit dem, was er unterwegs gesammelt hat: zusätzliche Attack- und
-     * Defense-Punkte (Level-Aufstiege, Artefakte) und weitere oder verbesserte Fertigkeiten.
+     * Defense-Punkte (Level-Aufstiege) und weitere oder verbesserte Fertigkeiten.
      * Fertigkeiten lassen sich nur hinzufügen oder heben, nie senken — eine einmal gelernte
      * Fertigkeit verliert ein Held in H3 nicht.
      *
@@ -137,7 +205,7 @@ public record Hero(
                     + " secondary skills, would have " + merged.size());
         }
         return new Hero(name, heroClass, faction, attack + attackBonus, defense + defenseBonus,
-                power + powerBonus, knowledge + knowledgeBonus, merged, specialty, level, spells);
+                power + powerBonus, knowledge + knowledgeBonus, merged, specialty, level, spells, artifacts);
     }
 
     /**
@@ -154,7 +222,7 @@ public record Hero(
     }
 
     public boolean canLearn(Spell spell) {
-        return spell.heroCastable() && spell.level() <= maxSpellLevel();
+        return spell.learnable() && spell.level() <= maxSpellLevel();
     }
 
     /** Beherrscht der Held eine Schule des Zaubers, auf welcher Stufe auch immer? */
@@ -168,7 +236,10 @@ public record Hero(
      * auf „basic/advanced/expert level").
      */
     public SkillLevel castLevel(Spell spell) {
-        SkillLevel best = SkillLevel.BASIC;
+        SkillLevel best = artifacts.effects(ArtifactEffect.GrantsSpell.class)
+                .filter(granted -> granted.spell() == spell)
+                .map(ArtifactEffect.GrantsSpell::level)
+                .findFirst().orElse(SkillLevel.BASIC);
         for (MagicSchool school : spell.schools()) {
             SkillLevel level = levelOf(schoolSkill(school));
             if (level.compareTo(best) > 0) {
@@ -189,7 +260,7 @@ public record Hero(
 
     /** Spell Power = Power, mindestens 1. */
     public int spellPower() {
-        return Math.max(1, power);
+        return Math.max(1, power());
     }
 
     /**
@@ -204,7 +275,7 @@ public record Hero(
             case EXPERT -> 100;
         };
         percent = percent * specialty.skillFactorPerMille(SecondarySkill.INTELLIGENCE, level) / 1000;
-        return knowledge * 10 * (100 + percent) / 100;
+        return knowledge() * 10 * (100 + percent) / 100;
     }
 
     /** Sorcery (Manual S. 38): +5/10/15 % Zauberschaden, ein Spezialist +5 % je Level darauf. */
@@ -220,7 +291,8 @@ public record Hero(
 
     /**
      * Resistance (Manual S. 38): 5/10/20 % Chance, dass ein feindlicher Zauber auf die eigenen
-     * Truppen versagt; ein Spezialist (Thorgrim) +5 % je Level darauf.
+     * Truppen versagt; ein Spezialist (Thorgrim) +5 % je Level darauf. Artefakte addieren ihre
+     * Prozente, auch ohne die Fertigkeit (heroes.thelazy.net, <em>Garniture of Interference</em>).
      */
     public int resistancePercent() {
         int percent = switch (levelOf(SecondarySkill.RESISTANCE)) {
@@ -229,7 +301,8 @@ public record Hero(
             case ADVANCED -> 10;
             case EXPERT -> 20;
         };
-        return percent * specialty.skillFactorPerMille(SecondarySkill.RESISTANCE, level) / 1000;
+        return percent * specialty.skillFactorPerMille(SecondarySkill.RESISTANCE, level) / 1000
+                + artifacts.magicResistance();
     }
 
     private static void requireNonNegative(int value, String field) {
@@ -277,9 +350,19 @@ public record Hero(
         return offenseBonusPercent() * specialty.skillFactorPerMille(SecondarySkill.OFFENSE, level) / 100;
     }
 
-    /** Archery in Promille, mit Spezialität. */
+    /**
+     * Archery in Promille, mit Spezialität. Die Bogen-Artefakte addieren ihre Prozente, aber nur,
+     * wenn der Held Archery hat (heroes.thelazy.net, <em>Bow of Elven Cherrywood</em>).
+     */
     public int archeryBonusPerMille() {
-        return archeryBonusPercent() * specialty.skillFactorPerMille(SecondarySkill.ARCHERY, level) / 100;
+        int artifactPerMille = levelOf(SecondarySkill.ARCHERY) == SkillLevel.NONE ? 0 : artifacts.archery() * 10;
+        return archeryBonusPercent() * specialty.skillFactorPerMille(SecondarySkill.ARCHERY, level) / 100
+                + artifactPerMille;
+    }
+
+    /** Zusätzliche Runden für Zauber mit Dauer: „1 Round/Power" plus Artefakte. */
+    public int spellDuration() {
+        return spellPower() + artifacts.spellDuration();
     }
 
     /** Armorer in Promille, mit Spezialität. */
@@ -323,7 +406,7 @@ public record Hero(
      * Held-Attack 1 sind es 5 × 1.05 = 5.25 gegen Defense 10, bei 2 dann 7.5 × 1.10 = 8.25.
      */
     public int ballistaAttack() {
-        return WarMachine.BALLISTA.attack() + attack + specialty.ballistaAttackBonus(level);
+        return WarMachine.BALLISTA.attack() + attack() + specialty.ballistaAttackBonus(level);
     }
 
     /** Attack-Aufschlag der Spezialität für diese Kreatur. */

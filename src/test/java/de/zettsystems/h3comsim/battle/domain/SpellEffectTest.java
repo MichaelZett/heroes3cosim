@@ -153,9 +153,9 @@ class SpellEffectTest {
         Stack enemy = new Stack(UnitCatalog.PIKEMAN, 10, new Hex(14, 5), Side.DEFENDER, 0);
         BattleSetup setup = new BattleSetup(List.of(dwarves, unicorns, lonely), List.of(enemy), Battlefield.STANDARD);
 
-        assertThat(SpellResistance.resistancePercent(dwarves, setup)).isEqualTo(52);
-        assertThat(SpellResistance.resistancePercent(lonely, setup)).isEqualTo(20);
-        assertThat(SpellResistance.resistancePercent(unicorns, setup)).as("Aura nicht für sich selbst").isZero();
+        assertThat(SpellResistance.resistancePercent(dwarves, HeroSpellcasting.other(dwarves.side()), setup)).isEqualTo(52);
+        assertThat(SpellResistance.resistancePercent(lonely, HeroSpellcasting.other(lonely.side()), setup)).isEqualTo(20);
+        assertThat(SpellResistance.resistancePercent(unicorns, HeroSpellcasting.other(unicorns.side()), setup)).as("Aura nicht für sich selbst").isZero();
     }
 
     @Test

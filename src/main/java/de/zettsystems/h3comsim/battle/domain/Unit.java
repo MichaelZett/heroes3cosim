@@ -111,6 +111,11 @@ public record Unit(
                 && !specialities.contains(UnitSpeciality.IMMUNE_TO_SPELLS_BELOW_5);
     }
 
+    /** Drachen (heroes.thelazy.net, <em>Dragon</em>): alle „… Dragon", der Dragon Fly nicht. */
+    public boolean isDragon() {
+        return name().endsWith(" Dragon");
+    }
+
     /** Lebewesen: weder untot noch Elementar noch Golem oder Gargoyle. */
     public boolean isLiving() {
         return !isUndead()

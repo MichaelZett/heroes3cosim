@@ -26,8 +26,8 @@ import java.util.Set;
  * senken laut Manual S. 103 die Moral der gegnerischen Armee um eins, ebenfalls einmal pro
  * Armee und nicht je Drachen-Stack.
  *
- * <p>Artefakte, Gebäude und Abenteuer-Orte kennt der Simulator nicht einzeln; ihre Summe kommt
- * als gesammelte Moral des Helden herein ({@link CollectedBonus}). Zauber fehlen ganz.
+ * <p>Artefakte des Helden ({@link Equipment#morale()}) zählen einzeln; Gebäude und Abenteuer-Orte
+ * kommen als gesammelte Moral herein ({@link CollectedBonus}).
  *
  * <p>Die Kappung auf [-3, +3] passiert nicht hier, sondern erst in {@link Stack#getMorale()} —
  * dort kommt der individuelle Bonus der Kreatur dazu, und erst diese Summe ist der Wert, den
@@ -42,6 +42,13 @@ public final class ArmyMorale {
     /** Manual S. 43: Moral außerhalb von [-3, +3] gibt es nicht — die Tabelle endet dort. */
     public static final int MIN = -3;
     public static final int MAX = 3;
+
+    /**
+     * Angelic Alliance: Castle, Rampart, Tower, Fortress und Stronghold zählen als eine Stadt
+     * (heroes.thelazy.net, SoD — Conflux und neutrale Kreaturen nicht).
+     */
+    private static final Set<Faction> GOOD_AND_NEUTRAL = EnumSet.of(Faction.CASTLE, Faction.RAMPART,
+            Faction.TOWER, Faction.FORTRESS, Faction.STRONGHOLD);
 
     private ArmyMorale() {
     }
@@ -70,9 +77,10 @@ public final class ArmyMorale {
         boolean undead = false;
         boolean living = false;
         boolean goodArmyMorale = false;
+        boolean alliance = hero != null && hero.artifacts().has(ArtifactEffect.AlignmentMix.class);
         for (Stack stack : stacks) {
             Unit unit = stack.unit();
-            towns.add(unit.faction());
+            towns.add(alliance && GOOD_AND_NEUTRAL.contains(unit.faction()) ? Faction.CASTLE : unit.faction());
             undead |= unit.isUndead();
             living |= !unit.isUndead();
             goodArmyMorale |= unit.hasSpeciality(UnitSpeciality.GOOD_ARMY_MORALE);
@@ -92,7 +100,7 @@ public final class ArmyMorale {
             rating++;
         }
         if (hero != null) {
-            rating += hero.leadershipMoraleBonus() + bonus.morale();
+            rating += hero.leadershipMoraleBonus() + bonus.morale() + hero.artifacts().morale();
         }
         boolean enemyLowersMorale = enemyStacks.stream()
                 .anyMatch(stack -> stack.unit().hasSpeciality(UnitSpeciality.LOWERS_ENEMY_MORALE));

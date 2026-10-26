@@ -37,7 +37,7 @@ public final class ArmyLuck {
         if (hero == null) {
             return 0;
         }
-        int rating = hero.luckBonus() + bonus.luck();
+        int rating = hero.luckBonus() + bonus.luck() + hero.artifacts().luck();
         boolean enemyLowersLuck = enemyStacks.stream()
                 .anyMatch(stack -> stack.unit().hasSpeciality(UnitSpeciality.LOWERS_ENEMY_LUCK));
         if (enemyLowersLuck) {

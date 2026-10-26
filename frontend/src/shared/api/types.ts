@@ -210,6 +210,15 @@ export type BattleEvent =
     }
   /** Der Held einer Seite wirkt einen Zauber; die Wirkung je Stack folgt als SpellHit. */
   | { type: 'HeroSpell'; actor: Side; spell: Spell; level: SkillLevel; manaLeft: number }
+  /** Ein Artefakt wirkt zu Kampfbeginn einen Zauber; die Wirkung je Stack folgt als SpellHit. */
+  | {
+      type: 'ArtifactSpell';
+      actor: Side;
+      artifact: string;
+      artifactName: string;
+      spell: Spell;
+      level: SkillLevel;
+    }
   /** Wirkung eines Heldenzaubers auf einen Stack; resisted = immun oder abgewehrt. */
   | {
       type: 'SpellHit';
@@ -359,7 +368,7 @@ export interface ArmySpec {
   stacks: StackSpec[];
   /** Name aus /api/heroes. Null bedeutet: Standardheld der Fraktion mit dem groessten Goldwert. */
   heroName?: string | null;
-  /** Gesammeltes Glueck des Helden (Artefakte, Gebaeude, Orte), 0..3. */
+  /** Gesammeltes Glueck des Helden (Gebaeude, Orte), 0..3; Artefakte stehen in artifacts. */
   luckBonus?: number;
   /** Gesammelte Moral des Helden, -3..+3. */
   moraleBonus?: number;
@@ -381,6 +390,83 @@ export interface ArmySpec {
   randomGrowth?: boolean;
   /** Armee ohne Helden (neutrale Monster, Garnison); schliesst heroName aus. */
   withoutHero?: boolean;
+  /** Artefakte des Helden je Platz (Identifier aus /api/artifacts). */
+  artifacts?: Partial<Record<ArtifactSlot, string>>;
+}
+
+/** Die 14 Plaetze am Helden, wie im Heldenfenster. */
+export type ArtifactSlot =
+  | 'HEAD'
+  | 'NECK'
+  | 'SHOULDERS'
+  | 'RIGHT_HAND'
+  | 'LEFT_HAND'
+  | 'TORSO'
+  | 'RING_1'
+  | 'RING_2'
+  | 'FEET'
+  | 'MISC_1'
+  | 'MISC_2'
+  | 'MISC_3'
+  | 'MISC_4'
+  | 'MISC_5';
+
+/** Art eines Platzes und der Artefakte, die dort liegen. */
+export type ArtifactKind =
+  'HELMET' | 'NECKLACE' | 'CAPE' | 'WEAPON' | 'SHIELD' | 'TORSO' | 'RING' | 'FEET' | 'MISC';
+
+export type MagicSchool = 'AIR' | 'EARTH' | 'FIRE' | 'WATER';
+
+export type ArtifactEffectType =
+  | 'LUCK'
+  | 'MORALE'
+  | 'SPELL_DURATION'
+  | 'MAGIC_RESISTANCE'
+  | 'ARCHERY'
+  | 'SPEED'
+  | 'HEALTH'
+  | 'LIVING_VITALITY'
+  | 'SPELL_DAMAGE'
+  | 'SCHOOL_SPELLS'
+  | 'LEVEL_SPELLS'
+  | 'GRANTS_SPELL'
+  | 'SPELL_IMMUNITY'
+  | 'LEVEL_IMMUNITY'
+  | 'MIND_IMMUNITY'
+  | 'BLOCK_MAGIC'
+  | 'NEGATE_IMMUNITIES'
+  | 'NEGATE_LUCK'
+  | 'NEGATE_MORALE'
+  | 'NO_SHOOTING_PENALTY'
+  | 'FREE_SHOOTING'
+  | 'DRAGON_BONUS'
+  | 'OPENING_SPELL'
+  | 'ALIGNMENT_MIX';
+
+export interface ArtifactEffectDto {
+  type: ArtifactEffectType;
+  value: number | null;
+  school: MagicSchool | null;
+  spells: Spell[];
+  level: SkillLevel | null;
+}
+
+/** Kampfwirksames Artefakt aus /api/artifacts. */
+export interface ArtifactDto {
+  id: string;
+  name: string;
+  kind: ArtifactKind;
+  rarity: 'TREASURE' | 'MINOR' | 'MAJOR' | 'RELIC';
+  value: number;
+  attack: number;
+  defense: number;
+  power: number;
+  knowledge: number;
+  /** Teile eines Kombi-Artefakts, sonst leer. */
+  components: string[];
+  /** Zusaetzlich gesperrte Platz-Arten eines Kombi-Artefakts. */
+  blocks: ArtifactKind[];
+  effects: ArtifactEffectDto[];
 }
 
 export type Spell =
@@ -427,6 +513,7 @@ export type Spell =
   | 'INFERNO'
   | 'METEOR_SHOWER'
   | 'IMPLOSION'
+  | 'TITANS_LIGHTNING_BOLT'
   | 'MAGIC_MIRROR'
   | 'SUMMON_AIR_ELEMENTAL'
   | 'SUMMON_EARTH_ELEMENTAL'
@@ -558,6 +645,8 @@ export type SkillLevel = 'NONE' | 'BASIC' | 'ADVANCED' | 'EXPERT';
  * power und knowledge bestimmen Spell Power und Mana seiner Zauber.
  */
 export interface HeroDto {
+  /** Getragene Artefakte (Namen); im Katalog leer. */
+  artifacts?: string[];
   name: string;
   heroClass: HeroClass;
   faction: Faction;

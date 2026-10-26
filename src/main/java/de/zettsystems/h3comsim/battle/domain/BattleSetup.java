@@ -39,6 +39,11 @@ public class BattleSetup {
     private final int defenderLuck;
     private final int attackerTactics;
     private final int defenderTactics;
+    /** Recanter's Cloak und Orb of Inhibition: höchste Zauberstufe für beide Helden. */
+    private final int maxHeroSpellLevel;
+    /** Hourglass of the Evil Hour und Spirit of Oppression bei einem der Helden. */
+    private final boolean noLuck;
+    private final boolean noPositiveMorale;
     private final Map<Side, Set<WarMachine>> warMachines = new EnumMap<>(Side.class);
     /** Die Maschinen als Stacks auf dem Feld; nicht Teil der Armeelisten. */
     private final Map<Side, Map<WarMachine, Stack>> machineStacks = new EnumMap<>(Side.class);
@@ -140,6 +145,15 @@ public class BattleSetup {
         this.defenderLuck = ArmyLuck.ratingOf(defenderHero, defenderBonus, this.attackerStacks);
         this.attackerStacks.forEach(stack -> stack.assignArmyLuck(attackerLuck));
         this.defenderStacks.forEach(stack -> stack.assignArmyLuck(defenderLuck));
+        Equipment attackerArtifacts = artifactsOf(attackerHero);
+        Equipment defenderArtifacts = artifactsOf(defenderHero);
+        this.maxHeroSpellLevel = Math.min(attackerArtifacts.maxSpellLevel(), defenderArtifacts.maxSpellLevel());
+        this.noLuck = attackerArtifacts.has(ArtifactEffect.NegateLuck.class)
+                || defenderArtifacts.has(ArtifactEffect.NegateLuck.class);
+        this.noPositiveMorale = attackerArtifacts.has(ArtifactEffect.NegateMorale.class)
+                || defenderArtifacts.has(ArtifactEffect.NegateMorale.class);
+        this.attackerStacks.forEach(stack -> stack.assignNegations(noLuck, noPositiveMorale));
+        this.defenderStacks.forEach(stack -> stack.assignNegations(noLuck, noPositiveMorale));
         mana.put(Side.ATTACKER, attackerHero == null ? 0 : attackerHero.maxMana());
         mana.put(Side.DEFENDER, defenderHero == null ? 0 : defenderHero.maxMana());
         this.attackerTactics = Tactics.columns(attackerHero, defenderHero);
@@ -197,6 +211,7 @@ public class BattleSetup {
             stack.assignCommander(side == Side.ATTACKER ? attackerHero : defenderHero);
             // Die Ballista schießt mit dem Glück der Armee (Fortune/Misfortune auf ihr verschieben es).
             stack.assignArmyLuck(side == Side.ATTACKER ? attackerLuck : defenderLuck);
+            stack.assignNegations(noLuck, noPositiveMorale);
             placed.put(machine, stack);
         }
         machineStacks.put(side, placed);
@@ -462,6 +477,41 @@ public class BattleSetup {
         return side == Side.ATTACKER ? attackerHero : defenderHero;
     }
 
+    private static Equipment artifactsOf(@Nullable Hero hero) {
+        return hero == null ? Equipment.NONE : hero.artifacts();
+    }
+
+    /** Artefakte des Helden dieser Seite, leer ohne Helden. */
+    public Equipment artifactsOf(Side side) {
+        return artifactsOf(heroOf(side));
+    }
+
+    /**
+     * Höchste Zauberstufe, die ein Held in dieser Schlacht wirken darf: 5, mit Recanter's Cloak
+     * bei einem der beiden 2, mit Orb of Inhibition 0 (heroes.thelazy.net: „Prevents either hero").
+     */
+    public int maxHeroSpellLevel() {
+        return maxHeroSpellLevel;
+    }
+
+    /**
+     * Orb of Inhibition hält auch fast alle zaubernden Kreaturen ab; nur die Faerie Dragons und
+     * die Zauber der Artefakte wirken weiter (heroes.thelazy.net, <em>Orb of Inhibition</em>).
+     */
+    public boolean creatureMagicBlocked() {
+        return maxHeroSpellLevel == 0;
+    }
+
+    /**
+     * Orb of Vulnerability: Zaubert sein Besitzer, zählen natürliche Immunitäten und
+     * Magieresistenz bei keinem Ziel; zaubert der Gegner, nur bei den Truppen des Besitzers
+     * (heroes.thelazy.net, <em>How it works</em>).
+     */
+    public boolean negatesImmunities(Side caster, Side target) {
+        return artifactsOf(caster).has(ArtifactEffect.NegateImmunities.class)
+                || artifactsOf(target).has(ArtifactEffect.NegateImmunities.class);
+    }
+
     public List<Stack> attackerStacks() {
         return Collections.unmodifiableList(attackerStacks);
     }
@@ -491,6 +541,7 @@ public class BattleSetup {
         stack.assignCommander(heroOf(stack.side()));
         stack.assignArmyMorale(moraleOf(stack.side()));
         stack.assignArmyLuck(luckOf(stack.side()));
+        stack.assignNegations(noLuck, noPositiveMorale);
         stack.assignGround(terrain, magicTerrain);
         stack.markSummoned();
         own.add(stack);

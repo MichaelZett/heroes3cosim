@@ -79,8 +79,8 @@ final class ArrowTowers {
     }
 
     private static double controlledValue(Stack attacker, double damage) {
-        int totalHealth = (attacker.getCount() - 1) * attacker.unit().health() + attacker.getCurrentHealth();
-        return Math.min(damage, totalHealth) * attacker.unit().cost() / attacker.unit().health()
+        int totalHealth = (attacker.getCount() - 1) * attacker.maxHealth() + attacker.getCurrentHealth();
+        return Math.min(damage, totalHealth) * attacker.unit().cost() / attacker.maxHealth()
                 * (attacker.canShoot() ? 1 : 0.5);
     }
 
@@ -90,7 +90,7 @@ final class ArrowTowers {
      * Die Stacks kommen in Slot-Reihenfolge, der letzte gewinnt Gleichstände.
      */
     private static double gameAiValue(Stack attacker, BattleSetup setup) {
-        double perHealth = (double) attacker.unit().cost() / attacker.unit().health();
+        double perHealth = (double) attacker.unit().cost() / attacker.maxHealth();
         if (attacker.canShoot()) {
             return perHealth;
         }

@@ -3,6 +3,7 @@ import type { ArmyPresetsResponse, MatrixJobSnapshot } from '../shared/api/types
 import {
   matrixReportFixture,
   simulationFixture,
+  TEST_ARTIFACTS,
   TEST_FACTIONS,
   TEST_HEROES,
   TEST_UNITS,
@@ -34,6 +35,7 @@ export const defaultHandlers = [
   http.get('*/api/units', () => HttpResponse.json(TEST_UNITS)),
   http.get('*/api/factions', () => HttpResponse.json(TEST_FACTIONS)),
   http.get('*/api/heroes', () => HttpResponse.json(TEST_HEROES)),
+  http.get('*/api/artifacts', () => HttpResponse.json(TEST_ARTIFACTS)),
   http.post('*/api/battles/simulate', () => HttpResponse.json(simulationFixture())),
   http.post('*/api/experiments/matrix', () => HttpResponse.json(COMPLETED_JOB)),
   http.get('*/api/experiments/matrix/:jobId', () => HttpResponse.json(COMPLETED_JOB)),

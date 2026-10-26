@@ -52,7 +52,7 @@ final class ControlSpells {
         List<HeroSpellcasting.Cast> casts = new ArrayList<>();
         for (Stack own : alive(setup.stacksOf(side))) {
             if (own.unit().tier() <= maxTier && !own.isSummoned() && !hasClone(own, setup)
-                    && !SpellResistance.isImmune(own, Spell.CLONE)
+                    && !SpellResistance.isImmune(own, Spell.CLONE, side, setup)
                     && setup.freeHexFor(side, own.unit().doubleWide()) != null) {
                 casts.add(new HeroSpellcasting.Cast(Spell.CLONE, level, own, List.of(own)));
             }
@@ -82,7 +82,7 @@ final class ControlSpells {
         List<HeroSpellcasting.Cast> casts = new ArrayList<>();
         if (level == SkillLevel.BASIC || level == SkillLevel.NONE) {
             for (Stack enemy : alive(setup.stacksOf(HeroSpellcasting.other(side)))) {
-                if (!SpellResistance.isImmune(enemy, Spell.BERSERK)) {
+                if (!SpellResistance.isImmune(enemy, Spell.BERSERK, side, setup)) {
                     casts.add(new HeroSpellcasting.Cast(Spell.BERSERK, level, enemy, List.of(enemy)));
                 }
             }
@@ -92,7 +92,7 @@ final class ControlSpells {
         for (Hex center : centers(setup)) {
             List<Stack> hit = alive(setup.aliveStacks()).stream()
                     .filter(s -> s.distanceTo(center) <= radius)
-                    .filter(s -> !SpellResistance.isImmune(s, Spell.BERSERK)).toList();
+                    .filter(s -> !SpellResistance.isImmune(s, Spell.BERSERK, side, setup)).toList();
             if (!hit.isEmpty()) {
                 casts.add(new HeroSpellcasting.Cast(Spell.BERSERK, level, null, hit));
             }
@@ -103,9 +103,9 @@ final class ControlSpells {
     private static List<HeroSpellcasting.Cast> hypnoses(Side side, SkillLevel level, int limit, BattleSetup setup) {
         List<HeroSpellcasting.Cast> casts = new ArrayList<>();
         for (Stack enemy : alive(setup.stacksOf(HeroSpellcasting.other(side)))) {
-            if (!SpellResistance.isImmune(enemy, Spell.HYPNOTIZE) && !enemy.hasSpell(Spell.MAGIC_MIRROR)
+            if (!SpellResistance.isImmune(enemy, Spell.HYPNOTIZE, side, setup) && !enemy.hasSpell(Spell.MAGIC_MIRROR)
                     && enemy.controller() != side
-                    && (long) enemy.getCount() * enemy.unit().health() < limit) {
+                    && (long) enemy.getCount() * enemy.maxHealth() < limit) {
                 casts.add(new HeroSpellcasting.Cast(Spell.HYPNOTIZE, level, enemy, List.of(enemy)));
             }
         }
@@ -124,7 +124,7 @@ final class ControlSpells {
             case CLONE -> {
                 Stack origin = cast.affected().getFirst();
                 yield HeroSpellcasting.stackValue(origin) * HeroSpellcasting.ROUND_SHARE
-                        * Math.min(CLONE_ACTIONS, hero.spellPower());
+                        * Math.min(CLONE_ACTIONS, hero.spellDuration());
             }
             case SACRIFICE -> {
                 Stack victim = cast.affected().getFirst();
@@ -149,7 +149,7 @@ final class ControlSpells {
             case HYPNOTIZE -> {
                 Stack target = cast.affected().getFirst();
                 yield 2 * HeroSpellcasting.stackValue(target) * HeroSpellcasting.ROUND_SHARE
-                        * Math.min(HeroSpellcasting.EXPECTED_ROUNDS, hero.spellPower())
+                        * Math.min(HeroSpellcasting.EXPECTED_ROUNDS, hero.spellDuration())
                         * HeroSpellcasting.successChance(Spell.HYPNOTIZE, target, side, setup);
             }
             default -> throw new IllegalArgumentException(cast.spell() + " is no control spell");
@@ -164,7 +164,7 @@ final class ControlSpells {
     }
 
     static int sacrificeAmount(SkillLevel level, int power, Stack victim) {
-        return (power + victim.unit().health() + SpellDamage.byLevel(level, 3, 6, 10)) * victim.getCount();
+        return (power + victim.maxHealth() + SpellDamage.byLevel(level, 3, 6, 10)) * victim.getCount();
     }
 
     /** Geopfert werden kann ein lebender, nicht immuner eigener Stack, keine Maschine, kein Klon. */
