@@ -35,6 +35,42 @@ class BallistaSpellsTest {
     }
 
     @Test
+    void the_gain_follows_the_roll_and_the_attack_points() {
+        assertThat(BallistaSpells.gainPercent(Spell.BLESS, SkillLevel.BASIC, 0)).isEqualTo(20.0);
+        assertThat(BallistaSpells.gainPercent(Spell.BLESS, SkillLevel.EXPERT, 0)).isEqualTo(60.0);
+        assertThat(BallistaSpells.gainPercent(Spell.CURSE, SkillLevel.BASIC, 0)).isEqualTo(20.0);
+        assertThat(BallistaSpells.gainPercent(Spell.CURSE, SkillLevel.ADVANCED, 0)).isEqualTo(60.0);
+        assertThat(BallistaSpells.gainPercent(Spell.PRECISION, SkillLevel.ADVANCED, 0)).isEqualTo(30.0);
+        assertThat(BallistaSpells.gainPercent(Spell.PRAYER, SkillLevel.BASIC, 1)).isEqualTo(15.0);
+        assertThat(BallistaSpells.gainPercent(Spell.HASTE, SkillLevel.EXPERT, 0)).isZero();
+    }
+
+    @Test
+    void basic_curse_and_no_ballista_roll_like_the_unit() {
+        BattleSetup setup = setup(null);
+        Stack ballista = Objects.requireNonNull(setup.working(Side.ATTACKER, WarMachine.BALLISTA));
+        ballista.applySpell(Spell.CURSE, SkillLevel.BASIC, 5, 0);
+        assertThat(BallistaSpells.roll(ballista, new Random(1))).isEqualTo(2);
+        assertThat(BallistaSpells.roll(null, new Random(1))).isBetween(2, 3);
+    }
+
+    @Test
+    void the_round_value_needs_living_enemies_and_grows_with_the_hero() {
+        BattleSetup without = setup(null);
+        Stack ballista = Objects.requireNonNull(without.working(Side.ATTACKER, WarMachine.BALLISTA));
+        double plain = BallistaSpells.roundValue(ballista, without);
+        assertThat(plain).isPositive();
+
+        Hero gunner = HeroCatalog.SORSHA.withBuild(5, 0, Map.of(SecondarySkill.ARTILLERY, SkillLevel.EXPERT));
+        BattleSetup with = setup(gunner);
+        assertThat(BallistaSpells.roundValue(Objects.requireNonNull(with.working(Side.ATTACKER, WarMachine.BALLISTA)), with))
+                .isGreaterThan(plain);
+
+        without.stacksOf(Side.DEFENDER).getFirst().loseTopCreatures(30);
+        assertThat(BallistaSpells.roundValue(ballista, without)).isZero();
+    }
+
+    @Test
     void the_hero_may_bless_his_ballista_and_curse_the_enemy_one() {
         Hero mage = HeroCatalog.SORSHA.withBuild(0, 0, 0, 10,
                 Map.of(SecondarySkill.WISDOM, SkillLevel.BASIC, SecondarySkill.ARTILLERY, SkillLevel.EXPERT))
