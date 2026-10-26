@@ -76,6 +76,9 @@ test {
     if (project.hasProperty('h3.harness')) {
         systemProperty 'h3.harness', project.property('h3.harness')
     }
+    if (project.hasProperty('h3.duel')) {
+        systemProperty 'h3.duel', project.property('h3.duel')
+    }
     finalizedBy jacocoTestReport
 }
 

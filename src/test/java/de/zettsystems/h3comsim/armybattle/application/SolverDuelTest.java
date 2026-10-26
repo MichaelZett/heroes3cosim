@@ -3,12 +3,15 @@ package de.zettsystems.h3comsim.armybattle.application;
 import de.zettsystems.h3comsim.armybattle.values.FactionPresetDto;
 import de.zettsystems.h3comsim.armybattle.values.StackSpec;
 import de.zettsystems.h3comsim.battle.domain.Action;
+import de.zettsystems.h3comsim.battle.domain.AttackType;
 import de.zettsystems.h3comsim.battle.domain.AutoSolver;
 import de.zettsystems.h3comsim.battle.domain.Battle;
 import de.zettsystems.h3comsim.battle.domain.BattleResult;
 import de.zettsystems.h3comsim.battle.domain.BattleSetup;
 import de.zettsystems.h3comsim.battle.domain.Battlefield;
 import de.zettsystems.h3comsim.battle.domain.Faction;
+import de.zettsystems.h3comsim.battle.domain.GreedyAutoSolver;
+import de.zettsystems.h3comsim.battle.domain.HeroCatalog;
 import de.zettsystems.h3comsim.battle.domain.Hex;
 import de.zettsystems.h3comsim.battle.domain.ObstacleGenerator;
 import de.zettsystems.h3comsim.battle.domain.Stack;
@@ -24,28 +27,42 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Supplier;
 
 /**
- * Lässt zwei Solver-Varianten <strong>direkt gegeneinander</strong> antreten.
+ * Lässt zwei Varianten <strong>direkt gegeneinander</strong> antreten: zwei Solver, zwei
+ * Aufstellungen oder beides.
  *
  * <p>Motivation: Die {@code FactionMatrixTest} beantwortet die Frage nach der Solver-Qualität
  * <em>nicht</em>. Dort spielen beide Seiten denselben Solver, eine Verbesserung hebt also beide
  * Seiten gleichermaßen an und bleibt in der Win-Rate unsichtbar. Wer wissen will, ob eine neue
- * Heuristik trägt, muss sie gegen die Variante ohne sie stellen.
+ * Heuristik trägt, muss sie gegen die Variante ohne sie stellen — und gegen Greedy, das am
+ * 2026-10-26 den alten Strategic-Solver mit 0.603 schlug, ohne dass die Matrix es zeigte.
  *
  * <p>Aufbau: {@link SplitSolver} routet nach {@code Stack.side()} — Attacker bekommt Variante A,
- * Defender Variante B. Jedes Pairing läuft zusätzlich mit getauschten Rollen, damit der
- * Attacker-Vorteil (bei Speed-Gleichstand zu Kampfbeginn zieht der Attacker zuerst) sich herausmittelt.
- * Gemessen wird die Win-Rate von A über alle Läufe; 0.50 heißt „kein Unterschied".
+ * Defender Variante B; jede Seite stellt ihre Armee mit dem {@link Layout} ihrer Variante auf.
+ * Alle 81 Pairings laufen mit getauschten Rollen, damit der Attacker-Vorteil (bei
+ * Speed-Gleichstand zu Kampfbeginn zieht der Attacker zuerst) sich herausmittelt. Beide Armeen
+ * führt wie im Endpunkt der Standardheld ihrer Fraktion. Gemessen wird die Win-Rate von A;
+ * 0.50 heißt „kein Unterschied". Zusätzlich je Faktion das Spiegel-Duell (identische Armee
+ * beiderseits) — eine Aufschlüsselung des Gesamtlaufs nach Faktion enthielte die
+ * Faktionsstärke, nicht den Effekt der Variante.
  *
- * <p>Aktivieren: {@code .\gradlew.bat test --tests "*SolverDuelTest" "-Ph3.harness=solver-duel"}.
+ * <p>Aktivieren: {@code .\gradlew.bat test --tests "*SolverDuelTest" "-Ph3.harness=solver-duel"},
+ * einzelne Duelle mit {@code "-Ph3.duel=strategic-vs-greedy,shooters-inside"}.
  * Report unter {@code build/reports/solver-duel.md}.
  */
 @EnabledIfSystemProperty(named = "h3.harness", matches = "solver-duel")
@@ -58,45 +75,52 @@ class SolverDuelTest {
             Faction.NECROPOLIS, Faction.DUNGEON, Faction.STRONGHOLD, Faction.FORTRESS,
             Faction.CONFLUX);
 
+    /** Reihen-Zuteilung einer Armee, wie {@link SpawnLayout#assignPositions(Side, List)}. */
+    @FunctionalInterface
+    interface Layout {
+        List<Hex> place(Side side, List<Unit> units);
+    }
+
+    /** Eine Seite im Duell: Solver und Aufstellung. */
+    record Contender(String name, Supplier<AutoSolver> solver, Layout layout) {
+    }
+
+    /** Zwei Varianten; die Win-Rate wird für {@code a} gezählt. */
+    record Duel(String key, Contender a, Contender b) {
+    }
+
+    private static final Layout TACTICAL = SpawnLayout::assignPositions;
+
+    private static final List<Duel> DUELS = List.of(
+            new Duel("strategic-vs-greedy",
+                    new Contender("Strategic", StrategicAutoSolver::new, TACTICAL),
+                    new Contender("Greedy", GreedyAutoSolver::new, TACTICAL)),
+            new Duel("tactical-wait",
+                    new Contender("Strategic mit Wait", () -> new StrategicAutoSolver(true), TACTICAL),
+                    new Contender("Strategic ohne Wait", () -> new StrategicAutoSolver(false), TACTICAL)),
+            new Duel("shooters-inside",
+                    new Contender("Schützen innen", StrategicAutoSolver::new, shootersFirstOn(SolverDuelTest::centerOut)),
+                    new Contender("Schützen außen", StrategicAutoSolver::new, TACTICAL)),
+            new Duel("shooters-second-ring",
+                    new Contender("Schützen auf r=2/8", StrategicAutoSolver::new, shootersFirstOn(SolverDuelTest::secondRing)),
+                    new Contender("Schützen außen", StrategicAutoSolver::new, TACTICAL)));
+
     @Test
-    void tactical_wait_versus_no_wait() throws Exception {
-        FactionPresetCatalog presets = new FactionPresetCatalog();
-        Map<Faction, FactionPresetDto> presetByFaction = new EnumMap<>(Faction.class);
-        for (FactionPresetDto p : presets.all()) {
-            presetByFaction.put(p.faction(), p);
+    void duels() throws Exception {
+        Map<Faction, FactionPresetDto> presets = new EnumMap<>(Faction.class);
+        for (FactionPresetDto p : new FactionPresetCatalog().all()) {
+            presets.put(p.faction(), p);
         }
-
-        Map<Faction, Tally> perFaction = new EnumMap<>(Faction.class);
-        for (Faction f : FACTIONS_IN_ORDER) {
-            perFaction.put(f, new Tally());
-        }
-        Tally overall = new Tally();
-
-        // (1) Gesamt-Effekt über alle 81 Pairings.
-        for (Faction a : FACTIONS_IN_ORDER) {
-            for (Faction d : FACTIONS_IN_ORDER) {
-                for (int s = 0; s < SEEDS_PER_PAIR; s++) {
-                    long seed = (long) a.ordinal() * 9929L + d.ordinal() * 113L + s;
-                    // Durchgang 1: Wait-Variante stellt den Attacker.
-                    duel(presetByFaction, a, d, seed, true, null, overall);
-                    // Durchgang 2: Rollen getauscht — Wait-Variante stellt den Defender.
-                    duel(presetByFaction, a, d, seed, false, null, overall);
-                }
+        Set<String> selected = selectedDuels();
+        StringBuilder report = new StringBuilder(4096).append("# Solver-Duelle\n\n")
+                .append("Variante A gegen Variante B, alle 9x9 Pairings mit getauschten Rollen, ")
+                .append(SEEDS_PER_PAIR).append(" Seeds je Pairing, Standardheld je Armee. ")
+                .append("Win-Rate von A; 0.50 = kein Unterschied, ab etwa 2 Sigma kein Zufall mehr.\n\n");
+        for (Duel duel : DUELS) {
+            if (selected.isEmpty() || selected.contains(duel.key())) {
+                render(report, duel, run(presets, duel));
             }
         }
-
-        // (2) Solver-Effekt je Faktion, isoliert per Spiegel-Duell: dieselbe Armee auf beiden
-        // Seiten, einziger Unterschied ist die Heuristik. Eine Aufschlüsselung des Laufs (1)
-        // nach Faktion wäre wertlos — sie enthielte die Faction-Stärke, nicht den Solver-Effekt.
-        for (Faction f : FACTIONS_IN_ORDER) {
-            for (int s = 0; s < SEEDS_PER_PAIR; s++) {
-                long seed = (long) f.ordinal() * 9929L + f.ordinal() * 113L + s;
-                duel(presetByFaction, f, f, seed, true, perFaction.get(f), null);
-                duel(presetByFaction, f, f, seed, false, perFaction.get(f), null);
-            }
-        }
-
-        String report = render(perFaction, overall);
         Path reportsDir = Path.of("build", "reports");
         Files.createDirectories(reportsDir);
         Path out = reportsDir.resolve("solver-duel.md");
@@ -105,40 +129,63 @@ class SolverDuelTest {
         IO.println(report);
     }
 
-    private static void duel(Map<Faction, FactionPresetDto> presets, Faction attackerFaction,
-                             Faction defenderFaction, long seed, boolean waitPlaysAttacker,
-                             @Nullable Tally perFaction, @Nullable Tally overall) {
-        List<Stack> attackerStacks = buildStacks(presets.get(attackerFaction).stacks(), Side.ATTACKER);
-        List<Stack> defenderStacks = buildStacks(presets.get(defenderFaction).stacks(), Side.DEFENDER);
-        BattleSetup setup = new BattleSetup(attackerStacks, defenderStacks,
-                buildBattlefield(attackerStacks, defenderStacks, seed));
-
-        AutoSolver withWait = new StrategicAutoSolver(true);
-        AutoSolver withoutWait = new StrategicAutoSolver(false);
-        AutoSolver split = waitPlaysAttacker
-                ? new SplitSolver(withWait, withoutWait)
-                : new SplitSolver(withoutWait, withWait);
-
-        BattleResult result = new Battle(new Random(seed), split).simulate(setup);
-        Side waitSide = waitPlaysAttacker ? Side.ATTACKER : Side.DEFENDER;
-
-        if (overall != null) {
-            tally(overall, result, waitSide);
-        }
-        if (perFaction != null) {
-            tally(perFaction, result, waitSide);
-        }
+    private static Set<String> selectedDuels() {
+        String raw = System.getProperty("h3.duel", "");
+        return raw.isBlank() ? Set.of() : Set.of(raw.split(","));
     }
 
-    private static void tally(Tally tally, BattleResult result, Side waitSide) {
-        tally.battles++;
-        Winner winner = result.winner();
-        if (winner == Winner.DRAW) {
-            tally.draws++;
-        } else if ((winner == Winner.ATTACKER) == (waitSide == Side.ATTACKER)) {
-            tally.waitWins++;
-        } else {
-            tally.waitLosses++;
+    private record Result(Tally overall, Map<Faction, Tally> mirror) {
+    }
+
+    private static Result run(Map<Faction, FactionPresetDto> presets, Duel duel) {
+        Tally overall = new Tally();
+        Map<Faction, Tally> mirror = new LinkedHashMap<>();
+        FACTIONS_IN_ORDER.forEach(f -> mirror.put(f, new Tally()));
+        try (ExecutorService pool = Executors.newWorkStealingPool()) {
+            for (Faction a : FACTIONS_IN_ORDER) {
+                for (Faction d : FACTIONS_IN_ORDER) {
+                    for (int s = 0; s < SEEDS_PER_PAIR; s++) {
+                        long seed = (long) a.ordinal() * 9929L + d.ordinal() * 113L + s;
+                        for (boolean aAttacks : new boolean[]{true, false}) {
+                            Tally perFaction = a == d ? mirror.get(a) : null;
+                            pool.execute(() -> tally(fight(presets, duel, a, d, seed, aAttacks),
+                                    aAttacks, overall, perFaction));
+                        }
+                    }
+                }
+            }
+        }
+        return new Result(overall, mirror);
+    }
+
+    private static BattleResult fight(Map<Faction, FactionPresetDto> presets, Duel duel,
+                                      Faction attackerFaction, Faction defenderFaction, long seed,
+                                      boolean aAttacks) {
+        Contender attacker = aAttacks ? duel.a() : duel.b();
+        Contender defender = aAttacks ? duel.b() : duel.a();
+        List<Stack> attackerStacks = buildStacks(presets.get(attackerFaction).stacks(), Side.ATTACKER,
+                attacker.layout());
+        List<Stack> defenderStacks = buildStacks(presets.get(defenderFaction).stacks(), Side.DEFENDER,
+                defender.layout());
+        BattleSetup setup = new BattleSetup(attackerStacks, defenderStacks,
+                buildBattlefield(attackerStacks, defenderStacks, seed),
+                HeroCatalog.defaultForArmy(attackerStacks), HeroCatalog.defaultForArmy(defenderStacks));
+        AutoSolver split = new SplitSolver(attacker.solver().get(), defender.solver().get());
+        return new Battle(new Random(seed), split).simulate(setup);
+    }
+
+    private static void tally(BattleResult result, boolean aAttacks, Tally overall,
+                              @Nullable Tally perFaction) {
+        Winner aWins = aAttacks ? Winner.ATTACKER : Winner.DEFENDER;
+        for (Tally t : perFaction == null ? List.of(overall) : List.of(overall, perFaction)) {
+            t.battles.increment();
+            if (result.winner() == Winner.DRAW) {
+                t.draws.increment();
+            } else if (result.winner() == aWins) {
+                t.aWins.increment();
+            } else {
+                t.aLosses.increment();
+            }
         }
     }
 
@@ -165,17 +212,86 @@ class SolverDuelTest {
             return solverFor(active).decide(active, opponent, bf);
         }
 
+        @Override
+        public boolean attacksWarMachines(Stack active) {
+            return solverFor(active).attacksWarMachines(active);
+        }
+
+        @Override
+        public boolean shootsWalls(Stack active, BattleSetup setup) {
+            return solverFor(active).shootsWalls(active, setup);
+        }
+
         private AutoSolver solverFor(Stack active) {
             return active.side() == Side.ATTACKER ? attackerSolver : defenderSolver;
         }
     }
 
-    private static List<Stack> buildStacks(List<StackSpec> specs, Side side) {
+    // ------------------------------------------------------------------ //
+    // Aufstellungs-Varianten
+    // ------------------------------------------------------------------ //
+
+    /**
+     * Wie {@link SpawnLayout#assignPositions}, nur bekommen die Schützen (schwächster zuerst)
+     * die Reihen in der Reihenfolge {@code shooterRows}; die Nahkämpfer füllen den Rest von der
+     * Mitte aus, der schnellste zuerst.
+     */
+    private static Layout shootersFirstOn(java.util.function.Function<int[], List<Integer>> shooterRows) {
+        return (side, units) -> {
+            int[] rows = rowsFor(units.size());
+            List<Integer> shooterOrder = shooterRows.apply(rows);
+            List<Integer> meleeOrder = centerOut(rows);
+            List<Integer> shooters = new ArrayList<>();
+            List<Integer> melees = new ArrayList<>();
+            for (int i = 0; i < units.size(); i++) {
+                (units.get(i).attackType() == AttackType.LONG_RANGE ? shooters : melees).add(i);
+            }
+            shooters.sort(Comparator.comparingInt((Integer slot) -> units.get(slot).health()));
+            melees.sort(Comparator.comparingInt((Integer slot) -> -units.get(slot).speed()));
+            Hex[] result = new Hex[units.size()];
+            Set<Integer> used = new HashSet<>();
+            for (int i = 0; i < shooters.size(); i++) {
+                int row = shooterOrder.get(i);
+                used.add(row);
+                result[shooters.get(i)] = SpawnLayout.edgeHex(side, row);
+            }
+            int next = 0;
+            for (int slot : melees) {
+                while (used.contains(meleeOrder.get(next))) {
+                    next++;
+                }
+                result[slot] = SpawnLayout.edgeHex(side, meleeOrder.get(next++));
+            }
+            return Arrays.asList(result);
+        };
+    }
+
+    private static List<Integer> centerOut(int[] rows) {
+        return Arrays.stream(rows).boxed()
+                .sorted(Comparator.<Integer>comparingInt(r -> Math.abs(r - SpawnLayout.CENTER_ROW))
+                        .thenComparingInt(r -> r))
+                .toList();
+    }
+
+    /** Erst die Reihen 2/8 (eine Reihe Nahkämpfer zwischen Schütze und Rand), dann wie innen. */
+    private static List<Integer> secondRing(int[] rows) {
+        return Arrays.stream(rows).boxed()
+                .sorted(Comparator.<Integer>comparingInt(r -> Math.abs(Math.abs(r - SpawnLayout.CENTER_ROW) - 3))
+                        .thenComparingInt(r -> r))
+                .toList();
+    }
+
+    private static int[] rowsFor(int total) {
+        int start = (SpawnLayout.ROWS_7.length - total) / 2;
+        return Arrays.copyOfRange(SpawnLayout.ROWS_7, start, start + total);
+    }
+
+    private static List<Stack> buildStacks(List<StackSpec> specs, Side side, Layout layout) {
         List<Unit> units = new ArrayList<>(specs.size());
         for (StackSpec spec : specs) {
             units.add(UnitCatalog.byName(spec.unitName()).orElseThrow());
         }
-        List<Hex> positions = SpawnLayout.assignPositions(side, units);
+        List<Hex> positions = layout.place(side, units);
         List<Stack> stacks = new ArrayList<>(specs.size());
         for (int slot = 0; slot < specs.size(); slot++) {
             stacks.add(new Stack(units.get(slot), specs.get(slot).count(),
@@ -191,68 +307,39 @@ class SolverDuelTest {
         return Battlefield.STANDARD.withObstacles(obstacles);
     }
 
-    private static String render(Map<Faction, Tally> perFaction, Tally overall) {
-        StringBuilder sb = new StringBuilder(2048);
-        sb.append("# Solver-Duell: Tactical Wait vs. kein Wait\n\n");
-        sb.append("Beide Varianten treten **direkt gegeneinander** an — die Wait-Variante spielt ")
-                .append("jedes Pairing einmal als Attacker und einmal als Defender. ")
-                .append(SEEDS_PER_PAIR).append(" Seeds pro Pairing, alle 9x9 Pairings, ")
-                .append("Basis: StrategicAutoSolver.\n\n");
-        sb.append("**Lesart**: Win-Rate der Wait-Variante. 0.50 = kein Unterschied, ")
-                .append("> 0.50 = Wait ist besser.\n\n");
-        sb.append("## Gesamt\n\n");
-        sb.append("| Battles | Wait-Siege | Wait-Niederlagen | Draws | Win-Rate Wait |\n");
-        sb.append("|--|--|--|--|--|\n");
-        sb.append("| ").append(overall.battles)
-                .append(" | ").append(overall.waitWins)
-                .append(" | ").append(overall.waitLosses)
-                .append(" | ").append(overall.draws)
-                .append(" | ").append(rate(overall))
-                .append(" |\n\n");
-        sb.append("Abweichung von 0.500: **").append(sigma(overall))
-                .append(" Sigma**. Ab etwa 2 Sigma ist der Unterschied nicht mehr durch Zufall ")
-                .append("erklärbar, darunter ist er Rauschen.\n\n");
-        sb.append("## Solver-Effekt je Faktion (Spiegel-Duell, identische Armeen)\n\n");
-        sb.append("| Faktion | Battles | Siege | Niederlagen | Draws | Win-Rate Wait | Sigma |\n");
+    // ------------------------------------------------------------------ //
+    // Report
+    // ------------------------------------------------------------------ //
+
+    private static void render(StringBuilder sb, Duel duel, Result result) {
+        sb.append("## ").append(duel.a().name()).append(" gegen ").append(duel.b().name())
+                .append(" (`").append(duel.key()).append("`)\n\n");
+        sb.append("| | Battles | Siege A | Niederlagen A | Draws | Win-Rate A | Sigma |\n");
         sb.append("|--|--|--|--|--|--|--|\n");
-        for (Faction f : FACTIONS_IN_ORDER) {
-            Tally t = perFaction.get(f);
-            sb.append("| ").append(f.name())
-                    .append(" | ").append(t.battles)
-                    .append(" | ").append(t.waitWins)
-                    .append(" | ").append(t.waitLosses)
-                    .append(" | ").append(t.draws)
-                    .append(" | ").append(rate(t))
-                    .append(" | ").append(sigma(t))
-                    .append(" |\n");
+        row(sb, "Gesamt", result.overall());
+        for (Map.Entry<Faction, Tally> e : result.mirror().entrySet()) {
+            row(sb, "Spiegel " + e.getKey().name(), e.getValue());
         }
-        return sb.toString();
+        sb.append('\n');
     }
 
-    private static String rate(Tally t) {
-        int decided = t.waitWins + t.waitLosses;
-        return decided == 0 ? "-"
-                : String.format(Locale.ROOT, "%.3f", (double) t.waitWins / decided);
-    }
-
-    /**
-     * Abweichung von der Nullhypothese „beide Varianten sind gleich stark" in
-     * Standardabweichungen. Binomialverteilung mit p = 0.5: sigma = sqrt(n / 4).
-     */
-    private static String sigma(Tally t) {
-        int decided = t.waitWins + t.waitLosses;
-        if (decided == 0) {
-            return "-";
-        }
-        double expected = decided / 2.0;
-        double sd = Math.sqrt(decided / 4.0);
-        return String.format(Locale.ROOT, "%+.2f", (t.waitWins - expected) / sd);
+    private static void row(StringBuilder sb, String label, Tally t) {
+        long wins = t.aWins.sum();
+        long losses = t.aLosses.sum();
+        long decided = wins + losses;
+        String rate = decided == 0 ? "-" : String.format(Locale.ROOT, "%.3f", (double) wins / decided);
+        // Binomialverteilung mit p = 0.5: Standardabweichung sqrt(n / 4).
+        String sigma = decided == 0 ? "-"
+                : String.format(Locale.ROOT, "%+.2f", (wins - decided / 2.0) / Math.sqrt(decided / 4.0));
+        sb.append("| ").append(label).append(" | ").append(t.battles.sum()).append(" | ").append(wins)
+                .append(" | ").append(losses).append(" | ").append(t.draws.sum()).append(" | ")
+                .append(rate).append(" | ").append(sigma).append(" |\n");
     }
 
     private static final class Tally {
-        private int battles;
-        private int waitWins;
-        private int waitLosses;
-        private int draws;
+        private final LongAdder battles = new LongAdder();
+        private final LongAdder aWins = new LongAdder();
+        private final LongAdder aLosses = new LongAdder();
+        private final LongAdder draws = new LongAdder();
     }
 }
