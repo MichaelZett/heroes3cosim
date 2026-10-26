@@ -250,15 +250,21 @@ public final class Battle {
      * (20 %) dauerhaft; ein stärker gewirkter Spiegel geht vor.
      */
     private @Nullable Stack mirrored(BattleSetup setup, Side side, Spell spell, Stack target) {
-        ActiveSpell mirror = target.activeSpell(Spell.MAGIC_MIRROR);
-        int percent = mirror != null ? HeroSpellcasting.mirrorPercent(mirror)
-                : target.hasSpeciality(UnitSpeciality.NATURAL_MAGIC_MIRROR) ? 20 : 0;
+        int percent = mirrorPercent(target);
         if (percent == 0 || target.side() == side || !HeroSpellcasting.singleTarget(spell)
                 || rng.nextInt(100) >= percent) {
             return null;
         }
         List<Stack> casters = setup.stacksOf(side).stream().filter(Stack::isAlive).toList();
         return casters.isEmpty() ? null : casters.get(rng.nextInt(casters.size()));
+    }
+
+    private static int mirrorPercent(Stack target) {
+        ActiveSpell mirror = target.activeSpell(Spell.MAGIC_MIRROR);
+        if (mirror != null) {
+            return HeroSpellcasting.mirrorPercent(mirror);
+        }
+        return target.hasSpeciality(UnitSpeciality.NATURAL_MAGIC_MIRROR) ? 20 : 0;
     }
 
     /** Frisch beschworene Stacks reihen sich in die laufende Runde ein. */
@@ -595,6 +601,32 @@ public final class Battle {
         }
     }
 
+    /**
+     * Was zu Beginn des Zugs passiert, bevor der Stack wählt: Enchanters zaubern, dann Furcht vor
+     * Azure Dragons und der Wurf auf schlechte Moral.
+     *
+     * @return {@code true}, wenn der Stack seine Aktion verliert oder der Kampf vorbei ist
+     */
+    private boolean losesTurnAtStart(Stack activeStack, BattleSetup setup) {
+        if (activeStack.hasSpeciality(UnitSpeciality.ENCHANTER_SPELLS) && CreatureSpellcasting.enchanterCastsIn(round)) {
+            enchant(activeStack, setup);
+            if (!setup.bothAlive()) {
+                return true;
+            }
+        }
+        if (fearsAzureDragons(activeStack, setup) && rng.nextInt(100) < 10) {
+            BattleLogger.logFear(activeStack.getName());
+            events.emit(new BattleEvent.Fear(activeStack.side(), activeStack.slot()));
+            return true;
+        }
+        if (activeStack.freezes(rng)) {
+            BattleLogger.logBadMorale(activeStack.getName());
+            events.emit(new BattleEvent.BadMorale(activeStack.side(), activeStack.slot()));
+            return true;
+        }
+        return false;
+    }
+
     /** Steht auf der Gegenseite ein Azure Dragon, dem dieser Stack nicht widersteht? */
     private static boolean fearsAzureDragons(Stack active, BattleSetup setup) {
         if (active.isWarMachine() || active.unit().isUndead() || active.hasSpeciality(UnitSpeciality.FEAR)) {
@@ -614,25 +646,11 @@ public final class Battle {
      */
     private void actWithMorale(Stack activeStack, BattleSetup setup) {
         Battlefield battlefield = setup.battlefieldFor(activeStack.side());
-        if (activeStack.hasSpeciality(UnitSpeciality.ENCHANTER_SPELLS) && !activeStack.hasWaitedThisTurn()
-                && CreatureSpellcasting.enchanterCastsIn(round)) {
-            enchant(activeStack, setup);
-            if (!setup.bothAlive()) {
-                return;
-            }
-        }
         // Der Freeze-Wurf gehört vor die Entscheidung, nicht dahinter: in H3 friert die Kreatur
         // ein, bevor der Spieler überhaupt zwischen Angriff, Wait und Defend wählen darf.
         // Wer in Phase 1 gewartet hat, hat dort bereits gewürfelt — in der Late-Phase würde ein
         // zweiter Wurf dem Warten eine doppelte Einfrier-Chance aufbürden.
-        if (!activeStack.hasWaitedThisTurn() && fearsAzureDragons(activeStack, setup) && rng.nextInt(100) < 10) {
-            BattleLogger.logFear(activeStack.getName());
-            events.emit(new BattleEvent.Fear(activeStack.side(), activeStack.slot()));
-            return;
-        }
-        if (!activeStack.hasWaitedThisTurn() && activeStack.freezes(rng)) {
-            BattleLogger.logBadMorale(activeStack.getName());
-            events.emit(new BattleEvent.BadMorale(activeStack.side(), activeStack.slot()));
+        if (!activeStack.hasWaitedThisTurn() && losesTurnAtStart(activeStack, setup)) {
             return;
         }
         Siege siege = setup.siege();
@@ -670,15 +688,9 @@ public final class Battle {
      *         der Late-Phase erneut drankommt; {@code true}, wenn er sie verbraucht hat.
      */
     private boolean takeAction(Stack active, Stack opponent, BattleSetup setup) {
-        if (active.hasSpeciality(UnitSpeciality.FAERIE_SPELLS) && active.spellCastsLeft() > 0) {
-            // Faerie Dragons greifen mit Zaubern an; ist das Ziel gegen den vorbereiteten immun,
-            // schlagen sie im Nahkampf zu (heroes.thelazy.net).
-            Spell spell = CreatureSpellcasting.faerieSpell(rng);
-            if (!SpellResistance.isImmune(opponent, spell)) {
-                faerieCast(active, spell, opponent, setup);
-                active.removeSpells(s -> s == Spell.FRENZY);
-                return true;
-            }
+        if (faerieCasts(active, opponent, setup)) {
+            active.removeSpells(s -> s == Spell.FRENZY);
+            return true;
         }
         Battlefield battlefield = setup.battlefieldFor(active.side());
         Action action = autoSolver.decide(active, opponent, battlefield);
@@ -754,6 +766,22 @@ public final class Battle {
             return;
         }
         applyCreatureSpell(caster, cast);
+    }
+
+    /**
+     * Faerie Dragons greifen mit Zaubern an, solange sie Würfe haben; ist das Ziel gegen den
+     * vorbereiteten immun, handeln sie normal, also im Nahkampf (heroes.thelazy.net).
+     */
+    private boolean faerieCasts(Stack active, Stack opponent, BattleSetup setup) {
+        if (!active.hasSpeciality(UnitSpeciality.FAERIE_SPELLS) || active.spellCastsLeft() == 0) {
+            return false;
+        }
+        Spell spell = CreatureSpellcasting.faerieSpell(rng);
+        if (SpellResistance.isImmune(opponent, spell)) {
+            return false;
+        }
+        faerieCast(active, spell, opponent, setup);
+        return true;
     }
 
     /**
@@ -1612,14 +1640,21 @@ public final class Battle {
     }
 
     private void doCursing(Stack active, Stack target) {
-        int chance = active.hasSpeciality(UnitSpeciality.CURSING) ? 20
-                : active.hasSpeciality(UnitSpeciality.CURSING_25) ? 25 : 0;
+        int chance = curseChance(active.unit());
         if (chance > 0 && rng.nextInt(100) < chance) {
             target.curse();
             BattleLogger.logCurse(active.getName(), target.getName());
             events.emit(new BattleEvent.Cursing(active.side(), active.slot(),
                     target.side(), target.slot()));
         }
+    }
+
+    /** Black/Dread Knight 20 %, Mummy 25 %. */
+    private static int curseChance(Unit unit) {
+        if (unit.hasSpeciality(UnitSpeciality.CURSING)) {
+            return 20;
+        }
+        return unit.hasSpeciality(UnitSpeciality.CURSING_25) ? 25 : 0;
     }
 
     private void doAcidBreath(Stack active, Stack target) {

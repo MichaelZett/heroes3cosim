@@ -110,11 +110,7 @@ final class CreatureSpellcasting {
                 if (!setup.battlefield().contains(center)) {
                     continue;
                 }
-                long value = 0;
-                for (Stack hit : HeroSpellcasting.inArea(spell, center, setup)) {
-                    long worth = (long) hit.getCount() * hit.unit().cost();
-                    value += hit.side() == caster.side() ? -worth : worth;
-                }
+                long value = areaValue(caster, spell, center, setup);
                 if (value > bestValue) {
                     best = center;
                     bestValue = value;
@@ -122,6 +118,15 @@ final class CreatureSpellcasting {
             }
         }
         return best;
+    }
+
+    private static long areaValue(Stack caster, Spell spell, Hex center, BattleSetup setup) {
+        long value = 0;
+        for (Stack hit : HeroSpellcasting.inArea(spell, center, setup)) {
+            long worth = (long) hit.getCount() * hit.unit().cost();
+            value += hit.side() == caster.side() ? -worth : worth;
+        }
+        return value;
     }
 
     private static Spell draw(Map<Spell, Integer> weights, RandomGenerator rng) {
