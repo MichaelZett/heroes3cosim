@@ -276,6 +276,7 @@ export type BattleEvent =
   | { type: 'Poisoning'; actor: Side; actorSlot: number; target: Side; targetSlot: number }
   | { type: 'Diseasing'; actor: Side; actorSlot: number; target: Side; targetSlot: number }
   | { type: 'Aging'; actor: Side; actorSlot: number; target: Side; targetSlot: number }
+  | { type: 'Bind'; actor: Side; actorSlot: number; target: Side; targetSlot: number }
   | {
       type: 'FireShield';
       shielded: Side;

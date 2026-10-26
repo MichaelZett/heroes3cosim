@@ -20,8 +20,14 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Two Blows / Two Shots, Good Morale (Minotaur), Good Army Morale
   (Angel/Arch Angel), Death Stare, Thunderbolts,
   Petryfying (Medusa/Scorpicore), Cursing, Poisonous, Diseases, Aging,
-  Death Blow, Angel/Devil/Titan Hate, Impact Damage (Cavalier-Jousting),
-  Defense Reduction (Behemoth), Move Back (Harpy), Counterstrike
+  Death Blow, Hass (Angel/Devil, Titan/Black Dragon, Genie/Efreet je
+  +50 %, Elementare gegen ihr Gegenelement +100 %), Impact Damage
+  (Cavalier-Jousting, wirkungslos gegen Pikeniere und Hellebardiere),
+  Defense Reduction (Behemoth), Move Back (Harpy), Fesselung (Dendroiden:
+  das Ziel bewegt sich nicht mehr, bis sie sich bewegen oder fallen),
+  Mana-Entzug (Wraith: 2 je Stack und Runde) und Mana-Kanal (Familiar:
+  20 % des gegnerischen Manas), Schutzzauber der Storm-, Ice-, Energy- und
+  Magma-Elementare gegen ihr Element, Counterstrike
   Twice/Unlimited (Griffin), Regeneration (Wight), Fire Shield (Efreet
   Sultan), Rebirth (Phoenix), No Hand-to-Hand Penalty, Moral-Senkung
   (Bone/Ghost Dragon), Resurrection (Arch Angel: einmal pro Kampf 100 HP
@@ -31,9 +37,12 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   50 HP je Pit Lord).
 - **Multi-Stack-Fähigkeiten** für die Army-Battles: Cerberus
   Three-Headed Attack (Ziel + die beiden Felder links und rechts davon,
-  nur Gegner), Fire Breath (Green/Gold/Red/Black Dragon — Ziel + Stack
-  dahinter), Magog-Fireball (Ziel + alle 1-Hex-Nachbarn, Manual S. 97),
-  Lich Death Cloud (Ziel + alle 1-Hex-Nachbarn außer Untoten).
+  nur Gegner), Fire Breath (Green/Gold/Red/Black Dragon, Firebird,
+  Phoenix — Ziel + Stack dahinter), Angriff auf alle benachbarten Gegner
+  (Hydra, Chaos Hydra, Psychic und Magic Elemental), Magog-Fireball (Ziel
+  + alle 1-Hex-Nachbarn, Manual S. 97), Lich Death Cloud (Ziel + alle
+  1-Hex-Nachbarn außer Untoten). In der Faction-Matrix legt Conflux damit
+  zu (Greedy 0.65 → 0.77, Strategic 0.87 → 0.94).
 - **Zweifeldrige Kreaturen** — 45 Kreaturen (Drachen, Behemoths,
   Cavaliers, Unicorns, Hydren und andere, Liste wie in VCMI) sowie
   Ballista, Sanitätszelt und Katapult belegen zwei Felder; das zweite

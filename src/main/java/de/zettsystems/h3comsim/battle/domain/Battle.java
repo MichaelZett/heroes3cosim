@@ -127,6 +127,7 @@ public final class Battle {
      * ({@link TurnOrder}). Tote Stacks fallen über {@link Stack#isAbleToAct()} heraus.
      */
     private void doTurn(BattleSetup setup, TurnOrder order) {
+        drainMana(setup);
         siegeEnginesAct(setup);
         updateGate(setup);
         autoSolver.planRound(setup);
@@ -155,6 +156,25 @@ public final class Battle {
         roundStacks.forEach(Stack::endTurn);
     }
 
+    /** Zu Rundenbeginn: jeder lebende Wraith-Stack zieht dem gegnerischen Helden 2 Mana ab. */
+    private static void drainMana(BattleSetup setup) {
+        for (Side side : Side.values()) {
+            long wraiths = setup.stacksOf(side).stream()
+                    .filter(s -> s.isAlive() && s.hasSpeciality(UnitSpeciality.MANA_DRAIN)).count();
+            if (wraiths > 0) {
+                setup.spendMana(HeroSpellcasting.other(side), (int) (2 * wraiths));
+            }
+        }
+    }
+
+    /** Ein lebender Familiar beim Gegner leitet 20 % des ausgegebenen Manas, abgerundet, um. */
+    private static void channelMana(BattleSetup setup, Side caster, int spent) {
+        Side other = HeroSpellcasting.other(caster);
+        if (setup.stacksOf(other).stream().anyMatch(s -> s.isAlive() && s.hasSpeciality(UnitSpeciality.MANA_CHANNEL))) {
+            setup.gainMana(other, spent * 20 / 100);
+        }
+    }
+
     /** Nach jedem Zug: Bewegung oder ein Gefallener auf dem Tor kann die Zugbrücke umstellen. */
     private void updateGate(BattleSetup setup) {
         Siege.@Nullable Gate changed = setup.updateGate();
@@ -179,7 +199,9 @@ public final class Battle {
         }
         heroesCast.add(side);
         Spell spell = cast.spell();
-        setup.spendMana(side, HeroSpellcasting.cost(spell, side, setup));
+        int cost = HeroSpellcasting.cost(spell, side, setup);
+        setup.spendMana(side, cost);
+        channelMana(setup, side, cost);
         events.emit(new BattleEvent.HeroSpell(side, spell, cast.level(), setup.manaOf(side)));
         if (spell.kind() == Spell.Kind.SUMMON) {
             summon(setup, side, hero, cast);
@@ -585,6 +607,9 @@ public final class Battle {
                 action = machineAttack;
             }
         }
+        if (active.isBound()) {
+            action = rooted(active, action);
+        }
         switch (action) {
             case Action.Wait() -> {
                 if (active.hasWaitedThisTurn()) {
@@ -624,12 +649,12 @@ public final class Battle {
     }
 
     /**
-     * Ogre Magi: Bloodlust auf einen verbündeten Stack (Advanced, 6 Runden). Ein ungültiger
+     * Ogre Magi und Elementare: ihr fester Zauber auf einen verbündeten Stack (Advanced, 6 Runden). Ein ungültiger
      * Auftrag fällt auf Defend zurück, wie bei {@link #resurrect}.
      */
     private void castSpell(Stack caster, Spell spell, Stack target, BattleSetup setup) {
         boolean allowed = caster.spellCastsLeft() > 0
-                && caster.hasSpeciality(UnitSpeciality.CASTS_BLOODLUST) && spell == Spell.BLOODLUST
+                && spell == CreatureSpellcasting.fixedSpell(caster.unit())
                 && CreatureSpellcasting.usefulTargets(caster, spell, setup).contains(target);
         if (!allowed) {
             emitDefend(caster);
@@ -719,7 +744,7 @@ public final class Battle {
         }
         int hexesMoved = startPos.distanceTo(active.position());
         meleeAttack(active, target, hexesMoved, setup);
-        if (active.hasSpeciality(UnitSpeciality.MOVE_BACK) && active.isAlive()) {
+        if (active.hasSpeciality(UnitSpeciality.MOVE_BACK) && active.isAlive() && !active.isBound()) {
             BattleLogger.logMoveBack(active.getName(), startPos.q(), startPos.r());
             List<HexCoord> backPath = battlefield.pathFor(active, startPos).stream()
                     .map(h -> new HexCoord(h.q(), h.r())).toList();
@@ -727,6 +752,19 @@ public final class Battle {
             events.emit(new BattleEvent.MoveBack(active.side(), active.slot(),
                     startPos.q(), startPos.r(), backPath));
         }
+    }
+
+    /**
+     * Ein gefesselter Stack bewegt sich nicht: statt eines Zugs verteidigt er, einen Angriff führt
+     * er nur auf einen Gegner aus, der schon neben ihm steht.
+     */
+    static Action rooted(Stack active, Action action) {
+        return switch (action) {
+            case Action.Move _ -> new Action.Defend();
+            case Action.MoveAndMelee charge ->
+                    active.distanceTo(charge.target()) == 1 ? new Action.Melee(charge.target()) : new Action.Defend();
+            default -> action;
+        };
     }
 
     /** Ein Zyklop des Angreifers darf statt der Kreatur die Befestigung beschießen ({@link WallShots}). */
@@ -934,29 +972,58 @@ public final class Battle {
      * des Ziels aus der Angriffsrichtung — den gemeinsamen Nachbarn von Cerberus und Ziel.
      * <strong>Fire Breath</strong> trifft dagegen auch eigene Stacks auf dem Feld dahinter.
      */
-    // collateral != primary: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
-    @SuppressWarnings("ReferenceEquality")
     private void applyMeleeSplash(Stack active, Stack primary, BattleSetup setup) {
         Hex[] contact = closestPair(active, primary);
         if (active.hasSpeciality(UnitSpeciality.THREE_HEADED_ATTACK)) {
-            for (Hex flank : contact[0].commonNeighbors(contact[1])) {
-                Stack candidate = findStackAt(active, flank, setup);
-                if (candidate != null && candidate.isAlive() && candidate.side() != active.side()) {
-                    applySplashHit(active, candidate, AttackType.HAND_TO_HAND);
-                }
+            threeHeaded(active, contact, setup);
+        }
+        if (active.hasSpeciality(UnitSpeciality.ATTACKS_ALL_ADJACENT)) {
+            for (Stack enemy : adjacentEnemies(active, primary, setup)) {
+                applySplashHit(active, enemy, AttackType.HAND_TO_HAND);
             }
         }
         if (active.hasSpeciality(UnitSpeciality.FIRE_BREATH)) {
-            Hex behind = behindHex(contact[0], contact[1]);
-            if (primary.occupies(behind)) {
-                // Hinter dem getroffenen Feld liegt das Heck des Ziels: der Atem geht ein Feld weiter.
-                behind = behindHex(contact[1], behind);
-            }
-            Stack collateral = findStackAt(active, behind, setup);
-            if (collateral != null && collateral != primary && collateral.isAlive()) {
-                applySplashHit(active, collateral, AttackType.HAND_TO_HAND);
+            fireBreath(active, primary, contact, setup);
+        }
+    }
+
+    /** Die beiden Flanken zwischen Cerberus und Ziel, nur Gegner. */
+    private void threeHeaded(Stack active, Hex[] contact, BattleSetup setup) {
+        for (Hex flank : contact[0].commonNeighbors(contact[1])) {
+            Stack candidate = findStackAt(active, flank, setup);
+            if (candidate != null && candidate.isAlive() && candidate.side() != active.side()) {
+                applySplashHit(active, candidate, AttackType.HAND_TO_HAND);
             }
         }
+    }
+
+    /** Der Stack auf dem Feld hinter dem Ziel, eigene eingeschlossen. */
+    // collateral != primary: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
+    @SuppressWarnings("ReferenceEquality")
+    private void fireBreath(Stack active, Stack primary, Hex[] contact, BattleSetup setup) {
+        Hex behind = behindHex(contact[0], contact[1]);
+        if (primary.occupies(behind)) {
+            // Hinter dem getroffenen Feld liegt das Heck des Ziels: der Atem geht ein Feld weiter.
+            behind = behindHex(contact[1], behind);
+        }
+        Stack collateral = findStackAt(active, behind, setup);
+        if (collateral != null && collateral != primary && collateral.isAlive()) {
+            applySplashHit(active, collateral, AttackType.HAND_TO_HAND);
+        }
+    }
+
+    /**
+     * Alle anderen Gegner neben dem Angreifer, auch Kriegsmaschinen — für Hydra und die
+     * Psychic/Magic Elementals, die alle benachbarten Gegner treffen.
+     */
+    // s != primary: Identitätsvergleich auf der mutable Stack-Entity.
+    @SuppressWarnings("ReferenceEquality")
+    private static List<Stack> adjacentEnemies(Stack active, Stack primary, BattleSetup setup) {
+        List<Stack> enemies = new ArrayList<>(setup.opponentsOf(active));
+        enemies.addAll(setup.enemyMachinesOf(active));
+        return enemies.stream()
+                .filter(s -> s != primary && s.isAlive() && active.distanceTo(s) == 1)
+                .toList();
     }
 
     /**
@@ -1201,7 +1268,9 @@ public final class Battle {
 
     private int dealDamage(Stack active, Stack passive, AttackType attackType,
                            int hexesMoved, int distance, boolean behindWall) {
-        int currentDamage = active.calculateCurrentDamage(attackType, hexesMoved, rng);
+        // Pikeniere und Hellebardiere heben den Anlauf-Bonus auf.
+        int runUp = passive.hasSpeciality(UnitSpeciality.JOUSTING_IMMUNE) ? 0 : hexesMoved;
+        int currentDamage = active.calculateCurrentDamage(attackType, runUp, rng);
         if (attackType == AttackType.LONG_RANGE) {
             Set<UnitSpeciality> attackerSpecs = active.getAttackerSpecialities();
             if (distance > 10 && !attackerSpecs.contains(UnitSpeciality.NO_DISTANCE_PENALTY)) {
@@ -1242,6 +1311,7 @@ public final class Battle {
             doDiseasing(active, passive);
             doAging(active, passive);
             doCreatureSpellProcs(active, passive);
+            doBinding(active, passive, attackType);
             if (passive.isAlive()) {
                 BattleLogger.logRemainingHealth(passive.getName(), passive.getCurrentHealth());
             } else {
@@ -1402,6 +1472,14 @@ public final class Battle {
             BattleLogger.logDiseasing(active.getName(), target.getName());
             events.emit(new BattleEvent.Diseasing(active.side(), active.slot(),
                     target.side(), target.slot()));
+        }
+    }
+
+    /** Dendroiden fesseln, wen sie im Nahkampf treffen — auch bei ihrer Vergeltung. */
+    private void doBinding(Stack active, Stack target, AttackType attackType) {
+        if (attackType == AttackType.HAND_TO_HAND && active.hasSpeciality(UnitSpeciality.BINDS)) {
+            target.bindTo(active);
+            events.emit(new BattleEvent.Bind(active.side(), active.slot(), target.side(), target.slot()));
         }
     }
 

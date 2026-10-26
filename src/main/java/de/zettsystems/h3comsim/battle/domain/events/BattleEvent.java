@@ -48,6 +48,7 @@ import java.util.List;
         @JsonSubTypes.Type(value = BattleEvent.Poisoning.class, name = "Poisoning"),
         @JsonSubTypes.Type(value = BattleEvent.Diseasing.class, name = "Diseasing"),
         @JsonSubTypes.Type(value = BattleEvent.Aging.class, name = "Aging"),
+        @JsonSubTypes.Type(value = BattleEvent.Bind.class, name = "Bind"),
         @JsonSubTypes.Type(value = BattleEvent.FireShield.class, name = "FireShield"),
         @JsonSubTypes.Type(value = BattleEvent.Rebirth.class, name = "Rebirth"),
         @JsonSubTypes.Type(value = BattleEvent.Resurrection.class, name = "Resurrection"),
@@ -75,7 +76,7 @@ import java.util.List;
                 BattleEvent.HeroSpell.class, BattleEvent.SpellHit.class, BattleEvent.Summon.class,
                 BattleEvent.MoveBack.class, BattleEvent.DeathStare.class, BattleEvent.Thunderbolts.class,
                 BattleEvent.Petrifying.class, BattleEvent.Cursing.class, BattleEvent.Poisoning.class,
-                BattleEvent.Diseasing.class, BattleEvent.Aging.class, BattleEvent.FireShield.class,
+                BattleEvent.Diseasing.class, BattleEvent.Aging.class, BattleEvent.Bind.class, BattleEvent.FireShield.class,
                 BattleEvent.Rebirth.class, BattleEvent.Resurrection.class, BattleEvent.RaiseDemons.class,
                 BattleEvent.BattleEnd.class
         },
@@ -114,6 +115,7 @@ import java.util.List;
                 @DiscriminatorMapping(value = "Poisoning", schema = BattleEvent.Poisoning.class),
                 @DiscriminatorMapping(value = "Diseasing", schema = BattleEvent.Diseasing.class),
                 @DiscriminatorMapping(value = "Aging", schema = BattleEvent.Aging.class),
+                @DiscriminatorMapping(value = "Bind", schema = BattleEvent.Bind.class),
                 @DiscriminatorMapping(value = "FireShield", schema = BattleEvent.FireShield.class),
                 @DiscriminatorMapping(value = "Rebirth", schema = BattleEvent.Rebirth.class),
                 @DiscriminatorMapping(value = "Resurrection", schema = BattleEvent.Resurrection.class),
@@ -456,6 +458,15 @@ public sealed interface BattleEvent {
             @Schema(description = "Slot des Auslösers") int actorSlot,
             @Schema(description = "Erkrankte Seite") Side target,
             @Schema(description = "Slot des Ziels") int targetSlot) implements BattleEvent {
+    }
+
+    @Schema(name = "Bind",
+            description = "Dendroiden fesseln das Ziel ihres Nahkampfs an seinen Platz, bis sie sich bewegen oder fallen.")
+    record Bind(
+            @Schema(description = "Seite der Dendroiden") Side actor,
+            @Schema(description = "Slot der Dendroiden") int actorSlot,
+            @Schema(description = "Seite des Gefesselten") Side target,
+            @Schema(description = "Slot des Gefesselten") int targetSlot) implements BattleEvent {
     }
 
     @Schema(name = "Aging",

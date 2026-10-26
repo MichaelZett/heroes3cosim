@@ -289,6 +289,7 @@ export const en: Dictionary = {
     cursing: '<actor>{{actor}}</actor> curses <target>{{target}}</target>.',
     poisoning: '<actor>{{actor}}</actor> poisons <target>{{target}}</target>.',
     diseasing: '<actor>{{actor}}</actor> diseases <target>{{target}}</target>.',
+    bind: '<actor>{{actor}}</actor> bind <target>{{target}}</target> in place.',
     aging: '<actor>{{actor}}</actor> ages <target>{{target}}</target> — half HP.',
     fireShield:
       '<shielded>{{shielded}}</shielded> reflects {{damage}} damage via fire shield onto <attacker>{{attacker}}</attacker>.',

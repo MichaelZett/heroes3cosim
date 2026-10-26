@@ -5,7 +5,10 @@ import static de.zettsystems.h3comsim.battle.domain.UnitSpecialityType.ATTACK;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpecialityType.DEFENSE;
 import static de.zettsystems.h3comsim.battle.domain.UnitSpecialityType.SPECIAL;
 
-// https://heroes.thelazy.net/index.php/Special_ability
+/**
+ * Die Fähigkeiten der Kreaturen (https://heroes.thelazy.net/index.php/Special_ability). Jede wird
+ * von der Engine ausgewertet; der Typ sagt, wann sie greift.
+ */
 public enum UnitSpeciality {
 
     NO_RETALIATION(DEFENSE),
@@ -100,6 +103,9 @@ public enum UnitSpeciality {
     MAGIC_RESISTANCE_AURA(SPECIAL),
     /** Ogre Magi (Manual S. 110): Bloodlust auf Verbündete, dreimal pro Kampf. */
     CASTS_BLOODLUST(SPECIAL),
+    /** Storm, Ice, Energy und Magma Elemental (heroes.thelazy.net): Protection from Air, Water,
+     *  Fire bzw. Earth auf Verbündete, Advanced mit Power 6, dreimal pro Kampf. */
+    CASTS_PROTECTION(SPECIAL),
     /** Master Genie (Manual S. 114): zufälliger nützlicher Zauber, dreimal pro Kampf. */
     CASTS_RANDOM_BENEFICIAL(SPECIAL),
     /** Unicorns (Manual S. 106): 20 % Chance, das Ziel des Angriffs zu blenden. */
@@ -113,12 +119,13 @@ public enum UnitSpeciality {
     /** Pegasi und Silver Pegasi (Manual S. 106): Zauber des gegnerischen Helden kosten 2 Mana mehr. */
     SPELL_COST_INCREASE(SPECIAL),
 
-    // Not yet evaluated by the engine — defined for unit catalog tagging only.
+    /** Angel und Arch Angel (Manual S. 96): heben die Moral der ganzen Armee (ArmyMorale). */
     GOOD_ARMY_MORALE(SPECIAL),
     /** Stone Golem (Manual S. 113): halber Schaden durch Zauber. */
     SPELL_DAMAGE_HALVED(DEFENSE),
     /** Iron Golem (Manual S. 113): ein Viertel des Zauberschadens. */
     SPELL_DAMAGE_QUARTERED(DEFENSE),
+    /** Cyclops und Cyclops King: schießen in einer Belagerung auf die Mauern (WallShots). */
     ATTACKS_WALLS(SPECIAL),
 
     // Multi-Stack-Fähigkeiten (greifen erst, wenn mehr als ein Gegner-Stack auf dem Feld steht).
@@ -135,7 +142,39 @@ public enum UnitSpeciality {
     SPLASH_SHOT(ATTACK),
     /** Lich: ranged-Hit erzeugt 7-Hex-AoE rund ums Ziel (Death Cloud). Friendly Fire
      *  inklusive, aber Untote sind immun — eine reine Necropolis-Armee trifft sich nicht. */
-    DEATH_CLOUD(ATTACK);
+    DEATH_CLOUD(ATTACK),
+    /** Hydra, Chaos Hydra, Psychic und Magic Elemental: der Nahkampf trifft alle benachbarten
+     *  Gegner (heroes.thelazy.net, „Attacks all adjacent enemies"). */
+    ATTACKS_ALL_ADJACENT(ATTACK),
+    /** Dendroid Guard und Soldier: ihr Angriff fesselt das Ziel an seinen Platz, bis die
+     *  Dendroiden sich bewegen oder fallen (heroes.thelazy.net, <em>Dendroid Guard</em>). */
+    BINDS(AFTER_ATTACK),
+    /** Wraith (Manual S. 102): zieht dem gegnerischen Helden je Runde 2 Mana ab, je Stack. */
+    MANA_DRAIN(SPECIAL),
+    /** Familiar (Manual S. 96): 20 % des Manas, das der gegnerische Held ausgibt, abgerundet,
+     *  fließen dem eigenen zu — einmal, egal wie viele Familiar-Stacks. */
+    MANA_CHANNEL(SPECIAL),
+    /** Pikeman und Halberdier: der Anlauf-Bonus von Cavalier und Champion wirkt gegen sie nicht
+     *  (heroes.thelazy.net, „Immune to jousting bonus"). */
+    JOUSTING_IMMUNE(DEFENSE),
+
+    // Hass-Paare (heroes.thelazy.net): Genie und Efreet, Titan und Black Dragon +50 %, Elementare gegen ihr Gegenelement
+    // +100 % — Hass-Marker am Angreifer, Volks-Marker am Ziel, ausgewertet in Stack.takeDamage.
+    GENIE_HATE(ATTACK),
+    GENIE_RACE(SPECIAL),
+    EFREET_HATE(ATTACK),
+    EFREET_RACE(SPECIAL),
+    AIR_HATE(ATTACK),
+    AIR_RACE(SPECIAL),
+    EARTH_HATE(ATTACK),
+    EARTH_RACE(SPECIAL),
+    FIRE_HATE(ATTACK),
+    FIRE_RACE(SPECIAL),
+    WATER_HATE(ATTACK),
+    WATER_RACE(SPECIAL),
+    /** Titan gegen Black Dragon (+50 %); umgekehrt gilt {@link #TITAN_HATE}. */
+    BLACK_DRAGON_HATE(ATTACK),
+    BLACK_DRAGON_RACE(SPECIAL);
 
     private final UnitSpecialityType unitSpecialityType;
 

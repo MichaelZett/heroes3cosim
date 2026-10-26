@@ -324,6 +324,13 @@ public class BattleSetup {
         mana.put(side, Math.max(0, manaOf(side) - amount));
     }
 
+    /** Mana dazu, ohne Obergrenze (Familiar); nur für eine Seite mit Helden. */
+    void gainMana(Side side, int amount) {
+        if (heroOf(side) != null && amount > 0) {
+            mana.put(side, manaOf(side) + amount);
+        }
+    }
+
     /**
      * Breite der Tactics-Zone dieser Seite in Hex-Spalten (Manual S. 42), 0 ohne
      * Aufstellungsphase. Höchstens eine Seite hat eine.

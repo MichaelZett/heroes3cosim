@@ -478,6 +478,17 @@ export function EventText({ event, names }: Readonly<EventTextProps>) {
           components={{ actor: sideSpan(event.actor), target: sideSpan(event.target) }}
         />
       );
+    case 'Bind':
+      return (
+        <Trans
+          i18nKey="events.bind"
+          values={{
+            actor: sideName(event.actor, event.actorSlot ?? 0, names),
+            target: sideName(event.target, event.targetSlot ?? 0, names),
+          }}
+          components={{ actor: sideSpan(event.actor), target: sideSpan(event.target) }}
+        />
+      );
     case 'FireShield':
       return (
         <Trans
