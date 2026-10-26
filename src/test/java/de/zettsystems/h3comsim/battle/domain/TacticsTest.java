@@ -56,6 +56,18 @@ class TacticsTest {
     }
 
     @Test
+    void with_five_columns_the_shooters_advance_too_so_the_first_shot_has_no_distance_penalty() {
+        Battlefield field = Battlefield.STANDARD;
+        Stack archers = new Stack(UnitCatalog.ARCHER, 10, new Hex(field.leftmostQ(5), 5), Side.ATTACKER, 0);
+        Stack enemy = new Stack(UnitCatalog.PIKEMAN, 10, new Hex(field.rightmostQ(5), 5), Side.DEFENDER, 0);
+
+        new BattleSetup(List.of(archers), List.of(enemy), field, withTactics(SkillLevel.ADVANCED), plain());
+
+        assertThat(archers.position()).isEqualTo(new Hex(field.leftmostQ(5) + 4, 5));
+        assertThat(archers.distanceTo(enemy)).isLessThanOrEqualTo(10);
+    }
+
+    @Test
     void expert_tactics_advances_no_deeper_than_five_columns_and_skips_obstacles() {
         Battlefield field = Battlefield.STANDARD.withObstacles(
                 Set.of(new Hex(Battlefield.STANDARD.rightmostQ(5) - 4, 5)));

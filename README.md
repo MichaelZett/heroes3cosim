@@ -241,7 +241,11 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Stufe als der Gegner, stellt er vor Kampfbeginn in den ersten 3/5/7
   Spalten auf (ein, zwei, drei Grade Vorsprung). Die Nahkämpfer rücken in
   ihrer Reihe an die vorderste freie Zelle vor, höchstens fünf Spalten
-  tief; die Schützen bleiben am Rand.
+  tief. Die Schützen rücken mit, wenn die Zone fünf Spalten erreicht —
+  dann trifft ihr erster Schuss ohne Distanzstrafe; bei drei Spalten
+  bleiben sie am Rand. Im Spiegel-Duell gewinnt die Tactics-Seite damit
+  0.555/0.588/0.555 (Basic/Advanced/Expert, je 1440 Kämpfe), mit Schützen
+  am Rand 0.555/0.528/0.530.
 - **Moral** (Manual S. 43) — jede Armee hat ein Rating, das sich aus ihrer
   Zusammenstellung ergibt: +1, wenn alle Kreaturen aus derselben Stadt
   stammen (außer Necropolis), −1 für Untote unter Lebenden, −1 je

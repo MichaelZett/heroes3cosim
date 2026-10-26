@@ -12,10 +12,15 @@ import java.util.List;
  *
  * <p>Die Aufstellung selbst ist eine Entscheidung, die das Spiel dem Spieler überlässt. Hier
  * rücken alle Nahkämpfer in ihrer Reihe an die vorderste freie Zelle der Zone vor, höchstens
- * {@value #MAX_USEFUL_COLUMNS} Spalten tief; die Schützen bleiben am Rand. Verworfene Varianten
- * (Spiegel-Duell, Win-Rate der Tactics-Seite bei Basic/Advanced/Expert): nur Bodentruppen
- * vorrücken 0.520/0.629/0.619; nur außer Reichweite gleich schneller Gegner 0.473/0.471/0.464 —
- * im Spiegel rückt dann nichts mehr vor, und wo doch, schadet es.
+ * {@value #MAX_USEFUL_COLUMNS} Spalten tief. Die Schützen rücken nur mit, wenn die Zone diese
+ * fünf Spalten erreicht: von dort liegt der gegnerische Rand höchstens zehn Felder entfernt, der
+ * erste Schuss trifft ohne Distanzstrafe. Gemessen mit dem umgebauten Strategic-Solver
+ * (Win-Rate der Tactics-Seite Basic/Advanced/Expert): Schützen am Rand 0.555/0.528/0.530,
+ * Schützen bei fünf Spalten mit vorn 0.555/0.588/0.555, Schützen immer mit vorn
+ * 0.482/0.588/0.555 — drei Spalten heben die Strafe nicht auf und stellen sie nur bloß.
+ * Verworfene Varianten: nur Bodentruppen vorrücken 0.520/0.629/0.619 und nur außer Reichweite
+ * gleich schneller Gegner 0.473/0.471/0.464 (beides mit dem alten Solver); nur Stacks mit Speed
+ * unter 7 vorrücken 0.461/0.474/0.478, Tiefe nach Speed (9 − Speed) 0.477/0.499/0.495.
  */
 public final class Tactics {
 
@@ -62,9 +67,10 @@ public final class Tactics {
         if (columns <= 0) {
             return;
         }
+        int depth = Math.min(columns, MAX_USEFUL_COLUMNS);
         for (Stack stack : stacks) {
-            if (stack.unit().attackType() != AttackType.LONG_RANGE) {
-                Hex target = targetFor(stack, side, Math.min(columns, MAX_USEFUL_COLUMNS), field, all);
+            if (stack.unit().attackType() != AttackType.LONG_RANGE || depth == MAX_USEFUL_COLUMNS) {
+                Hex target = targetFor(stack, side, depth, field, all);
                 if (target != null) {
                     stack.moveTo(target);
                 }
