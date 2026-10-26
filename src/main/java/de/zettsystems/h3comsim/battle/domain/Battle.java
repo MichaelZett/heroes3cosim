@@ -36,6 +36,7 @@ public final class Battle {
     private @Nullable BattleSetup currentSetup;
     /** Laufende Runde ab 0, für die Mana-Einteilung der Helden. */
     private int round;
+    private final List<Stack> joinedThisRound = new ArrayList<>();
     /** Dauer der Zauber, die Unicorns und Dragon Flies beim Angriff auslösen (heroes.thelazy.net). */
     private static final int PROC_ROUNDS = 3;
     private final AutoSolver autoSolver;
@@ -131,7 +132,7 @@ public final class Battle {
         siegeEnginesAct(setup);
         updateGate(setup);
         autoSolver.planRound(setup);
-        List<Stack> roundStacks = setup.aliveStacks();
+        List<Stack> roundStacks = new ArrayList<>(setup.aliveStacks());
         List<Stack> pending = new ArrayList<>(roundStacks);
         List<Stack> waiting = new ArrayList<>();
         Set<Side> heroesCast = EnumSet.noneOf(Side.class);
@@ -140,6 +141,7 @@ public final class Battle {
             if (activeStack.isAbleToAct() && setup.bothAlive()) {
                 order.acted(activeStack);
                 heroCasts(setup, activeStack, heroesCast);
+                joinRound(pending, roundStacks);
                 if (activeStack.isAbleToAct() && setup.bothAlive()) {
                     actWithMorale(activeStack, setup);
                 }
@@ -150,10 +152,14 @@ public final class Battle {
             }
             BattleLogger.logShortDelimiter();
         }
-        runLatePhase(waiting, setup, order, heroesCast);
+        runLatePhase(waiting, setup, order, heroesCast, roundStacks);
         warMachinesAct(setup);
         updateGate(setup);
         roundStacks.forEach(Stack::endTurn);
+        // Zauber auf Maschinen (Bless auf der Ballista) laufen ab wie auf Kreaturen.
+        for (Side side : Side.values()) {
+            setup.machinesOf(side).stream().filter(Stack::isAlive).forEach(Stack::endTurn);
+        }
     }
 
     /** Zu Rundenbeginn: jeder lebende Wraith-Stack zieht dem gegnerischen Helden 2 Mana ab. */
@@ -245,10 +251,24 @@ public final class Battle {
         return casters.isEmpty() ? null : casters.get(rng.nextInt(casters.size()));
     }
 
+    /** Frisch beschworene Stacks reihen sich in die laufende Runde ein. */
+    private void joinRound(List<Stack> pending, List<Stack> roundStacks) {
+        for (Stack joined : joinedThisRound) {
+            if (!pending.contains(joined)) {
+                pending.add(joined);
+            }
+            if (!roundStacks.contains(joined)) {
+                roundStacks.add(joined);
+            }
+        }
+        joinedThisRound.clear();
+    }
+
     /**
      * Summon Elementals (Manual S. 66 ff.): Power × 2/3/4 Elementare als neuer Stack am eigenen
      * Rand. Dieselbe Art erneut verstärkt den beschworenen Stack bzw. ruft ihn zurück, wenn er
-     * gefallen ist. Er handelt ab der nächsten Runde.
+     * gefallen ist. Ein neuer oder zurückgerufener Stack handelt noch in dieser Runde, wenn die
+     * Zugreihenfolge ihn erreicht — wie in VCMI, wo er mit dem Status „bereit“ ins Feld kommt.
      */
     private void summon(BattleSetup setup, Side side, Hero hero, HeroSpellcasting.Cast cast) {
         Unit unit = HeroSpellcasting.summonedUnit(cast.spell());
@@ -270,6 +290,7 @@ public final class Battle {
                 summoned.moveTo(hex);
                 summoned.riseAs(unit, count);
             }
+            joinedThisRound.add(summoned);
         }
         BattleLogger.logSpell(hero.name(), cast.spell(), summoned.getName());
         events.emit(new BattleEvent.Summon(side, cast.spell(), count, snapshot(summoned)));
@@ -493,8 +514,10 @@ public final class Battle {
      */
     private void ballistaShot(BattleSetup setup, Side side, @Nullable Hero hero, Stack target) {
         int heroAttack = hero == null ? 0 : hero.attack();
-        int base = rng.nextInt(2, 4) * (heroAttack + 1);
-        int attack = hero == null ? WarMachine.BALLISTA.attack() : hero.ballistaAttack();
+        Stack ballista = setup.working(side, WarMachine.BALLISTA);
+        int base = BallistaSpells.roll(ballista, rng) * (heroAttack + 1);
+        int attack = (hero == null ? WarMachine.BALLISTA.attack() : hero.ballistaAttack())
+                + BallistaSpells.attackBonus(ballista);
         int luck = setup.luckOf(side);
         boolean lucky = luck > 0 && rng.nextInt(1000) < ArmyMorale.triggerChancePerMille(luck);
         int chance = hero == null ? 0 : hero.artilleryDoubleDamagePercent();
@@ -544,13 +567,15 @@ public final class Battle {
      * dazu nichts — belegt ist dort nur die Phasen-Trennung selbst (S. 43); die Reihenfolge ist
      * H3-Spielverhalten. Die Gleichstandsregel gilt hier genauso.
      */
-    private void runLatePhase(List<Stack> waiting, BattleSetup setup, TurnOrder order, Set<Side> heroesCast) {
+    private void runLatePhase(List<Stack> waiting, BattleSetup setup, TurnOrder order, Set<Side> heroesCast,
+                              List<Stack> roundStacks) {
         List<Stack> pending = new ArrayList<>(waiting);
         while (!pending.isEmpty()) {
             Stack activeStack = order.next(pending, false);
             if (activeStack.isAbleToAct() && setup.bothAlive()) {
                 order.acted(activeStack);
                 heroCasts(setup, activeStack, heroesCast);
+                joinRound(pending, roundStacks);
                 if (activeStack.isAbleToAct() && setup.bothAlive()) {
                     actWithMorale(activeStack, setup);
                 }

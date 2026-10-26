@@ -44,7 +44,7 @@ class SummonAndMirrorTest {
     }
 
     @Test
-    void summoned_elementals_join_from_the_next_round_and_do_not_survive() {
+    void summoned_elementals_join_the_running_round_and_do_not_survive() {
         Stack pikemen = stack(UnitCatalog.PIKEMAN, 20, 0, 5, Side.ATTACKER, 0);
         Stack enemy = stack(UnitCatalog.GOBLIN, 30, 14, 5, Side.DEFENDER, 0);
         Hero summoner = mage(2, 10, EXPERT_WISDOM, Spell.SUMMON_EARTH_ELEMENTAL);
@@ -65,6 +65,30 @@ class SummonAndMirrorTest {
         if (summons.size() > 1) {
             assertThat(summons.get(1).stack().slot()).as("dieselbe Art verstärkt denselben Stack").isEqualTo(1);
         }
+        // Die Elementare (Speed 4) ziehen noch vor dem zweiten Zug der Pikeniere — in derselben Runde.
+        List<BattleEvent> all = collector.events();
+        int summoned = all.indexOf(summons.getFirst());
+        List<Integer> pikemenTurns = new java.util.ArrayList<>();
+        int elementalTurn = -1;
+        for (int i = summoned + 1; i < all.size(); i++) {
+            Integer slot = attackerActor(all.get(i));
+            if (slot != null && slot == 0) {
+                pikemenTurns.add(i);
+            } else if (slot != null && slot == 1 && elementalTurn < 0) {
+                elementalTurn = i;
+            }
+        }
+        assertThat(elementalTurn).isPositive().isLessThan(pikemenTurns.get(1));
+    }
+
+    private static Integer attackerActor(BattleEvent e) {
+        return switch (e) {
+            case BattleEvent.Move m when m.actor() == Side.ATTACKER -> m.actorSlot();
+            case BattleEvent.Wait w when w.actor() == Side.ATTACKER -> w.actorSlot();
+            case BattleEvent.Defend d when d.actor() == Side.ATTACKER -> d.actorSlot();
+            case BattleEvent.Melee m when m.actor() == Side.ATTACKER -> m.actorSlot();
+            default -> null;
+        };
     }
 
     @Test
