@@ -98,6 +98,8 @@ export type BattleEvent =
       warMachineStacks?: StackSnapshot[];
       /** Die Befestigung bei einer Belagerung. */
       siege?: SiegeSnapshot | null;
+      terrain?: Terrain | null;
+      magicTerrain?: MagicTerrain | null;
     }
   | {
       type: 'CatapultShot';
@@ -445,6 +447,20 @@ export type WarMachine = 'BALLISTA' | 'AMMO_CART' | 'FIRST_AID_TENT' | 'CATAPULT
 
 export type Fortification = 'FORT' | 'CITADEL' | 'CASTLE';
 
+export type Terrain =
+  'DIRT' | 'SAND' | 'GRASS' | 'SNOW' | 'SWAMP' | 'ROUGH' | 'SUBTERRANEAN' | 'LAVA';
+
+export type MagicTerrain =
+  | 'MAGIC_PLAINS'
+  | 'CURSED_GROUND'
+  | 'ROCKLANDS'
+  | 'FIERY_FIELDS'
+  | 'LUCID_POOLS'
+  | 'MAGIC_CLOUDS'
+  | 'HOLY_GROUND'
+  | 'EVIL_FOG'
+  | 'CLOVER_FIELD';
+
 /** Zustand der Zugbrücke. */
 export type Gate = 'CLOSED' | 'OPEN' | 'BLOCKED' | 'DESTROYED';
 
@@ -567,6 +583,10 @@ export interface ArmyBattleRequest {
   fortification?: Fortification | null;
   /** Stadt des Verteidigers; null = Fraktion seines Helden, ohne Helden Hauptfraktion der Garnison. */
   town?: Faction | null;
+  /** Grundgelände; null = Feld ohne Gelände (keine Heimatboni, zufällige Felsen). */
+  terrain?: Terrain | null;
+  /** Magisches Gelände; nicht in einer Belagerung. */
+  magicTerrain?: MagicTerrain | null;
   /** Zauberkosten nach Shadow of Death: beherrschte Schule macht Zauber billiger. */
   sodSpellCosts?: boolean | null;
 }

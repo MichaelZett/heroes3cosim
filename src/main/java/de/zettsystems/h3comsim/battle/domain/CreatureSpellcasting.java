@@ -73,6 +73,16 @@ final class CreatureSpellcasting {
                 || unit.hasSpeciality(UnitSpeciality.CASTS_PROTECTION) ? CASTS_PER_BATTLE : 0;
     }
 
+    /** Auf Cursed Ground zaubern Kreaturen gar nicht (heroes.thelazy.net, <em>Terrain</em>). */
+    static boolean blocked(BattleSetup setup) {
+        return setup.magicTerrain() == MagicTerrain.CURSED_GROUND;
+    }
+
+    /** Die Stufe eines Kreaturzaubers: auf Magic Plains Expert, sonst die eigene. */
+    static SkillLevel level(SkillLevel own, BattleSetup setup) {
+        return setup.magicTerrain() == MagicTerrain.MAGIC_PLAINS ? SkillLevel.EXPERT : own;
+    }
+
     /** Der Zauber, den ein Faerie-Dragon-Stack in diesem Zug vorbereitet. */
     static Spell faerieSpell(RandomGenerator rng) {
         return draw(FAERIE_WEIGHTS, rng);
@@ -171,7 +181,7 @@ final class CreatureSpellcasting {
 
     /** Solver-Entscheidung: zaubern statt handeln? {@code null} heißt nein. */
     static @Nullable Action decide(Stack active, Stack opponent, @Nullable BattleSetup setup) {
-        if (setup == null || active.spellCastsLeft() == 0 || canAttackNow(active, opponent)) {
+        if (setup == null || active.spellCastsLeft() == 0 || blocked(setup) || canAttackNow(active, opponent)) {
             return null;
         }
         Spell fixed = fixedSpell(active.unit());

@@ -2,6 +2,8 @@ package de.zettsystems.h3comsim.armybattle.values;
 
 import de.zettsystems.h3comsim.battle.domain.Faction;
 import de.zettsystems.h3comsim.battle.domain.Fortification;
+import de.zettsystems.h3comsim.battle.domain.MagicTerrain;
+import de.zettsystems.h3comsim.battle.domain.Terrain;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -27,6 +29,14 @@ public record ArmyBattleRequest(
                 example = "RAMPART", nullable = true)
         @Nullable Faction town,
 
+        @Schema(description = "Grundgelände: Kreaturen auf ihrem Heimatgelände bekommen +1 Attack, Defense und Speed, die Hindernisse kommen aus dem Satz des Geländes. Bei null ein Feld ohne Gelände: keine Heimatboni, zufällig verteilte Felsen. Eine Belagerung findet immer auf dem Heimatgelände der Stadt statt.",
+                example = "GRASS", nullable = true)
+        @Nullable Terrain terrain,
+
+        @Schema(description = "Magisches Gelände über dem Grundgelände (Magic Plains, Cursed Ground, Holy Ground, …), sonst null. Nicht in einer Belagerung.",
+                example = "MAGIC_PLAINS", nullable = true)
+        @Nullable MagicTerrain magicTerrain,
+
         @Schema(description = "Zauberkosten nach Shadow of Death: beherrscht ein Held die Schule eines Zaubers (gleich auf welcher Stufe), kostet der Zauber weniger, etwa Haste 5 statt 6. Bei null oder false gelten die Kosten des RoE-Manuals.",
                 example = "false", nullable = true)
         @Nullable Boolean sodSpellCosts) {
@@ -39,6 +49,6 @@ public record ArmyBattleRequest(
     /** Mit oder ohne Belagerung, Zauberkosten nach RoE. */
     public ArmyBattleRequest(ArmySpec attacker, ArmySpec defender, @Nullable Long seed,
                              @Nullable Fortification fortification) {
-        this(attacker, defender, seed, fortification, null, null);
+        this(attacker, defender, seed, fortification, null, null, null, null);
     }
 }

@@ -96,7 +96,7 @@ final class HeroSpellcasting {
         double bestValue = 0;
         for (Spell spell : hero.spells()) {
             int cost = cost(spell, side, setup);
-            if (cost > mana) {
+            if (cost > mana || !castable(spell, setup)) {
                 continue;
             }
             int casts = Math.min(roundsLeft, mana / cost);
@@ -114,9 +114,19 @@ final class HeroSpellcasting {
         return best;
     }
 
+    /** Stufe, mit der der Held hier zaubert: seine eigene, auf Magic Plains und den Schul-Geländen Expert. */
+    static SkillLevel castLevel(Hero hero, Spell spell, BattleSetup setup) {
+        return MagicTerrain.heroLevel(setup.magicTerrain(), spell, hero.castLevel(spell));
+    }
+
+    /** Auf Cursed Ground wirken Helden nur Zauber der Stufe 1 (heroes.thelazy.net, SoD). */
+    static boolean castable(Spell spell, BattleSetup setup) {
+        return setup.magicTerrain() != MagicTerrain.CURSED_GROUND || spell.level() <= 1;
+    }
+
     /** Teleport nur für den Stack am Zug, und nur, wenn er dabei neben einen Gegner kommt. */
     private static List<Cast> teleportCandidates(Hero hero, Side side, @Nullable Stack active, BattleSetup setup) {
-        SkillLevel level = hero.castLevel(Spell.TELEPORT);
+        SkillLevel level = castLevel(hero, Spell.TELEPORT, setup);
         if (active == null || active.side() != side || Teleport.destination(active, level, setup) == null) {
             return List.of();
         }
@@ -154,7 +164,7 @@ final class HeroSpellcasting {
 
     /** Alle sinnvollen Ziele eines Zaubers. */
     static List<Cast> candidates(Hero hero, Side side, Spell spell, BattleSetup setup) {
-        SkillLevel level = hero.castLevel(spell);
+        SkillLevel level = castLevel(hero, spell, setup);
         List<Stack> own = alive(setup.stacksOf(side));
         List<Stack> enemies = alive(setup.stacksOf(other(side)));
         List<Cast> casts = new ArrayList<>();
@@ -558,10 +568,11 @@ final class HeroSpellcasting {
         int mana = setup.manaOf(enemy);
         double worst = 0;
         for (Spell spell : foe.spells()) {
-            if (spell.beneficial() || !which.test(spell) || cost(spell, enemy, setup) > mana) {
+            if (spell.beneficial() || !which.test(spell) || cost(spell, enemy, setup) > mana
+                    || !castable(spell, setup)) {
                 continue;
             }
-            SkillLevel level = foe.castLevel(spell);
+            SkillLevel level = castLevel(foe, spell, setup);
             double harm = switch (spell.kind()) {
                 case DAMAGE -> damageValue(foe, spell, SpellDamage.base(spell, level, foe.spellPower()), s);
                 case EFFECT -> Math.max(0, gainPercent(spell, level,

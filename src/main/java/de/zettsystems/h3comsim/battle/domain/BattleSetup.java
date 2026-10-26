@@ -43,6 +43,8 @@ public class BattleSetup {
     /** Die Maschinen als Stacks auf dem Feld; nicht Teil der Armeelisten. */
     private final Map<Side, Map<WarMachine, Stack>> machineStacks = new EnumMap<>(Side.class);
     private boolean sodSpellCosts;
+    private @Nullable Terrain terrain;
+    private @Nullable MagicTerrain magicTerrain;
     private final Map<Side, Integer> mana = new EnumMap<>(Side.class);
     /** Je Seite die eine Elementar-Art, die beschworen werden darf, sobald die erste gerufen ist. */
     private final Map<Side, Unit> summonedKind = new EnumMap<>(Side.class);
@@ -215,6 +217,28 @@ public class BattleSetup {
 
     public boolean sodSpellCosts() {
         return sodSpellCosts;
+    }
+
+    /**
+     * Grund- und magisches Gelände; beides {@code null} ist ein Feld ohne Gelände (keine
+     * Heimatboni). Gilt für alle Stacks und Maschinen, auch später beschworene.
+     */
+    public BattleSetup ground(@Nullable Terrain terrain, @Nullable MagicTerrain magic) {
+        this.terrain = terrain;
+        this.magicTerrain = magic;
+        for (Side side : Side.values()) {
+            side(side).forEach(s -> s.assignGround(terrain, magic));
+            machinesOf(side).forEach(s -> s.assignGround(terrain, magic));
+        }
+        return this;
+    }
+
+    public @Nullable Terrain terrain() {
+        return terrain;
+    }
+
+    public @Nullable MagicTerrain magicTerrain() {
+        return magicTerrain;
     }
 
     /** Die Maschinen dieser Seite als Stacks auf dem Feld, auch die zerstörten. */
@@ -416,6 +440,7 @@ public class BattleSetup {
         stack.assignCommander(heroOf(stack.side()));
         stack.assignArmyMorale(moraleOf(stack.side()));
         stack.assignArmyLuck(luckOf(stack.side()));
+        stack.assignGround(terrain, magicTerrain);
         stack.markSummoned();
         own.add(stack);
         summonedKind.put(stack.side(), stack.unit());

@@ -74,7 +74,7 @@ public final class Battle {
                 heroName(setup.attackerHero()), heroName(setup.defenderHero()),
                 setup.luckOf(Side.ATTACKER), setup.luckOf(Side.DEFENDER),
                 List.copyOf(setup.warMachinesOf(Side.ATTACKER)), List.copyOf(setup.warMachinesOf(Side.DEFENDER)),
-                machineSnapshots(setup), siegeSnapshot(setup.siege())));
+                machineSnapshots(setup), siegeSnapshot(setup.siege()), setup.terrain(), setup.magicTerrain()));
         for (Side side : Side.values()) {
             if (setup.tacticsOf(side) > 0) {
                 events.emit(new BattleEvent.TacticsPhase(side, setup.tacticsOf(side)));
@@ -608,7 +608,8 @@ public final class Battle {
      * @return {@code true}, wenn der Stack seine Aktion verliert oder der Kampf vorbei ist
      */
     private boolean losesTurnAtStart(Stack activeStack, BattleSetup setup) {
-        if (activeStack.hasSpeciality(UnitSpeciality.ENCHANTER_SPELLS) && CreatureSpellcasting.enchanterCastsIn(round)) {
+        if (activeStack.hasSpeciality(UnitSpeciality.ENCHANTER_SPELLS) && CreatureSpellcasting.enchanterCastsIn(round)
+                && !CreatureSpellcasting.blocked(setup)) {
             enchant(activeStack, setup);
             if (!setup.bothAlive()) {
                 return true;
@@ -753,7 +754,7 @@ public final class Battle {
             emitDefend(caster);
             return;
         }
-        applyCreatureSpell(caster, new CreatureSpellcasting.Cast(spell, target));
+        applyCreatureSpell(caster, new CreatureSpellcasting.Cast(spell, target), setup);
     }
 
     /** Master Genie: Zauber und Ziel per Zufall unter den sinnvollen (CreatureSpellcasting). */
@@ -765,7 +766,7 @@ public final class Battle {
             emitDefend(caster);
             return;
         }
-        applyCreatureSpell(caster, cast);
+        applyCreatureSpell(caster, cast, setup);
     }
 
     /**
@@ -773,7 +774,8 @@ public final class Battle {
      * vorbereiteten immun, handeln sie normal, also im Nahkampf (heroes.thelazy.net).
      */
     private boolean faerieCasts(Stack active, Stack opponent, BattleSetup setup) {
-        if (!active.hasSpeciality(UnitSpeciality.FAERIE_SPELLS) || active.spellCastsLeft() == 0) {
+        if (!active.hasSpeciality(UnitSpeciality.FAERIE_SPELLS) || active.spellCastsLeft() == 0
+                || CreatureSpellcasting.blocked(setup)) {
             return false;
         }
         Spell spell = CreatureSpellcasting.faerieSpell(rng);
@@ -792,7 +794,7 @@ public final class Battle {
     private void faerieCast(Stack caster, Spell spell, Stack target, BattleSetup setup) {
         caster.useSpellCast();
         int power = CreatureSpellcasting.FAERIE_POWER_PER_DRAGON * caster.getCount();
-        int base = SpellDamage.base(spell, CreatureSpellcasting.FAERIE_LEVEL, power);
+        int base = SpellDamage.base(spell, CreatureSpellcasting.level(CreatureSpellcasting.FAERIE_LEVEL, setup), power);
         List<Stack> affected = switch (spell) {
             case FIREBALL, FROST_RING, INFERNO, METEOR_SHOWER -> HeroSpellcasting.inArea(spell,
                     CreatureSpellcasting.areaCenter(caster, spell, target, setup), setup);
@@ -849,7 +851,7 @@ public final class Battle {
         }
     }
 
-    private void applyCreatureSpell(Stack caster, CreatureSpellcasting.Cast cast) {
+    private void applyCreatureSpell(Stack caster, CreatureSpellcasting.Cast cast, BattleSetup setup) {
         Stack target = cast.target();
         Spell spell = cast.spell();
         caster.useSpellCast();
@@ -859,7 +861,7 @@ public final class Battle {
             target.healTop(CreatureSpellcasting.SPELL_POWER * 5 + 20);
         } else {
             int rounds = spell == Spell.FRENZY ? Integer.MAX_VALUE : CreatureSpellcasting.SPELL_POWER;
-            target.applySpell(spell, CreatureSpellcasting.CAST_LEVEL, rounds);
+            target.applySpell(spell, CreatureSpellcasting.level(CreatureSpellcasting.CAST_LEVEL, setup), rounds);
         }
         BattleLogger.logSpell(caster.getName(), spell, target.getName());
         events.emit(new BattleEvent.SpellCast(caster.side(), caster.slot(), spell,

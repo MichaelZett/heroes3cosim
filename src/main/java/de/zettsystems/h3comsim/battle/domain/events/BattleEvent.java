@@ -2,9 +2,11 @@ package de.zettsystems.h3comsim.battle.domain.events;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import de.zettsystems.h3comsim.battle.domain.MagicTerrain;
 import de.zettsystems.h3comsim.battle.domain.Siege;
 import de.zettsystems.h3comsim.battle.domain.SkillLevel;
 import de.zettsystems.h3comsim.battle.domain.Spell;
+import de.zettsystems.h3comsim.battle.domain.Terrain;
 import de.zettsystems.h3comsim.battle.domain.WallPart;
 import de.zettsystems.h3comsim.battle.domain.WarMachine;
 import io.swagger.v3.oas.annotations.media.DiscriminatorMapping;
@@ -147,7 +149,9 @@ public sealed interface BattleEvent {
             @Schema(description = "Kriegsmaschinen des Angreifers") List<WarMachine> attackerWarMachines,
             @Schema(description = "Kriegsmaschinen des Verteidigers") List<WarMachine> defenderWarMachines,
             @Schema(description = "Die Kriegsmaschinen beider Seiten auf dem Feld, als Stacks ab Slot 20 (Ballista 20, Ammo Cart 21, First Aid Tent 22). Sie lassen sich angreifen; Treffer auf sie kommen als Melee- oder Shoot-Events.") List<StackSnapshot> warMachineStacks,
-            @Schema(description = "Die Befestigung bei einer Belagerung, sonst null.", nullable = true) @Nullable SiegeSnapshot siege) implements BattleEvent {
+            @Schema(description = "Die Befestigung bei einer Belagerung, sonst null.", nullable = true) @Nullable SiegeSnapshot siege,
+            @Schema(description = "Grundgelände, null für ein Feld ohne Gelände.", nullable = true) @Nullable Terrain terrain,
+            @Schema(description = "Magisches Gelände, sonst null.", nullable = true) @Nullable MagicTerrain magicTerrain) implements BattleEvent {
         public BattleStart {
             obstacles = List.copyOf(obstacles);
             stacks = List.copyOf(stacks);

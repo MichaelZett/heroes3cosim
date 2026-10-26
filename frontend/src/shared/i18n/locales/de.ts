@@ -88,6 +88,28 @@ export const de = {
     FIRST_AID_TENT: 'Sanitätszelt',
     CATAPULT: 'Katapult',
   },
+  terrain: {
+    DIRT: 'Erde',
+    SAND: 'Sand',
+    GRASS: 'Gras',
+    SNOW: 'Schnee',
+    SWAMP: 'Sumpf',
+    ROUGH: 'Ödland',
+    SUBTERRANEAN: 'Untergrund',
+    LAVA: 'Lava',
+  },
+  magicTerrain: {
+    MAGIC_PLAINS: 'Magic Plains (alle Zauber Expert)',
+    CURSED_GROUND:
+      'Cursed Ground (nur Zauber der Stufe 1, keine Heimatboni, keine positive Moral, kein Glück)',
+    ROCKLANDS: 'Rocklands (Erdmagie Expert)',
+    FIERY_FIELDS: 'Fiery Fields (Feuermagie Expert)',
+    LUCID_POOLS: 'Lucid Pools (Wassermagie Expert)',
+    MAGIC_CLOUDS: 'Magic Clouds (Luftmagie Expert)',
+    HOLY_GROUND: 'Holy Ground (gut +1, böse −1 Moral)',
+    EVIL_FOG: 'Evil Fog (böse +1, gut −1 Moral)',
+    CLOVER_FIELD: 'Clover Field (Stronghold, Fortress, Conflux +2 Glück)',
+  },
   fortification: {
     FORT: 'Fort',
     CITADEL: 'Citadel',
@@ -211,6 +233,7 @@ export const de = {
   events: {
     battleStart:
       'Kampf beginnt: <actor>{{attacker}}</actor> ({{attackerCount}}×) gegen <target>{{defender}}</target> ({{defenderCount}}×).',
+    battleStartTerrain: 'Gelände: {{terrain}}.',
     battleStartHeroes:
       'Helden: <actor>{{attackerHero}}</actor> gegen <target>{{defenderHero}}</target>.',
     battleStartLuck:
@@ -323,6 +346,13 @@ export const de = {
     town: 'Stadt',
     townHint: 'Bestimmt Graben und Turmschaden.',
     townDefault: '— Stadt des Helden, sonst Hauptfraktion der Garnison —',
+    terrainTitle: 'Gelände',
+    terrainHint:
+      'Kreaturen auf ihrem Heimatgelände bekommen +1 Angriff, Verteidigung und Speed; die Hindernisse kommen aus dem Satz des Geländes. Eine Belagerung findet immer auf dem Heimatgelände der Stadt statt.',
+    terrainNone: '— ohne Gelände (keine Heimatboni, zufällige Felsen) —',
+    magicTerrain: 'Magisches Gelände',
+    magicTerrainNone: '— kein magisches Gelände —',
+    terrainSiege: 'Bei einer Belagerung gilt das Heimatgelände der Stadt.',
     rulesTitle: 'Regeln',
     sodSpellCosts: 'Zauberkosten nach Shadow of Death',
     sodSpellCostsHint:
