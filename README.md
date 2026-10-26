@@ -49,11 +49,13 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   liegt hinter dem Kopf, zum eigenen Rand hin. Nachbarschaft, Distanz,
   Splash und Flächenzauber rechnen mit beiden Feldern; Landefelder und
   am Boden jeder Schritt des Wegs brauchen Platz für beide, am Rand rückt
-  die Kreatur ein Feld vor. In
-  der Faction-Matrix mit dem Strategic-Solver verschiebt das vor allem
-  Stronghold (0.32 → 0.64), Rampart (0.35 → 0.15) und Dungeon
-  (0.71 → 0.54); mit dem Greedy-Solver ändert sich keine Fraktion um mehr
-  als 0.05 (80 Kämpfe je Paarung).
+  die Kreatur ein Feld vor. Mit
+  dem Greedy-Solver ändert das keine Fraktion in der Faction-Matrix um
+  mehr als 0.05, mit dem Strategic-Solver um höchstens 0.06 (80 Kämpfe je
+  Paarung). Der alte Strategic-Solver sprang hier um bis zu 0.32
+  (Stronghold 0.32 → 0.64, Rampart 0.35 → 0.15); das kam von Tank-Pattern
+  und Focus-Fire, die mit zweifeldrigen Kreaturen Schaden anrichteten
+  (siehe unten).
 - **Helden** — alle 144 Helden aus RoE und Armageddon's Blade (18
   Klassen, je Fraktion 16) mit ihren Startfertigkeiten; die Primärwerte
   hängen an der Klasse. Im Army-Battle führt jede Armee einen Helden:
@@ -295,21 +297,23 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   **Taktische Aufstellung statt Slot-Direct**: `SpawnLayout`
   positioniert Schützen nach `unit.health()` aufsteigend auf die
   äußersten Reihen (zerbrechlichster Schütze in die Ecke — weniger
-  Adjazenz-Hexen + durch Tank-Wall vollständig abdeckbar), Melees
+  Adjazenz-Hexen, also weniger Angriffsfläche), Melees
   nach Speed absteigend von der Mitte nach außen (schnellster
   zentriert für maximale Charge-Reichweite). Der UI-Slot bestimmt
   nur die Anzeige-Reihenfolge im Editor.
 - **Strategischer Solver** (`StrategicAutoSolver`) für Army-Battles:
-  Pro Runde wird ein `RoundPlan` mit `TeamStance` (RANGED_DOMINANT /
-  MELEE_DOMINANT / BALANCED), Focus-Fire-Target (gewichtet nach
-  Schaden × Count plus Special-Boni) und Schützen-Schutz berechnet.
-  Drei Heuristiken übereinander: Tank-Pattern für eigene Schützen
-  (greift auch bei BALANCED-Spiegel-Setups, wenn ein eigener Schütze
-  in einer Rand-Reihe sitzt — 1–2 Tanks decken die 2–3 Adjazenz-Hexen
-  vor dem Eck-Schützen ab), AoE-aware Target-Pick
-  (Magog/Lich/Dragons), Focus-Fire über alle eigenen Stacks.
-  Single-Battle und Matrix nutzen weiterhin den egoistischen
-  `GreedyAutoSolver`.
+  Pro Runde wird ein `RoundPlan` mit einem Focus-Fire-Ziel je Seite
+  berechnet (gewichtet nach Schaden × Count plus Special-Boni). In der
+  Ziel-Wahl gehen vor: Schützen mit einem Gegner daneben schlagen den
+  Nachbarn, Flieger greifen ungedeckte Schützen an, AoE-Schützen und
+  Feuer-Atem suchen den besten Netto-Treffer (mit Veto gegen Eigentore),
+  dann das Focus-Ziel, für Nahkämpfer nur, wenn sie es diese Runde
+  erreichen; sonst entscheidet der `GreedyAutoSolver`, dessen Bewegung,
+  Warten und Landefeld-Wahl der Strategic-Solver übernimmt. Ein früheres
+  Tank-Pattern (Nahkämpfer decken die eigenen Schützen) verlor im direkten
+  Duell gegen die Fassung ohne (0.469 bei 6480 Kämpfen) und ist entfallen.
+  Gegen Greedy gewinnt der Strategic-Solver 0.580 (vorher 0.397).
+  Single-Battle nutzt den `GreedyAutoSolver`, die Faction-Matrix beide.
 - **Replay-UI** — React 19 + Vite + Tailwind. Drei Modi über den
   ModeSwitcher: Single-Battle (Truppenkonfig + Hex-Replay mit
   Step/Pause/Speed-Slider + Rückspiel mit getauschten Seiten),
@@ -384,8 +388,8 @@ Feature-first nach Konvention `<fachlich>.<technisch>` mit
   `Battlefield`, `PathFinder`, `ObstacleGenerator`, `BattleSetup`
   mit `List<Stack>` pro Seite, `Battle.simulate(...)` als
   Orchestrator, `AutoSolver`-Interface plus zwei Implementierungen
-  (`GreedyAutoSolver`, `StrategicAutoSolver` mit `RoundPlan` und
-  `TeamStance`). Event-Records unter `battle.domain.events`.
+  (`GreedyAutoSolver`, `StrategicAutoSolver` mit `RoundPlan`).
+  Event-Records unter `battle.domain.events`.
 - **`singlebattle`** — Ausprägung „ein Stack gegen einen Stack".
   `BattleSimulationService` + `BattleController`
   (`POST /api/battles/simulate`).
@@ -469,14 +473,11 @@ zu lesen, nicht als universelle H3-Tier-Liste.
 
 ## Was als nächstes kommt
 
-- **Strategischer Solver — Feintuning**: nach Einführung der
-  taktischen Aufstellung und Stance-unabhängigen Tank-Wall (Snapshot
-  unter `build/reports/spawn-layout-comparison.md`) ist Tower zwar
-  von 0.95 auf 0.89 Ø-Win-Rate zurück, dominiert aber weiter; Fortress
-  bleibt am unteren Ende. Offene Feinheiten siehe
-  Backlog: Sticky-Target für Multi-Stack-Schützen, Anti-IMPACT_DAMAGE-
-  Defense, und Replay-Inspection einzelner Flip-Cells (z.B. CON vs
-  NEC) zur Trennung Heuristik-Effekt vs. Faction-Balance.
+- **Strategischer Solver — Feintuning**: Fortress und Inferno bleiben am
+  unteren Ende, Conflux dominiert. Offen sind Sticky-Target für
+  Multi-Stack-Schützen, Anti-IMPACT_DAMAGE-Defense und eine Aufstellung,
+  die ohne Tank-Pattern auskommt (`SpawnLayout` setzt Schützen noch in
+  die Ecken, damit Tanks sie decken können).
 - **Friendly-Fire-Awareness**. Fire Breath, Magog-Fireball und Death
   Cloud treffen beide Seiten, die Three-Headed Attack des Cerberus nur
   Gegner. Die Ziel-Wahl der AoE-Schützen rechnet

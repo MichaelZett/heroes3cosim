@@ -38,7 +38,6 @@ public final class GreedyAutoSolver implements AutoSolver {
     private @Nullable BattleSetup currentSetup;
 
     private final boolean tacticalWait;
-    private final boolean avoidExposedCharges;
 
     public GreedyAutoSolver() {
         this(true);
@@ -52,21 +51,7 @@ public final class GreedyAutoSolver implements AutoSolver {
      *                     ist ein Solver-Vorteil per Konstruktion unsichtbar.
      */
     public GreedyAutoSolver(boolean tacticalWait) {
-        this(tacticalWait, true);
-    }
-
-    /**
-     * @param avoidExposedCharges ob ein Anlauf, der allein in die gegnerische Armee führen würde,
-     *                            per Wait verschoben wird ({@link #chargeOrWait}). Der
-     *                            {@link StrategicAutoSolver} schaltet das ab: Im Duell gewann
-     *                            Greedy damit 0.585 gegen sich selbst ohne (+16.9 Sigma) und
-     *                            mit dem Ziel in der Schätzung noch einmal 0.562 (+12.3 Sigma);
-     *                            Strategic verlor in beiden Fassungen leicht (0.490 / 0.493) —
-     *                            das Warten stört dort die geplanten Fokus-Angriffe.
-     */
-    GreedyAutoSolver(boolean tacticalWait, boolean avoidExposedCharges) {
         this.tacticalWait = tacticalWait;
-        this.avoidExposedCharges = avoidExposedCharges;
     }
 
     @Override
@@ -420,8 +405,8 @@ public final class GreedyAutoSolver implements AutoSolver {
         // Multi-Stack: Kite-Heuristik ist nicht sinnvoll, weil sie nur gegen den
         // pickTarget-Threat bewertet und andere lebende Gegner ignoriert (Kite-Position
         // könnte direkt in deren Reichweite landen). Im Multi-Stack-Kontext setzen wir
-        // statt Kiten auf Tank-Wall + Defend (siehe Strategic-Solver). Hier: direkt
-        // schießen — der gegnerische Stack-Cluster macht 1-Target-Kite ohnehin sinnlos.
+        // statt Kiten auf direktes Schießen — der gegnerische Stack-Cluster macht
+        // 1-Target-Kite ohnehin sinnlos.
         if (hasMultipleLivingEnemies(active)) {
             return new Action.Shoot(opponent);
         }
@@ -463,7 +448,7 @@ public final class GreedyAutoSolver implements AutoSolver {
      * {@link #waitOr}.
      */
     private Action chargeOrWait(Stack active, Stack target, Hex landing) {
-        if (avoidExposedCharges && tacticalWait && !active.hasWaitedThisTurn() && active.getSpeed() > 0
+        if (tacticalWait && !active.hasWaitedThisTurn() && active.getSpeed() > 0
                 && isExposedCharge(active, landing)) {
             return new Action.Wait();
         }

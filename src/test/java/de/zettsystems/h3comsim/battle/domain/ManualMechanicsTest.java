@@ -241,44 +241,6 @@ class ManualMechanicsTest {
     }
 
     @Test
-    void tank_pattern_skips_high_tier_attackers() {
-        // Tank-Duty greift heute für jeden Melee auf RANGED_DOMINANT-Seite.
-        // Mit isTankCandidate-Filter sollen T7+ und Stacks mit aggressiven Specials
-        // (FIRE_BREATH) NICHT als Tank abgezogen werden, sondern angreifen.
-        // Linke Randzellen der Reihen 0 und 2: (3,0) und (2,2).
-        Stack beholder = new Stack(UnitCatalog.BEHOLDER, 5, new Hex(3, 0), Side.ATTACKER, 0);
-        Stack troglodyte = new Stack(UnitCatalog.TROGLODYTE, 14, new Hex(2, 2),
-                Side.ATTACKER, 1);
-        Stack blackDragon = new Stack(UnitCatalog.BLACK_DRAGON, 1, new Hex(0, 5),
-                Side.ATTACKER, 2);
-        Stack threat = new Stack(UnitCatalog.PIKEMAN, 14, new Hex(10, 5),
-                Side.DEFENDER, 0);
-        BattleSetup setup = new BattleSetup(
-                List.of(beholder, troglodyte, blackDragon), List.of(threat),
-                Battlefield.STANDARD);
-
-        StrategicAutoSolver solver = new StrategicAutoSolver();
-        solver.planRound(setup);
-        // Troglodyte (T1, tank-candidate): bekommt Tank-Position adjacent zum Beholder.
-        Action troglodyteAction = solver.decide(troglodyte, threat, Battlefield.STANDARD);
-        assertThat(troglodyteAction).isInstanceOf(Action.Move.class);
-        Hex troglodyteDest = ((Action.Move) troglodyteAction).destination();
-        assertThat(troglodyteDest.distanceTo(beholder.position())).isEqualTo(1);
-
-        // Black Dragon (T7, FIRE_BREATH): kein Tank, soll chargen → MoveAndMelee/Move
-        // Richtung threat, nicht Richtung Beholder.
-        Action dragonAction = solver.decide(blackDragon, threat, Battlefield.STANDARD);
-        Hex dragonDest = switch (dragonAction) {
-            case Action.Move m -> m.destination();
-            case Action.MoveAndMelee mm -> mm.destination();
-            default -> throw new AssertionError("expected Move/MoveAndMelee, got " + dragonAction);
-        };
-        // Distance zu threat von Dragon-Position aus geringer als von Start aus.
-        assertThat(dragonDest.distanceTo(threat.position()))
-                .isLessThan(blackDragon.position().distanceTo(threat.position()));
-    }
-
-    @Test
     void devil_teleports_beyond_speed_to_reach_distant_target() {
         // Manual S. 99: Devils können zu jedem Hex auf dem Battlefield teleportieren —
         // unabhängig von Speed. Test: Devil auf (0, 5), Speed 11. Ziel-Pikeman auf
