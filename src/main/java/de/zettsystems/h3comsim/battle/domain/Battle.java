@@ -139,7 +139,7 @@ public final class Battle {
             Stack activeStack = order.next(pending, true);
             if (activeStack.isAbleToAct() && setup.bothAlive()) {
                 order.acted(activeStack);
-                heroCasts(setup, activeStack.side(), heroesCast);
+                heroCasts(setup, activeStack, heroesCast);
                 if (activeStack.isAbleToAct() && setup.bothAlive()) {
                     actWithMorale(activeStack, setup);
                 }
@@ -188,12 +188,13 @@ public final class Battle {
      * dem Stack die Aktion zu nehmen. Findet die Heuristik nichts Lohnendes, versucht er es beim
      * nächsten eigenen Stack erneut. Ohne Zauberbuch zieht das keinen Zufallswert.
      */
-    private void heroCasts(BattleSetup setup, Side side, Set<Side> heroesCast) {
+    private void heroCasts(BattleSetup setup, Stack active, Set<Side> heroesCast) {
+        Side side = active.side();
         Hero hero = setup.heroOf(side);
         if (hero == null || heroesCast.contains(side)) {
             return;
         }
-        HeroSpellcasting.Cast cast = HeroSpellcasting.decide(hero, side, setup.manaOf(side), setup, round);
+        HeroSpellcasting.Cast cast = HeroSpellcasting.decide(hero, side, setup.manaOf(side), setup, round, active);
         if (cast == null) {
             return;
         }
@@ -209,6 +210,10 @@ public final class Battle {
         }
         if (spell == Spell.EARTHQUAKE) {
             earthquake(Objects.requireNonNull(setup.siege()), cast.level());
+            return;
+        }
+        if (spell == Spell.TELEPORT) {
+            teleport(setup, hero, active, cast.level());
             return;
         }
         for (int i = 0; i < cast.affected().size(); i++) {
@@ -268,6 +273,16 @@ public final class Battle {
         }
         BattleLogger.logSpell(hero.name(), cast.spell(), summoned.getName());
         events.emit(new BattleEvent.Summon(side, cast.spell(), count, snapshot(summoned)));
+    }
+
+    /** Teleport ({@link Teleport}): der Stack springt; im Replay ein Move mit Start und Ziel. */
+    private void teleport(BattleSetup setup, Hero hero, Stack mover, SkillLevel level) {
+        Hex destination = Objects.requireNonNull(Teleport.destination(mover, level, setup));
+        Hex from = mover.position();
+        mover.moveTo(destination);
+        BattleLogger.logSpell(hero.name(), Spell.TELEPORT, mover.getName());
+        events.emit(new BattleEvent.Move(mover.side(), mover.slot(), from.q(), from.r(),
+                destination.q(), destination.r(), List.of(coord(from), coord(destination))));
     }
 
     private void applyHeroSpell(BattleSetup setup, Side side, Hero hero, HeroSpellcasting.Cast cast, int index,
@@ -535,7 +550,7 @@ public final class Battle {
             Stack activeStack = order.next(pending, false);
             if (activeStack.isAbleToAct() && setup.bothAlive()) {
                 order.acted(activeStack);
-                heroCasts(setup, activeStack.side(), heroesCast);
+                heroCasts(setup, activeStack, heroesCast);
                 if (activeStack.isAbleToAct() && setup.bothAlive()) {
                     actWithMorale(activeStack, setup);
                 }

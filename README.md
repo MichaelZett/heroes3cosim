@@ -143,7 +143,14 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   wählt der Held nach Goldwert abzüglich dessen, was der gegnerische Held
   ihr mit seinen Zaubern nehmen kann: meist Earth, gegen Meteor Shower Air,
   gegen Ice Bolt Water. Schnelle Elementare zu bevorzugen, verlor in der
-  Messung gegen „immer Earth" deutlich. Welchen Zauber der Held wählt, entscheidet eine
+  Messung gegen „immer Earth" deutlich. Teleport setzt den Stack am Zug
+  neben den gefährlichsten Gegner, wenn er zu Fuß diese Runde keinen
+  erreicht und dort nicht in die Reichweite von Nahkämpfern mit halb so
+  viel Schaden wie seine Lebenskraft landet — Basic nicht über Mauern oder
+  Graben, Advanced über den Graben, Expert überallhin; er kostet je nach
+  Water Magic 15/12/6/3. Auf freiem Feld bringt er nichts (0.496), in der
+  Belagerung mit Expert Water Magic hebt er den doppelt so starken
+  Angreifer gegen eine Castle von 0.722 auf 0.908. Welchen Zauber der Held wählt, entscheidet eine
   Heuristik: erwartete vernichtete Kosten bei Schaden, geschätzter Anteil
   am Wert des Stacks bei Wirkungen, bei Schutz vor einer Schule und
   Anti-Magic der Schaden, den der gegnerische Held mit seinen Zaubern
@@ -222,11 +229,13 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   mit einem Schaden von 1 zu rechnen; mit Artillery zielt der Verteidiger
   selbst. Der Verteidiger stellt ohne Tactics auf und hat keine Ballista.
   Messung (`SiegeImpactTest`, Spiegel-Duell, Standardhelden, je 360
-  Kämpfe): Bei gleich großen Armeen gewinnt der Verteidiger im Fort
-  0.669, in Citadel und Castle immer. Mit doppelter Armee nimmt der
-  Angreifer ein Fort sicher ein, eine Citadel hält dann 0.149, eine
-  Castle 0.597, mit Expert Ballistics 0.300; mit vierfacher Armee fällt
-  jede Stadt. Die Mauerschüsse der Zyklopen bringen Stronghold mit
+  Kämpfe, Win-Rate des Verteidigers): Bei gleich großen Armeen gewinnt er
+  auf freiem Feld 0.552, im Fort 0.609, in der Citadel 0.861, in der Castle
+  immer. Mit doppelter Armee nimmt der Angreifer ein Fort sicher ein, eine
+  Citadel hält dann 0.072, eine Castle 0.278, mit Expert Ballistics 0.111;
+  mit vierfacher Armee fällt jede Stadt. Der Graben kostet den Angreifer
+  je Kampf ein bis vier Treffer, rund 5 % seiner Armee; jeder Weg durch
+  eine Bresche endet im Graben. Die Mauerschüsse der Zyklopen bringen Stronghold mit
   doppelter Armee gegen eine Citadel 0.630 statt 0.534 (je 540 Kämpfe).
 - **Tactics** (Manual S. 42) — hat ein Held die Fertigkeit auf höherer
   Stufe als der Gegner, stellt er vor Kampfbeginn in den ersten 3/5/7
@@ -499,11 +508,11 @@ zu lesen, nicht als universelle H3-Tier-Liste.
   Schul-Rabatte aus späteren Fassungen.
 - **Taktisches Warten ausbauen**: Nahkämpfer nutzen *Wait* bereits, wenn
   sie ihr Ziel diese Runde nicht erreichen — messbar stärker, aber der
-  Gewinn kommt fast nur von Tower. Offen sind Schützen (warten, bis der
-  eigene Tank die Splash-Zone geleert hat) und Flieger (warten, bis
+  Gewinn kommt fast nur von Tower. Offen sind Schützen (warten, bis ein
+  eigener Nahkämpfer die Splash-Zone geleert hat) und Flieger (warten, bis
   feststeht, wo der Gegner landet).
-- **Belagerung, Rest**: Teleport über den Graben und eine Solver-Planung,
-  die den Graben mitdenkt.
+- **Belagerung, Rest**: Wegsuche, die das offene Tor dem Graben vorzieht,
+  und das Spiegelbild für einen Verteidiger auf der linken Seite.
 
 ## Quellen
 

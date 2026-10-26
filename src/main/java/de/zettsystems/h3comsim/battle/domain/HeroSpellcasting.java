@@ -6,6 +6,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -78,6 +79,15 @@ final class HeroSpellcasting {
      * @param round Runde ab 0; bestimmt, für wie viele Runden das Mana noch reichen soll
      */
     static @Nullable Cast decide(@Nullable Hero hero, Side side, int mana, BattleSetup setup, int round) {
+        return decide(hero, side, mana, setup, round, null);
+    }
+
+    /**
+     * Wie {@link #decide(Hero, Side, int, BattleSetup, int)}; {@code active} ist der Stack, der
+     * gerade am Zug ist — nur ihn kann der Held teleportieren ({@link Teleport}).
+     */
+    static @Nullable Cast decide(@Nullable Hero hero, Side side, int mana, BattleSetup setup, int round,
+                                 @Nullable Stack active) {
         if (hero == null || hero.spells().isEmpty()) {
             return null;
         }
@@ -90,7 +100,10 @@ final class HeroSpellcasting {
                 continue;
             }
             int casts = Math.min(roundsLeft, mana / cost);
-            for (Cast cast : candidates(hero, side, spell, setup)) {
+            List<Cast> candidates = spell == Spell.TELEPORT
+                    ? teleportCandidates(hero, side, active, setup)
+                    : candidates(hero, side, spell, setup);
+            for (Cast cast : candidates) {
                 double value = value(hero, side, cast, setup) * casts;
                 if (value > bestValue) {
                     best = cast;
@@ -101,9 +114,24 @@ final class HeroSpellcasting {
         return best;
     }
 
-    /** Mana-Kosten für diese Seite: Magi im eigenen Heer −2, Pegasi beim Gegner +2, mindestens 1. */
+    /** Teleport nur für den Stack am Zug, und nur, wenn er dabei neben einen Gegner kommt. */
+    private static List<Cast> teleportCandidates(Hero hero, Side side, @Nullable Stack active, BattleSetup setup) {
+        SkillLevel level = hero.castLevel(Spell.TELEPORT);
+        if (active == null || active.side() != side || Teleport.destination(active, level, setup) == null) {
+            return List.of();
+        }
+        return List.of(new Cast(Spell.TELEPORT, level, active, List.of(active)));
+    }
+
+    /**
+     * Mana-Kosten für diese Seite: Magi im eigenen Heer −2, Pegasi beim Gegner +2, mindestens 1.
+     * Teleport kostet je nach Water Magic des Helden 15/12/6/3.
+     */
     static int cost(Spell spell, Side side, BattleSetup setup) {
-        int cost = spell.cost();
+        Hero hero = setup.heroOf(side);
+        int cost = spell == Spell.TELEPORT && hero != null
+                ? Teleport.cost(hero.levelOf(SecondarySkill.WATER_MAGIC))
+                : spell.cost();
         if (anyAlive(setup.stacksOf(side), UnitSpeciality.SPELL_COST_REDUCTION)) {
             cost -= COST_MODIFIER;
         }
@@ -365,6 +393,9 @@ final class HeroSpellcasting {
         }
         if (spell == Spell.EARTHQUAKE) {
             return earthquakeValue(cast.level(), side, setup);
+        }
+        if (spell == Spell.TELEPORT) {
+            return Teleport.value(Objects.requireNonNull(cast.target()), setup);
         }
         double total = 0;
         for (int i = 0; i < cast.affected().size(); i++) {
