@@ -972,17 +972,10 @@ public final class Battle {
      * des Ziels aus der Angriffsrichtung — den gemeinsamen Nachbarn von Cerberus und Ziel.
      * <strong>Fire Breath</strong> trifft dagegen auch eigene Stacks auf dem Feld dahinter.
      */
-    // collateral != primary: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
-    @SuppressWarnings("ReferenceEquality")
     private void applyMeleeSplash(Stack active, Stack primary, BattleSetup setup) {
         Hex[] contact = closestPair(active, primary);
         if (active.hasSpeciality(UnitSpeciality.THREE_HEADED_ATTACK)) {
-            for (Hex flank : contact[0].commonNeighbors(contact[1])) {
-                Stack candidate = findStackAt(active, flank, setup);
-                if (candidate != null && candidate.isAlive() && candidate.side() != active.side()) {
-                    applySplashHit(active, candidate, AttackType.HAND_TO_HAND);
-                }
-            }
+            threeHeaded(active, contact, setup);
         }
         if (active.hasSpeciality(UnitSpeciality.ATTACKS_ALL_ADJACENT)) {
             for (Stack enemy : adjacentEnemies(active, primary, setup)) {
@@ -990,15 +983,32 @@ public final class Battle {
             }
         }
         if (active.hasSpeciality(UnitSpeciality.FIRE_BREATH)) {
-            Hex behind = behindHex(contact[0], contact[1]);
-            if (primary.occupies(behind)) {
-                // Hinter dem getroffenen Feld liegt das Heck des Ziels: der Atem geht ein Feld weiter.
-                behind = behindHex(contact[1], behind);
+            fireBreath(active, primary, contact, setup);
+        }
+    }
+
+    /** Die beiden Flanken zwischen Cerberus und Ziel, nur Gegner. */
+    private void threeHeaded(Stack active, Hex[] contact, BattleSetup setup) {
+        for (Hex flank : contact[0].commonNeighbors(contact[1])) {
+            Stack candidate = findStackAt(active, flank, setup);
+            if (candidate != null && candidate.isAlive() && candidate.side() != active.side()) {
+                applySplashHit(active, candidate, AttackType.HAND_TO_HAND);
             }
-            Stack collateral = findStackAt(active, behind, setup);
-            if (collateral != null && collateral != primary && collateral.isAlive()) {
-                applySplashHit(active, collateral, AttackType.HAND_TO_HAND);
-            }
+        }
+    }
+
+    /** Der Stack auf dem Feld hinter dem Ziel, eigene eingeschlossen. */
+    // collateral != primary: Identitätsvergleich auf der mutable Stack-Entity (kein equals).
+    @SuppressWarnings("ReferenceEquality")
+    private void fireBreath(Stack active, Stack primary, Hex[] contact, BattleSetup setup) {
+        Hex behind = behindHex(contact[0], contact[1]);
+        if (primary.occupies(behind)) {
+            // Hinter dem getroffenen Feld liegt das Heck des Ziels: der Atem geht ein Feld weiter.
+            behind = behindHex(contact[1], behind);
+        }
+        Stack collateral = findStackAt(active, behind, setup);
+        if (collateral != null && collateral != primary && collateral.isAlive()) {
+            applySplashHit(active, collateral, AttackType.HAND_TO_HAND);
         }
     }
 

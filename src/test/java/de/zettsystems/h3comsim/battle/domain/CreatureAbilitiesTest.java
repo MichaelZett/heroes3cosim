@@ -173,7 +173,7 @@ class CreatureAbilitiesTest {
 
     private static int firstChargeDamage(Unit defenderUnit, boolean runUp) {
         Hex target = new Hex(9, 5);
-        Hex start = runUp ? new Hex(3, 5) : new Hex(8, 5);
+        Hex start = new Hex(runUp ? 3 : 8, 5);
         Stack cavaliers = new Stack(UnitCatalog.CAVALIER, 10, start, Side.ATTACKER, 0);
         Stack defender = new Stack(defenderUnit, 30, target, Side.DEFENDER, 0);
         BattleSetup setup = new BattleSetup(List.of(cavaliers), List.of(defender), FIELD);
