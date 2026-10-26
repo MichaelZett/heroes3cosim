@@ -54,40 +54,44 @@ final class FieldSpells {
         return SpellDamage.byLevel(level, 4, 6, 8);
     }
 
-    static List<HeroSpellcasting.Cast> candidates(Hero hero, Side side, Spell spell, SkillLevel level,
-                                                  BattleSetup setup) {
-        List<HeroSpellcasting.Cast> casts = new ArrayList<>();
-        switch (spell) {
-            case FIRE_WALL, FORCE_FIELD -> {
-                Set<List<Hex>> seen = new HashSet<>();
-                for (Stack enemy : walkers(HeroSpellcasting.other(side), setup)) {
-                    List<Hex> path = pathToNearestFoe(enemy, setup.battlefieldFor(enemy.side()), setup);
-                    for (int i = 0; i < Math.min(3, path.size() - 1); i++) {
-                        List<Hex> hexes = wall(path.get(i), side, level);
-                        if (placeable(hexes, side, setup) && seen.add(hexes)) {
-                            casts.add(new HeroSpellcasting.Cast(spell, level, enemy, List.of(enemy), hexes));
-                        }
-                    }
-                }
-            }
-            case QUICKSAND, LAND_MINE -> {
-                Side enemySide = HeroSpellcasting.other(side);
-                boolean spotted = spell == Spell.LAND_MINE && setup.stacksOf(enemySide).stream()
-                        .anyMatch(s -> s.onNativeTerrain() && !SpellResistance.isImmune(s, Spell.LAND_MINE));
-                List<Stack> walkers = walkers(enemySide, setup);
-                if (!spotted && !walkers.isEmpty() && freeHexes(setup).size() >= patches(level)) {
-                    casts.add(new HeroSpellcasting.Cast(spell, level, null, walkers));
-                }
-            }
-            case REMOVE_OBSTACLE -> {
-                for (List<Hex> group : removable(level, side, setup)) {
-                    casts.add(new HeroSpellcasting.Cast(spell, level, null, List.of(), group));
-                }
-            }
+    static List<HeroSpellcasting.Cast> candidates(Side side, Spell spell, SkillLevel level, BattleSetup setup) {
+        return switch (spell) {
+            case FIRE_WALL, FORCE_FIELD -> walls(side, spell, level, setup);
+            case QUICKSAND, LAND_MINE -> scattered(side, spell, level, setup);
+            case REMOVE_OBSTACLE -> removable(level, side, setup).stream()
+                    .map(group -> new HeroSpellcasting.Cast(spell, level, null, List.of(), group)).toList();
             default -> throw new IllegalArgumentException(spell + " is no field spell");
+        };
+    }
+
+    /** Wände auf den ersten Feldern des Wegs jedes gegnerischen Bodenstacks. */
+    private static List<HeroSpellcasting.Cast> walls(Side side, Spell spell, SkillLevel level, BattleSetup setup) {
+        List<HeroSpellcasting.Cast> casts = new ArrayList<>();
+        Set<List<Hex>> seen = new HashSet<>();
+        for (Stack enemy : walkers(HeroSpellcasting.other(side), setup)) {
+            List<Hex> path = pathToNearestFoe(enemy, setup.battlefieldFor(enemy.side()), setup);
+            for (int i = 0; i < Math.min(3, path.size() - 1); i++) {
+                List<Hex> hexes = wall(path.get(i), side, level);
+                if (placeable(hexes, side, setup) && seen.add(hexes)) {
+                    casts.add(new HeroSpellcasting.Cast(spell, level, enemy, List.of(enemy), hexes));
+                }
+            }
         }
         return casts;
     }
+
+    /** Quicksand und Land Mine: ein Wurf über das ganze Feld, bewertet gegen alle gegnerischen Bodenstacks. */
+    private static List<HeroSpellcasting.Cast> scattered(Side side, Spell spell, SkillLevel level, BattleSetup setup) {
+        Side enemySide = HeroSpellcasting.other(side);
+        boolean spotted = spell == Spell.LAND_MINE && setup.stacksOf(enemySide).stream()
+                .anyMatch(s -> s.onNativeTerrain() && !SpellResistance.isImmune(s, Spell.LAND_MINE));
+        List<Stack> walkers = walkers(enemySide, setup);
+        if (spotted || walkers.isEmpty() || freeHexes(setup).size() < patches(level)) {
+            return List.of();
+        }
+        return List.of(new HeroSpellcasting.Cast(spell, level, null, walkers));
+    }
+
 
     static double value(Hero hero, Side side, HeroSpellcasting.Cast cast, BattleSetup setup) {
         Spell spell = cast.spell();

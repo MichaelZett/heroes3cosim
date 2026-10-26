@@ -198,7 +198,7 @@ final class HeroSpellcasting {
             return ControlSpells.candidates(hero, side, spell, level, setup);
         }
         if (FieldSpells.handles(spell)) {
-            return FieldSpells.candidates(hero, side, spell, level, setup);
+            return FieldSpells.candidates(side, spell, level, setup);
         }
         if (spell.kind() == Spell.Kind.OTHER) {
             return casts;

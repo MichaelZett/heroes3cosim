@@ -129,7 +129,7 @@ class FieldSpellsTest {
         BattleSetup setup = new BattleSetup(List.of(archers()), List.of(walker()), FIELD, mage(Spell.LAND_MINE), null)
                 .ground(Terrain.GRASS, null);
 
-        assertThat(FieldSpells.candidates(mage(Spell.LAND_MINE), Side.ATTACKER, Spell.LAND_MINE, SkillLevel.EXPERT,
+        assertThat(FieldSpells.candidates(Side.ATTACKER, Spell.LAND_MINE, SkillLevel.EXPERT,
                 setup)).isEmpty();
     }
 

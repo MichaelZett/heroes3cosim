@@ -36,67 +36,82 @@ final class ControlSpells {
         return spell == Spell.CLONE || spell == Spell.SACRIFICE || spell == Spell.BERSERK || spell == Spell.HYPNOTIZE;
     }
 
-    // receiver != victim: Identitätsvergleich auf der mutable Stack-Entity.
-    @SuppressWarnings("ReferenceEquality")
     static List<HeroSpellcasting.Cast> candidates(Hero hero, Side side, Spell spell, SkillLevel level,
                                                   BattleSetup setup) {
-        List<HeroSpellcasting.Cast> casts = new ArrayList<>();
-        switch (spell) {
-            case CLONE -> {
-                int maxTier = SpellDamage.byLevel(level, 5, 6, 7);
-                for (Stack own : alive(setup.stacksOf(side))) {
-                    if (own.unit().tier() <= maxTier && !own.isSummoned() && !hasClone(own, setup)
-                            && !SpellResistance.isImmune(own, spell)
-                            && setup.freeHexFor(side, own.unit().doubleWide()) != null) {
-                        casts.add(new HeroSpellcasting.Cast(spell, level, own, List.of(own)));
-                    }
-                }
-            }
-            case SACRIFICE -> {
-                for (Stack victim : alive(setup.stacksOf(side))) {
-                    if (!sacrificeable(victim)) {
-                        continue;
-                    }
-                    for (Stack receiver : setup.stacksOf(side)) {
-                        if (receiver != victim && receivesSacrifice(receiver, setup)) {
-                            casts.add(new HeroSpellcasting.Cast(spell, level, receiver, List.of(victim, receiver)));
-                        }
-                    }
-                }
-            }
-            case BERSERK -> {
-                if (level == SkillLevel.BASIC || level == SkillLevel.NONE) {
-                    for (Stack enemy : alive(setup.stacksOf(HeroSpellcasting.other(side)))) {
-                        if (!SpellResistance.isImmune(enemy, spell)) {
-                            casts.add(new HeroSpellcasting.Cast(spell, level, enemy, List.of(enemy)));
-                        }
-                    }
-                } else {
-                    int radius = level == SkillLevel.ADVANCED ? 1 : 2;
-                    for (Hex center : centers(setup)) {
-                        List<Stack> hit = alive(setup.aliveStacks()).stream()
-                                .filter(s -> s.distanceTo(center) <= radius)
-                                .filter(s -> !SpellResistance.isImmune(s, spell)).toList();
-                        if (!hit.isEmpty()) {
-                            casts.add(new HeroSpellcasting.Cast(spell, level, null, hit));
-                        }
-                    }
-                }
-            }
-            case HYPNOTIZE -> {
-                int limit = hypnotizeLimit(level, hero.spellPower());
-                for (Stack enemy : alive(setup.stacksOf(HeroSpellcasting.other(side)))) {
-                    if (!SpellResistance.isImmune(enemy, spell) && !enemy.hasSpell(Spell.MAGIC_MIRROR)
-                            && enemy.controller() != side
-                            && (long) enemy.getCount() * enemy.unit().health() < limit) {
-                        casts.add(new HeroSpellcasting.Cast(spell, level, enemy, List.of(enemy)));
-                    }
-                }
-            }
+        return switch (spell) {
+            case CLONE -> clones(side, level, setup);
+            case SACRIFICE -> sacrifices(side, level, setup);
+            case BERSERK -> berserks(side, level, setup);
+            case HYPNOTIZE -> hypnoses(side, level, hypnotizeLimit(level, hero.spellPower()), setup);
             default -> throw new IllegalArgumentException(spell + " is no control spell");
+        };
+    }
+
+    private static List<HeroSpellcasting.Cast> clones(Side side, SkillLevel level, BattleSetup setup) {
+        int maxTier = SpellDamage.byLevel(level, 5, 6, 7);
+        List<HeroSpellcasting.Cast> casts = new ArrayList<>();
+        for (Stack own : alive(setup.stacksOf(side))) {
+            if (own.unit().tier() <= maxTier && !own.isSummoned() && !hasClone(own, setup)
+                    && !SpellResistance.isImmune(own, Spell.CLONE)
+                    && setup.freeHexFor(side, own.unit().doubleWide()) != null) {
+                casts.add(new HeroSpellcasting.Cast(Spell.CLONE, level, own, List.of(own)));
+            }
         }
         return casts;
     }
+
+    // receiver != victim: Identitätsvergleich auf der mutable Stack-Entity.
+    @SuppressWarnings("ReferenceEquality")
+    private static List<HeroSpellcasting.Cast> sacrifices(Side side, SkillLevel level, BattleSetup setup) {
+        List<HeroSpellcasting.Cast> casts = new ArrayList<>();
+        for (Stack victim : alive(setup.stacksOf(side))) {
+            if (!sacrificeable(victim)) {
+                continue;
+            }
+            for (Stack receiver : setup.stacksOf(side)) {
+                if (receiver != victim && receivesSacrifice(receiver, setup)) {
+                    casts.add(new HeroSpellcasting.Cast(Spell.SACRIFICE, level, receiver, List.of(victim, receiver)));
+                }
+            }
+        }
+        return casts;
+    }
+
+    /** Basic ein Gegner, Advanced und Expert alle im Radius 1 bzw. 2 um ein Feld. */
+    private static List<HeroSpellcasting.Cast> berserks(Side side, SkillLevel level, BattleSetup setup) {
+        List<HeroSpellcasting.Cast> casts = new ArrayList<>();
+        if (level == SkillLevel.BASIC || level == SkillLevel.NONE) {
+            for (Stack enemy : alive(setup.stacksOf(HeroSpellcasting.other(side)))) {
+                if (!SpellResistance.isImmune(enemy, Spell.BERSERK)) {
+                    casts.add(new HeroSpellcasting.Cast(Spell.BERSERK, level, enemy, List.of(enemy)));
+                }
+            }
+            return casts;
+        }
+        int radius = level == SkillLevel.ADVANCED ? 1 : 2;
+        for (Hex center : centers(setup)) {
+            List<Stack> hit = alive(setup.aliveStacks()).stream()
+                    .filter(s -> s.distanceTo(center) <= radius)
+                    .filter(s -> !SpellResistance.isImmune(s, Spell.BERSERK)).toList();
+            if (!hit.isEmpty()) {
+                casts.add(new HeroSpellcasting.Cast(Spell.BERSERK, level, null, hit));
+            }
+        }
+        return casts;
+    }
+
+    private static List<HeroSpellcasting.Cast> hypnoses(Side side, SkillLevel level, int limit, BattleSetup setup) {
+        List<HeroSpellcasting.Cast> casts = new ArrayList<>();
+        for (Stack enemy : alive(setup.stacksOf(HeroSpellcasting.other(side)))) {
+            if (!SpellResistance.isImmune(enemy, Spell.HYPNOTIZE) && !enemy.hasSpell(Spell.MAGIC_MIRROR)
+                    && enemy.controller() != side
+                    && (long) enemy.getCount() * enemy.unit().health() < limit) {
+                casts.add(new HeroSpellcasting.Cast(Spell.HYPNOTIZE, level, enemy, List.of(enemy)));
+            }
+        }
+        return casts;
+    }
+
 
     /**
      * Was der Zauber bringt, in Gold: Clone gut eine Aktion des Stacks, Sacrifice die

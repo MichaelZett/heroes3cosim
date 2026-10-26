@@ -217,24 +217,7 @@ public final class Battle {
         setup.spendMana(side, cost);
         channelMana(setup, side, cost);
         events.emit(new BattleEvent.HeroSpell(side, spell, cast.level(), setup.manaOf(side)));
-        if (spell.kind() == Spell.Kind.SUMMON) {
-            summon(setup, side, hero, cast);
-            return;
-        }
-        if (spell == Spell.EARTHQUAKE) {
-            earthquake(Objects.requireNonNull(setup.siege()), cast.level());
-            return;
-        }
-        if (spell == Spell.TELEPORT) {
-            teleport(setup, hero, active, cast.level());
-            return;
-        }
-        if (ControlSpells.handles(spell)) {
-            controlSpell(setup, side, hero, cast);
-            return;
-        }
-        if (FieldSpells.handles(spell)) {
-            fieldSpell(setup, side, hero, cast);
+        if (castSpecial(setup, active, hero, cast)) {
             return;
         }
         if (spell == Spell.DISPEL && cast.level() == SkillLevel.EXPERT) {
@@ -250,6 +233,31 @@ public final class Battle {
                 applyHeroSpell(setup, side, hero, cast, i, hit, reflectedTo != null);
             }
         }
+    }
+
+    /**
+     * Zauber, die nicht einfach auf ihre Ziele wirken: Beschwörung, Earthquake, Teleport, die
+     * Kontroll- und die Feldzauber.
+     *
+     * @return {@code true}, wenn der Zauber damit erledigt ist
+     */
+    private boolean castSpecial(BattleSetup setup, Stack active, Hero hero, HeroSpellcasting.Cast cast) {
+        Side side = active.side();
+        Spell spell = cast.spell();
+        if (spell.kind() == Spell.Kind.SUMMON) {
+            summon(setup, side, hero, cast);
+        } else if (spell == Spell.EARTHQUAKE) {
+            earthquake(Objects.requireNonNull(setup.siege()), cast.level());
+        } else if (spell == Spell.TELEPORT) {
+            teleport(setup, hero, active, cast.level());
+        } else if (ControlSpells.handles(spell)) {
+            controlSpell(setup, side, hero, cast);
+        } else if (FieldSpells.handles(spell)) {
+            fieldSpell(setup, side, hero, cast);
+        } else {
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -351,38 +359,51 @@ public final class Battle {
             shootCreatureOrWall(active, target, setup);
         } else if (active.distanceTo(target) == 1) {
             meleeAttack(active, target, 0, setup);
-        } else {
-            Battlefield battlefield = setup.battlefieldFor(active.side());
-            Hex best = null;
-            int bestSteps = Integer.MAX_VALUE;
-            for (Hex head : setup.attackHeads(active, target)) {
-                if (isHexBlocked(head, active, setup)) {
-                    continue;
-                }
-                int steps = active.unit().movement() == Movement.GROUND
-                        ? battlefield.pathFor(active, head).size() : active.position().distanceTo(head);
-                if (steps > 0 && steps < bestSteps) {
-                    best = head;
-                    bestSteps = steps;
-                }
-            }
-            if (best != null && bestSteps <= active.getSpeed() && !active.isBound()) {
-                moveAndMelee(active, best, target, setup);
-            } else if (!active.isBound()) {
-                Hex step = battlefield.moveToward(active, best != null ? best : target.position(), active.getSpeed());
-                if (step.equals(active.position()) || isHexBlocked(step, active, setup)) {
-                    emitDefend(active);
-                } else {
-                    moveTo(active, step, battlefield);
-                }
-                return;
-            } else {
-                emitDefend(active);
-                return;
-            }
+        } else if (!chargeBerserk(active, target, setup)) {
+            return;
         }
         active.removeSpells(s -> s == Spell.BERSERK);
     }
+
+    /**
+     * Der Berserker läuft zum Ziel und schlägt zu, wenn er ein Landefeld erreicht; sonst kommt er
+     * so nah wie möglich heran.
+     *
+     * @return {@code true}, wenn er angegriffen hat
+     */
+    private boolean chargeBerserk(Stack active, Stack target, BattleSetup setup) {
+        if (active.isBound()) {
+            emitDefend(active);
+            return false;
+        }
+        Battlefield battlefield = setup.battlefieldFor(active.side());
+        Hex best = null;
+        int bestSteps = Integer.MAX_VALUE;
+        for (Hex head : setup.attackHeads(active, target)) {
+            int steps = isHexBlocked(head, active, setup) ? 0 : stepsTo(active, head, battlefield);
+            if (steps > 0 && steps < bestSteps) {
+                best = head;
+                bestSteps = steps;
+            }
+        }
+        if (best != null && bestSteps <= active.getSpeed()) {
+            moveAndMelee(active, best, target, setup);
+            return true;
+        }
+        Hex step = battlefield.moveToward(active, best != null ? best : target.position(), active.getSpeed());
+        if (step.equals(active.position()) || isHexBlocked(step, active, setup)) {
+            emitDefend(active);
+        } else {
+            moveTo(active, step, battlefield);
+        }
+        return false;
+    }
+
+    private static int stepsTo(Stack active, Hex head, Battlefield battlefield) {
+        return active.unit().movement() == Movement.GROUND
+                ? battlefield.pathFor(active, head).size() : active.position().distanceTo(head);
+    }
+
 
     /**
      * Fire Wall, Force Field, Quicksand, Land Mine und Remove Obstacle ({@link FieldSpells}). Der
