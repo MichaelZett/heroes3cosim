@@ -16,6 +16,7 @@ const BUILD: HeroBuild = {
   luck: 0,
   morale: 0,
   warMachines: [],
+  artifacts: {},
 };
 
 describe('HeroBonusPicker', () => {

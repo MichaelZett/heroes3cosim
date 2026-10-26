@@ -1,12 +1,13 @@
 package de.zettsystems.h3comsim.battle.domain;
 
+import de.zettsystems.h3comsim.battle.domain.events.Side;
 import org.jspecify.annotations.Nullable;
 
 /**
  * Schaden der Heldenzauber (Manual, Spell Reference S. 64–79) und seine Modifikatoren.
  *
- * <p>Reihenfolge: Grundschaden nach Formel aus Spell Power und Stufe, dann Sorcery und
- * Spezialität des Zaubernden, dann beim Ziel Protection from … (−30/50 %), Golems (Stone halber,
+ * <p>Reihenfolge: Grundschaden nach Formel aus Spell Power und Stufe, dann Sorcery plus Orb der
+ * Schule (additiv wie in VCMI) und Spezialität des Zaubernden, dann beim Ziel Protection from … (−30/50 %), Golems (Stone halber,
  * Iron ein Viertel des Schadens, Manual S. 113) und die Elementar-Eigenheiten aus dem AB-Manual:
  * Air Elementals nehmen doppelten Schaden von Lightning Bolt und Chain Lightning und keinen von
  * Meteor Shower; Earth Elementals keinen von Lightning Bolt und Chain Lightning, doppelten von
@@ -15,6 +16,9 @@ import org.jspecify.annotations.Nullable;
  * SpellResistance}) macht den Schaden zu 0.
  */
 final class SpellDamage {
+
+    /** Titan's Lightning Bolt: fest, ohne Spell Power und Stufe (heroes.thelazy.net). */
+    static final int TITANS_BOLT_DAMAGE = 600;
 
     private SpellDamage() {
     }
@@ -35,6 +39,7 @@ final class SpellDamage {
             case INFERNO -> power * 10 + byLevel(level, 20, 40, 80);
             case ARMAGEDDON -> power * 50 + byLevel(level, 30, 60, 120);
             case IMPLOSION -> power * 75 + byLevel(level, 100, 200, 300);
+            case TITANS_LIGHTNING_BOLT -> TITANS_BOLT_DAMAGE;
             default -> 0;
         };
     }
@@ -52,12 +57,20 @@ final class SpellDamage {
      * {@code caster} ist {@code null}, wenn eine Kreatur zaubert (Faerie Dragon).
      */
     static int toTarget(Spell spell, int baseDamage, @Nullable Hero caster, Stack target) {
-        if (SpellResistance.isImmune(target, spell)) {
-            return 0;
-        }
+        return SpellResistance.isImmune(target, spell) ? 0 : modified(spell, baseDamage, caster, target);
+    }
+
+    /** Wie oben für einen Zauber dieser Seite, also mit Orb of Vulnerability ({@link SpellResistance}). */
+    static int toTarget(Spell spell, int baseDamage, @Nullable Hero caster, Stack target, Side casterSide,
+                        BattleSetup setup) {
+        return SpellResistance.isImmune(target, spell, casterSide, setup) ? 0
+                : modified(spell, baseDamage, caster, target);
+    }
+
+    private static int modified(Spell spell, int baseDamage, @Nullable Hero caster, Stack target) {
         long damage = baseDamage;
         if (caster != null) {
-            damage = damage * (100 + caster.sorceryPercent()) / 100;
+            damage = damage * (100 + caster.sorceryPercent() + caster.artifacts().spellDamagePercent(spell)) / 100;
             damage = damage * (100 + caster.specialty().spellEffectPercent(spell, caster.level(), target.unit())) / 100;
         }
         damage = damage * target.spellDamagePercent(spell.school()) / 100;

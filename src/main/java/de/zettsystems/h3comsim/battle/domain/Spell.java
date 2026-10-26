@@ -67,6 +67,8 @@ public enum Spell {
     INFERNO(MagicSchool.FIRE, 4, 16, Kind.DAMAGE, false, false, false),
     METEOR_SHOWER(MagicSchool.EARTH, 4, 16, Kind.DAMAGE, false, false, false),
     IMPLOSION(MagicSchool.EARTH, 5, 30, Kind.DAMAGE, false, false, false),
+    // Nur mit Titan's Thunder (SoD): 600 Schaden ohne Mana, keine Gilde lehrt ihn.
+    TITANS_LIGHTNING_BOLT(MagicSchool.AIR, 5, 0, Kind.DAMAGE, false, false, false),
     // Beschwörung
     SUMMON_AIR_ELEMENTAL(MagicSchool.AIR, 5, 25, Kind.SUMMON, true, false, false),
     SUMMON_EARTH_ELEMENTAL(MagicSchool.EARTH, 5, 25, Kind.SUMMON, true, false, false),
@@ -175,5 +177,10 @@ public enum Spell {
     /** Kann ein Held den Zauber im Simulator wirken? */
     public boolean heroCastable() {
         return !CREATURE_ONLY.contains(this);
+    }
+
+    /** Kann ein Held den Zauber lernen? Titan's Lightning Bolt kommt nur mit dem Artefakt. */
+    public boolean learnable() {
+        return heroCastable() && this != TITANS_LIGHTNING_BOLT;
     }
 }

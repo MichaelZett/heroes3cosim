@@ -274,6 +274,19 @@ export function EventText({ event, names }: Readonly<EventTextProps>) {
           context={event.actor === 'ATTACKER' ? 'attacker' : 'defender'}
         />
       );
+    case 'ArtifactSpell':
+      return (
+        <Trans
+          i18nKey="events.artifactSpell"
+          values={{
+            artifact: event.artifactName,
+            spell: t(`spell.${event.spell}`),
+            level: t(`army.skillLevel${event.level}`),
+          }}
+          components={{ actor: sideSpan(event.actor) }}
+          context={event.actor === 'ATTACKER' ? 'attacker' : 'defender'}
+        />
+      );
     case 'SpellHit':
       return (
         <>

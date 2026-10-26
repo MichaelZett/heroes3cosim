@@ -54,6 +54,10 @@ public class Stack {
     private boolean defending;
     private boolean waitedThisTurn;
     private @Nullable Hero commander;
+    /** Artefakte des Helden: Lebenspunkte je Kreatur, Speed, Attack/Defense für Drachen. */
+    private int artifactHealth;
+    private int artifactSpeed;
+    private int artifactDragonBonus;
     private int armyMorale;
     private int armyLuck;
     /** +1 Attack, Defense und Speed auf dem Heimatgelände (siehe {@link Terrain}). */
@@ -63,9 +67,14 @@ public class Stack {
     private int terrainLuck;
     /** Cursed Ground: positive Moral und positives Glück fallen weg. */
     private boolean cursedGround;
+    /** Hourglass of the Evil Hour bzw. Spirit of Oppression bei einem der Helden. */
+    private boolean noLuck;
+    private boolean noPositiveMorale;
     private boolean unlimitedAmmo;
     private final Map<Spell, ActiveSpell> spells = new EnumMap<>(Spell.class);
     private int spellCastsLeft;
+    /** Höchstens so viele Lebenspunkte bringt Regeneration je Zug zurück. */
+    private static final int REGENERATION_HEALTH = 50;
     private static final Map<Spell, Spell> OPPOSITES = Map.of(
             Spell.BLESS, Spell.CURSE, Spell.CURSE, Spell.BLESS,
             Spell.HASTE, Spell.SLOW, Spell.SLOW, Spell.HASTE,
@@ -213,6 +222,21 @@ public class Stack {
         this.unlimitedAmmo = true;
     }
 
+    /**
+     * Golden Bow und Bow of the Sharpshooter: die Schützen des Helden schießen ohne Entfernungs-
+     * und Hindernis-Strafe (heroes.thelazy.net).
+     */
+    public boolean ignoresShootingPenalties() {
+        return commander != null && !isWarMachine()
+                && commander.artifacts().has(ArtifactEffect.NoShootingPenalty.class);
+    }
+
+    /** Bow of the Sharpshooter: schießt auch mit einem Gegner daneben (heroes.thelazy.net). */
+    public boolean shootsWhenAdjacent() {
+        return canShoot() && commander != null && !isWarMachine()
+                && commander.artifacts().has(ArtifactEffect.FreeShooting.class);
+    }
+
     /** Ab Advanced Forgetfulness kann der Stack gar nicht mehr schießen (Manual S. 78). */
     public boolean canShoot() {
         ActiveSpell forgetful = spells.get(Spell.FORGETFULNESS);
@@ -229,7 +253,8 @@ public class Stack {
      * ({@link HeroSpecialty}) und Haste (+3/5) bzw. Prayer (+2/4).
      */
     public int getSpeed() {
-        int speed = unit.speed() + nativeBonus + (commander == null ? 0 : commander.specialty().speedBonus(unit))
+        int speed = unit.speed() + nativeBonus + artifactSpeed
+                + (commander == null ? 0 : commander.specialty().speedBonus(unit))
                 + spellPoints(Spell.HASTE, 3, 5, 5) + spellPoints(Spell.PRAYER, 2, 4, 4);
         ActiveSpell slow = spells.get(Spell.SLOW);
         // Slow (Manual S. 68): auf 25 % (Basic) bzw. 50 % der normalen Geschwindigkeit.
@@ -242,7 +267,7 @@ public class Stack {
      * der Defense, Manual S. 75).
      */
     public int getAttack() {
-        int attack = unit.attack() + nativeBonus - (diseased ? 2 : 0)
+        int attack = unit.attack() + nativeBonus + artifactDragonBonus - (diseased ? 2 : 0)
                 + (commander == null ? 0 : commander.attack() + commander.specialtyAttackBonus(unit))
                 - spellPoints(Spell.WEAKNESS, 3, 6, 6) + spellPoints(Spell.PRAYER, 2, 4, 4);
         ActiveSpell frenzy = spells.get(Spell.FRENZY);
@@ -286,7 +311,7 @@ public class Stack {
     }
 
     private int baseDefense() {
-        return unit.defense() + nativeBonus - (diseased ? 2 : 0)
+        return unit.defense() + nativeBonus + artifactDragonBonus - (diseased ? 2 : 0)
                 + (commander == null ? 0 : commander.defense() + commander.specialtyDefenseBonus(unit));
     }
 
@@ -330,7 +355,45 @@ public class Stack {
     }
 
     void assignCommander(@Nullable Hero hero) {
+        boolean unhurt = topUnitCurrentHealth == maxHealth();
         this.commander = hero;
+        Equipment artifacts = hero == null || isWarMachine() ? Equipment.NONE : hero.artifacts();
+        artifactHealth = artifactHealthFor(hero);
+        artifactSpeed = artifacts.speed();
+        artifactDragonBonus = unit.isDragon() ? artifacts.dragonBonus() : 0;
+        if (unhurt && aliveCount > 0) {
+            topUnitCurrentHealth = maxHealth();
+        }
+    }
+
+    /**
+     * Lebenspunkte je Kreatur aus den Artefakten des Helden: Ringe und Vial für alle, das Elixir of
+     * Life dazu 25 % der Grund-Lebenspunkte für Lebewesen, abgerundet (heroes.thelazy.net: ein Imp
+     * bekommt 4 + 1 + 4, nicht 4 + 4 + 2).
+     */
+    private int artifactHealthFor(@Nullable Hero hero) {
+        if (hero == null || isWarMachine()) {
+            return 0;
+        }
+        Equipment artifacts = hero.artifacts();
+        int living = unit.isLiving() ? unit.health() * artifacts.livingHealthPercent() / 100 : 0;
+        return artifacts.health() + living;
+    }
+
+    /** Lebenspunkte einer Kreatur dieses Stacks: Grundwert plus Artefakte des Helden. */
+    public int maxHealth() {
+        return unit.health() + artifactHealth;
+    }
+
+    /**
+     * Regeneration von Wights, Wraiths und Trolls, mit dem Elixir of Life auch aller Lebewesen:
+     * die oberste Kreatur gewinnt zu Beginn ihres Zugs bis zu 50 Lebenspunkte zurück
+     * (heroes.thelazy.net, <em>Regeneration</em>).
+     */
+    private boolean regenerates() {
+        return unit.hasSpeciality(UnitSpeciality.REGENERATION)
+                || (commander != null && !isWarMachine() && unit.isLiving()
+                && commander.artifacts().livingHealthPercent() > 0);
     }
 
     /** Moral-Rating der Armee, zu der dieser Stack gehoert — gesetzt von {@link BattleSetup}. */
@@ -352,6 +415,15 @@ public class Stack {
         cursedGround = onCursedGround;
     }
 
+    /**
+     * Hourglass of the Evil Hour nimmt beiden Seiten das positive Glück, Spirit of Oppression die
+     * positive Moral, auch die von Zaubern wie Mirth (heroes.thelazy.net) — gesetzt von {@link BattleSetup}.
+     */
+    void assignNegations(boolean luck, boolean morale) {
+        noLuck = luck;
+        noPositiveMorale = morale;
+    }
+
     /** Kämpft der Stack auf seinem Heimatgelände (und nicht auf Cursed Ground)? */
     public boolean onNativeTerrain() {
         return nativeBonus > 0;
@@ -369,7 +441,7 @@ public class Stack {
         int clover = commander == null ? 0 : terrainLuck;
         int luck = Math.clamp(armyLuck + clover + fortuneLuck - spellValue(Spell.MISFORTUNE, 1, 2, 2),
                 ArmyLuck.MIN, ArmyLuck.MAX);
-        if (cursedGround) {
+        if (cursedGround || noLuck) {
             return 0;
         }
         return commander != null && unit.hasSpeciality(UnitSpeciality.MINIMUM_LUCK_1) ? Math.max(1, luck) : luck;
@@ -492,7 +564,7 @@ public class Stack {
 
     /** Lebenspunkte, die der obersten Kreatur fehlen. */
     public int topMissingHealth() {
-        return aliveCount > 0 ? unit.health() - topUnitCurrentHealth : 0;
+        return aliveCount > 0 ? maxHealth() - topUnitCurrentHealth : 0;
     }
 
     /**
@@ -552,7 +624,7 @@ public class Stack {
         }
         int morale = ArmyMorale.clamp(armyMorale + unit.morale() + terrainMorale + spellValue(Spell.MIRTH, 1, 2, 2)
                 - spellValue(Spell.SORROW, 1, 2, 2));
-        return cursedGround ? Math.min(0, morale) : morale;
+        return cursedGround || noPositiveMorale ? Math.min(0, morale) : morale;
     }
 
     /**
@@ -627,21 +699,21 @@ public class Stack {
     public void loseTopCreatures(int killCount) {
         int actualKills = Math.min(killCount, aliveCount);
         aliveCount -= actualKills;
-        topUnitCurrentHealth = aliveCount > 0 ? unit.health() : 0;
+        topUnitCurrentHealth = aliveCount > 0 ? maxHealth() : 0;
         tryRebirth();
     }
 
     /**
      * Heilt den Stack um {@code hp} Lebenspunkte: füllt zuerst die aktuelle Top-Creature
      * auf, dann resurrected ganze tote Creatures (max bis zur Start-Stack-Größe).
-     * Partielle Resurrects gibt es nicht — ein Rest unterhalb {@code unit.health()}
+     * Partielle Resurrects gibt es nicht — ein Rest unterhalb {@link #maxHealth()}
      * verfällt. Liefert die tatsächlich verwendete Heilmenge (für Diagnose-Tests).
      */
     public int heal(int hp) {
         if (hp <= 0) {
             return 0;
         }
-        int max = unit.health();
+        int max = maxHealth();
         int remaining = hp;
         int used = 0;
         // Spezialfall: Stack komplett tot → braucht ganze HP-Wert für erste Resurrect. Die
@@ -816,7 +888,8 @@ public class Stack {
         unit = Objects.requireNonNull(newUnit, "newUnit");
         startCount = count;
         aliveCount = count;
-        topUnitCurrentHealth = newUnit.health();
+        artifactHealth = artifactHealthFor(commander);
+        topUnitCurrentHealth = maxHealth();
         shotsRemaining = newUnit.shots();
         resetConditions();
         spellCastsLeft = CreatureSpellcasting.castsFor(newUnit);
@@ -900,8 +973,8 @@ public class Stack {
 
     /** Lebenspunkte, die dem Stack zur vollen Start-Stärke fehlen. */
     public int missingHealth() {
-        int full = startCount * unit.health();
-        int current = aliveCount > 0 ? (aliveCount - 1) * unit.health() + topUnitCurrentHealth : 0;
+        int full = startCount * maxHealth();
+        int current = aliveCount > 0 ? (aliveCount - 1) * maxHealth() + topUnitCurrentHealth : 0;
         return full - current;
     }
 
@@ -911,7 +984,7 @@ public class Stack {
         }
         int restored = Math.max(1, startCount / 5);
         aliveCount = restored;
-        topUnitCurrentHealth = unit.health();
+        topUnitCurrentHealth = maxHealth();
         rebirthUsed = true;
         LOG.debug("{} wird durch Wiedergeburt mit {} Einheiten zurueckgebracht.", getName(), restored);
     }
@@ -979,8 +1052,8 @@ public class Stack {
         if (diseasedCounter > 0 && --diseasedCounter == 0) {
             undisease();
         }
-        if (unit.hasSpeciality(UnitSpeciality.REGENERATION) && isAlive()) {
-            topUnitCurrentHealth = unit.health();
+        if (regenerates() && isAlive()) {
+            topUnitCurrentHealth = Math.min(maxHealth(), topUnitCurrentHealth + REGENERATION_HEALTH);
         }
         retaliationsThisTurn = 0;
     }
@@ -1011,7 +1084,7 @@ public class Stack {
             if (topUnitCurrentHealth == 0) {
                 aliveCount--;
                 if (aliveCount > 0) {
-                    topUnitCurrentHealth = unit.health();
+                    topUnitCurrentHealth = maxHealth();
                 }
             }
         }
@@ -1047,7 +1120,7 @@ public class Stack {
         if (!isAlive()) {
             return;
         }
-        int loss = unit.health() / 2;
+        int loss = maxHealth() / 2;
         LOG.debug("{} verliert {} Gesundheit durch Gift.", getName(), loss);
         applyDamage(loss);
     }

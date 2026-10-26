@@ -92,9 +92,9 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   auf der Abenteuerkarte oder nach dem Kampf und sind hier ohne Effekt.
   Je Armee einstellbar ist, was der Held unterwegs gesammelt hat:
   Level (1..99), zusätzliche Attack-/Defense-Punkte, gelernte oder
-  verbesserte Fertigkeiten (höchstens acht) sowie Glück und Moral aus
-  Artefakten, Gebäuden und Abenteuer-Orten, dazu Power, Knowledge und
-  das Zauberbuch (siehe Heldenzauber). Single Battle und
+  verbesserte Fertigkeiten (höchstens acht), Glück und Moral aus
+  Gebäuden und Abenteuer-Orten, dazu Power, Knowledge, das Zauberbuch
+  (siehe Heldenzauber) und die Artefakte (siehe unten). Single Battle und
   Einheiten-Matrix bleiben ohne Helden.
 - **Armeen ohne Helden** — neutrale Monster und Garnisonen. Ohne Helden
   gibt es kein Glück (in SoD wirkt es nur unter einem Helden,
@@ -220,6 +220,48 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   (etwa Haste 5 statt 6, Fireball 12 statt 15); Magi und
   Arch Magi senken die Kosten der eigenen Zauber um 2, Pegasi heben die
   des Gegners um 2.
+- **Artefakte** (heroes.thelazy.net, *List of artifacts*; Wirkungen nach VCMI
+  `config/artifacts.json`): die 94 kampfwirksamen aus RoE, AB und SoD, je
+  Held auf die 14 Plätze des Heldenfensters gelegt. Jedes Artefakt passt
+  nur auf einen Platz seiner Art, ein Kombi-Artefakt sperrt die Plätze
+  seiner übrigen Teile und führt deren Summe plus die eigene Wirkung;
+  jedes Artefakt höchstens einmal. Primärwerte kommen auf den Helden
+  (Attack und Defense nicht unter 0), dazu Glück und Moral (Pendant of
+  Courage +3/+3), Speed (Cape of Velocity +2), Lebenspunkte (Ringe und
+  Vial; Elixir of Life +4, für Lebewesen 25 % der Grund-Lebenspunkte und
+  Regeneration), Zauberdauer (Ring of the Magi +56), Magieresistenz zur
+  Resistance-Fertigkeit, Archery-Prozente (nur mit der Fertigkeit), Orbs
+  (+50 % Schaden ihrer Schule, additiv zu Sorcery), Tomes und Spellbinder's
+  Hat (alle Zauber einer Schule bzw. der Stufe 5, ohne Wisdom), Armageddon's
+  Blade (Armageddon auf Expert, Armee immun dagegen), Titan's Thunder
+  (Titan's Lightning Bolt, 600 Schaden ohne Mana), Pendants und Power of
+  the Dragon Father (Immunitäten der Armee, auch gegen eigene Zauber),
+  Badge of Courage (in SoD immun gegen Gedankenzauber), Sphere of
+  Permanence (kein Dispel), Golden Bow und Bow of the Sharpshooter (keine
+  Entfernungs- und Hindernisstrafe, mit dem Bogen schießen Schützen auch
+  neben Gegnern), Vial of Dragon Blood (+5/+5 für Drachen) und Angelic
+  Alliance (gute und neutrale Städte zählen für die Moral als eine).
+  Beide Seiten treffen Recanter's Cloak (kein Held über Stufe 2), Orb of
+  Inhibition (kein Held, fast keine Kreatur zaubert — Faerie Dragons
+  schon), Hourglass of the Evil Hour und Spirit of Oppression (kein
+  positives Glück bzw. keine positive Moral) und Orb of Vulnerability
+  (natürliche Immunitäten und Magieresistenz zählen nicht — für Zauber des
+  Besitzers bei allen, für Zauber des Gegners nur bei den Truppen des
+  Besitzers). Angelic Alliance und Armor of the Damned wirken ihre Zauber
+  (Prayer 10 Runden auf die eigenen, Slow, Curse, Weakness und Misfortune
+  50 Runden auf die feindlichen Stacks, Expert, ohne Mana), sobald die
+  erste eigene Kreatur am Zug ist. Was nur auf der Abenteuerkarte oder
+  nach der Schlacht wirkt (Bewegung, Ressourcen, Necromancy, Eagle Eye,
+  Rückzug), fehlt. Im Konfigurator gibt es eine Auswahlliste je Platz, die
+  nur Passendes anbietet, und eine Zufallsauswahl nach Anzahl oder
+  Goldwert. Gemessen (Helden auf Level 10 zufällig aufgestiegen, je
+  Fraktion im Spiegel mit getauschten Rollen, 108 Kämpfe je Artefakt):
+  Armor of the Damned, Angelic Alliance, Power of the Dragon Father und
+  Titan's Thunder 1.00, Elixir of Life 0.94, Shield of the Damned 0.84,
+  Sword of Hellfire 0.83, Tome of Fire Magic 0.83, Pendant of Courage 0.72,
+  Cape of Velocity 0.68, Bow of the Sharpshooter 0.65; Orb of Inhibition
+  und Spirit of Oppression wirken auf beide Seiten und bleiben im Spiegel
+  bei 0.50.
 - **Kreatur-Zauber** (Werte aus der Spell Reference des Manuals) —
   Zauber liegen mit Stufe und Rundenzahl auf dem Stack und laufen am
   Rundenende ab. Ogre Magi wirken Bloodlust, Master Genies einen
@@ -590,9 +632,6 @@ zu lesen, nicht als universelle H3-Tier-Liste.
 
 Damit sich jede Schlacht abbilden lässt, die das Spiel kennt, fehlen noch:
 
-- **Artefakte** mit Auswahl je Held: Primärwerte, Glück und Moral, die
-  Zauber-Artefakte (Tomes, Orbs, Recanter's Cloak, Pendants) und die
-  übrigen kampfwirksamen.
 - **Kreaturenbanken** mit ihrer eigenen Aufstellung (optional).
 
 Bewusst nicht abgebildet, weil es nichts am Kampf selbst ändert:

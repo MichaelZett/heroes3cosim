@@ -25,6 +25,10 @@ export function useHeroes() {
   return useQuery({ queryKey: ['heroes'], queryFn: api.listHeroes });
 }
 
+export function useArtifacts() {
+  return useQuery({ queryKey: ['artifacts'], queryFn: api.listArtifacts });
+}
+
 export function useSimulateBattle(
   onSuccess: (sim: BattleSimulationDto, request: BattleConfigRequest) => void,
 ) {

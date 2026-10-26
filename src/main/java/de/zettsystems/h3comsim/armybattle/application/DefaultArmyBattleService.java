@@ -9,6 +9,7 @@ import de.zettsystems.h3comsim.battle.domain.BattleResult;
 import de.zettsystems.h3comsim.battle.domain.BattleSetup;
 import de.zettsystems.h3comsim.battle.domain.Battlefield;
 import de.zettsystems.h3comsim.battle.domain.CollectedBonus;
+import de.zettsystems.h3comsim.battle.domain.Equipment;
 import de.zettsystems.h3comsim.battle.domain.Faction;
 import de.zettsystems.h3comsim.battle.domain.Fortification;
 import de.zettsystems.h3comsim.battle.domain.Hero;
@@ -151,7 +152,8 @@ public class DefaultArmyBattleService implements ArmyBattleService {
                             Objects.requireNonNullElse(army.defenseBonus(), 0),
                             Objects.requireNonNullElse(army.powerBonus(), 0),
                             Objects.requireNonNullElse(army.knowledgeBonus(), 0), learned)
-                    .withSpellbook(Objects.requireNonNullElse(army.spells(), Set.of()));
+                    .withSpellbook(Objects.requireNonNullElse(army.spells(), Set.of()))
+                    .withArtifacts(new Equipment(Objects.requireNonNullElse(army.artifacts(), Map.of())));
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
         }

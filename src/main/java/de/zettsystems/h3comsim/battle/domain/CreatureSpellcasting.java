@@ -73,9 +73,17 @@ final class CreatureSpellcasting {
                 || unit.hasSpeciality(UnitSpeciality.CASTS_PROTECTION) ? CASTS_PER_BATTLE : 0;
     }
 
-    /** Auf Cursed Ground zaubern Kreaturen gar nicht (heroes.thelazy.net, <em>Terrain</em>). */
+    /**
+     * Auf Cursed Ground zaubern Kreaturen gar nicht (heroes.thelazy.net, <em>Terrain</em>). Für die
+     * Faerie Dragons; die übrigen hält auch Orb of Inhibition ab ({@link #blockedByArtifact}).
+     */
     static boolean blocked(BattleSetup setup) {
         return setup.magicTerrain() == MagicTerrain.CURSED_GROUND;
+    }
+
+    /** Cursed Ground oder Orb of Inhibition ({@link BattleSetup#creatureMagicBlocked()}). */
+    static boolean blockedByArtifact(BattleSetup setup) {
+        return blocked(setup) || setup.creatureMagicBlocked();
     }
 
     /** Die Stufe eines Kreaturzaubers: auf Magic Plains Expert, sonst die eigene. */
@@ -181,7 +189,7 @@ final class CreatureSpellcasting {
 
     /** Solver-Entscheidung: zaubern statt handeln? {@code null} heißt nein. */
     static @Nullable Action decide(Stack active, Stack opponent, @Nullable BattleSetup setup) {
-        if (setup == null || active.spellCastsLeft() == 0 || blocked(setup) || canAttackNow(active, opponent)) {
+        if (setup == null || active.spellCastsLeft() == 0 || blockedByArtifact(setup) || canAttackNow(active, opponent)) {
             return null;
         }
         Spell fixed = fixedSpell(active.unit());

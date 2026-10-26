@@ -77,7 +77,7 @@ public final class GreedyAutoSolver implements AutoSolver {
         if (alive.isEmpty()) {
             return null;
         }
-        Stack adjacent = alive.stream()
+        Stack adjacent = active.shootsWhenAdjacent() ? null : alive.stream()
                 .filter(o -> active.distanceTo(o) == 1)
                 .min(Comparator.comparingInt(Stack::slot))
                 .orElse(null);
@@ -134,6 +134,9 @@ public final class GreedyAutoSolver implements AutoSolver {
         int speed = active.getSpeed();
         Movement movement = active.unit().movement();
 
+        if (active.shootsWhenAdjacent()) {
+            return new Action.Shoot(opponent);
+        }
         if (distance == 1) {
             return new Action.Melee(opponent);
         }
@@ -476,7 +479,7 @@ public final class GreedyAutoSolver implements AutoSolver {
                 incoming += dangerScore(enemy);
             }
         }
-        int ownHealth = (active.getCount() - 1) * active.unit().health() + active.getCurrentHealth();
+        int ownHealth = (active.getCount() - 1) * active.maxHealth() + active.getCurrentHealth();
         return 2 * incoming >= ownHealth;
     }
 
@@ -540,7 +543,7 @@ public final class GreedyAutoSolver implements AutoSolver {
         int shotsAvailable = Math.min(active.shotsRemaining(), turnsUntilMelee * shotsPerTurn);
         double projectedDamage = active.getCount() * avgPerShot * shotsAvailable;
 
-        int opponentMaxHp = opponent.unit().health();
+        int opponentMaxHp = opponent.maxHealth();
         int opponentTotalHp = Math.max(0, opponent.getCount() - 1) * opponentMaxHp
                 + opponent.getCurrentHealth();
         return projectedDamage >= opponentTotalHp;

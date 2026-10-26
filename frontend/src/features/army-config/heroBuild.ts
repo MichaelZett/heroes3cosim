@@ -1,4 +1,10 @@
-import type { SecondarySkill, SkillLevel, Spell, WarMachine } from '../../shared/api/types';
+import type {
+  ArtifactSlot,
+  SecondarySkill,
+  SkillLevel,
+  Spell,
+  WarMachine,
+} from '../../shared/api/types';
 
 export const MAX_HERO_LEVEL = 99;
 
@@ -115,6 +121,8 @@ export interface HeroBuild {
   luck: number;
   morale: number;
   warMachines: WarMachine[];
+  /** Artefakte je Platz (Identifier aus /api/artifacts). */
+  artifacts: Partial<Record<ArtifactSlot, string>>;
 }
 
 export const DEFAULT_BUILD: HeroBuild = {
@@ -129,4 +137,5 @@ export const DEFAULT_BUILD: HeroBuild = {
   luck: 0,
   morale: 0,
   warMachines: [],
+  artifacts: {},
 };

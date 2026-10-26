@@ -3,16 +3,25 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../../shared/ui/LanguageSwitcher';
 import ModeSwitcher from '../../shared/ui/ModeSwitcher';
-import { useArmyPresets, useHeroes, useSimulateArmyBattle, useUnits } from '../../shared/api/hooks';
+import {
+  useArmyPresets,
+  useArtifacts,
+  useHeroes,
+  useSimulateArmyBattle,
+  useUnits,
+} from '../../shared/api/hooks';
 import { useArmyConfigStore } from './armyConfigStore';
 import { DEFAULT_BUILD, higherLevel, learnableSpells, type HeroBuild } from './heroBuild';
 import { useArmyBattleStore } from './armyBattleStore';
 import FactionPresetPicker from './FactionPresetPicker';
+import ArtifactPicker from './ArtifactPicker';
+import { equipmentTotals } from './artifacts';
 import HeroBonusPicker from './HeroBonusPicker';
 import HeroPicker from './HeroPicker';
 import SlotEditor from './SlotEditor';
 import type {
   ArmySpec,
+  ArtifactDto,
   Faction,
   FactionPresetDto,
   Fortification,
@@ -67,6 +76,7 @@ export default function ArmyConfigPage() {
   const unitsQuery = useUnits();
   const presetsQuery = useArmyPresets();
   const heroesQuery = useHeroes();
+  const artifactsQuery = useArtifacts();
 
   const simulate = useSimulateArmyBattle((sim, request) => {
     loadSimulation(sim, request);
@@ -178,6 +188,7 @@ export default function ArmyConfigPage() {
             stacks={form.attackerStacks}
             onSlotChange={(slot, patch) => updateStack('attacker', slot, patch)}
             heroes={heroes}
+            artifacts={artifactsQuery.data ?? []}
             heroName={form.attackerHeroName}
             onHeroChange={(name) => setForm({ attackerHeroName: name, attackerWithoutHero: false })}
             withoutHero={form.attackerWithoutHero ?? false}
@@ -198,6 +209,7 @@ export default function ArmyConfigPage() {
             stacks={form.defenderStacks}
             onSlotChange={(slot, patch) => updateStack('defender', slot, patch)}
             heroes={heroes}
+            artifacts={artifactsQuery.data ?? []}
             heroName={form.defenderHeroName}
             onHeroChange={(name) => setForm({ defenderHeroName: name, defenderWithoutHero: false })}
             withoutHero={form.defenderWithoutHero ?? false}
@@ -377,6 +389,7 @@ interface SideColumnProps {
   stacks: StackSpec[];
   onSlotChange: (slot: number, patch: Partial<StackSpec>) => void;
   heroes: HeroDto[];
+  artifacts: ArtifactDto[];
   heroName: string | null;
   onHeroChange: (name: string | null) => void;
   withoutHero: boolean;
@@ -388,6 +401,7 @@ interface SideColumnProps {
 function SideColumn(props: Readonly<SideColumnProps>) {
   const { t } = useTranslation();
   const selectedHero = props.heroes.find((h) => h.name === props.heroName);
+  const artifactTotals = equipmentTotals(props.build.artifacts, props.artifacts);
   return (
     <section className="space-y-3 rounded-lg border border-slate-800 bg-slate-900 p-4">
       <h2 className="text-lg font-semibold text-slate-100">{props.title}</h2>
@@ -409,10 +423,17 @@ function SideColumn(props: Readonly<SideColumnProps>) {
         <HeroBonusPicker
           value={props.build}
           startSkills={selectedHero?.skills ?? {}}
-          basePower={selectedHero?.power ?? 0}
-          baseKnowledge={selectedHero?.knowledge ?? 0}
+          basePower={(selectedHero?.power ?? 0) + artifactTotals.power}
+          baseKnowledge={(selectedHero?.knowledge ?? 0) + artifactTotals.knowledge}
           startSpells={selectedHero?.spells ?? []}
           onChange={props.onBuildChange}
+        />
+      )}
+      {!props.withoutHero && props.artifacts.length > 0 && (
+        <ArtifactPicker
+          catalog={props.artifacts}
+          value={props.build.artifacts}
+          onChange={(artifacts) => props.onBuildChange({ artifacts })}
         />
       )}
       <div className="space-y-1.5">
@@ -449,6 +470,7 @@ function buildSpec(stored: Partial<HeroBuild> | undefined, hero: HeroDto | undef
     luckBonus: build.luck,
     moraleBonus: build.morale,
     warMachines: build.warMachines,
+    artifacts: build.artifacts,
   };
 }
 

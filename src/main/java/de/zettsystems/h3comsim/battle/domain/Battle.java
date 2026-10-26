@@ -40,6 +40,8 @@ public final class Battle {
     /** Wer sich in diesem Zug schon an einer Feuerwand verbrannt hat. */
     private final Set<Stack> burnedThisTurn = new HashSet<>();
     private final List<Stack> joinedThisRound = new ArrayList<>();
+    /** Seiten, deren Artefakte ihre Eröffnungszauber schon gewirkt haben ({@link ArtifactSpells}). */
+    private final Set<Side> openingCast = EnumSet.noneOf(Side.class);
     /** Dauer der Zauber, die Unicorns und Dragon Flies beim Angriff auslösen (heroes.thelazy.net). */
     private static final int PROC_ROUNDS = 3;
     private final AutoSolver autoSolver;
@@ -61,6 +63,7 @@ public final class Battle {
 
     public BattleResult simulate(BattleSetup setup) {
         this.currentSetup = setup;
+        openingCast.clear();
         BattleLogger.logStartOfCombat(setup.getAttackerName(), setup.getAttackerCount(),
                 setup.getDefenderName(), setup.getDefenderCount());
         Battlefield bf = setup.baseBattlefield();
@@ -305,7 +308,7 @@ public final class Battle {
                 }
                 Stack clone = new Stack(origin.unit(), origin.getCount(), hex, side, setup.nextSlot(side));
                 setup.addSummoned(clone);
-                clone.markClone(origin, round + Math.max(1, power) - 1);
+                clone.markClone(origin, round + hero.spellDuration() - 1);
                 joinedThisRound.add(clone);
                 BattleLogger.logSpell(hero.name(), spell, origin.getName());
                 events.emit(new BattleEvent.Summon(side, spell, clone.getCount(), snapshot(clone)));
@@ -328,12 +331,12 @@ public final class Battle {
                     if (!target.isAlive()) {
                         continue;
                     }
-                    boolean works = SpellResistance.takesEffect(spell, target, setup, rng);
+                    boolean works = SpellResistance.takesEffect(spell, side, target, setup, rng);
                     if (works && spell == Spell.BERSERK) {
                         target.removeSpells(s -> s == Spell.HYPNOTIZE);
                         target.applySpell(spell, cast.level(), Integer.MAX_VALUE);
                     } else if (works) {
-                        target.applySpell(spell, cast.level(), Math.max(1, power));
+                        target.applySpell(spell, cast.level(), hero.spellDuration());
                     }
                     BattleLogger.logSpell(hero.name(), spell, target.getName());
                     events.emit(new BattleEvent.SpellHit(side, spell, target.side(), target.slot(), 0, 0, 0,
@@ -646,8 +649,8 @@ public final class Battle {
         // Dispel auf eigene Stacks ist kein feindlicher Zauber und würfelt nicht gegen Resistenz.
         boolean friendlyDispel = spell == Spell.DISPEL && target.side() == side;
         boolean works = friendlyDispel
-                ? !SpellResistance.isImmune(target, spell)
-                : SpellResistance.takesEffect(spell, target, setup, rng);
+                ? !SpellResistance.isImmune(target, spell, side, setup)
+                : SpellResistance.takesEffect(spell, side, target, setup, rng);
         int damage = 0;
         int killed = 0;
         int healed = 0;
@@ -655,7 +658,8 @@ public final class Battle {
             int power = hero.spellPower();
             switch (spell.kind()) {
                 case DAMAGE -> {
-                    damage = SpellDamage.toTarget(spell, HeroSpellcasting.baseDamage(cast, power, index), hero, target);
+                    damage = SpellDamage.toTarget(spell, HeroSpellcasting.baseDamage(cast, power, index), hero, target,
+                            side, setup);
                     int countBefore = target.getCount();
                     boolean rebirthUsedBefore = target.isRebirthUsed();
                     target.takeDamage(damage, Set.of());
@@ -665,7 +669,7 @@ public final class Battle {
                 }
                 case INSTANT -> healed = applyInstantSpell(spell,
                         HeroSpellcasting.healing(hero, spell, cast.level(), target), target);
-                case EFFECT -> target.applySpell(spell, cast.level(), power,
+                case EFFECT -> target.applySpell(spell, cast.level(), hero.spellDuration(),
                         hero.specialty().spellEffectBonus(spell, hero.level(), target.unit()));
                 case SUMMON, OTHER -> throw new IllegalStateException(spell + " is not cast on a stack");
             }
@@ -830,8 +834,8 @@ public final class Battle {
             }
             double damage = 2.5 * (heroAttack + 1)
                     * (100 + Stack.boniMaliPercentage(attack, enemy.getDefense())) / 100.0;
-            int totalHealth = (enemy.getCount() - 1) * enemy.unit().health() + enemy.getCurrentHealth();
-            double value = Math.min(damage, totalHealth) * enemy.unit().cost() / enemy.unit().health();
+            int totalHealth = (enemy.getCount() - 1) * enemy.maxHealth() + enemy.getCurrentHealth();
+            double value = Math.min(damage, totalHealth) * enemy.unit().cost() / enemy.maxHealth();
             if (value > bestValue) {
                 best = enemy;
                 bestValue = value;
@@ -929,7 +933,7 @@ public final class Battle {
      */
     private boolean losesTurnAtStart(Stack activeStack, BattleSetup setup) {
         if (activeStack.hasSpeciality(UnitSpeciality.ENCHANTER_SPELLS) && CreatureSpellcasting.enchanterCastsIn(round)
-                && !CreatureSpellcasting.blocked(setup)) {
+                && !CreatureSpellcasting.blockedByArtifact(setup)) {
             enchant(activeStack, setup);
             if (!setup.bothAlive()) {
                 return true;
@@ -946,6 +950,25 @@ public final class Battle {
             return true;
         }
         return false;
+    }
+
+    /** Die Eröffnungszauber der Artefakte, einmal je Seite beim ersten eigenen Zug ({@link ArtifactSpells}). */
+    private void castOpeningSpells(Side side, BattleSetup setup) {
+        if (!openingCast.add(side)) {
+            return;
+        }
+        Spell announced = null;
+        for (ArtifactSpells.Hit hit : ArtifactSpells.cast(side, setup, rng)) {
+            if (hit.spell() != announced) {
+                announced = hit.spell();
+                events.emit(new BattleEvent.ArtifactSpell(side, hit.artifact(), hit.artifact().displayName(),
+                        hit.spell(), hit.level()));
+            }
+            Stack target = hit.target();
+            BattleLogger.logSpell(hit.artifact().displayName(), hit.spell(), target.getName());
+            events.emit(new BattleEvent.SpellHit(side, hit.spell(), target.side(), target.slot(), 0, 0, 0,
+                    !hit.works(), false, snapshot(target)));
+        }
     }
 
     /** Steht auf der Gegenseite ein Azure Dragon, dem dieser Stack nicht widersteht? */
@@ -974,6 +997,7 @@ public final class Battle {
         if (!activeStack.hasWaitedThisTurn() && losesTurnAtStart(activeStack, setup)) {
             return;
         }
+        castOpeningSpells(activeStack.controller(), setup);
         Siege siege = setup.siege();
         if (siege != null && !activeStack.hasWaitedThisTurn() && siege.isMoat(activeStack.position())) {
             // Wer seinen Zug im Graben beginnt, nimmt erneut Schaden; wer aussetzt, nicht.
@@ -1103,7 +1127,7 @@ public final class Battle {
             return false;
         }
         Spell spell = CreatureSpellcasting.faerieSpell(rng);
-        if (SpellResistance.isImmune(opponent, spell)) {
+        if (SpellResistance.isImmune(opponent, spell, active.side(), setup)) {
             return false;
         }
         faerieCast(active, spell, opponent, setup);
@@ -1135,11 +1159,12 @@ public final class Battle {
             }
             Stack reflectedTo = mirrored(setup, caster.side(), spell, aimed);
             Stack hit = reflectedTo == null ? aimed : reflectedTo;
-            boolean works = SpellResistance.takesEffect(spell, hit, setup, rng);
+            boolean works = SpellResistance.takesEffect(spell, caster.side(), hit, setup, rng);
             int damage = 0;
             int killed = 0;
             if (works) {
-                damage = SpellDamage.toTarget(spell, spell == Spell.CHAIN_LIGHTNING ? base >> i : base, null, hit);
+                damage = SpellDamage.toTarget(spell, spell == Spell.CHAIN_LIGHTNING ? base >> i : base, null, hit,
+                        caster.side(), setup);
                 int countBefore = hit.getCount();
                 boolean rebirthUsedBefore = hit.isRebirthUsed();
                 hit.takeDamage(damage, Set.of());
@@ -1163,7 +1188,7 @@ public final class Battle {
                 .stream().filter(Stack::isAlive).toList();
         BattleLogger.logSpell(caster.getName(), spell, "alle");
         for (Stack target : targets) {
-            boolean works = SpellResistance.takesEffect(spell, target, setup, rng);
+            boolean works = SpellResistance.takesEffect(spell, caster.side(), target, setup, rng);
             if (works && spell == Spell.CURE) {
                 target.removeSpells(s -> !s.beneficial());
                 target.healTop(CreatureSpellcasting.ENCHANTER_POWER * 5 + 30);
@@ -1282,7 +1307,7 @@ public final class Battle {
             // Keine Shots übrig (oder gar keine ranged Attacke) — Solver-Bug-
             // Sicherheitsnetz: kein Phantom-Schuss, Engine fällt zu Defend.
             emitDefend(active);
-        } else if (hasAdjacentEnemy(active, setup)) {
+        } else if (hasAdjacentEnemy(active, setup) && !active.shootsWhenAdjacent()) {
             // Manual S. 42: „Creatures with ranged attacks ... can fire only when
             // there are no adjacent enemies." Engaged Schütze kann nicht schießen
             // → defensiv Defend (Engine-Sicherheitsnetz; Solver wählt den Pfad
@@ -1791,13 +1816,15 @@ public final class Battle {
         int currentDamage = active.calculateCurrentDamage(attackType, runUp, rng);
         if (attackType == AttackType.LONG_RANGE) {
             Set<UnitSpeciality> attackerSpecs = active.getAttackerSpecialities();
-            if (distance > 10 && !attackerSpecs.contains(UnitSpeciality.NO_DISTANCE_PENALTY)) {
+            if (distance > 10 && !attackerSpecs.contains(UnitSpeciality.NO_DISTANCE_PENALTY)
+                    && !active.ignoresShootingPenalties()) {
                 currentDamage = currentDamage / 2;
                 BattleLogger.logDistancePenalty(active.getName(), distance);
             }
             // Hindernis-Strafe nur über Stadtmauern (heroes.thelazy.net, Obstacle penalty).
             // NO_OBSTACLE_PENALTY ist keine Angriffs-, sondern eine Sonderfähigkeit — also am Stack prüfen.
-            if (behindWall && !active.hasSpeciality(UnitSpeciality.NO_OBSTACLE_PENALTY)) {
+            if (behindWall && !active.hasSpeciality(UnitSpeciality.NO_OBSTACLE_PENALTY)
+                    && !active.ignoresShootingPenalties()) {
                 currentDamage = currentDamage / 2;
                 BattleLogger.logObstaclePenalty(active.getName());
             }
@@ -1928,8 +1955,8 @@ public final class Battle {
             return;
         }
         if (active.hasSpeciality(UnitSpeciality.BLINDING)
-                && !SpellResistance.isImmune(target, Spell.BLIND) && rng.nextInt(100) < 20) {
-            boolean takes = SpellResistance.takesEffect(Spell.BLIND, target, setup, rng);
+                && !SpellResistance.isImmune(target, Spell.BLIND, active.side(), setup) && rng.nextInt(100) < 20) {
+            boolean takes = SpellResistance.takesEffect(Spell.BLIND, active.side(), target, setup, rng);
             if (takes) {
                 target.applySpell(Spell.BLIND, SkillLevel.BASIC, PROC_ROUNDS);
             }
@@ -1943,8 +1970,8 @@ public final class Battle {
             }
         }
         if (active.hasSpeciality(UnitSpeciality.CASTS_WEAKNESS)
-                && !SpellResistance.isImmune(target, Spell.WEAKNESS)) {
-            boolean takes = SpellResistance.takesEffect(Spell.WEAKNESS, target, setup, rng);
+                && !SpellResistance.isImmune(target, Spell.WEAKNESS, active.side(), setup)) {
+            boolean takes = SpellResistance.takesEffect(Spell.WEAKNESS, active.side(), target, setup, rng);
             if (takes) {
                 target.applySpell(Spell.WEAKNESS, SkillLevel.ADVANCED, PROC_ROUNDS);
             }
@@ -2076,7 +2103,7 @@ public final class Battle {
     }
 
     private static int totalHp(Stack stack) {
-        int max = stack.unit().health();
+        int max = stack.maxHealth();
         return Math.max(0, stack.getCount() - 1) * max + stack.getCurrentHealth();
     }
 

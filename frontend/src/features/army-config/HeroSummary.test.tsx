@@ -23,6 +23,7 @@ const HERO: HeroDto = {
   },
   level: 15,
   spells: ['CHAIN_LIGHTNING', 'SUMMON_BOAT'],
+  artifacts: ['Orb of the Firmament', 'Ring of the Magi'],
 };
 
 describe('HeroSummary', () => {
@@ -32,5 +33,8 @@ describe('HeroSummary', () => {
     expect(screen.getByText('Solmyr, Level 15 — 1/2/7/9')).toBeInTheDocument();
     expect(screen.getByText(/Wisdom Expert, Sorcery Advanced/)).toBeInTheDocument();
     expect(screen.getByText(/Chain Lightning, Summon Boat/)).toBeInTheDocument();
+    expect(
+      screen.getByText('Artefakte: Orb of the Firmament, Ring of the Magi'),
+    ).toBeInTheDocument();
   });
 });

@@ -78,7 +78,7 @@ public final class StrategicAutoSolver implements AutoSolver {
         }
         // Engagement: Ein Schütze mit Gegner daneben kann nicht schießen. Ein Nahkämpfer prüft
         // erst die lohnenderen Ziele; Greedy fällt am Ende ohnehin auf den Nachbarn zurück.
-        if (active.canShoot()) {
+        if (active.canShoot() && !active.shootsWhenAdjacent()) {
             Stack adjacent = alive.stream()
                     .filter(o -> active.distanceTo(o) == 1)
                     .min(Comparator.comparingInt(Stack::slot))

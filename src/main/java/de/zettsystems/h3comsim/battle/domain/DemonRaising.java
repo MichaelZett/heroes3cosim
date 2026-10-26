@@ -25,7 +25,7 @@ final class DemonRaising {
     }
 
     static int demonsFrom(Stack caster, Stack corpse) {
-        int corpseHealth = corpse.startCount() * corpse.unit().health();
+        int corpseHealth = corpse.startCount() * corpse.maxHealth();
         int capacity = HEALTH_PER_CASTER * caster.getCount();
         return Math.min(Math.min(corpseHealth, capacity) / UnitCatalog.DEMON.health(), corpse.startCount());
     }
@@ -35,6 +35,7 @@ final class DemonRaising {
     static boolean isValidCorpse(Stack caster, Stack corpse, BattleSetup setup) {
         return corpse != caster
                 && corpse.side() == caster.side()
+                && !setup.creatureMagicBlocked()
                 && !corpse.isAlive()
                 && corpse.leavesCorpse()
                 && corpse.unit().isLiving()

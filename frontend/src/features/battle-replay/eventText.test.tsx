@@ -217,6 +217,17 @@ describe('eventToNode', () => {
     expect(cast.container.textContent).toContain(
       'Held des Verteidigers wirkt Fireball (Advanced), 15 Mana übrig',
     );
+    const artifactCast = renderEvent({
+      type: 'ArtifactSpell',
+      actor: 'ATTACKER',
+      artifact: 'ARMOR_OF_THE_DAMNED',
+      artifactName: 'Armor of the Damned',
+      spell: 'SLOW',
+      level: 'EXPERT',
+    });
+    expect(artifactCast.container.textContent).toContain(
+      'Armor of the Damned des Angreifers wirkt Slow (Expert).',
+    );
 
     const hit = {
       type: 'SpellHit',

@@ -219,8 +219,8 @@ class HeroSpellTest {
         BattleSetup setup = new BattleSetup(List.of(pikemen, dwarves), List.of(enemy), Battlefield.STANDARD,
                 resistant, null);
 
-        assertThat(SpellResistance.resistancePercent(pikemen, setup)).isEqualTo(20);
-        assertThat(SpellResistance.resistancePercent(dwarves, setup)).isEqualTo(36);
+        assertThat(SpellResistance.resistancePercent(pikemen, HeroSpellcasting.other(pikemen.side()), setup)).isEqualTo(20);
+        assertThat(SpellResistance.resistancePercent(dwarves, HeroSpellcasting.other(dwarves.side()), setup)).isEqualTo(36);
     }
 
     @Test

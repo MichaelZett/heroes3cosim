@@ -1,5 +1,7 @@
 package de.zettsystems.h3comsim.armybattle.values;
 
+import de.zettsystems.h3comsim.battle.domain.Artifact;
+import de.zettsystems.h3comsim.battle.domain.ArtifactSlot;
 import de.zettsystems.h3comsim.battle.domain.SecondarySkill;
 import de.zettsystems.h3comsim.battle.domain.SkillLevel;
 import de.zettsystems.h3comsim.battle.domain.Spell;
@@ -31,14 +33,14 @@ public record ArmySpec(
         @Nullable String heroName,
 
         @Schema(description = """
-                Gesammeltes Glück des Helden (Artefakte, Gebäude, Abenteuer-Orte), 0..3. Addiert
-                sich zur Luck-Fertigkeit; das Armee-Glück wird auf 0..3 gekappt. Fehlt das Feld
-                oder ist es null, gilt 0.
+                Gesammeltes Glück des Helden aus Gebäuden und Abenteuer-Orten, 0..3 (Artefakte
+                über `artifacts`). Addiert sich zur Luck-Fertigkeit; das Armee-Glück wird auf 0..3
+                gekappt. Fehlt das Feld oder ist es null, gilt 0.
                 """, example = "1", minimum = "0", maximum = "3", nullable = true)
         @Min(0) @Max(3) @Nullable Integer luckBonus,
 
         @Schema(description = """
-                Gesammelte Moral des Helden (Artefakte, Gebäude, Abenteuer-Orte), -3..+3.
+                Gesammelte Moral des Helden aus Gebäuden und Abenteuer-Orten, -3..+3.
                 Addiert sich zum Moral-Rating der Armee. Fehlt das Feld oder ist es null, gilt 0.
                 """, example = "0", minimum = "-3", maximum = "3", nullable = true)
         @Min(-3) @Max(3) @Nullable Integer moraleBonus,
@@ -51,7 +53,7 @@ public record ArmySpec(
         @Min(1) @Max(MAX_HERO_LEVEL) @Nullable Integer heroLevel,
 
         @Schema(description = """
-                Zusätzliche Attack-Punkte des Helden (Level-Aufstiege, Artefakte), 0..99. Werden wie
+                Zusätzliche Attack-Punkte des Helden (Level-Aufstiege), 0..99. Werden wie
                 der Grundwert auf jede Kreatur addiert. Fehlt das Feld, gilt 0.
                 """, example = "3", minimum = "0", maximum = "99", nullable = true)
         @Min(0) @Max(99) @Nullable Integer attackBonus,
@@ -107,7 +109,16 @@ public record ArmySpec(
                 die Moral aus der Zusammenstellung wirkt. Schließt `heroName` aus; die übrigen
                 Helden-Felder werden ignoriert. Eine Stadt greift nur ein Held an.
                 """, example = "false", nullable = true)
-        @Nullable Boolean withoutHero) {
+        @Nullable Boolean withoutHero,
+
+        @Schema(description = """
+                Artefakte des Helden je Platz, wie im Heldenfenster (Katalog: `/api/artifacts`).
+                Jedes Artefakt muss auf einen Platz seiner Art, ein Kombi-Artefakt braucht freie
+                Plätze für seine übrigen Teile; jedes Artefakt höchstens einmal. Primärwerte,
+                Glück und Moral kommen auf den Helden und die übrigen Aufbau-Felder obendrauf.
+                """, example = "{\"RIGHT_HAND\": \"SWORD_OF_HELLFIRE\", \"MISC_1\": \"CLOVER_OF_FORTUNE\"}",
+                nullable = true)
+        @Nullable Map<ArtifactSlot, Artifact> artifacts) {
 
     /** Obergrenze des Simulators, kein Spielwert — Kreatur-Boni wachsen linear weiter. */
     public static final int MAX_HERO_LEVEL = 99;
@@ -133,6 +144,21 @@ public record ArmySpec(
         spells = spells == null ? Set.of() : spells.stream()
                 .filter(Objects::nonNull)
                 .collect(Collectors.toUnmodifiableSet());
+        // Ein Platz mit null ist leer, kein Fehler.
+        artifacts = artifacts == null ? Map.of() : artifacts.entrySet().stream()
+                .filter(e -> e.getKey() != null && e.getValue() != null)
+                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    /** Armee ohne Artefakte. */
+    @SuppressWarnings("java:S107")
+    public ArmySpec(List<StackSpec> stacks, @Nullable String heroName, @Nullable Integer luckBonus,
+                    @Nullable Integer moraleBonus, @Nullable Integer heroLevel, @Nullable Integer attackBonus,
+                    @Nullable Integer defenseBonus, @Nullable Integer powerBonus, @Nullable Integer knowledgeBonus,
+                    @Nullable Map<SecondarySkill, SkillLevel> skills, @Nullable Set<WarMachine> warMachines,
+                    @Nullable Set<Spell> spells, @Nullable Boolean randomGrowth, @Nullable Boolean withoutHero) {
+        this(stacks, heroName, luckBonus, moraleBonus, heroLevel, attackBonus, defenseBonus, powerBonus,
+                knowledgeBonus, skills, warMachines, spells, randomGrowth, withoutHero, Map.of());
     }
 
     /** Armee mit Helden, ohne gesammelte Boni. */

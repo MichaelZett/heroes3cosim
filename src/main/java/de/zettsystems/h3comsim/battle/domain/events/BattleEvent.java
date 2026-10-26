@@ -2,6 +2,7 @@ package de.zettsystems.h3comsim.battle.domain.events;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import de.zettsystems.h3comsim.battle.domain.Artifact;
 import de.zettsystems.h3comsim.battle.domain.MagicTerrain;
 import de.zettsystems.h3comsim.battle.domain.Siege;
 import de.zettsystems.h3comsim.battle.domain.SkillLevel;
@@ -40,6 +41,7 @@ import java.util.List;
         @JsonSubTypes.Type(value = BattleEvent.SpellCast.class, name = "SpellCast"),
         @JsonSubTypes.Type(value = BattleEvent.Dispel.class, name = "Dispel"),
         @JsonSubTypes.Type(value = BattleEvent.HeroSpell.class, name = "HeroSpell"),
+        @JsonSubTypes.Type(value = BattleEvent.ArtifactSpell.class, name = "ArtifactSpell"),
         @JsonSubTypes.Type(value = BattleEvent.SpellHit.class, name = "SpellHit"),
         @JsonSubTypes.Type(value = BattleEvent.Summon.class, name = "Summon"),
         @JsonSubTypes.Type(value = BattleEvent.MoveBack.class, name = "MoveBack"),
@@ -79,7 +81,7 @@ import java.util.List;
                 BattleEvent.BallistaShot.class, BattleEvent.FirstAid.class, BattleEvent.CatapultShot.class, BattleEvent.TowerShot.class,
                 BattleEvent.MoatDamage.class, BattleEvent.Drawbridge.class, BattleEvent.QuakeHit.class,
                 BattleEvent.SpellCast.class, BattleEvent.Dispel.class,
-                BattleEvent.HeroSpell.class, BattleEvent.SpellHit.class, BattleEvent.Summon.class,
+                BattleEvent.HeroSpell.class, BattleEvent.ArtifactSpell.class, BattleEvent.SpellHit.class, BattleEvent.Summon.class,
                 BattleEvent.MoveBack.class, BattleEvent.DeathStare.class, BattleEvent.Thunderbolts.class,
                 BattleEvent.Petrifying.class, BattleEvent.Cursing.class, BattleEvent.AcidBreath.class,
                 BattleEvent.Fear.class, BattleEvent.FieldSpell.class, BattleEvent.FieldTrigger.class,
@@ -113,6 +115,7 @@ import java.util.List;
                 @DiscriminatorMapping(value = "SpellCast", schema = BattleEvent.SpellCast.class),
                 @DiscriminatorMapping(value = "Dispel", schema = BattleEvent.Dispel.class),
                 @DiscriminatorMapping(value = "HeroSpell", schema = BattleEvent.HeroSpell.class),
+                @DiscriminatorMapping(value = "ArtifactSpell", schema = BattleEvent.ArtifactSpell.class),
                 @DiscriminatorMapping(value = "SpellHit", schema = BattleEvent.SpellHit.class),
                 @DiscriminatorMapping(value = "Summon", schema = BattleEvent.Summon.class),
                 @DiscriminatorMapping(value = "MoveBack", schema = BattleEvent.MoveBack.class),
@@ -370,6 +373,16 @@ public sealed interface BattleEvent {
             @Schema(description = "Zauber") Spell spell,
             @Schema(description = "Stufe, mit der er gewirkt wird") SkillLevel level,
             @Schema(description = "Mana danach") int manaLeft) implements BattleEvent {
+    }
+
+    @Schema(name = "ArtifactSpell",
+            description = "Ein Artefakt des Helden wirkt zu Beginn der Schlacht einen Zauber (Angelic Alliance, Armor of the Damned), ohne Mana. Die Wirkung auf die einzelnen Stacks folgt als `SpellHit`.")
+    record ArtifactSpell(
+            @Schema(description = "Seite des Helden") Side actor,
+            @Schema(description = "Artefakt") Artifact artifact,
+            @Schema(description = "Name des Artefakts wie im Spiel", example = "Armor of the Damned") String artifactName,
+            @Schema(description = "Zauber") Spell spell,
+            @Schema(description = "Stufe, mit der er gewirkt wird") SkillLevel level) implements BattleEvent {
     }
 
     @Schema(name = "SpellHit",

@@ -31,6 +31,24 @@ class CatalogControllerIT {
     }
 
     @Test
+    void list_artifacts_returns_the_combat_artifacts_with_their_effects() throws Exception {
+        mockMvc().perform(get("/api/artifacts"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(94))
+                .andExpect(jsonPath("$[?(@.id=='SWORD_OF_HELLFIRE')].attack").value(6))
+                .andExpect(jsonPath("$[?(@.id=='ELIXIR_OF_LIFE')].blocks[0]").value("RING"))
+                .andExpect(jsonPath("$[?(@.id=='PENDANT_OF_COURAGE')].effects[0].type").value("LUCK"))
+                .andExpect(jsonPath("$[?(@.id=='ARMOR_OF_THE_DAMNED')].effects[0].spells[0]").value("SLOW"));
+    }
+
+    @Test
+    void list_heroes_returns_heroes_without_artifacts() throws Exception {
+        mockMvc().perform(get("/api/heroes"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.name=='Crag Hack')].artifacts[0]").doesNotExist());
+    }
+
+    @Test
     void list_factions_returns_all_ten_factions() throws Exception {
         mockMvc().perform(get("/api/factions"))
                 .andExpect(status().isOk())

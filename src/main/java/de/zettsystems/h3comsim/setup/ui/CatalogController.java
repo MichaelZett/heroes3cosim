@@ -1,8 +1,11 @@
 package de.zettsystems.h3comsim.setup.ui;
 
+import de.zettsystems.h3comsim.battle.domain.Artifact;
 import de.zettsystems.h3comsim.battle.domain.Faction;
 import de.zettsystems.h3comsim.battle.domain.HeroCatalog;
 import de.zettsystems.h3comsim.battle.domain.UnitCatalog;
+import de.zettsystems.h3comsim.battle.values.ArtifactDto;
+import de.zettsystems.h3comsim.battle.values.ArtifactMapper;
 import de.zettsystems.h3comsim.battle.values.HeroDto;
 import de.zettsystems.h3comsim.battle.values.HeroMapper;
 import de.zettsystems.h3comsim.battle.values.UnitDto;
@@ -20,7 +23,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api")
 @Tag(name = "Catalog",
-        description = "Read-only Listen für den Frontend-Konfigurator: alle bekannten Einheiten, Helden und Faktionen.")
+        description = "Read-only Listen für den Frontend-Konfigurator: alle bekannten Einheiten, Helden, Artefakte und Faktionen.")
 public class CatalogController {
 
     @Operation(summary = "Alle Einheiten auflisten",
@@ -47,13 +50,26 @@ public class CatalogController {
         return Arrays.asList(Faction.values());
     }
 
+    @Operation(summary = "Alle Artefakte auflisten",
+            description = """
+                    Gibt die kampfwirksamen Artefakte aus RoE, AB und SoD zurück — Platz-Art, Seltenheit,
+                    Goldwert, Primärwerte und Wirkungen. Was nur auf der Abenteuerkarte oder nach der
+                    Schlacht wirkt, fehlt. Die Reihenfolge ist stabil (nach Platz-Art, Kombi-Artefakte
+                    zuletzt).
+                    """,
+            operationId = "listArtifacts")
+    @ApiResponse(responseCode = "200", description = "Vollständige Artefakt-Liste.")
+    @GetMapping("/artifacts")
+    public List<ArtifactDto> listArtifacts() {
+        return Arrays.stream(Artifact.values())
+                .map(ArtifactMapper::toDto)
+                .toList();
+    }
+
     @Operation(summary = "Alle Helden auflisten",
             description = """
-                    Gibt den Hero-Catalog zurück — derzeit genau einen Helden je Fraktion
-                    (`NEUTRAL` hat keinen). Von den Primärwerten wirken nur `attack` und
-                    `defense`: sie werden auf jede Kreatur der geführten Armee addiert
-                    (Manual S. 33). `power`, `knowledge` und `skills` werden geführt, aber
-                    noch nicht ausgewertet.
+                    Gibt den Hero-Catalog zurück: alle Helden der neun Fraktionen mit Klasse,
+                    Primärwerten, Startfertigkeiten, Spezialität und Startzaubern auf Level 1.
                     """,
             operationId = "listHeroes")
     @ApiResponse(responseCode = "200", description = "Vollständige Hero-Liste.")

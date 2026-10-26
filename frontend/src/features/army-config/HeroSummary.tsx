@@ -9,6 +9,7 @@ export default function HeroSummary({ hero }: Readonly<{ hero: HeroDto }>) {
     .map(([skill, level]) => `${t(`secondarySkill.${skill}`)} ${t(`army.skillLevel${level}`)}`)
     .join(', ');
   const spells = (hero.spells ?? []).map((spell) => t(`spell.${spell}`)).join(', ');
+  const artifacts = (hero.artifacts ?? []).join(', ');
   return (
     <div className="mt-2 space-y-0.5 text-xs text-slate-400">
       <p className="text-slate-300">
@@ -23,6 +24,7 @@ export default function HeroSummary({ hero }: Readonly<{ hero: HeroDto }>) {
       </p>
       {skills && <p>{t('army.heroSummarySkills', { skills })}</p>}
       {spells && <p>{t('army.heroSummarySpells', { spells })}</p>}
+      {artifacts && <p>{t('army.heroSummaryArtifacts', { artifacts })}</p>}
     </div>
   );
 }

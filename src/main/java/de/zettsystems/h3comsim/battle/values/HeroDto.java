@@ -49,5 +49,8 @@ public record HeroDto(
         int level,
 
         @Schema(description = "Startzauber: der Zauber eines Spezialisten (auch über dem Wisdom-Gate) und bei magischen Klassen die fünf Stufe-1-Kampfzauber der Magiergilde ihrer Fraktion.")
-        List<Spell> spells) {
+        List<Spell> spells,
+
+        @Schema(description = "Getragene Artefakte mit Namen wie im Spiel; im Katalog leer. Ihre Primärwerte und Zauber sind oben schon eingerechnet.")
+        List<String> artifacts) {
 }
