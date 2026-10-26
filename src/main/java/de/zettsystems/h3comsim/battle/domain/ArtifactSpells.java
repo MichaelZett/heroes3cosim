@@ -37,26 +37,31 @@ final class ArtifactSpells {
         boolean cursed = setup.magicTerrain() == MagicTerrain.CURSED_GROUND;
         for (Artifact artifact : hero.artifacts().artifacts()) {
             for (ArtifactEffect effect : artifact.effects()) {
-                if (!(effect instanceof ArtifactEffect.OpeningSpell opening)
-                        || (cursed && opening.spell().level() > 1)) {
-                    continue;
-                }
-                Spell spell = opening.spell();
-                SkillLevel level = cursed ? SkillLevel.BASIC : SkillLevel.EXPERT;
-                Side targets = spell.beneficial() ? side : HeroSpellcasting.other(side);
-                for (Stack target : setup.stacksOf(targets)) {
-                    if (!target.isAlive()) {
-                        continue;
-                    }
-                    boolean works = SpellResistance.takesEffect(spell, side, target, setup, rng);
-                    if (works) {
-                        target.applySpell(spell, level, opening.rounds(),
-                                hero.specialty().spellEffectBonus(spell, hero.level(), target.unit()));
-                    }
-                    hits.add(new Hit(artifact, spell, level, target, works));
+                if (effect instanceof ArtifactEffect.OpeningSpell opening && (!cursed || opening.spell().level() <= 1)) {
+                    SkillLevel level = cursed ? SkillLevel.BASIC : SkillLevel.EXPERT;
+                    castOn(hero, side, artifact, opening, level, setup, rng, hits);
                 }
             }
         }
         return hits;
+    }
+
+    // Held, Artefakt, Zauber und Stufe gehören zum selben Wurf; ein Parameterobjekt brächte nichts.
+    @SuppressWarnings("java:S107")
+    private static void castOn(Hero hero, Side side, Artifact artifact, ArtifactEffect.OpeningSpell opening,
+                               SkillLevel level, BattleSetup setup, RandomGenerator rng, List<Hit> hits) {
+        Spell spell = opening.spell();
+        Side targets = spell.beneficial() ? side : HeroSpellcasting.other(side);
+        for (Stack target : setup.stacksOf(targets)) {
+            if (!target.isAlive()) {
+                continue;
+            }
+            boolean works = SpellResistance.takesEffect(spell, side, target, setup, rng);
+            if (works) {
+                target.applySpell(spell, level, opening.rounds(),
+                        hero.specialty().spellEffectBonus(spell, hero.level(), target.unit()));
+            }
+            hits.add(new Hit(artifact, spell, level, target, works));
+        }
     }
 }
