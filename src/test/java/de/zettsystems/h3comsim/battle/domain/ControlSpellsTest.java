@@ -127,6 +127,20 @@ class ControlSpellsTest {
     }
 
     @Test
+    void basic_berserk_is_worth_most_where_the_enemy_would_hit_its_own() {
+        Stack orcs = new Stack(UnitCatalog.ORC, 30, new Hex(10, 5), Side.DEFENDER, 0);
+        Stack goblins = new Stack(UnitCatalog.GOBLIN, 60, new Hex(11, 5), Side.DEFENDER, 1);
+        BattleSetup setup = new BattleSetup(List.of(new Stack(UnitCatalog.ARCHER, 20, new Hex(2, 5), Side.ATTACKER, 0)),
+                List.of(orcs, goblins), FIELD);
+
+        List<HeroSpellcasting.Cast> casts = ControlSpells.candidates(HeroCatalog.SORSHA, Side.ATTACKER,
+                Spell.BERSERK, SkillLevel.BASIC, setup);
+
+        assertThat(casts).extracting(HeroSpellcasting.Cast::target).containsExactly(orcs, goblins);
+        assertThat(ControlSpells.value(HeroCatalog.SORSHA, Side.ATTACKER, casts.getFirst(), setup)).isPositive();
+    }
+
+    @Test
     void a_hypnotized_stack_fights_for_the_caster_until_the_spell_ends() {
         Stack pikemen = new Stack(UnitCatalog.PIKEMAN, 20, new Hex(5, 5), Side.ATTACKER, 0);
         Stack imps = new Stack(UnitCatalog.IMP, 5, new Hex(10, 5), Side.DEFENDER, 0);
@@ -156,6 +170,81 @@ class ControlSpellsTest {
         assertThat(ControlSpells.hypnotizeLimit(SkillLevel.BASIC, mage.spellPower())).isEqualTo(135);
         assertThat(ControlSpells.candidates(mage, Side.ATTACKER, Spell.HYPNOTIZE, SkillLevel.BASIC, setup))
                 .extracting(HeroSpellcasting.Cast::target).containsExactly(imps);
+    }
+
+    @Test
+    void the_hero_sacrifices_cheap_creatures_for_fallen_angels() {
+        Stack angels = new Stack(UnitCatalog.ANGEL, 10, new Hex(3, 5), Side.ATTACKER, 0);
+        angels.takeDamage(1000, Set.of());
+        Stack peasants = new Stack(UnitCatalog.PEASANT, 200, new Hex(3, 1), Side.ATTACKER, 1);
+        BattleSetup setup = new BattleSetup(List.of(angels, peasants),
+                List.of(new Stack(UnitCatalog.PIKEMAN, 20, new Hex(14, 5), Side.DEFENDER, 0)), FIELD,
+                mage(Spell.SACRIFICE, SecondarySkill.FIRE_MAGIC), null);
+
+        List<BattleEvent> events = fight(setup);
+
+        assertThat(events).anyMatch(e -> e instanceof BattleEvent.SpellHit h && h.spell() == Spell.SACRIFICE
+                && h.killed() == 200);
+        assertThat(events).anyMatch(e -> e instanceof BattleEvent.SpellHit h && h.spell() == Spell.SACRIFICE
+                && h.healed() > 0);
+        assertThat(setup.hasFreeCorpse(peasants)).isFalse();
+    }
+
+    @Test
+    void the_hero_hypnotizes_a_small_enemy_stack() {
+        BattleSetup setup = new BattleSetup(List.of(new Stack(UnitCatalog.SWORDSMAN, 30, new Hex(3, 5), Side.ATTACKER, 0)),
+                List.of(new Stack(UnitCatalog.WOLF_RIDER, 3, new Hex(13, 3), Side.DEFENDER, 0),
+                        new Stack(UnitCatalog.ORC, 40, new Hex(14, 7), Side.DEFENDER, 1)),
+                FIELD, mage(Spell.HYPNOTIZE, SecondarySkill.AIR_MAGIC), null);
+
+        List<BattleEvent> events = fight(setup);
+
+        assertThat(events).anyMatch(e -> e instanceof BattleEvent.SpellHit h && h.spell() == Spell.HYPNOTIZE
+                && h.target() == Side.DEFENDER);
+    }
+
+    @Test
+    void the_hero_drives_a_cluster_of_enemies_berserk() {
+        BattleSetup setup = new BattleSetup(List.of(new Stack(UnitCatalog.ARCHER, 20, new Hex(3, 5), Side.ATTACKER, 0)),
+                List.of(new Stack(UnitCatalog.ORC, 30, new Hex(12, 4), Side.DEFENDER, 0),
+                        new Stack(UnitCatalog.GOBLIN, 60, new Hex(12, 5), Side.DEFENDER, 1),
+                        new Stack(UnitCatalog.OGRE, 10, new Hex(12, 6), Side.DEFENDER, 2)),
+                FIELD, mage(Spell.BERSERK, SecondarySkill.FIRE_MAGIC), null);
+
+        List<BattleEvent> events = fight(setup);
+
+        assertThat(events).anyMatch(e -> e instanceof BattleEvent.SpellHit h && h.spell() == Spell.BERSERK
+                && !h.resisted());
+        assertThat(events).anyMatch(e -> e instanceof BattleEvent.Melee m && m.actor() == Side.DEFENDER
+                && m.target() == Side.DEFENDER);
+    }
+
+    @Test
+    void a_berserk_shooter_shoots_the_nearest_stack() {
+        Stack archers = new Stack(UnitCatalog.ARCHER, 20, new Hex(3, 5), Side.ATTACKER, 0);
+        Stack pikemen = new Stack(UnitCatalog.PIKEMAN, 20, new Hex(3, 7), Side.ATTACKER, 1);
+        archers.applySpell(Spell.BERSERK, SkillLevel.BASIC, Integer.MAX_VALUE);
+        BattleSetup setup = new BattleSetup(List.of(archers, pikemen),
+                List.of(new Stack(UnitCatalog.PEASANT, 10, new Hex(14, 5), Side.DEFENDER, 0)), FIELD);
+
+        List<BattleEvent> events = fight(setup);
+
+        assertThat(events).anyMatch(e -> e instanceof BattleEvent.Shoot sh && sh.actor() == Side.ATTACKER
+                && sh.target() == Side.ATTACKER);
+    }
+
+    @Test
+    void a_berserk_walker_approaches_a_target_out_of_reach() {
+        Stack pikemen = new Stack(UnitCatalog.PIKEMAN, 20, new Hex(3, 5), Side.ATTACKER, 0);
+        pikemen.applySpell(Spell.BERSERK, SkillLevel.BASIC, Integer.MAX_VALUE);
+        BattleSetup setup = new BattleSetup(List.of(pikemen),
+                List.of(new Stack(UnitCatalog.PEASANT, 10, new Hex(14, 5), Side.DEFENDER, 0)), FIELD);
+
+        List<BattleEvent> events = fight(setup);
+
+        BattleEvent.Move first = events.stream().filter(e -> e instanceof BattleEvent.Move m && m.actor() == Side.ATTACKER)
+                .map(BattleEvent.Move.class::cast).findFirst().orElseThrow();
+        assertThat(first.toQ()).isGreaterThan(3);
     }
 
     private static List<Stack> targets(Spell spell, SkillLevel level, BattleSetup setup) {

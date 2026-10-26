@@ -1,6 +1,7 @@
 package de.zettsystems.h3comsim.battle.domain;
 
 import de.zettsystems.h3comsim.battle.domain.events.BattleEvent;
+import de.zettsystems.h3comsim.battle.domain.events.HexCoord;
 import de.zettsystems.h3comsim.battle.domain.events.ListEventCollector;
 import de.zettsystems.h3comsim.battle.domain.events.Side;
 import org.junit.jupiter.api.Test;
@@ -143,6 +144,82 @@ class FieldSpellsTest {
         setup.removeObstacle(rock);
         assertThat(setup.battlefieldFor(Side.DEFENDER).isPassable(new Hex(8, 5))).isTrue();
         assertThat(FieldSpells.removable(SkillLevel.BASIC, Side.ATTACKER, setup)).isEmpty();
+    }
+
+    @Test
+    void the_hero_opens_a_wall_of_rocks_with_remove_obstacle() {
+        Set<Hex> rocks = new HashSet<>();
+        for (int row = 0; row < FIELD.height(); row++) {
+            rocks.add(SiegeLayout.h3(row * 17 + 9));
+        }
+        Map<SecondarySkill, SkillLevel> skills = Map.of(SecondarySkill.WISDOM, SkillLevel.EXPERT,
+                SecondarySkill.WATER_MAGIC, SkillLevel.EXPERT);
+        Hero mage = HeroCatalog.SORSHA.withBuild(0, 0, 6, 20, skills).withSpellbook(Set.of(Spell.REMOVE_OBSTACLE));
+        BattleSetup setup = new BattleSetup(List.of(new Stack(UnitCatalog.PIKEMAN, 30, new Hex(3, 5), Side.ATTACKER, 0)),
+                List.of(new Stack(UnitCatalog.PEASANT, 50, new Hex(14, 5), Side.DEFENDER, 0)),
+                FIELD.withObstacles(rocks), mage, null);
+
+        List<BattleEvent> events = fight(setup);
+
+        assertThat(events).anyMatch(e -> e instanceof BattleEvent.FieldSpell f && f.spell() == Spell.REMOVE_OBSTACLE
+                && f.removed());
+        assertThat(setup.standingObstacles()).hasSizeLessThan(rocks.size());
+    }
+
+    @Test
+    void expert_remove_obstacle_clears_an_enemy_force_field_in_the_only_gap() {
+        Set<Hex> rocks = new HashSet<>();
+        Hex gap = SiegeLayout.h3(5 * 17 + 9);
+        for (int row = 0; row < FIELD.height(); row++) {
+            if (row != 5) {
+                rocks.add(SiegeLayout.h3(row * 17 + 9));
+            }
+        }
+        Map<SecondarySkill, SkillLevel> skills = Map.of(SecondarySkill.WISDOM, SkillLevel.EXPERT,
+                SecondarySkill.WATER_MAGIC, SkillLevel.EXPERT);
+        Hero mage = HeroCatalog.SORSHA.withBuild(0, 0, 6, 20, skills).withSpellbook(Set.of(Spell.REMOVE_OBSTACLE));
+        BattleSetup setup = new BattleSetup(List.of(new Stack(UnitCatalog.PIKEMAN, 30, new Hex(3, 5), Side.ATTACKER, 0)),
+                List.of(new Stack(UnitCatalog.PEASANT, 50, new Hex(14, 5), Side.DEFENDER, 0)),
+                FIELD.withObstacles(rocks), mage, null).obstacleGroups(List.of());
+        setup.fieldEffects().add(FieldEffects.Kind.FORCE_FIELD, List.of(gap), Side.DEFENDER, 0, Integer.MAX_VALUE, null);
+
+        List<BattleEvent> events = fight(setup);
+
+        assertThat(events).anyMatch(e -> e instanceof BattleEvent.FieldSpell f && f.spell() == Spell.REMOVE_OBSTACLE
+                && f.removed() && f.hexes().equals(List.of(new HexCoord(gap.q(), gap.r()))));
+    }
+
+    @Test
+    void remove_obstacle_takes_fire_walls_from_advanced_and_all_spell_fields_on_expert() {
+        BattleSetup setup = setup(walker(), List.of(archers()));
+        setup.fieldEffects().add(FieldEffects.Kind.FIRE_WALL, List.of(new Hex(8, 5)), Side.DEFENDER, 10, 1, null);
+        setup.fieldEffects().add(FieldEffects.Kind.FORCE_FIELD, List.of(new Hex(8, 7)), Side.DEFENDER, 0, 1, null);
+
+        assertThat(FieldSpells.removable(SkillLevel.BASIC, Side.ATTACKER, setup)).isEmpty();
+        assertThat(FieldSpells.removable(SkillLevel.ADVANCED, Side.ATTACKER, setup)).containsExactly(List.of(new Hex(8, 5)));
+        assertThat(FieldSpells.removable(SkillLevel.EXPERT, Side.ATTACKER, setup)).hasSize(2);
+    }
+
+    @Test
+    void quicksand_and_mines_are_worth_more_the_longer_the_enemy_walks() {
+        BattleSetup setup = setup(walker(), List.of(archers()));
+        Hero hero = mage(Spell.LAND_MINE);
+        List<HeroSpellcasting.Cast> mines = FieldSpells.candidates(Side.ATTACKER, Spell.LAND_MINE, SkillLevel.EXPERT, setup);
+        List<HeroSpellcasting.Cast> sand = FieldSpells.candidates(Side.ATTACKER, Spell.QUICKSAND, SkillLevel.EXPERT, setup);
+
+        assertThat(FieldSpells.value(hero, Side.ATTACKER, mines.getFirst(), setup)).isPositive();
+        assertThat(FieldSpells.value(hero, Side.ATTACKER, sand.getFirst(), setup)).isPositive();
+    }
+
+    @Test
+    void fire_walls_and_force_fields_vanish_after_their_second_round() {
+        BattleSetup setup = setup(walker(), List.of(archers()));
+        setup.fieldEffects().add(FieldEffects.Kind.FORCE_FIELD, List.of(new Hex(5, 0)), Side.ATTACKER, 0, 1, null);
+
+        List<BattleEvent> events = fight(setup);
+
+        assertThat(events).anyMatch(e -> e instanceof BattleEvent.FieldSpell f && f.spell() == Spell.FORCE_FIELD
+                && f.removed());
     }
 
     private static List<Hex> row(int r, int fromQ, int toQ) {
