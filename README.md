@@ -299,8 +299,9 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   äußersten Reihen (zerbrechlichster Schütze in die Ecke — weniger
   Adjazenz-Hexen, also weniger Angriffsfläche), Melees
   nach Speed absteigend von der Mitte nach außen (schnellster
-  zentriert für maximale Charge-Reichweite). Der UI-Slot bestimmt
-  nur die Anzeige-Reihenfolge im Editor.
+  zentriert für maximale Charge-Reichweite). Schützen innen oder auf
+  den Reihen 2/8 brachten im Duell nichts (0.497 / 0.511 bei 6480
+  Kämpfen). Der UI-Slot bestimmt nur die Anzeige-Reihenfolge im Editor.
 - **Strategischer Solver** (`StrategicAutoSolver`) für Army-Battles:
   Pro Runde wird ein `RoundPlan` mit einem Focus-Fire-Ziel je Seite
   berechnet (gewichtet nach Schaden × Count plus Special-Boni). In der
@@ -313,6 +314,10 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Tank-Pattern (Nahkämpfer decken die eigenen Schützen) verlor im direkten
   Duell gegen die Fassung ohne (0.469 bei 6480 Kämpfen) und ist entfallen.
   Gegen Greedy gewinnt der Strategic-Solver 0.580 (vorher 0.397).
+  Solche Vergleiche misst der `SolverDuelTest`: zwei Varianten (Solver,
+  Aufstellung oder beides) direkt gegeneinander über alle Paarungen mit
+  getauschten Rollen, aktiviert mit `-Ph3.harness=solver-duel`, einzelne
+  Duelle mit `-Ph3.duel=<name>`.
   Single-Battle nutzt den `GreedyAutoSolver`, die Faction-Matrix beide.
 - **Replay-UI** — React 19 + Vite + Tailwind. Drei Modi über den
   ModeSwitcher: Single-Battle (Truppenkonfig + Hex-Replay mit
