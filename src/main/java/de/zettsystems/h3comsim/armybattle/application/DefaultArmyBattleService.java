@@ -9,6 +9,7 @@ import de.zettsystems.h3comsim.battle.domain.BattleResult;
 import de.zettsystems.h3comsim.battle.domain.BattleSetup;
 import de.zettsystems.h3comsim.battle.domain.Battlefield;
 import de.zettsystems.h3comsim.battle.domain.CollectedBonus;
+import de.zettsystems.h3comsim.battle.domain.Faction;
 import de.zettsystems.h3comsim.battle.domain.Fortification;
 import de.zettsystems.h3comsim.battle.domain.Hero;
 import de.zettsystems.h3comsim.battle.domain.HeroCatalog;
@@ -22,9 +23,11 @@ import de.zettsystems.h3comsim.battle.domain.Stack;
 import de.zettsystems.h3comsim.battle.domain.StrategicAutoSolver;
 import de.zettsystems.h3comsim.battle.domain.Unit;
 import de.zettsystems.h3comsim.battle.domain.UnitCatalog;
+import de.zettsystems.h3comsim.battle.domain.WarMachine;
 import de.zettsystems.h3comsim.battle.domain.events.ListEventCollector;
 import de.zettsystems.h3comsim.battle.domain.events.Side;
 import de.zettsystems.h3comsim.battle.values.HeroMapper;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -52,18 +55,45 @@ public class DefaultArmyBattleService implements ArmyBattleService {
                 : Battlefield.STANDARD;
         Hero attackerHero = resolveHero(request.attacker(), attackerStacks, growthRandom(seed, Side.ATTACKER));
         Hero defenderHero = resolveHero(request.defender(), defenderStacks, growthRandom(seed, Side.DEFENDER));
-        Siege siege = fortification == null ? null : new Siege(fortification, defenderHero.faction());
+        Siege siege = null;
+        if (fortification != null) {
+            if (attackerHero == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only a hero can besiege a town");
+            }
+            siege = new Siege(fortification, town(request, defenderHero, defenderStacks));
+        }
         BattleSetup setup = new BattleSetup(attackerStacks, defenderStacks, battlefield,
                 attackerHero, bonusOf(request.attacker()),
                 defenderHero, bonusOf(request.defender()), siege)
-                .equip(Side.ATTACKER, Objects.requireNonNullElse(request.attacker().warMachines(), Set.of()))
-                .equip(Side.DEFENDER, Objects.requireNonNullElse(request.defender().warMachines(), Set.of()))
+                .equip(Side.ATTACKER, machines(request.attacker(), attackerHero))
+                .equip(Side.DEFENDER, machines(request.defender(), defenderHero))
                 .sodSpellCosts(Boolean.TRUE.equals(request.sodSpellCosts()));
 
         ListEventCollector collector = new ListEventCollector();
         BattleResult result = new Battle(new Random(seed), new StrategicAutoSolver(), collector).simulate(setup);
         return new ArmyBattleSimulation(result, collector.events(),
-                HeroMapper.toDto(attackerHero), HeroMapper.toDto(defenderHero));
+                attackerHero == null ? null : HeroMapper.toDto(attackerHero),
+                defenderHero == null ? null : HeroMapper.toDto(defenderHero));
+    }
+
+    /**
+     * Die Stadt des Verteidigers: wie angegeben, sonst die Fraktion seines Helden, ohne Helden
+     * die Hauptfraktion der Garnison. Eine rein neutrale Garnison braucht die Angabe.
+     */
+    private static Faction town(ArmyBattleRequest request, @Nullable Hero defenderHero, List<Stack> defenderStacks) {
+        Faction town = request.town();
+        if (town == null) {
+            town = defenderHero != null ? defenderHero.faction() : HeroCatalog.dominantFaction(defenderStacks);
+        }
+        if (town == null || town == Faction.NEUTRAL) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Town needs one of the nine town factions");
+        }
+        return town;
+    }
+
+    /** Kriegsmaschinen gehören dem Helden; eine Armee ohne ihn hat keine. */
+    private static Set<WarMachine> machines(ArmySpec army, @Nullable Hero hero) {
+        return hero == null ? Set.of() : Objects.requireNonNullElse(army.warMachines(), Set.of());
     }
 
     /** Eigener Zufallsstrom je Seite für den Aufstieg, damit die Schlacht selbst ungestört bleibt. */
@@ -72,12 +102,18 @@ public class DefaultArmyBattleService implements ArmyBattleService {
     }
 
     /**
-     * Jede Armee hat einen Helden; ohne Auswahl den Standardhelden ihrer Hauptfraktion. Level
-     * und Aufbau aus dem Request gelten für beide Fälle; mit {@code randomGrowth} steigt der Held
-     * zuerst nach den Regeln zufällig auf ({@link HeroGrowth}).
+     * Der Held der Armee; ohne Auswahl den Standardhelden ihrer Hauptfraktion, mit
+     * {@code withoutHero} keinen. Level und Aufbau aus dem Request gelten für beide Fälle; mit
+     * {@code randomGrowth} steigt der Held zuerst nach den Regeln zufällig auf ({@link HeroGrowth}).
      */
-    private static Hero resolveHero(ArmySpec army, List<Stack> stacks, Random growth) {
+    private static @Nullable Hero resolveHero(ArmySpec army, List<Stack> stacks, Random growth) {
         String name = army.heroName();
+        if (Boolean.TRUE.equals(army.withoutHero())) {
+            if (name != null && !name.isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "heroName and withoutHero exclude each other");
+            }
+            return null;
+        }
         Hero hero = name == null || name.isBlank()
                 ? HeroCatalog.defaultForArmy(stacks)
                 : HeroCatalog.byName(name)

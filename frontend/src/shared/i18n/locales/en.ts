@@ -314,8 +314,12 @@ export const en: Dictionary = {
   army: {
     siegeTitle: 'Siege',
     siegeHint:
-      'The defender holds a town of the faction of the defending hero: walls and gate (Fort), plus keep and moat (Citadel), plus two towers and stronger walls (Castle). The attacker brings a catapult.',
+      'The defender holds a town: walls and gate (Fort), plus keep and moat (Citadel), plus two towers and stronger walls (Castle). The attacker brings a catapult.',
     siegeNone: 'None — open field',
+    siegeNeedsHero: 'Only a hero can besiege a town — choose a hero for the attacker.',
+    town: 'Town',
+    townHint: 'Decides moat and tower damage.',
+    townDefault: '— town of the hero, else main faction of the garrison —',
     rulesTitle: 'Rules',
     sodSpellCosts: 'Spell costs from Shadow of Death',
     sodSpellCostsHint:
@@ -331,6 +335,10 @@ export const en: Dictionary = {
     slotEmpty: '— empty —',
     hero: 'Hero',
     heroNone: '— default hero of the main faction —',
+    heroWithout: 'No hero (neutral monsters, garrison)',
+    heroWithoutHint:
+      'Without a hero there is no luck, no spells, no tactics and no war machines; the morale of the composition applies.',
+    heroWithoutSummary: 'No hero',
     heroEffect: '+{{attack}} attack / +{{defense}} defense on every creature of this army',
     heroPending: 'Loading heroes …',
     heroSkillOFFENSE: 'Offense',

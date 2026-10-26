@@ -114,7 +114,7 @@ interface ArmySummaryProps {
   side: 'ATTACKER' | 'DEFENDER';
   state: import('../battle-replay/state').BattleState;
   color: 'amber' | 'blue';
-  hero?: HeroDto;
+  hero?: HeroDto | null;
 }
 
 function ArmySummary({ side, state, color, hero }: Readonly<ArmySummaryProps>) {
@@ -131,6 +131,9 @@ function ArmySummary({ side, state, color, hero }: Readonly<ArmySummaryProps>) {
         </span>
       </div>
       {hero && <HeroSummary hero={hero} />}
+      {hero === null && (
+        <p className="mt-2 text-xs text-slate-400">{t('army.heroWithoutSummary')}</p>
+      )}
       <ul className="mt-2 space-y-0.5 text-xs text-slate-300">
         {stacks.map((s) => {
           const ratio = s.startCount === 0 ? 0 : Math.max(0, Math.min(1, s.count / s.startCount));

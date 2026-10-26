@@ -1,5 +1,6 @@
 package de.zettsystems.h3comsim.armybattle.values;
 
+import de.zettsystems.h3comsim.battle.domain.Faction;
 import de.zettsystems.h3comsim.battle.domain.Fortification;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
@@ -18,9 +19,13 @@ public record ArmyBattleRequest(
                 example = "42", nullable = true)
         @Nullable Long seed,
 
-        @Schema(description = "Belagerung: Befestigung der Stadt des Verteidigers (FORT, CITADEL, CASTLE). Die Stadt ist die Fraktion seines Helden. Bei null eine Feldschlacht.",
+        @Schema(description = "Belagerung: Befestigung der Stadt des Verteidigers (FORT, CITADEL, CASTLE). Bei null eine Feldschlacht. Der Angreifer braucht einen Helden.",
                 example = "CASTLE", nullable = true)
         @Nullable Fortification fortification,
+
+        @Schema(description = "Stadt des Verteidigers bei einer Belagerung; bestimmt Graben und Turmschaden. Bei null die Fraktion seines Helden, ohne Helden die Hauptfraktion der Garnison (nach Goldwert). Eine rein neutrale Garnison braucht die Angabe.",
+                example = "RAMPART", nullable = true)
+        @Nullable Faction town,
 
         @Schema(description = "Zauberkosten nach Shadow of Death: beherrscht ein Held die Schule eines Zaubers (gleich auf welcher Stufe), kostet der Zauber weniger, etwa Haste 5 statt 6. Bei null oder false gelten die Kosten des RoE-Manuals.",
                 example = "false", nullable = true)
@@ -34,6 +39,6 @@ public record ArmyBattleRequest(
     /** Mit oder ohne Belagerung, Zauberkosten nach RoE. */
     public ArmyBattleRequest(ArmySpec attacker, ArmySpec defender, @Nullable Long seed,
                              @Nullable Fortification fortification) {
-        this(attacker, defender, seed, fortification, null);
+        this(attacker, defender, seed, fortification, null, null);
     }
 }

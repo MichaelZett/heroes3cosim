@@ -7,12 +7,14 @@ import de.zettsystems.h3comsim.armybattle.values.StackSpec;
 import de.zettsystems.h3comsim.battle.domain.Spell;
 import de.zettsystems.h3comsim.battle.domain.events.BattleEvent;
 import de.zettsystems.h3comsim.battle.domain.events.Side;
+import de.zettsystems.h3comsim.battle.values.HeroDto;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -125,7 +127,7 @@ class HeroArmyBattleTest {
         // Crag Hack (Barbar, ohne Startzauber) mit Magic Arrow, dazu 2 Power und 3 Knowledge.
         List<StackSpec> army = List.of(new StackSpec("Pikeman", 30));
         ArmySpec mage = new ArmySpec(army, "Crag Hack", 0, 0, 1, 0, 0, 2, 3, Map.of(), Set.of(),
-                Set.of(Spell.MAGIC_ARROW), false);
+                Set.of(Spell.MAGIC_ARROW), false, false);
         ArmyBattleSimulation simulation = service.simulate(
                 new ArmyBattleRequest(mage, new ArmySpec(army, null), SEED), SEED);
 
@@ -141,7 +143,7 @@ class HeroArmyBattleTest {
     void a_spell_beyond_the_wisdom_of_the_hero_is_rejected() {
         List<StackSpec> army = List.of(new StackSpec("Pikeman", 30));
         ArmyBattleRequest request = new ArmyBattleRequest(
-                new ArmySpec(army, "Crag Hack", 0, 0, 1, 0, 0, 0, 0, Map.of(), Set.of(), Set.of(Spell.IMPLOSION), false),
+                new ArmySpec(army, "Crag Hack", 0, 0, 1, 0, 0, 0, 0, Map.of(), Set.of(), Set.of(Spell.IMPLOSION), false, false),
                 new ArmySpec(army, null), SEED);
 
         assertThatThrownBy(() -> service.simulate(request, SEED))
@@ -152,19 +154,20 @@ class HeroArmyBattleTest {
     @Test
     void random_growth_levels_the_hero_by_the_seed_and_reports_him() {
         List<StackSpec> army = List.of(new StackSpec("Pikeman", 30));
-        ArmySpec grown = new ArmySpec(army, "Solmyr", 0, 0, 15, 0, 0, 0, 0, Map.of(), Set.of(), Set.of(), true);
+        ArmySpec grown = new ArmySpec(army, "Solmyr", 0, 0, 15, 0, 0, 0, 0, Map.of(), Set.of(), Set.of(), true, false);
         ArmyBattleRequest request = new ArmyBattleRequest(grown, new ArmySpec(army, null), SEED);
 
         ArmyBattleSimulation first = service.simulate(request, SEED);
         ArmyBattleSimulation second = service.simulate(request, SEED);
 
-        assertThat(first.attackerHero().level()).isEqualTo(15);
-        assertThat(first.attackerHero().power() + first.attackerHero().knowledge()
-                + first.attackerHero().attack() + first.attackerHero().defense()).as("2+3 aus der Klasse, 14 Aufstiege")
-                .isEqualTo(19);
-        assertThat(first.attackerHero().spells()).contains(Spell.CHAIN_LIGHTNING).hasSizeGreaterThan(5);
-        assertThat(first.attackerHero()).isEqualTo(second.attackerHero());
-        assertThat(first.defenderHero().name()).isEqualTo("Sorsha");
-        assertThat(first.defenderHero().level()).isEqualTo(1);
+        HeroDto hero = Objects.requireNonNull(first.attackerHero());
+        assertThat(hero.level()).isEqualTo(15);
+        assertThat(hero.power() + hero.knowledge() + hero.attack() + hero.defense())
+                .as("2+3 aus der Klasse, 14 Aufstiege").isEqualTo(19);
+        assertThat(hero.spells()).contains(Spell.CHAIN_LIGHTNING).hasSizeGreaterThan(5);
+        assertThat(hero).isEqualTo(second.attackerHero());
+        HeroDto defender = Objects.requireNonNull(first.defenderHero());
+        assertThat(defender.name()).isEqualTo("Sorsha");
+        assertThat(defender.level()).isEqualTo(1);
     }
 }

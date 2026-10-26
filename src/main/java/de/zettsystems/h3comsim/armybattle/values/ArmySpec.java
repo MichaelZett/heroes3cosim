@@ -99,7 +99,15 @@ public record ArmySpec(
                 darüber nach Wisdom), auch Abenteuerzauber ohne Wirkung im Kampf. Gewürfelt wird aus
                 dem Seed der Schlacht. Die übrigen Aufbau-Felder kommen obendrauf.
                 """, example = "true", nullable = true)
-        @Nullable Boolean randomGrowth) {
+        @Nullable Boolean randomGrowth,
+
+        @Schema(description = """
+                Armee ohne Helden: neutrale Monster, Garnison einer Stadt. Dann gibt es kein Glück
+                (SoD), keine Zauber, kein Tactics, keine Kriegsmaschinen und keine gesammelten Boni;
+                die Moral aus der Zusammenstellung wirkt. Schließt `heroName` aus; die übrigen
+                Helden-Felder werden ignoriert. Eine Stadt greift nur ein Held an.
+                """, example = "false", nullable = true)
+        @Nullable Boolean withoutHero) {
 
     /** Obergrenze des Simulators, kein Spielwert — Kreatur-Boni wachsen linear weiter. */
     public static final int MAX_HERO_LEVEL = 99;
@@ -121,6 +129,7 @@ public record ArmySpec(
                 .filter(Objects::nonNull)
                 .collect(Collectors.toUnmodifiableSet());
         randomGrowth = Objects.requireNonNullElse(randomGrowth, false);
+        withoutHero = Objects.requireNonNullElse(withoutHero, false);
         spells = spells == null ? Set.of() : spells.stream()
                 .filter(Objects::nonNull)
                 .collect(Collectors.toUnmodifiableSet());
@@ -134,11 +143,17 @@ public record ArmySpec(
     /** Armee mit Helden, gesammeltem Glück/Moral und Level, ohne weiteren Aufbau. */
     public ArmySpec(List<StackSpec> stacks, @Nullable String heroName, int luckBonus,
                     int moraleBonus, int heroLevel) {
-        this(stacks, heroName, luckBonus, moraleBonus, heroLevel, 0, 0, 0, 0, Map.of(), Set.of(), Set.of(), false);
+        this(stacks, heroName, luckBonus, moraleBonus, heroLevel, 0, 0, 0, 0, Map.of(), Set.of(), Set.of(), false,
+                false);
     }
 
     /** Armee mit dem Standardhelden ihrer Hauptfraktion. */
     public ArmySpec(List<StackSpec> stacks) {
         this(stacks, null);
+    }
+
+    /** Armee ohne Helden. */
+    public static ArmySpec withoutHero(List<StackSpec> stacks) {
+        return new ArmySpec(stacks, null, 0, 0, 1, 0, 0, 0, 0, Map.of(), Set.of(), Set.of(), false, true);
     }
 }
