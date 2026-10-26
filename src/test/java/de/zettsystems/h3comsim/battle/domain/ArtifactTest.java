@@ -248,6 +248,24 @@ class ArtifactTest {
     }
 
     @Test
+    void the_orb_of_vulnerability_keeps_undead_and_war_machine_immunities() {
+        Stack skeletons = stack(UnitCatalog.SKELETON, Side.DEFENDER);
+        Stack giants = new Stack(UnitCatalog.GIANT, 5, new Hex(12, 7), Side.DEFENDER, 1);
+        Hero orb = HeroCatalog.SORSHA.withArtifacts(Equipment.of(Artifact.ORB_OF_VULNERABILITY));
+        BattleSetup setup = new BattleSetup(List.of(stack(UnitCatalog.PIKEMAN, Side.ATTACKER)),
+                List.of(skeletons, giants), FIELD, orb, HeroCatalog.NYMUS).equip(Side.DEFENDER, Set.of(WarMachine.BALLISTA));
+        Stack ballista = setup.machinesOf(Side.DEFENDER).getFirst();
+
+        assertThat(SpellResistance.isImmune(skeletons, Spell.BLIND, Side.ATTACKER, setup)).isTrue();
+        assertThat(SpellResistance.isImmune(skeletons, Spell.SLOW, Side.ATTACKER, setup)).isFalse();
+        assertThat(SpellResistance.isImmune(giants, Spell.BLIND)).isTrue();
+        assertThat(SpellResistance.isImmune(giants, Spell.BLIND, Side.ATTACKER, setup))
+                .as("die Immunität der Giants ist natürlich").isFalse();
+        assertThat(SpellResistance.isImmune(ballista, Spell.SLOW, Side.ATTACKER, setup)).isTrue();
+        assertThat(SpellResistance.isImmune(ballista, Spell.CURSE, Side.ATTACKER, setup)).isFalse();
+    }
+
+    @Test
     void orbs_raise_spell_damage_and_the_titans_bolt_hits_for_600() {
         Hero fire = HeroCatalog.SORSHA.withArtifacts(Equipment.of(Artifact.ORB_OF_TEMPESTUOUS_FIRE));
         Stack pikemen = stack(UnitCatalog.PIKEMAN, Side.DEFENDER);
