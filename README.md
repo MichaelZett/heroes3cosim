@@ -334,6 +334,31 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Stronghold 0.52 → 0.68, Rampart 0.26 → 0.41, Inferno 0.20 → 0.36,
   Necropolis 0.24 → 0.34, Dungeon 0.61 → 0.71; Castle, Tower und Conflux
   liegen schon oben und gewinnen wenig dazu.
+- **Seeschlacht** (VCMI `battlefields.json`) — Wasser als Gelände: Treffen
+  zwei Helden in Booten aufeinander, kämpfen sie auf zwei Schiffen; die
+  Spalten 6–10 dazwischen sind Wasser, nur zwei Planken (dritte und neunte
+  Reihe) führen hinüber. Alle übrigen Kämpfe auf Wasser — gegen neutrale
+  Wächter oder eine Garnison ohne Helden — finden auf einem Schiffsdeck
+  statt, dessen Hindernisse Masten sind (drei Felder je Mast). Auf Wasser
+  hat niemand Heimatgelände, magisches Gelände gibt es dort nicht. Gemessen
+  (Wochenproduktionen aller Paarungen, Helden auf Level 10): auf zwei
+  Schiffen dauert ein Kampf 6.7 statt 6.2 Runden.
+- **Kreaturenbanken** (VCMI `config/objects/creatureBanks.json`) — die elf
+  Banken aus SoD (Cyclops Stockpile, Dwarven Treasury, Griffin Conservatory,
+  Imp Cache, Medusa Stores, Naga Bank, Dragon Fly Hive, Shipwreck, Derelict
+  Ship, Crypt, Dragon Utopia) mit je vier Stufen. Die Stufe ist wählbar oder
+  wird nach ihrem Anteil auf der Karte gewürfelt (30/30/30/10 %), ein
+  Wächter-Stack ist mit 50 % die ausgebaute Kreatur (aus dem Seed). Die
+  Wächter ersetzen den Verteidiger und stehen in der Aufstellung der Bank
+  (VCMI-Layouts `creatureBankNarrow/Wide`): die Armee des Helden in der
+  Mitte, die Wächter an den Ecken und Rändern ringsum. Keine Tactics, keine
+  Hindernisse, keine Kriegsmaschinen; nur ein Held greift eine Bank an,
+  eine Belagerung ist sie nicht. Gemessen (Wochenproduktion je Fraktion,
+  Helden auf Level 10, 36 Kämpfe je Stufe): Imp Cache, Medusa Stores,
+  Shipwreck, Derelict Ship und Crypt fallen auf allen Stufen; Dwarven
+  Treasury und Dragon Fly Hive erst auf Stufe 4 nicht immer (0.61/0.75);
+  Cyclops Stockpile, Griffin Conservatory und Naga Bank nur auf Stufe 1;
+  Dragon Utopia nie.
 - **Belagerung** (heroes.thelazy.net, *Fortifications*, Felder wie in der
   freien H3-Engine VCMI) — je Army-Battle wählbar: Der Verteidiger steht
   in einer Stadt, ohne Felsen auf dem Feld. Die Stadt ist frei wählbar;
@@ -628,17 +653,16 @@ Match-ups:
 Die Werte sind also als „unter spell-/hero-freien 1-vs-1-Bedingungen"
 zu lesen, nicht als universelle H3-Tier-Liste.
 
-## Was noch fehlt
+## Was bewusst fehlt
 
-Damit sich jede Schlacht abbilden lässt, die das Spiel kennt, fehlen noch:
-
-- **Kreaturenbanken** mit ihrer eigenen Aufstellung (optional).
+Jede Schlacht, die das Spiel kennt — Feld, Gelände, Belagerung, Wasser,
+Kreaturenbank, mit und ohne Helden —, lässt sich abbilden.
 
 Bewusst nicht abgebildet, weil es nichts am Kampf selbst ändert:
 Rückzug und Kapitulation, die Abenteuerkarte (Bewegung, Logistics,
 Pathfinding, Scouting …), alles nach dem Kampf (Necromancy, Eagle Eye,
 Erfahrung), Abenteuer-Zauber und die Inhalte späterer Erweiterungen
-(Kanone, Commander). Seeschlachten auf dem Schiffsdeck fehlen. Zweifeldrige Kreaturen drehen sich nicht um, wenn
+(Kanone, Commander). Zweifeldrige Kreaturen drehen sich nicht um, wenn
 sie rückwärts gehen — wie in VCMI; eine Regel, nach der sich dabei ihre
 Felder änderten, ist nicht belegt. Der Verteidiger einer Stadt steht wie
 im Spiel immer rechts.

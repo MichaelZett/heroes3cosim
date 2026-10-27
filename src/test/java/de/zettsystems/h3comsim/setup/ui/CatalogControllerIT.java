@@ -49,6 +49,17 @@ class CatalogControllerIT {
     }
 
     @Test
+    void list_creature_banks_returns_levels_and_guards() throws Exception {
+        mockMvc().perform(get("/api/creature-banks"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(11))
+                .andExpect(jsonPath("$[?(@.id=='CYCLOPS_STOCKPILE')].levels[3].chance").value(10))
+                .andExpect(jsonPath("$[?(@.id=='CYCLOPS_STOCKPILE')].levels[0].guards[2].upgradeName")
+                        .value("Cyclops King"))
+                .andExpect(jsonPath("$[?(@.id=='CRYPT')].levels[0].guards[0].unitName").value("Skeleton"));
+    }
+
+    @Test
     void list_factions_returns_all_ten_factions() throws Exception {
         mockMvc().perform(get("/api/factions"))
                 .andExpect(status().isOk())

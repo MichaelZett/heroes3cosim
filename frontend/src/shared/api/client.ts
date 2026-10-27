@@ -1,6 +1,7 @@
 import type {
   ArmyBattleRequest,
   ArtifactDto,
+  CreatureBankDto,
   ArmyBattleSimulation,
   ArmyPresetsResponse,
   BattleConfigRequest,
@@ -40,6 +41,9 @@ export const api = {
   },
   listArtifacts(): Promise<ArtifactDto[]> {
     return jsonFetch<ArtifactDto[]>('/artifacts');
+  },
+  listCreatureBanks(): Promise<CreatureBankDto[]> {
+    return jsonFetch<CreatureBankDto[]>('/creature-banks');
   },
   simulateBattle(request: BattleConfigRequest): Promise<BattleSimulationDto> {
     return jsonFetch<BattleSimulationDto>('/battles/simulate', {

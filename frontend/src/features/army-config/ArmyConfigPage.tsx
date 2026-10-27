@@ -6,6 +6,7 @@ import ModeSwitcher from '../../shared/ui/ModeSwitcher';
 import {
   useArmyPresets,
   useArtifacts,
+  useCreatureBanks,
   useHeroes,
   useSimulateArmyBattle,
   useUnits,
@@ -15,6 +16,7 @@ import { DEFAULT_BUILD, higherLevel, learnableSpells, type HeroBuild } from './h
 import { useArmyBattleStore } from './armyBattleStore';
 import FactionPresetPicker from './FactionPresetPicker';
 import ArtifactPicker from './ArtifactPicker';
+import CreatureBankSection, { CreatureBankGuards } from './CreatureBankSection';
 import { equipmentTotals } from './artifacts';
 import HeroBonusPicker from './HeroBonusPicker';
 import HeroPicker from './HeroPicker';
@@ -41,6 +43,7 @@ const TERRAINS: Terrain[] = [
   'SAND',
   'SNOW',
   'SWAMP',
+  'WATER',
 ];
 const MAGIC_TERRAINS: MagicTerrain[] = [
   'MAGIC_PLAINS',
@@ -77,6 +80,7 @@ export default function ArmyConfigPage() {
   const presetsQuery = useArmyPresets();
   const heroesQuery = useHeroes();
   const artifactsQuery = useArtifacts();
+  const banksQuery = useCreatureBanks();
 
   const simulate = useSimulateArmyBattle((sim, request) => {
     loadSimulation(sim, request);
@@ -93,6 +97,7 @@ export default function ArmyConfigPage() {
     const defenderStacks = trimEmpty(form.defenderStacks);
     if (attackerStacks.length === 0 || defenderStacks.length === 0) return;
     const seedNum = form.seedText.trim() === '' ? null : Number(form.seedText);
+    const bank = form.creatureBank ?? null;
     simulate.mutate({
       attacker: armySpec(
         attackerStacks,
@@ -100,17 +105,21 @@ export default function ArmyConfigPage() {
         form.attackerHeroName,
         form.attackerBuild,
       ),
-      defender: armySpec(
-        defenderStacks,
-        form.defenderWithoutHero ?? false,
-        form.defenderHeroName,
-        form.defenderBuild,
-      ),
+      defender: bank
+        ? null
+        : armySpec(
+            defenderStacks,
+            form.defenderWithoutHero ?? false,
+            form.defenderHeroName,
+            form.defenderBuild,
+          ),
+      creatureBank: bank ? { bank, level: form.creatureBankLevel ?? null } : null,
       seed: seedNum !== null && Number.isFinite(seedNum) ? seedNum : null,
       fortification: form.fortification ?? null,
       town: form.fortification ? (form.town ?? null) : null,
       terrain: form.fortification ? null : (form.terrain ?? null),
-      magicTerrain: form.fortification ? null : (form.magicTerrain ?? null),
+      magicTerrain:
+        form.fortification || form.terrain === 'WATER' ? null : (form.magicTerrain ?? null),
       sodSpellCosts: form.sodSpellCosts ?? false,
     });
   }
@@ -157,8 +166,13 @@ export default function ArmyConfigPage() {
   const heroes = heroesQuery.data;
 
   const attackerReady = trimEmpty(form.attackerStacks).length > 0;
-  const defenderReady = trimEmpty(form.defenderStacks).length > 0;
-  const siegeWithoutHero = !!form.fortification && (form.attackerWithoutHero ?? false);
+  const banks = banksQuery.data ?? [];
+  const selectedBank = form.creatureBank
+    ? banks.find((b) => b.id === form.creatureBank)
+    : undefined;
+  const defenderReady = !!selectedBank || trimEmpty(form.defenderStacks).length > 0;
+  const needsHero = !!form.fortification || !!selectedBank;
+  const siegeWithoutHero = needsHero && (form.attackerWithoutHero ?? false);
   const submitDisabled = !attackerReady || !defenderReady || siegeWithoutHero || simulate.isPending;
 
   return (
@@ -198,27 +212,33 @@ export default function ArmyConfigPage() {
               setForm({ attackerBuild: { ...DEFAULT_BUILD, ...form.attackerBuild, ...patch } })
             }
           />
-          <SideColumn
-            side="defender"
-            title={t('army.defender')}
-            units={units}
-            presets={presets}
-            selectedFaction={form.defenderFaction}
-            onFactionChange={(f: Faction | null) => setForm({ defenderFaction: f })}
-            onPresetApply={(preset: FactionPresetDto) => applyPreset('defender', preset)}
-            stacks={form.defenderStacks}
-            onSlotChange={(slot, patch) => updateStack('defender', slot, patch)}
-            heroes={heroes}
-            artifacts={artifactsQuery.data ?? []}
-            heroName={form.defenderHeroName}
-            onHeroChange={(name) => setForm({ defenderHeroName: name, defenderWithoutHero: false })}
-            withoutHero={form.defenderWithoutHero ?? false}
-            onWithoutHero={() => setForm({ defenderHeroName: null, defenderWithoutHero: true })}
-            build={{ ...DEFAULT_BUILD, ...form.defenderBuild }}
-            onBuildChange={(patch) =>
-              setForm({ defenderBuild: { ...DEFAULT_BUILD, ...form.defenderBuild, ...patch } })
-            }
-          />
+          {selectedBank ? (
+            <CreatureBankGuards bank={selectedBank} level={form.creatureBankLevel ?? null} />
+          ) : (
+            <SideColumn
+              side="defender"
+              title={t('army.defender')}
+              units={units}
+              presets={presets}
+              selectedFaction={form.defenderFaction}
+              onFactionChange={(f: Faction | null) => setForm({ defenderFaction: f })}
+              onPresetApply={(preset: FactionPresetDto) => applyPreset('defender', preset)}
+              stacks={form.defenderStacks}
+              onSlotChange={(slot, patch) => updateStack('defender', slot, patch)}
+              heroes={heroes}
+              artifacts={artifactsQuery.data ?? []}
+              heroName={form.defenderHeroName}
+              onHeroChange={(name) =>
+                setForm({ defenderHeroName: name, defenderWithoutHero: false })
+              }
+              withoutHero={form.defenderWithoutHero ?? false}
+              onWithoutHero={() => setForm({ defenderHeroName: null, defenderWithoutHero: true })}
+              build={{ ...DEFAULT_BUILD, ...form.defenderBuild }}
+              onBuildChange={(patch) =>
+                setForm({ defenderBuild: { ...DEFAULT_BUILD, ...form.defenderBuild, ...patch } })
+              }
+            />
+          )}
         </div>
 
         <section className="rounded-lg border border-slate-800 bg-slate-900 p-6">
@@ -227,8 +247,9 @@ export default function ArmyConfigPage() {
             <span className="text-sm text-slate-400">{t('army.siegeHint')}</span>
             <select
               aria-label={t('army.siegeTitle')}
-              className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-amber-500 focus:outline-none"
+              className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-amber-500 focus:outline-none disabled:text-slate-500"
               value={form.fortification ?? ''}
+              disabled={!!selectedBank}
               onChange={(e) =>
                 setForm({
                   fortification: e.target.value === '' ? null : (e.target.value as Fortification),
@@ -264,9 +285,25 @@ export default function ArmyConfigPage() {
             </label>
           )}
           {siegeWithoutHero && (
-            <p className="mt-3 text-sm text-red-400">{t('army.siegeNeedsHero')}</p>
+            <p className="mt-3 text-sm text-red-400">
+              {t(selectedBank ? 'army.bankNeedsHero' : 'army.siegeNeedsHero')}
+            </p>
           )}
         </section>
+
+        {banks.length > 0 && (
+          <CreatureBankSection
+            banks={banks}
+            bank={form.creatureBank ?? null}
+            level={form.creatureBankLevel ?? null}
+            disabled={!!form.fortification}
+            onChange={(patch) =>
+              setForm(
+                patch.creatureBank === undefined ? patch : { ...patch, creatureBankLevel: null },
+              )
+            }
+          />
+        )}
 
         <section className="rounded-lg border border-slate-800 bg-slate-900 p-6">
           <h2 className="text-lg font-semibold text-slate-100">{t('army.terrainTitle')}</h2>
@@ -292,8 +329,9 @@ export default function ArmyConfigPage() {
               </select>
               <select
                 aria-label={t('army.magicTerrain')}
-                className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-amber-500 focus:outline-none"
-                value={form.magicTerrain ?? ''}
+                className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-amber-500 focus:outline-none disabled:text-slate-500"
+                value={form.terrain === 'WATER' ? '' : (form.magicTerrain ?? '')}
+                disabled={form.terrain === 'WATER'}
                 onChange={(e) =>
                   setForm({
                     magicTerrain: e.target.value === '' ? null : (e.target.value as MagicTerrain),
@@ -308,6 +346,9 @@ export default function ArmyConfigPage() {
                 ))}
               </select>
             </div>
+          )}
+          {!form.fortification && form.terrain === 'WATER' && (
+            <p className="mt-3 text-sm text-slate-300">{t('army.waterHint')}</p>
           )}
         </section>
 

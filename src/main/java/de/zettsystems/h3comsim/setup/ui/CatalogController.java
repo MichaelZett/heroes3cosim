@@ -1,11 +1,13 @@
 package de.zettsystems.h3comsim.setup.ui;
 
 import de.zettsystems.h3comsim.battle.domain.Artifact;
+import de.zettsystems.h3comsim.battle.domain.CreatureBank;
 import de.zettsystems.h3comsim.battle.domain.Faction;
 import de.zettsystems.h3comsim.battle.domain.HeroCatalog;
 import de.zettsystems.h3comsim.battle.domain.UnitCatalog;
 import de.zettsystems.h3comsim.battle.values.ArtifactDto;
 import de.zettsystems.h3comsim.battle.values.ArtifactMapper;
+import de.zettsystems.h3comsim.battle.values.CreatureBankDto;
 import de.zettsystems.h3comsim.battle.values.HeroDto;
 import de.zettsystems.h3comsim.battle.values.HeroMapper;
 import de.zettsystems.h3comsim.battle.values.UnitDto;
@@ -23,7 +25,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api")
 @Tag(name = "Catalog",
-        description = "Read-only Listen für den Frontend-Konfigurator: alle bekannten Einheiten, Helden, Artefakte und Faktionen.")
+        description = "Read-only Listen für den Frontend-Konfigurator: alle bekannten Einheiten, Helden, Artefakte, Kreaturenbanken und Faktionen.")
 public class CatalogController {
 
     @Operation(summary = "Alle Einheiten auflisten",
@@ -63,6 +65,21 @@ public class CatalogController {
     public List<ArtifactDto> listArtifacts() {
         return Arrays.stream(Artifact.values())
                 .map(ArtifactMapper::toDto)
+                .toList();
+    }
+
+    @Operation(summary = "Alle Kreaturenbanken auflisten",
+            description = """
+                    Gibt die Kreaturenbanken aus SoD zurück (VCMI `config/objects/creatureBanks.json`): je
+                    Ausbaustufe ihr Anteil auf der Karte und die Wächter, ausbaufähige Stacks mit ihrer
+                    ausgebauten Kreatur.
+                    """,
+            operationId = "listCreatureBanks")
+    @ApiResponse(responseCode = "200", description = "Vollständige Liste der Kreaturenbanken.")
+    @GetMapping("/creature-banks")
+    public List<CreatureBankDto> listCreatureBanks() {
+        return Arrays.stream(CreatureBank.values())
+                .map(CreatureBankDto::of)
                 .toList();
     }
 

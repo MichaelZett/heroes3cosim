@@ -3,12 +3,14 @@ package de.zettsystems.h3comsim.armybattle.application;
 import de.zettsystems.h3comsim.armybattle.values.ArmyBattleRequest;
 import de.zettsystems.h3comsim.armybattle.values.ArmyBattleSimulation;
 import de.zettsystems.h3comsim.armybattle.values.ArmySpec;
+import de.zettsystems.h3comsim.armybattle.values.CreatureBankSpec;
 import de.zettsystems.h3comsim.armybattle.values.StackSpec;
 import de.zettsystems.h3comsim.battle.domain.Battle;
 import de.zettsystems.h3comsim.battle.domain.BattleResult;
 import de.zettsystems.h3comsim.battle.domain.BattleSetup;
 import de.zettsystems.h3comsim.battle.domain.Battlefield;
 import de.zettsystems.h3comsim.battle.domain.CollectedBonus;
+import de.zettsystems.h3comsim.battle.domain.CreatureBank;
 import de.zettsystems.h3comsim.battle.domain.Equipment;
 import de.zettsystems.h3comsim.battle.domain.Faction;
 import de.zettsystems.h3comsim.battle.domain.Fortification;
@@ -49,32 +51,51 @@ public class DefaultArmyBattleService implements ArmyBattleService {
 
     @Override
     public ArmyBattleSimulation simulate(ArmyBattleRequest request, long seed) {
-        List<Stack> attackerStacks = buildStacks(request.attacker(), Side.ATTACKER);
-        List<Stack> defenderStacks = buildStacks(request.defender(), Side.DEFENDER);
+        CreatureBankSpec bankSpec = request.creatureBank();
+        Random bankRandom = new Random(seed * 31 + 3);
+        Integer bankLevel = bankSpec == null ? null : bankLevel(bankSpec, bankRandom);
+        ArmySpec defender = request.defender();
+        if (bankSpec == null && defender == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "defender is required without a creature bank");
+        }
+        List<Stack> attackerStacks = bankSpec == null
+                ? buildStacks(request.attacker(), Side.ATTACKER)
+                : bankAttackers(request.attacker());
+        List<Stack> defenderStacks = bankSpec == null
+                ? buildStacks(Objects.requireNonNull(defender), Side.DEFENDER)
+                : guards(bankSpec.bank(), Objects.requireNonNull(bankLevel), bankRandom);
 
-        Fortification fortification = request.fortification();
         Hero attackerHero = resolveHero(request.attacker(), attackerStacks, growthRandom(seed, Side.ATTACKER));
-        Hero defenderHero = resolveHero(request.defender(), defenderStacks, growthRandom(seed, Side.DEFENDER));
-        Siege siege = null;
-        if (fortification != null) {
-            if (attackerHero == null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only a hero can besiege a town");
-            }
-            siege = new Siege(fortification, town(request, defenderHero, defenderStacks));
+        Hero defenderHero = bankSpec == null
+                ? resolveHero(Objects.requireNonNull(defender), defenderStacks, growthRandom(seed, Side.DEFENDER))
+                : null;
+        Siege siege = siege(request, attackerHero, defenderHero, defenderStacks);
+        if (bankSpec != null && (siege != null || attackerHero == null)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Only a hero visits a creature bank, and it is no town");
         }
         Terrain terrain = siege == null ? request.terrain() : siegeTerrain(request, siege);
-        // Belagerungen haben im Spiel keine Felsen auf dem Feld.
-        Battlefield battlefield = siege == null
-                ? buildBattlefield(attackerStacks.size(), defenderStacks.size(), seed, terrain, request.magicTerrain())
-                : Battlefield.STANDARD;
+        if (terrain == Terrain.WATER && request.magicTerrain() != null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "There is no magical terrain at sea");
+        }
+        // Zwei Helden in Booten kämpfen auf zwei Schiffen, alle übrigen Kämpfe auf Wasser auf dem Deck.
+        boolean twoShips = terrain == Terrain.WATER && bankSpec == null && attackerHero != null && defenderHero != null;
+        // Belagerungen und Kreaturenbanken haben im Spiel keine Felsen auf dem Feld.
+        boolean obstacles = siege == null && bankSpec == null && !twoShips;
+        Battlefield battlefield = twoShips ? Battlefield.STANDARD.withObstacles(TerrainObstacles.shipToShip())
+                : buildBattlefield(obstacles, attackerStacks.size(), defenderStacks.size(), seed, terrain,
+                request.magicTerrain());
         BattleSetup setup = new BattleSetup(attackerStacks, defenderStacks, battlefield,
                 attackerHero, bonusOf(request.attacker()),
-                defenderHero, bonusOf(request.defender()), siege)
-                .equip(Side.ATTACKER, machines(request.attacker(), attackerHero))
-                .equip(Side.DEFENDER, machines(request.defender(), defenderHero))
+                defenderHero, defender == null || bankSpec != null ? CollectedBonus.NONE : bonusOf(defender),
+                siege, bankSpec == null)
                 .sodSpellCosts(Boolean.TRUE.equals(request.sodSpellCosts()))
                 .ground(terrain, request.magicTerrain());
-        if (siege == null && (terrain != null || request.magicTerrain() != null)) {
+        if (bankSpec == null) {
+            setup.equip(Side.ATTACKER, machines(request.attacker(), attackerHero))
+                    .equip(Side.DEFENDER, machines(Objects.requireNonNull(defender), defenderHero));
+        }
+        if (obstacles && (terrain != null || request.magicTerrain() != null)) {
             setup.obstacleGroups(obstacleGroups(battlefield, terrain, request.magicTerrain(), seed));
         }
 
@@ -82,7 +103,47 @@ public class DefaultArmyBattleService implements ArmyBattleService {
         BattleResult result = new Battle(new Random(seed), new StrategicAutoSolver(), collector).simulate(setup);
         return new ArmyBattleSimulation(result, collector.events(),
                 attackerHero == null ? null : HeroMapper.toDto(attackerHero),
-                defenderHero == null ? null : HeroMapper.toDto(defenderHero));
+                defenderHero == null ? null : HeroMapper.toDto(defenderHero), bankLevel);
+    }
+
+    private static @Nullable Siege siege(ArmyBattleRequest request, @Nullable Hero attackerHero,
+                                         @Nullable Hero defenderHero, List<Stack> defenderStacks) {
+        Fortification fortification = request.fortification();
+        if (fortification == null) {
+            return null;
+        }
+        if (attackerHero == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only a hero can besiege a town");
+        }
+        return new Siege(fortification, town(request, defenderHero, defenderStacks));
+    }
+
+    /** Die gewählte Stufe der Bank, ohne Angabe gewürfelt. */
+    private static int bankLevel(CreatureBankSpec spec, Random random) {
+        Integer level = spec.level();
+        return level == null ? spec.bank().rollLevel(random) : level;
+    }
+
+    /** Die Armee des Helden auf den Feldern der Bank, Slot für Slot. */
+    private static List<Stack> bankAttackers(ArmySpec army) {
+        List<Stack> stacks = new ArrayList<>();
+        for (int slot = 0; slot < army.stacks().size(); slot++) {
+            StackSpec spec = army.stacks().get(slot);
+            stacks.add(new Stack(unit(spec), spec.count(), CreatureBank.attackerHex(slot), Side.ATTACKER, slot));
+        }
+        return stacks;
+    }
+
+    /** Die Wächter der Bank auf ihren Feldern; ausbaufähige Stacks werden gewürfelt. */
+    private static List<Stack> guards(CreatureBank bank, int level, Random random) {
+        List<CreatureBank.Guard> guards = bank.level(level).guards();
+        List<Stack> stacks = new ArrayList<>();
+        for (int index = 0; index < guards.size(); index++) {
+            CreatureBank.Guard guard = guards.get(index);
+            stacks.add(new Stack(CreatureBank.roll(guard, random), guard.count(), bank.guardHex(index),
+                    Side.DEFENDER, index));
+        }
+        return stacks;
     }
 
     /**
@@ -165,13 +226,17 @@ public class DefaultArmyBattleService implements ArmyBattleService {
                 Objects.requireNonNullElse(army.moraleBonus(), 0));
     }
 
+    private static Unit unit(StackSpec spec) {
+        return UnitCatalog.byName(spec.unitName())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "Unknown unit: " + spec.unitName()));
+    }
+
     private static List<Stack> buildStacks(ArmySpec army, Side side) {
         int total = army.stacks().size();
         List<Unit> units = new ArrayList<>(total);
         for (StackSpec spec : army.stacks()) {
-            units.add(UnitCatalog.byName(spec.unitName())
-                    .orElseThrow(() -> new ResponseStatusException(
-                            HttpStatus.BAD_REQUEST, "Unknown unit: " + spec.unitName())));
+            units.add(unit(spec));
         }
         List<Hex> positions = SpawnLayout.assignPositions(side, units);
         List<Stack> stacks = new ArrayList<>(total);
@@ -199,8 +264,11 @@ public class DefaultArmyBattleService implements ArmyBattleService {
         return groups;
     }
 
-    private static Battlefield buildBattlefield(int attackerStacks, int defenderStacks, long seed,
+    private static Battlefield buildBattlefield(boolean withObstacles, int attackerStacks, int defenderStacks, long seed,
                                                 @Nullable Terrain terrain, @Nullable MagicTerrain magic) {
+        if (!withObstacles) {
+            return Battlefield.STANDARD;
+        }
         // Obstacle-Layout aus separatem Seed-Strom ableiten, damit der Battle-RNG identische
         // Würfe liefert. Spawn-Hexen werden anschließend aus dem Obstacle-Set entfernt — sonst
         // könnte ein Stack auf einem Hindernis landen. Ohne Gelände zufällige Felsen, sonst der

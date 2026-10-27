@@ -21,8 +21,13 @@ public record ArmyBattleSimulation(
         @Nullable HeroDto attackerHero,
 
         @Schema(description = "Held des Verteidigers, analog zu `attackerHero`.", nullable = true)
-        @Nullable HeroDto defenderHero) {
+        @Nullable HeroDto defenderHero,
+
+        @Schema(description = "Ausbaustufe der Kreaturenbank, um die gekämpft wurde (auch die gewürfelte), sonst null.",
+                example = "2", nullable = true)
+        @Nullable Integer creatureBankLevel) {
     public ArmyBattleSimulation {
         events = List.copyOf(events);
     }
+
 }

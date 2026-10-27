@@ -28,6 +28,7 @@ import static de.zettsystems.h3comsim.battle.domain.Terrain.SAND;
 import static de.zettsystems.h3comsim.battle.domain.Terrain.SNOW;
 import static de.zettsystems.h3comsim.battle.domain.Terrain.SUBTERRANEAN;
 import static de.zettsystems.h3comsim.battle.domain.Terrain.SWAMP;
+import static de.zettsystems.h3comsim.battle.domain.Terrain.WATER;
 
 /**
  * Die Hindernisse eines Felds nach Gelände, wie sie die freie H3-Engine VCMI aus den Spieldaten
@@ -78,6 +79,8 @@ public final class TerrainObstacles {
             usual(2, 1, terrains(DIRT, ROUGH, SUBTERRANEAN), fields(CURSED_GROUND), 0, 1),
             usual(4, 2, terrains(DIRT), fields(), 1, 2, 3),
             usual(3, 1, terrains(DIRT), fields(), 0, 1),
+            // Mast auf dem Schiffsdeck (VCMI Hindernis 55, „specialBattlefields: ship").
+            usual(3, 3, terrains(WATER), fields(), -15, -16, -33),
             usual(2, 2, terrains(DIRT), fields(), 0, 1),
             usual(2, 2, terrains(DIRT), fields(), -16),
             usual(2, 2, terrains(DIRT), fields(), 0, 1),
@@ -185,7 +188,20 @@ public final class TerrainObstacles {
             absolute(terrains(), fields(ROCKLANDS), 60, 61, 75, 76, 77, 91, 92, 93, 94, 95),
             absolute(terrains(), fields(MAGIC_CLOUDS), 59, 60, 74, 75, 76, 93, 94, 95, 111, 112));
 
+    /**
+     * Zwei Schiffe, dazwischen Wasser (VCMI {@code battlefields.json}, {@code ship_to_ship}): die
+     * Spalten 6–10 sind gesperrt, nur in der dritten und neunten Reihe führt eine Planke hinüber.
+     */
+    private static final List<Integer> SHIP_TO_SHIP = List.of(6, 7, 8, 9, 24, 25, 26, 58, 59, 60, 75, 76, 77, 92, 93,
+            94, 109, 110, 111, 126, 127, 128, 159, 160, 161, 162, 163, 176, 177, 178, 179, 180);
+
     private TerrainObstacles() {
+    }
+
+    /** Die gesperrten Wasserfelder zwischen zwei Schiffen; Remove Obstacle entfernt sie nicht. */
+    public static Set<Hex> shipToShip() {
+        return SHIP_TO_SHIP.stream().map(SiegeLayout::h3).filter(Battlefield.STANDARD::contains)
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     /** Die blockierten Felder und die einzeln entfernbaren Hindernisse (ohne Klippen). */

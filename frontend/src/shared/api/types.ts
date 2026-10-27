@@ -546,7 +546,7 @@ export type WarMachine = 'BALLISTA' | 'AMMO_CART' | 'FIRST_AID_TENT' | 'CATAPULT
 export type Fortification = 'FORT' | 'CITADEL' | 'CASTLE';
 
 export type Terrain =
-  'DIRT' | 'SAND' | 'GRASS' | 'SNOW' | 'SWAMP' | 'ROUGH' | 'SUBTERRANEAN' | 'LAVA';
+  'DIRT' | 'SAND' | 'GRASS' | 'SNOW' | 'SWAMP' | 'ROUGH' | 'SUBTERRANEAN' | 'LAVA' | 'WATER';
 
 export type MagicTerrain =
   | 'MAGIC_PLAINS'
@@ -675,9 +675,39 @@ export interface HeroSpecialtyDto {
   effective: boolean;
 }
 
+/** Kampf um eine Kreaturenbank; ihre Waechter ersetzen den Verteidiger. */
+export interface CreatureBankSpec {
+  bank: string;
+  /** Stufe 1..4; null = gewuerfelt nach dem Anteil auf der Karte. */
+  level?: number | null;
+}
+
+export interface CreatureBankGuard {
+  unitName: string;
+  count: number;
+  /** Ausgebaute Kreatur, die der Stack zu 50 % ist. */
+  upgradeName: string | null;
+}
+
+export interface CreatureBankLevel {
+  level: number;
+  chance: number;
+  guards: CreatureBankGuard[];
+}
+
+/** Kreaturenbank aus /api/creature-banks. */
+export interface CreatureBankDto {
+  id: string;
+  name: string;
+  levels: CreatureBankLevel[];
+}
+
 export interface ArmyBattleRequest {
   attacker: ArmySpec;
-  defender: ArmySpec;
+  /** Entfaellt im Kampf um eine Kreaturenbank. */
+  defender?: ArmySpec | null;
+  /** Kampf um eine Kreaturenbank statt gegen eine Armee. */
+  creatureBank?: CreatureBankSpec | null;
   seed?: number | null;
   /** Belagerung: Befestigung der Stadt des Verteidigers; null = Feldschlacht. */
   fortification?: Fortification | null;
@@ -697,6 +727,8 @@ export interface ArmyBattleSimulation {
   /** Die Helden, wie sie gekaempft haben (nach Aufbau und Aufstieg); null ohne Helden. */
   attackerHero?: HeroDto | null;
   defenderHero?: HeroDto | null;
+  /** Stufe der Kreaturenbank, auch die gewuerfelte; sonst null. */
+  creatureBankLevel?: number | null;
 }
 
 export interface FactionPresetDto {

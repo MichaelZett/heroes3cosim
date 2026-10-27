@@ -29,6 +29,10 @@ export function useArtifacts() {
   return useQuery({ queryKey: ['artifacts'], queryFn: api.listArtifacts });
 }
 
+export function useCreatureBanks() {
+  return useQuery({ queryKey: ['creatureBanks'], queryFn: api.listCreatureBanks });
+}
+
 export function useSimulateBattle(
   onSuccess: (sim: BattleSimulationDto, request: BattleConfigRequest) => void,
 ) {

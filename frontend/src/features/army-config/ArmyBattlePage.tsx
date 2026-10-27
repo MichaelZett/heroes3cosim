@@ -50,12 +50,15 @@ export default function ArmyBattlePage() {
     return { attacker: attackerFirst, defender: defenderFirst, bySlot };
   }, [state, t]);
 
+  // Eine Kreaturenbank hat keine Armee, mit der sich die Rollen tauschen liessen.
+  const rematchRequest = lastRequest?.defender && !lastRequest.creatureBank ? lastRequest : null;
+
   function startRematch() {
-    if (!lastRequest) return;
+    if (!rematchRequest?.defender) return;
     rematch.mutate({
-      attacker: lastRequest.defender,
-      defender: lastRequest.attacker,
-      seed: lastRequest.seed ?? null,
+      attacker: rematchRequest.defender,
+      defender: rematchRequest.attacker,
+      seed: rematchRequest.seed ?? null,
     });
   }
 
@@ -89,7 +92,7 @@ export default function ArmyBattlePage() {
         onTogglePaused={() => setPaused(!paused)}
         onRestart={reset}
         onStep={step}
-        onRematch={lastRequest ? startRematch : undefined}
+        onRematch={rematchRequest ? startRematch : undefined}
         rematchPending={rematch.isPending}
         finished={finished}
       />
@@ -98,7 +101,13 @@ export default function ArmyBattlePage() {
         <HexGrid state={state} transitionMs={speedMs} />
         <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
           <ArmySummary side="ATTACKER" state={state} color="amber" hero={simulation.attackerHero} />
-          <ArmySummary side="DEFENDER" state={state} color="blue" hero={simulation.defenderHero} />
+          <ArmySummary
+            side="DEFENDER"
+            state={state}
+            color="blue"
+            hero={simulation.defenderHero}
+            bankLevel={simulation.creatureBankLevel ?? null}
+          />
         </div>
       </section>
 
@@ -115,9 +124,11 @@ interface ArmySummaryProps {
   state: import('../battle-replay/state').BattleState;
   color: 'amber' | 'blue';
   hero?: HeroDto | null;
+  /** Stufe der Kreaturenbank, deren Waechter diese Seite stellen. */
+  bankLevel?: number | null;
 }
 
-function ArmySummary({ side, state, color, hero }: Readonly<ArmySummaryProps>) {
+function ArmySummary({ side, state, color, hero, bankLevel }: Readonly<ArmySummaryProps>) {
   const { t } = useTranslation();
   const stacks = [...state.stacks.values()].filter((s) => s.side === side);
   const headerText = color === 'amber' ? 'text-amber-300' : 'text-blue-300';
@@ -132,7 +143,9 @@ function ArmySummary({ side, state, color, hero }: Readonly<ArmySummaryProps>) {
       </div>
       {hero && <HeroSummary hero={hero} />}
       {hero === null && (
-        <p className="mt-2 text-xs text-slate-400">{t('army.heroWithoutSummary')}</p>
+        <p className="mt-2 text-xs text-slate-400">
+          {bankLevel ? t('army.bankSummary', { level: bankLevel }) : t('army.heroWithoutSummary')}
+        </p>
       )}
       <ul className="mt-2 space-y-0.5 text-xs text-slate-300">
         {stacks.map((s) => {

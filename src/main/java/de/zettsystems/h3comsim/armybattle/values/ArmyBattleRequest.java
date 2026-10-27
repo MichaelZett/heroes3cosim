@@ -14,8 +14,9 @@ public record ArmyBattleRequest(
         @Schema(description = "Armee der Attacker-Seite", requiredMode = Schema.RequiredMode.REQUIRED)
         @NotNull @Valid ArmySpec attacker,
 
-        @Schema(description = "Armee der Defender-Seite", requiredMode = Schema.RequiredMode.REQUIRED)
-        @NotNull @Valid ArmySpec defender,
+        @Schema(description = "Armee der Defender-Seite; entfällt im Kampf um eine Kreaturenbank (`creatureBank`).",
+                nullable = true)
+        @Valid @Nullable ArmySpec defender,
 
         @Schema(description = "Optionaler PRNG-Seed für deterministische Reproduktion. Bei null wird ein Zufalls-Seed gezogen.",
                 example = "42", nullable = true)
@@ -39,7 +40,14 @@ public record ArmyBattleRequest(
 
         @Schema(description = "Zauberkosten nach Shadow of Death: beherrscht ein Held die Schule eines Zaubers (gleich auf welcher Stufe), kostet der Zauber weniger, etwa Haste 5 statt 6. Bei null oder false gelten die Kosten des RoE-Manuals.",
                 example = "false", nullable = true)
-        @Nullable Boolean sodSpellCosts) {
+        @Nullable Boolean sodSpellCosts,
+
+        @Schema(description = """
+                Kampf um eine Kreaturenbank: ihre Wächter verteidigen in der Aufstellung der Bank (Armee
+                des Angreifers in der Mitte, Wächter an den Rändern), ohne Tactics, Hindernisse und
+                Kriegsmaschinen; `defender` wird ignoriert. Nur ein Held greift eine Bank an; keine Belagerung.
+                """, nullable = true)
+        @Valid @Nullable CreatureBankSpec creatureBank) {
 
     /** Feldschlacht ohne Belagerung. */
     public ArmyBattleRequest(ArmySpec attacker, ArmySpec defender, @Nullable Long seed) {
@@ -50,5 +58,14 @@ public record ArmyBattleRequest(
     public ArmyBattleRequest(ArmySpec attacker, ArmySpec defender, @Nullable Long seed,
                              @Nullable Fortification fortification) {
         this(attacker, defender, seed, fortification, null, null, null, null);
+    }
+
+    /** Ohne Kreaturenbank. */
+    // Je Feld ein Parameter, wie beim kanonischen Konstruktor.
+    @SuppressWarnings("java:S107")
+    public ArmyBattleRequest(ArmySpec attacker, ArmySpec defender, @Nullable Long seed,
+                             @Nullable Fortification fortification, @Nullable Faction town, @Nullable Terrain terrain,
+                             @Nullable MagicTerrain magicTerrain, @Nullable Boolean sodSpellCosts) {
+        this(attacker, defender, seed, fortification, town, terrain, magicTerrain, sodSpellCosts, null);
     }
 }

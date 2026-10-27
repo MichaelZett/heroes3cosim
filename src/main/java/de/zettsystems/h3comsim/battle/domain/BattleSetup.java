@@ -117,6 +117,20 @@ public class BattleSetup {
                        @Nullable Hero attackerHero, CollectedBonus attackerBonus,
                        @Nullable Hero defenderHero, CollectedBonus defenderBonus,
                        @Nullable Siege siege) {
+        this(attackerStacks, defenderStacks, battlefield, attackerHero, attackerBonus, defenderHero, defenderBonus,
+                siege, true);
+    }
+
+    /**
+     * Wie oben; ohne {@code tactics} stellt keine Seite per Tactics auf, etwa in einer
+     * Kreaturenbank ({@link CreatureBank}).
+     */
+    @SuppressWarnings("java:S107")
+    public BattleSetup(List<Stack> attackerStacks, List<Stack> defenderStacks,
+                       Battlefield battlefield,
+                       @Nullable Hero attackerHero, CollectedBonus attackerBonus,
+                       @Nullable Hero defenderHero, CollectedBonus defenderBonus,
+                       @Nullable Siege siege, boolean tactics) {
         Objects.requireNonNull(attackerStacks, "attackerStacks");
         Objects.requireNonNull(defenderStacks, "defenderStacks");
         if (attackerStacks.isEmpty() || defenderStacks.isEmpty()) {
@@ -156,8 +170,8 @@ public class BattleSetup {
         this.defenderStacks.forEach(stack -> stack.assignNegations(noLuck, noPositiveMorale));
         mana.put(Side.ATTACKER, attackerHero == null ? 0 : attackerHero.maxMana());
         mana.put(Side.DEFENDER, defenderHero == null ? 0 : defenderHero.maxMana());
-        this.attackerTactics = Tactics.columns(attackerHero, defenderHero);
-        this.defenderTactics = siege == null ? Tactics.columns(defenderHero, attackerHero) : 0;
+        this.attackerTactics = tactics ? Tactics.columns(attackerHero, defenderHero) : 0;
+        this.defenderTactics = tactics && siege == null ? Tactics.columns(defenderHero, attackerHero) : 0;
         List<Stack> all = new ArrayList<>(this.attackerStacks);
         all.addAll(this.defenderStacks);
         Tactics.arrange(this.attackerStacks, Side.ATTACKER, attackerTactics, fieldFor(Side.ATTACKER), all);

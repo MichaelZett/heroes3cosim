@@ -1,6 +1,7 @@
 import type {
   ArtifactDto,
   BattleEvent,
+  CreatureBankDto,
   BattleSimulationDto,
   Faction,
   HeroDto,
@@ -28,6 +29,33 @@ function artifact(
     ...overrides,
   };
 }
+
+export const TEST_BANKS: CreatureBankDto[] = [
+  {
+    id: 'CYCLOPS_STOCKPILE',
+    name: 'Cyclops Stockpile',
+    levels: [1, 2, 3, 4].map((level) => ({
+      level,
+      chance: level === 4 ? 10 : 30,
+      guards: [0, 1, 2, 3, 4].map((i) => ({
+        unitName: 'Cyclops',
+        count: 2 + 2 * level,
+        upgradeName: i === 2 ? 'Cyclops King' : null,
+      })),
+    })),
+  },
+  {
+    id: 'CRYPT',
+    name: 'Crypt',
+    levels: [
+      {
+        level: 1,
+        chance: 100,
+        guards: [{ unitName: 'Skeleton', count: 10, upgradeName: null }],
+      },
+    ],
+  },
+];
 
 export const TEST_ARTIFACTS: ArtifactDto[] = [
   artifact({
