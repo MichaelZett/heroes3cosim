@@ -38,6 +38,7 @@ public final class GreedyAutoSolver implements AutoSolver {
     private @Nullable BattleSetup currentSetup;
 
     private final boolean tacticalWait;
+    private final boolean safeApproach;
 
     public GreedyAutoSolver() {
         this(true);
@@ -51,7 +52,18 @@ public final class GreedyAutoSolver implements AutoSolver {
      *                     ist ein Solver-Vorteil per Konstruktion unsichtbar.
      */
     public GreedyAutoSolver(boolean tacticalWait) {
+        this(tacticalWait, true);
+    }
+
+    /**
+     * @param safeApproach ob ein Nahkämpfer, der sein Ziel diese Runde nicht erreicht, nur so weit
+     *                     vorrückt, wie ihn möglichst wenige Gegner erreichen, die in dieser Runde
+     *                     noch ziehen ({@link #safeStep}). Abschaltbar für Duelle gegen die Fassung
+     *                     ohne.
+     */
+    public GreedyAutoSolver(boolean tacticalWait, boolean safeApproach) {
         this.tacticalWait = tacticalWait;
+        this.safeApproach = safeApproach;
     }
 
     @Override
@@ -202,7 +214,54 @@ public final class GreedyAutoSolver implements AutoSolver {
         if (tacticalWait && !active.hasWaitedThisTurn()) {
             return new Action.Wait();
         }
-        return new Action.Move(moveTarget);
+        Hex step = safeApproach ? safeStep(active, battlefield, moveTarget) : moveTarget;
+        return step.equals(from) ? new Action.Defend() : new Action.Move(step);
+    }
+
+    /**
+     * Das Feld auf dem Weg nach {@code moveTarget} (Startfeld eingeschlossen), das am wenigsten
+     * gegnerische Nahkämpfer erreichen, die in dieser Runde noch ziehen — gewichtet nach ihrem
+     * Schaden; bei Gleichstand das weiteste.
+     *
+     * <p>Im Spiegel verlor, wer bei Gleichstand zuerst zog: In der Wait-Phase rückte der Stack, der
+     * sein Ziel nicht erreicht, bis in die Reichweite des gleich schnellen Gegners vor, und der
+     * schlug unmittelbar danach als Erster zu.
+     */
+    private Hex safeStep(Stack active, Battlefield battlefield, Hex moveTarget) {
+        List<Stack> threats = pendingMeleeThreats(active);
+        if (threat(moveTarget, threats) == 0) {
+            return moveTarget;
+        }
+        Hex best = active.position();
+        int bestThreat = threat(best, threats);
+        for (Hex hex : battlefield.pathFor(active, moveTarget)) {
+            int threat = threat(hex, threats);
+            if (threat <= bestThreat && fitsAt(active, hex, battlefield)) {
+                best = hex;
+                bestThreat = threat;
+            }
+        }
+        return best;
+    }
+
+    /** Gegnerische Nahkämpfer, die in dieser Runde noch ziehen. */
+    private List<Stack> pendingMeleeThreats(Stack active) {
+        BattleSetup setup = currentSetup;
+        if (setup == null) {
+            return List.of();
+        }
+        return setup.opponentsOf(active).stream()
+                .filter(e -> e.isAlive() && e.isAbleToAct() && !e.hasActedThisTurn() && !e.canShoot()
+                        && e.getSpeed() > 0)
+                .toList();
+    }
+
+    /** Summe der Gefahr der Gegner, die {@code hex} in ihrem Zug erreichen. */
+    private static int threat(Hex hex, List<Stack> threats) {
+        return threats.stream()
+                .filter(e -> e.distanceTo(hex) <= e.getSpeed() + 1)
+                .mapToInt(GreedyAutoSolver::dangerScore)
+                .sum();
     }
 
     /**

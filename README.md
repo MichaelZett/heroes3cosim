@@ -499,7 +499,19 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Warten und Landefeld-Wahl der Strategic-Solver übernimmt. Ein früheres
   Tank-Pattern (Nahkämpfer decken die eigenen Schützen) verlor im direkten
   Duell gegen die Fassung ohne (0.469 bei 6480 Kämpfen) und ist entfallen.
-  Gegen Greedy gewinnt der Strategic-Solver 0.580 (vorher 0.397).
+  **Vorrücken nur bis außer Reichweite**: Ein Nahkämpfer, der sein Ziel
+  in dieser Runde nicht erreicht (in der Wait-Phase, nach seinem Warten),
+  zieht auf das Feld seines Wegs, das am wenigsten Gegner erreichen, die
+  in dieser Runde noch ziehen (gewichtet nach Schaden; bei Gleichstand das
+  weiteste), statt voll vorzurücken. Vorher schlug der gleich schnelle
+  Gegner, der direkt danach zog, als Erster zu — im Spiegel verlor
+  deshalb, wer bei Gleichstand zuerst zog. Duell gegen die Fassung ohne
+  (6480 Kämpfe): Strategic 0.519 (+3.0 Sigma), Greedy 0.540 (+6.4 Sigma);
+  die Seitenlast im Spiegel (Strategic, 400 Seeds je Fraktion, mittlerer
+  Abstand der Angreifer-Siegquote von 0.5) sinkt mit Helden von 0.125 auf
+  0.063, ohne Helden von 0.089 auf 0.047.
+  Gegen Greedy gewinnt der Strategic-Solver 0.564 (beide mit der Regel;
+  vorher 0.580, davor 0.397).
   Solche Vergleiche misst der `SolverDuelTest`: zwei Varianten (Solver,
   Aufstellung oder beides) direkt gegeneinander über alle Paarungen mit
   getauschten Rollen, aktiviert mit `-Ph3.harness=solver-duel`, einzelne

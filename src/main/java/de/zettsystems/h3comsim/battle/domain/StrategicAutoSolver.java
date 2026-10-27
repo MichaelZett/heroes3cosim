@@ -35,7 +35,9 @@ import java.util.Set;
  * zweifeldrigen Kreaturen verlor jedes davon im direkten Duell gegen dieselbe Fassung ohne
  * (0.469, 0.458, 0.480; je 6480 Kämpfe). Ohne alle drei und mit Greedys Warten vor ungedeckten
  * Anläufen gewinnt der Solver 0.619 gegen die alte Fassung und 0.580 gegen Greedy; die alte
- * verlor gegen Greedy mit 0.397.
+ * verlor gegen Greedy mit 0.397. Seit Greedy in der Wait-Phase nur noch bis außer Reichweite der
+ * Gegner vorrückt, die noch ziehen ({@code GreedyAutoSolver#safeStep}), sind es 0.519 gegen die
+ * Fassung ohne und 0.564 gegen Greedy mit derselben Regel.
  *
  * <p>Stateful: speichert den Plan + Setup-Referenz zwischen {@link #planRound(BattleSetup)} und
  * den nachfolgenden {@link #pickTarget}/{@link #decide}-Aufrufen. Pro {@link Battle} eine
@@ -52,6 +54,11 @@ public final class StrategicAutoSolver implements AutoSolver {
     /** @see GreedyAutoSolver#GreedyAutoSolver(boolean) */
     public StrategicAutoSolver(boolean tacticalWait) {
         this.greedy = new GreedyAutoSolver(tacticalWait);
+    }
+
+    /** @see GreedyAutoSolver#GreedyAutoSolver(boolean, boolean) */
+    public StrategicAutoSolver(boolean tacticalWait, boolean safeApproach) {
+        this.greedy = new GreedyAutoSolver(tacticalWait, safeApproach);
     }
 
     private RoundPlan plan = RoundPlan.EMPTY;

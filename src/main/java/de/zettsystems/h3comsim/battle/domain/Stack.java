@@ -53,6 +53,7 @@ public class Stack {
     private boolean demonsRaised;
     private boolean defending;
     private boolean waitedThisTurn;
+    private boolean actedThisTurn;
     private @Nullable Hero commander;
     /** Artefakte des Helden: Lebenspunkte je Kreatur, Speed, Attack/Defense für Drachen. */
     private int artifactHealth;
@@ -467,6 +468,15 @@ public class Stack {
 
     public void markWaited() {
         waitedThisTurn = true;
+    }
+
+    /** Hat der Stack seinen Zug in dieser Runde hinter sich (nicht nur gewartet)? */
+    public boolean hasActedThisTurn() {
+        return actedThisTurn;
+    }
+
+    public void markActed() {
+        actedThisTurn = true;
     }
 
     public int getCount() {
@@ -1035,6 +1045,7 @@ public class Stack {
         // Defend gilt nur für die laufende Runde — nächste Runde gibt's wieder Base-Defense.
         defending = false;
         waitedThisTurn = false;
+        actedThisTurn = false;
         spells.replaceAll((spell, active) -> active.tick());
         spells.values().removeIf(active -> active.roundsLeft() <= 0);
         if (petrifiedCounter > 0 && --petrifiedCounter == 0) {
