@@ -445,7 +445,8 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Necropolis, Fortress und Stronghold verlieren 36–54 Siege.
 - **HTTP-API** über Spring Boot 4 mit
   [Swagger-UI](http://localhost:8080/swagger-ui.html): `GET /api/units`,
-  `GET /api/factions`, `POST /api/battles/simulate` für einzelne Kämpfe,
+  `GET /api/factions`, `GET /api/heroes`, `GET /api/artifacts`,
+  `GET /api/creature-banks`, `POST /api/battles/simulate` für einzelne Kämpfe,
   `POST /api/army-battles/simulate` + `GET /api/army-battles/presets`
   für Army-vs-Army, `POST /api/experiments/matrix` für Matrix-
   Auswertungen. Antworten enthalten Ergebnis plus strukturierten
@@ -569,8 +570,10 @@ Feature-first nach Konvention `<fachlich>.<technisch>` mit
   Orchestrator, `AutoSolver`-Interface plus zwei Implementierungen
   (`GreedyAutoSolver`, `StrategicAutoSolver` mit `RoundPlan`), Helden
   und Zauber (`Hero`, `HeroCatalog`, `HeroSpellcasting`, `Spell`),
-  Kriegsmaschinen (`WarMachine`, `BallistaSpells`) und Belagerung
-  (`Siege`, `SiegeLayout`, `Catapult`, `ArrowTowers`).
+  Kriegsmaschinen (`WarMachine`, `BallistaSpells`), Belagerung
+  (`Siege`, `SiegeLayout`, `Catapult`, `ArrowTowers`), Gelände und Wasser
+  (`Terrain`, `MagicTerrain`, `TerrainObstacles`), Artefakte (`Artifact`,
+  `Equipment`, `ArtifactSpells`) und Kreaturenbanken (`CreatureBank`).
   Event-Records unter `battle.domain.events`.
 - **`singlebattle`** — Ausprägung „ein Stack gegen einen Stack".
   `BattleSimulationService` + `BattleController`
