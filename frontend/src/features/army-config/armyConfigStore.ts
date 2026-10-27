@@ -38,6 +38,10 @@ export interface ArmyConfigForm {
   magicTerrain?: MagicTerrain | null;
   /** Zauberkosten nach Shadow of Death statt nach dem RoE-Manual. */
   sodSpellCosts?: boolean;
+  /** Kampf um eine Kreaturenbank statt gegen die Verteidiger-Armee; null = keine. */
+  creatureBank?: string | null;
+  /** Stufe der Bank 1..4; null = gewuerfelt. */
+  creatureBankLevel?: number | null;
 }
 
 export interface ArmyConfigStore {
@@ -66,6 +70,8 @@ const DEFAULT_FORM: ArmyConfigForm = {
   terrain: null,
   magicTerrain: null,
   sodSpellCosts: false,
+  creatureBank: null,
+  creatureBankLevel: null,
 };
 
 function withUpdatedSlot(
