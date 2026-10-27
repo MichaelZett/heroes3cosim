@@ -66,14 +66,7 @@ public class DefaultArmyBattleService implements ArmyBattleService {
         CreatureBankSpec bankSpec = request.creatureBank();
         Sides sides = bankSpec == null ? armies(request, seed) : bank(request, bankSpec, seed);
         Siege siege = siege(request, sides.attackerHero(), sides.defenderHero(), sides.defenders());
-        if (sides.bank() && (siege != null || sides.attackerHero() == null)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Only a hero visits a creature bank, and it is no town");
-        }
-        Terrain terrain = siege == null ? request.terrain() : siegeTerrain(request, siege);
-        if (terrain == Terrain.WATER && request.magicTerrain() != null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "There is no magical terrain at sea");
-        }
+        Terrain terrain = terrain(request, sides, siege);
         // Zwei Helden in Booten kämpfen auf zwei Schiffen, alle übrigen Kämpfe auf Wasser auf dem Deck.
         boolean twoShips = terrain == Terrain.WATER && sides.attackerHero() != null && sides.defenderHero() != null;
         // Belagerungen und Kreaturenbanken haben im Spiel keine Felsen auf dem Feld.
@@ -103,6 +96,22 @@ public class DefaultArmyBattleService implements ArmyBattleService {
         return new ArmyBattleSimulation(result, collector.events(),
                 attackerHero == null ? null : HeroMapper.toDto(attackerHero),
                 defenderHero == null ? null : HeroMapper.toDto(defenderHero), sides.bankLevel());
+    }
+
+    /**
+     * Das Gelände der Schlacht, geprüft: eine Bank greift nur ein Held an und sie ist keine Stadt,
+     * auf Wasser gibt es kein magisches Gelände.
+     */
+    private static @Nullable Terrain terrain(ArmyBattleRequest request, Sides sides, @Nullable Siege siege) {
+        if (sides.bank() && (siege != null || sides.attackerHero() == null)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Only a hero visits a creature bank, and it is no town");
+        }
+        Terrain terrain = siege == null ? request.terrain() : siegeTerrain(request, siege);
+        if (terrain == Terrain.WATER && request.magicTerrain() != null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "There is no magical terrain at sea");
+        }
+        return terrain;
     }
 
     /** Armee gegen Armee, beide in der üblichen Aufstellung. */
