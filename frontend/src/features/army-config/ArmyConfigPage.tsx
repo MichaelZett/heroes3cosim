@@ -21,6 +21,7 @@ import { equipmentTotals } from './artifacts';
 import HeroBonusPicker from './HeroBonusPicker';
 import HeroPicker from './HeroPicker';
 import SlotEditor from './SlotEditor';
+import { MAGIC_TERRAINS, TERRAINS, TOWNS } from '../../shared/api/catalog';
 import type {
   ArmySpec,
   ArtifactDto,
@@ -34,40 +35,6 @@ import type {
 } from '../../shared/api/types';
 
 const FORTIFICATIONS: Fortification[] = ['FORT', 'CITADEL', 'CASTLE'];
-const TERRAINS: Terrain[] = [
-  'GRASS',
-  'DIRT',
-  'LAVA',
-  'SUBTERRANEAN',
-  'ROUGH',
-  'SAND',
-  'SNOW',
-  'SWAMP',
-  'WATER',
-];
-const MAGIC_TERRAINS: MagicTerrain[] = [
-  'MAGIC_PLAINS',
-  'CURSED_GROUND',
-  'ROCKLANDS',
-  'FIERY_FIELDS',
-  'LUCID_POOLS',
-  'MAGIC_CLOUDS',
-  'HOLY_GROUND',
-  'EVIL_FOG',
-  'CLOVER_FIELD',
-];
-const TOWNS: Faction[] = [
-  'CASTLE',
-  'RAMPART',
-  'TOWER',
-  'INFERNO',
-  'NECROPOLIS',
-  'DUNGEON',
-  'STRONGHOLD',
-  'FORTRESS',
-  'CONFLUX',
-];
-
 export default function ArmyConfigPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();

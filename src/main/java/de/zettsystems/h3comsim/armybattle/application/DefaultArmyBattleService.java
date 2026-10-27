@@ -23,6 +23,7 @@ import de.zettsystems.h3comsim.battle.domain.ObstacleGenerator;
 import de.zettsystems.h3comsim.battle.domain.SecondarySkill;
 import de.zettsystems.h3comsim.battle.domain.Siege;
 import de.zettsystems.h3comsim.battle.domain.SkillLevel;
+import de.zettsystems.h3comsim.battle.domain.SolverKind;
 import de.zettsystems.h3comsim.battle.domain.Stack;
 import de.zettsystems.h3comsim.battle.domain.StrategicAutoSolver;
 import de.zettsystems.h3comsim.battle.domain.Terrain;
@@ -61,8 +62,30 @@ public class DefaultArmyBattleService implements ArmyBattleService {
         }
     }
 
+    /** Die aufgestellte Schlacht mit den Helden beider Seiten und der Stufe einer Kreaturenbank. */
+    private record Prepared(BattleSetup setup, @Nullable Hero attackerHero, @Nullable Hero defenderHero,
+                            @Nullable Integer bankLevel) {
+    }
+
     @Override
     public ArmyBattleSimulation simulate(ArmyBattleRequest request, long seed) {
+        Prepared prepared = prepare(request, seed);
+        ListEventCollector collector = new ListEventCollector();
+        BattleResult result = new Battle(new Random(seed), new StrategicAutoSolver(), collector)
+                .simulate(prepared.setup());
+        Hero attackerHero = prepared.attackerHero();
+        Hero defenderHero = prepared.defenderHero();
+        return new ArmyBattleSimulation(result, collector.events(),
+                attackerHero == null ? null : HeroMapper.toDto(attackerHero),
+                defenderHero == null ? null : HeroMapper.toDto(defenderHero), prepared.bankLevel());
+    }
+
+    @Override
+    public BattleResult outcome(ArmyBattleRequest request, long seed, SolverKind solver) {
+        return new Battle(new Random(seed), solver.create()).simulate(prepare(request, seed).setup());
+    }
+
+    private static Prepared prepare(ArmyBattleRequest request, long seed) {
         CreatureBankSpec bankSpec = request.creatureBank();
         Sides sides = bankSpec == null ? armies(request, seed) : bank(request, bankSpec, seed);
         Siege siege = siege(request, sides.attackerHero(), sides.defenderHero(), sides.defenders());
@@ -88,14 +111,7 @@ public class DefaultArmyBattleService implements ArmyBattleService {
         if (obstacles && (terrain != null || request.magicTerrain() != null)) {
             setup.obstacleGroups(obstacleGroups(battlefield, terrain, request.magicTerrain(), seed));
         }
-
-        ListEventCollector collector = new ListEventCollector();
-        BattleResult result = new Battle(new Random(seed), new StrategicAutoSolver(), collector).simulate(setup);
-        Hero attackerHero = sides.attackerHero();
-        Hero defenderHero = sides.defenderHero();
-        return new ArmyBattleSimulation(result, collector.events(),
-                attackerHero == null ? null : HeroMapper.toDto(attackerHero),
-                defenderHero == null ? null : HeroMapper.toDto(defenderHero), sides.bankLevel());
+        return new Prepared(setup, sides.attackerHero(), sides.defenderHero(), sides.bankLevel());
     }
 
     /**

@@ -353,6 +353,7 @@ export const en: Dictionary = {
     single: 'Single Battle',
     matrix: 'Matrix Experiment',
     mixedArmy: 'Mixed Armies',
+    factionMatrix: 'Faction Matrix',
   },
   artifactSlot: {
     HEAD: 'Head',
@@ -520,6 +521,32 @@ export const en: Dictionary = {
       power: 'power',
       knowledge: 'knowledge',
     },
+  },
+  solver: {
+    GREEDY: 'Greedy',
+    STRATEGIC: 'Strategic',
+  },
+  factionMatrix: {
+    title: 'Faction Matrix',
+    subtitle:
+      'The weekly production of every town fights every other, in both roles and in the mirror, per solver.',
+    seedsLabel: 'Seeds per pairing and role',
+    seedsHint: 'Each pair fights twice as often (both roles), the mirror once per seed.',
+    weeksLabel: 'Weeks of production',
+    weeksHint: 'Multiple of the weekly production from the mixed-army presets.',
+    heroes: 'With default heroes',
+    scopeSummary: '{{factions}} towns, {{sims}} battles in total.',
+    resultSummary:
+      '{{factions}} towns, {{seeds}} seeds, {{weeks}} week(s), {{heroes}}, {{terrain}} — took {{elapsed}}s',
+    withHeroes: 'with heroes',
+    noHeroes: 'without heroes',
+    noTerrain: 'no terrain',
+    solverSummary: 'Side bias in the mirror avg|Δ0.5| = {{bias}} · {{elapsed}}s',
+    matrixLabel: 'Win rates {{solver}}',
+    matrixHint:
+      'Row against column, both roles combined. Diagonal: attacker win rate in the mirror (0.5 = no side bias).',
+    cellTitle:
+      '{{faction}} vs {{opponent}}: {{wins}}/{{losses}}/{{draws}} (W/L/D), avg {{rounds}} rounds',
   },
   matrix: {
     title: 'Matrix experiment',

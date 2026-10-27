@@ -1,6 +1,11 @@
 import { http, HttpResponse } from 'msw';
-import type { ArmyPresetsResponse, MatrixJobSnapshot } from '../shared/api/types';
+import type {
+  ArmyPresetsResponse,
+  FactionMatrixJobSnapshot,
+  MatrixJobSnapshot,
+} from '../shared/api/types';
 import {
+  factionMatrixReportFixture,
   matrixReportFixture,
   simulationFixture,
   TEST_ARTIFACTS,
@@ -16,6 +21,15 @@ const COMPLETED_JOB: MatrixJobSnapshot = {
   completed: 100,
   total: 100,
   report: matrixReportFixture(),
+  error: null,
+};
+
+const COMPLETED_FACTION_JOB: FactionMatrixJobSnapshot = {
+  jobId: 'faction-job',
+  status: 'COMPLETED',
+  completed: 8,
+  total: 8,
+  report: factionMatrixReportFixture(),
   error: null,
 };
 
@@ -41,6 +55,10 @@ export const defaultHandlers = [
   http.post('*/api/battles/simulate', () => HttpResponse.json(simulationFixture())),
   http.post('*/api/experiments/matrix', () => HttpResponse.json(COMPLETED_JOB)),
   http.get('*/api/experiments/matrix/:jobId', () => HttpResponse.json(COMPLETED_JOB)),
+  http.post('*/api/experiments/faction-matrix', () => HttpResponse.json(COMPLETED_FACTION_JOB)),
+  http.get('*/api/experiments/faction-matrix/:jobId', () =>
+    HttpResponse.json(COMPLETED_FACTION_JOB),
+  ),
   http.get('*/api/army-battles/presets', () => HttpResponse.json(ARMY_PRESETS)),
   http.post('*/api/army-battles/simulate', () => HttpResponse.json(simulationFixture())),
 ];

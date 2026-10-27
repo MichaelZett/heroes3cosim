@@ -7,6 +7,8 @@ import type {
   BattleConfigRequest,
   BattleSimulationDto,
   Faction,
+  FactionMatrixJobSnapshot,
+  FactionMatrixRequestDto,
   HeroDto,
   MatrixJobSnapshot,
   MatrixRequestDto,
@@ -59,6 +61,15 @@ export const api = {
   },
   getMatrixJob(jobId: string): Promise<MatrixJobSnapshot> {
     return jsonFetch<MatrixJobSnapshot>(`/experiments/matrix/${jobId}`);
+  },
+  startFactionMatrix(request: FactionMatrixRequestDto): Promise<FactionMatrixJobSnapshot> {
+    return jsonFetch<FactionMatrixJobSnapshot>('/experiments/faction-matrix', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  },
+  getFactionMatrixJob(jobId: string): Promise<FactionMatrixJobSnapshot> {
+    return jsonFetch<FactionMatrixJobSnapshot>(`/experiments/faction-matrix/${jobId}`);
   },
   simulateArmyBattle(request: ArmyBattleRequest): Promise<ArmyBattleSimulation> {
     return jsonFetch<ArmyBattleSimulation>('/army-battles/simulate', {

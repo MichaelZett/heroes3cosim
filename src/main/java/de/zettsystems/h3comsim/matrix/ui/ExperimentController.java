@@ -1,6 +1,10 @@
 package de.zettsystems.h3comsim.matrix.ui;
 
+import de.zettsystems.h3comsim.matrix.application.FactionMatrixJobService;
 import de.zettsystems.h3comsim.matrix.application.MatrixJobService;
+import de.zettsystems.h3comsim.matrix.values.FactionMatrixJobSnapshot;
+import de.zettsystems.h3comsim.matrix.values.FactionMatrixRequest;
+import de.zettsystems.h3comsim.matrix.values.FactionMatrixRequestDto;
 import de.zettsystems.h3comsim.matrix.values.MatrixJobSnapshot;
 import de.zettsystems.h3comsim.matrix.values.MatrixRequestDto;
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,13 +25,15 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("/api/experiments")
 @Tag(name = "Matrix Experiments",
-        description = "Asynchrone All-vs-All-Experimente: jede zugelassene Einheit kämpft gegen jede andere mehrfach mit getauschten Rollen; das Resultat ist ein aggregierter Report inkl. Tier-Anomalien.")
+        description = "Asynchrone All-vs-All-Experimente: jede zugelassene Einheit (Matrix) oder die Wochenproduktion jeder Fraktion (Faction-Matrix) kämpft gegen jede andere mehrfach mit getauschten Rollen; das Resultat ist ein aggregierter Report.")
 public class ExperimentController {
 
     private final MatrixJobService jobs;
+    private final FactionMatrixJobService factionJobs;
 
-    public ExperimentController(MatrixJobService jobs) {
+    public ExperimentController(MatrixJobService jobs, FactionMatrixJobService factionJobs) {
         this.jobs = jobs;
+        this.factionJobs = factionJobs;
     }
 
     @Operation(
@@ -70,5 +76,49 @@ public class ExperimentController {
             @PathVariable String jobId) {
         return jobs.get(jobId).orElseThrow(() -> new ResponseStatusException(
                 HttpStatus.NOT_FOUND, "Unknown matrix job: " + jobId));
+    }
+
+    @Operation(
+            summary = "Faction-Matrix starten",
+            description = """
+                    Startet einen asynchronen Lauf: die Wochenproduktion jeder gewählten Fraktion
+                    (Presets aus `GET /army-battles/presets`) kämpft gegen jede andere in beiden Rollen
+                    und im Spiegel, je gewähltem Solver, wie im Army-Battle (Gelände, Hindernisse,
+                    Standardheld). Alle Felder sind optional (alle neun Städte, beide Solver,
+                    `seedsPerPair=10`, eine Woche, mit Helden, ohne Gelände). Fortschritt über
+                    `GET /faction-matrix/{jobId}`.
+                    """,
+            operationId = "startFactionMatrix")
+    @ApiResponse(responseCode = "200", description = "Job angenommen — Snapshot mit jobId und Zahl der Kämpfe.")
+    @ApiResponse(responseCode = "400",
+            description = "Validierungsfehler (weniger als zwei Städte, NEUTRAL, Seeds oder Wochen außerhalb, magisches Gelände auf Wasser)",
+            content = @Content)
+    @PostMapping("/faction-matrix")
+    public FactionMatrixJobSnapshot runFactionMatrix(@Valid @RequestBody FactionMatrixRequestDto request) {
+        FactionMatrixRequest application;
+        try {
+            application = request.toApplication();
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
+        }
+        return factionJobs.start(application);
+    }
+
+    @Operation(
+            summary = "Faction-Matrix-Job pollen",
+            description = """
+                    Liefert den aktuellen Snapshot eines Faction-Matrix-Laufs. `completed`/`total` sind
+                    Einzelkämpfe. Im Status `COMPLETED` ist `report` gesetzt, im Status `FAILED` `error`.
+                    """,
+            operationId = "getFactionMatrixJob")
+    @ApiResponse(responseCode = "200", description = "Snapshot des Jobs.")
+    @ApiResponse(responseCode = "404", description = "Keine Job-ID mit diesem Wert bekannt.", content = @Content)
+    @GetMapping("/faction-matrix/{jobId}")
+    public FactionMatrixJobSnapshot getFactionMatrixJob(
+            @Parameter(description = "Job-ID, wie zuvor von `POST /faction-matrix` zurückgegeben.",
+                    required = true, example = "1a2b3c4d-5e6f-7890-abcd-ef1234567890")
+            @PathVariable String jobId) {
+        return factionJobs.get(jobId).orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND, "Unknown faction matrix job: " + jobId));
     }
 }
