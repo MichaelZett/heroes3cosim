@@ -812,3 +812,66 @@ export interface MatrixProgress {
   completed: number;
   total: number;
 }
+
+// Faction-Matrix — Spiegel von matrix.values.FactionMatrix*
+export type SolverKind = 'GREEDY' | 'STRATEGIC';
+
+export interface FactionMatrixRequestDto {
+  factions?: Faction[] | null;
+  solvers?: SolverKind[] | null;
+  seedsPerPair?: number | null;
+  weeks?: number | null;
+  heroes?: boolean | null;
+  terrain?: Terrain | null;
+  magicTerrain?: MagicTerrain | null;
+}
+
+/** Zelle aus Sicht von faction; im Spiegel zählen die Siege des Angreifers. */
+export interface FactionPairing {
+  faction: Faction;
+  opponent: Faction;
+  sims: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  winRate: number;
+  avgRounds: number;
+}
+
+export interface FactionStanding {
+  faction: Faction;
+  sims: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  winRate: number;
+  avgSurvivorRatio: number;
+}
+
+export interface SolverMatrix {
+  solver: SolverKind;
+  standings: FactionStanding[];
+  pairings: FactionPairing[];
+  mirrorSideBias: number;
+  elapsedMs: number;
+}
+
+export interface FactionMatrixReport {
+  factions: Faction[];
+  seedsPerPair: number;
+  weeks: number;
+  heroes: boolean;
+  terrain: Terrain | null;
+  magicTerrain: MagicTerrain | null;
+  matrices: SolverMatrix[];
+  elapsedMs: number;
+}
+
+export interface FactionMatrixJobSnapshot {
+  jobId: string;
+  status: MatrixJobStatus;
+  completed: number;
+  total: number;
+  report: FactionMatrixReport | null;
+  error: string | null;
+}

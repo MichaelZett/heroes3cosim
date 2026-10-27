@@ -449,7 +449,8 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   `GET /api/creature-banks`, `POST /api/battles/simulate` für einzelne Kämpfe,
   `POST /api/army-battles/simulate` + `GET /api/army-battles/presets`
   für Army-vs-Army, `POST /api/experiments/matrix` für Matrix-
-  Auswertungen. Antworten enthalten Ergebnis plus strukturierten
+  Auswertungen, `POST /api/experiments/faction-matrix` für die
+  Faction-Matrix (beide asynchron, Polling unter `…/{jobId}`). Antworten enthalten Ergebnis plus strukturierten
   `BattleEvent`-Stream (sealed Interface, Jackson-polymorph serialisiert,
   Action-Events tragen `actorSlot`/`targetSlot` für Multi-Stack-
   Disambiguierung).
@@ -463,6 +464,16 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Config; Report mit Per-Unit- und Per-Faction-Tabelle plus
   „Anomalien" (Truppen, die mehrheitlich gegen die nächstniedrigere
   Tier-Klasse verlieren).
+- **Faction-Matrix** — die Wochenproduktion jeder Stadt (Presets des
+  Army-vs-Army-Modus, auf Wunsch mehrere Wochen) gegen die jeder anderen,
+  in beiden Rollen und im Spiegel, je Solver (Greedy, Strategic oder
+  beide). Jeder Kampf läuft wie im Army-Battle-Endpunkt: Gelände und
+  magisches Gelände wählbar, Hindernisse aus dem Seed, Standardheld der
+  Fraktion oder ohne Helden. Beide Solver kämpfen mit denselben Seeds.
+  Ergebnis je Solver: Rangliste (Siege, Überlebende) und 9×9-Matrix; die
+  Diagonale zeigt die Siegquote des Angreifers im Spiegel, dazu die
+  mittlere Seitenlast Ø|Δ0,5|. Asynchron wie die Einheiten-Matrix, ein
+  Lauf zur Zeit für beide Arten.
 - **Army-vs-Army-Modus** — bis zu 7 Stacks pro Seite auf einer
   Spawn-Spalte (Reihen `{0, 2, 4, 5, 6, 8, 10}`), Zugreihenfolge wie im
   Rundenablauf beschrieben. Jede Armee führt ein Held (ohne Auswahl der
@@ -488,17 +499,30 @@ im Schnitt, wann zahlt sich welche Spezial-Synergie aus.
   Warten und Landefeld-Wahl der Strategic-Solver übernimmt. Ein früheres
   Tank-Pattern (Nahkämpfer decken die eigenen Schützen) verlor im direkten
   Duell gegen die Fassung ohne (0.469 bei 6480 Kämpfen) und ist entfallen.
-  Gegen Greedy gewinnt der Strategic-Solver 0.580 (vorher 0.397).
+  **Vorrücken nur bis außer Reichweite**: Ein Nahkämpfer, der sein Ziel
+  in dieser Runde nicht erreicht (in der Wait-Phase, nach seinem Warten),
+  zieht auf das Feld seines Wegs, das am wenigsten Gegner erreichen, die
+  in dieser Runde noch ziehen (gewichtet nach Schaden; bei Gleichstand das
+  weiteste), statt voll vorzurücken. Vorher schlug der gleich schnelle
+  Gegner, der direkt danach zog, als Erster zu — im Spiegel verlor
+  deshalb, wer bei Gleichstand zuerst zog. Duell gegen die Fassung ohne
+  (6480 Kämpfe): Strategic 0.519 (+3.0 Sigma), Greedy 0.540 (+6.4 Sigma);
+  die Seitenlast im Spiegel (Strategic, 400 Seeds je Fraktion, mittlerer
+  Abstand der Angreifer-Siegquote von 0.5) sinkt mit Helden von 0.125 auf
+  0.063, ohne Helden von 0.089 auf 0.047.
+  Gegen Greedy gewinnt der Strategic-Solver 0.564 (beide mit der Regel;
+  vorher 0.580, davor 0.397).
   Solche Vergleiche misst der `SolverDuelTest`: zwei Varianten (Solver,
   Aufstellung oder beides) direkt gegeneinander über alle Paarungen mit
   getauschten Rollen, aktiviert mit `-Ph3.harness=solver-duel`, einzelne
   Duelle mit `-Ph3.duel=<name>`.
   Single-Battle nutzt den `GreedyAutoSolver`, die Faction-Matrix beide.
-- **Replay-UI** — React 19 + Vite + Tailwind. Drei Modi über den
+- **Replay-UI** — React 19 + Vite + Tailwind. Vier Modi über den
   ModeSwitcher: Single-Battle (Truppenkonfig + Hex-Replay mit
   Step/Pause/Speed-Slider + Rückspiel mit getauschten Seiten),
   Matrix-Auswertung (Faction-/Unit-Excludes, sortierbare Ergebnis-
-  Tabelle), Army-vs-Army (Faction-Preset-Picker + 7-Slot-Editor pro
+  Tabelle), Faction-Matrix (Städte, Solver, Seeds, Wochen, Helden,
+  Gelände; Rangliste und farbige Matrix je Solver), Army-vs-Army (Faction-Preset-Picker + 7-Slot-Editor pro
   Seite, Replay rendert bis zu 14 Tokens, Combat-Log mit Stack-
   Namen-Auflösung). Deutsch und Englisch umschaltbar.
 - **Deterministisch über Seed**: gleicher Seed → identische
@@ -582,13 +606,17 @@ Feature-first nach Konvention `<fachlich>.<technisch>` mit
   `ArmyBattleService`, `FactionPresetCatalog`, `SpawnLayout`,
   `ArmyBattleController` (`POST /api/army-battles/simulate`,
   `GET /api/army-battles/presets`).
-- **`matrix`** — Ausprägung „viele 1-vs-1" (paarweise alle gegen alle).
-  Parallel via Work-Stealing-Pool, asynchrone Jobs mit Polling-Endpoint.
+- **`matrix`** — Auswertungen über viele Kämpfe: Einheiten-Matrix
+  („viele 1-vs-1", paarweise alle gegen alle) und Faction-Matrix (Armeen
+  über `ArmyBattleService.outcome`, ohne Ereignisse, mit wählbarem
+  `SolverKind`). Parallel via Work-Stealing-Pool, asynchrone Jobs mit
+  Polling-Endpoint (`JobRegistry`, ein Lauf zur Zeit über
+  `MatrixJobRunner`).
 - **`setup` + `config`** — Cross-cutting: `CatalogController`,
   `SpaForwardingController`, CORS-Config, CLI-Runner.
 - **`frontend/`** — eigenständiges Vite-Projekt, vom Gradle-Build als
   statisches Resource gebündelt. Feature-Buckets: `battle-config`,
-  `battle-replay`, `matrix-experiment`, `army-config`.
+  `battle-replay`, `matrix-experiment`, `faction-matrix`, `army-config`.
 
 ## Erste Erkenntnisse aus der Einheiten-Matrix
 

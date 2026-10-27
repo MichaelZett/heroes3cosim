@@ -13,8 +13,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class SpaForwardingController {
 
-    @GetMapping("/battle")
-    public String forwardBattle() {
+    /** Alle Routen aus {@code App.tsx} außer {@code /}. */
+    @GetMapping({"/battle", "/matrix", "/matrix/result", "/factions", "/army", "/army/battle"})
+    public String forwardToApp() {
         return "forward:/index.html";
     }
 }

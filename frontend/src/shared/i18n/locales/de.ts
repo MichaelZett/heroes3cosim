@@ -351,6 +351,7 @@ export const de = {
     single: 'Einzelkampf',
     matrix: 'Matrix-Auswertung',
     mixedArmy: 'Gemischte Armeen',
+    factionMatrix: 'Faction-Matrix',
   },
   artifactSlot: {
     HEAD: 'Kopf',
@@ -520,6 +521,32 @@ export const de = {
       power: 'Power',
       knowledge: 'Knowledge',
     },
+  },
+  solver: {
+    GREEDY: 'Greedy',
+    STRATEGIC: 'Strategic',
+  },
+  factionMatrix: {
+    title: 'Faction-Matrix',
+    subtitle:
+      'Die Wochenproduktion jeder Stadt kämpft gegen jede andere, in beiden Rollen und im Spiegel, je Solver.',
+    seedsLabel: 'Seeds je Paarung und Rolle',
+    seedsHint: 'Jedes Paar kämpft doppelt so oft (beide Rollen), der Spiegel einmal je Seed.',
+    weeksLabel: 'Wochen Produktion',
+    weeksHint: 'Vielfaches der Wochenproduktion aus den Presets der gemischten Armeen.',
+    heroes: 'Mit Standardhelden',
+    scopeSummary: '{{factions}} Städte, insgesamt {{sims}} Kämpfe.',
+    resultSummary:
+      '{{factions}} Städte, {{seeds}} Seeds, {{weeks}} Woche(n), {{heroes}}, {{terrain}} — Laufzeit {{elapsed}}s',
+    withHeroes: 'mit Helden',
+    noHeroes: 'ohne Helden',
+    noTerrain: 'ohne Gelände',
+    solverSummary: 'Seitenlast im Spiegel Ø|Δ0,5| = {{bias}} · {{elapsed}}s',
+    matrixLabel: 'Siegquoten {{solver}}',
+    matrixHint:
+      'Zeile gegen Spalte, beide Rollen zusammen. Diagonale: Siegquote des Angreifers im Spiegel (0,5 = keine Seitenlast).',
+    cellTitle:
+      '{{faction}} gegen {{opponent}}: {{wins}}/{{losses}}/{{draws}} (S/N/U), Ø {{rounds}} Runden',
   },
   matrix: {
     title: 'Matrix-Auswertung',

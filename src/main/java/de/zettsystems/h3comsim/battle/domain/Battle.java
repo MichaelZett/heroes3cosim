@@ -156,6 +156,8 @@ public final class Battle {
                 updateGate(setup);
                 if (activeStack.hasWaitedThisTurn()) {
                     waiting.add(activeStack);
+                } else {
+                    activeStack.markActed();
                 }
             }
             BattleLogger.logShortDelimiter();
@@ -917,6 +919,7 @@ public final class Battle {
                 if (activeStack.isAbleToAct() && setup.bothAlive()) {
                     actWithMorale(activeStack, setup);
                 }
+                activeStack.markActed();
                 fireWallAtTurnEnd(activeStack, setup);
                 dispelClones(setup, false);
                 updateGate(setup);

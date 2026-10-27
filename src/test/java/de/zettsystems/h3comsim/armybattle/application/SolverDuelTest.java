@@ -103,7 +103,13 @@ class SolverDuelTest {
                     new Contender("Schützen außen", StrategicAutoSolver::new, TACTICAL)),
             new Duel("shooters-second-ring",
                     new Contender("Schützen auf r=2/8", StrategicAutoSolver::new, shootersFirstOn(SolverDuelTest::secondRing)),
-                    new Contender("Schützen außen", StrategicAutoSolver::new, TACTICAL)));
+                    new Contender("Schützen außen", StrategicAutoSolver::new, TACTICAL)),
+            new Duel("safe-approach",
+                    new Contender("Strategic mit sicherer Annäherung", () -> new StrategicAutoSolver(true, true), TACTICAL),
+                    new Contender("Strategic ohne", () -> new StrategicAutoSolver(true, false), TACTICAL)),
+            new Duel("safe-approach-greedy",
+                    new Contender("Greedy mit sicherer Annäherung", () -> new GreedyAutoSolver(true, true), TACTICAL),
+                    new Contender("Greedy ohne", () -> new GreedyAutoSolver(true, false), TACTICAL)));
 
     @Test
     void duels() throws Exception {

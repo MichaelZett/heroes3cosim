@@ -296,6 +296,59 @@ class GreedyAutoSolverTest {
     }
 
     /**
+     * Pikeman (Speed 4) in der Wait-Phase gegen einen Pikeman, der in dieser Runde noch zieht und
+     * {@code distance} Felder entfernt steht; Reichweite des Gegners: 4 + 1.
+     */
+    private static Action lateApproach(GreedyAutoSolver greedy, int distance, boolean enemyActed) {
+        Stack active = inLatePhase(new Stack(UnitCatalog.PIKEMAN, 10, new Hex(0, 5), Side.ATTACKER, 0));
+        Stack enemy = new Stack(UnitCatalog.PIKEMAN, 10, new Hex(distance, 5), Side.DEFENDER, 0);
+        if (enemyActed) {
+            enemy.markActed();
+        }
+        greedy.planRound(new BattleSetup(List.of(active), List.of(enemy), Battlefield.STANDARD));
+        return greedy.decide(active, enemy, Battlefield.STANDARD);
+    }
+
+    @Test
+    void a_late_approach_stops_outside_the_reach_of_an_enemy_still_to_move() {
+        // Voller Zug nach (4,5) läge 5 Felder vor dem Gegner, also in seiner Reichweite.
+        assertThat(lateApproach(new GreedyAutoSolver(), 9, false)).isInstanceOfSatisfying(Action.Move.class,
+                move -> assertThat(move.destination()).isEqualTo(new Hex(3, 5)));
+    }
+
+    @Test
+    void an_enemy_that_has_already_moved_does_not_stop_the_approach() {
+        assertThat(lateApproach(new GreedyAutoSolver(), 9, true)).isInstanceOfSatisfying(Action.Move.class,
+                move -> assertThat(move.destination()).isEqualTo(new Hex(4, 5)));
+    }
+
+    @Test
+    void without_a_safe_step_ahead_the_stack_holds_its_ground() {
+        // Schon ein Schritt nach (1,5) läge in Reichweite des Gegners auf (6,5).
+        assertThat(lateApproach(new GreedyAutoSolver(), 6, false)).isInstanceOf(Action.Defend.class);
+    }
+
+    @Test
+    void safe_approach_can_be_switched_off_for_ab_measurements() {
+        assertThat(lateApproach(new GreedyAutoSolver(true, false), 9, false))
+                .isInstanceOfSatisfying(Action.Move.class,
+                        move -> assertThat(move.destination()).isEqualTo(new Hex(4, 5)));
+    }
+
+    @Test
+    void a_threat_that_reaches_every_field_does_not_stop_the_advance() {
+        // Ein Phoenix (Speed 21) erreicht jedes Feld: dann bringt Zurückbleiben nichts.
+        Stack active = inLatePhase(new Stack(UnitCatalog.PIKEMAN, 10, new Hex(0, 5), Side.ATTACKER, 0));
+        Stack target = new Stack(UnitCatalog.PIKEMAN, 10, new Hex(14, 5), Side.DEFENDER, 0);
+        Stack phoenix = new Stack(UnitCatalog.PHOENIX, 1, new Hex(14, 9), Side.DEFENDER, 1);
+        GreedyAutoSolver greedy = new GreedyAutoSolver();
+        greedy.planRound(new BattleSetup(List.of(active), List.of(target, phoenix), Battlefield.STANDARD));
+
+        assertThat(greedy.decide(active, target, Battlefield.STANDARD)).isInstanceOfSatisfying(Action.Move.class,
+                move -> assertThat(move.destination()).isEqualTo(new Hex(4, 5)));
+    }
+
+    /**
      * Simuliert die späte Rundenphase: der Stack hat seine Verzögerung bereits verbraucht und
      * muss jetzt handeln. {@code decide} fällt damit auf den Bewegungs-Pfad zurück.
      */

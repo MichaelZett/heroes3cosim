@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 interface ModeSwitcherProps {
-  current: 'single' | 'matrix' | 'mixedArmy';
+  current: 'single' | 'matrix' | 'factionMatrix' | 'mixedArmy';
 }
 
 export default function ModeSwitcher({ current }: Readonly<ModeSwitcherProps>) {
@@ -17,6 +17,9 @@ export default function ModeSwitcher({ current }: Readonly<ModeSwitcherProps>) {
       </ModeButton>
       <ModeButton active={current === 'matrix'} onClick={() => navigate('/matrix')}>
         {t('mode.matrix')}
+      </ModeButton>
+      <ModeButton active={current === 'factionMatrix'} onClick={() => navigate('/factions')}>
+        {t('mode.factionMatrix')}
       </ModeButton>
       <ModeButton active={current === 'mixedArmy'} onClick={() => navigate('/army')}>
         {t('mode.mixedArmy')}

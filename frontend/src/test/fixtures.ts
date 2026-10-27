@@ -1,4 +1,5 @@
 import type {
+  FactionMatrixReport,
   ArtifactDto,
   BattleEvent,
   CreatureBankDto,
@@ -298,6 +299,66 @@ export function matrixReportFixture(): MatrixReport {
         againstTier: 1,
         winRate: 0.25,
         sampleSize: 4,
+      },
+    ],
+  };
+}
+
+export function factionMatrixReportFixture(): FactionMatrixReport {
+  const pairing = (
+    faction: 'CASTLE' | 'TOWER',
+    opponent: 'CASTLE' | 'TOWER',
+    wins: number,
+    losses: number,
+  ) => ({
+    faction,
+    opponent,
+    sims: wins + losses,
+    wins,
+    losses,
+    draws: 0,
+    winRate: wins / (wins + losses),
+    avgRounds: 6.5,
+  });
+  return {
+    factions: ['CASTLE', 'TOWER'],
+    seedsPerPair: 2,
+    weeks: 1,
+    heroes: true,
+    terrain: 'GRASS',
+    magicTerrain: null,
+    elapsedMs: 1200,
+    matrices: [
+      {
+        solver: 'STRATEGIC',
+        mirrorSideBias: 0.25,
+        elapsedMs: 1100,
+        standings: [
+          {
+            faction: 'CASTLE',
+            sims: 4,
+            wins: 3,
+            losses: 1,
+            draws: 0,
+            winRate: 0.75,
+            avgSurvivorRatio: 0.4,
+          },
+          {
+            faction: 'TOWER',
+            sims: 4,
+            wins: 1,
+            losses: 3,
+            draws: 0,
+            winRate: 0.25,
+            avgSurvivorRatio: 0.2,
+          },
+        ],
+        pairings: [
+          pairing('CASTLE', 'CASTLE', 1, 1),
+          pairing('CASTLE', 'TOWER', 3, 1),
+          pairing('TOWER', 'CASTLE', 1, 3),
+          pairing('TOWER', 'TOWER', 2, 0),
+        ],
       },
     ],
   };

@@ -252,4 +252,21 @@ class StrategicAutoSolverTest {
         assertThat(setup.attackHeads(dragon, marksman)).isEmpty();
         assertThat(solver.decide(dragon, marksman, battlefield)).isNotInstanceOf(Action.MoveAndMelee.class);
     }
+
+    @Test
+    void the_safe_approach_is_inherited_from_greedy_and_can_be_switched_off() {
+        // Pikeman in der Wait-Phase, Gegner-Pikeman noch am Zug: mit der Regel bleibt er auf
+        // (3,5) außer Reichweite, ohne zieht er voll nach (4,5).
+        assertThat(lateApproach(new StrategicAutoSolver(true, true))).isEqualTo(new Hex(3, 5));
+        assertThat(lateApproach(new StrategicAutoSolver(true, false))).isEqualTo(new Hex(4, 5));
+    }
+
+    private static Hex lateApproach(StrategicAutoSolver solver) {
+        Stack active = new Stack(UnitCatalog.PIKEMAN, 10, new Hex(0, 5), Side.ATTACKER, 0);
+        active.markWaited();
+        Stack enemy = new Stack(UnitCatalog.PIKEMAN, 10, new Hex(9, 5), Side.DEFENDER, 0);
+        solver.planRound(new BattleSetup(List.of(active), List.of(enemy), Battlefield.STANDARD));
+        Action action = solver.decide(active, enemy, Battlefield.STANDARD);
+        return ((Action.Move) action).destination();
+    }
 }

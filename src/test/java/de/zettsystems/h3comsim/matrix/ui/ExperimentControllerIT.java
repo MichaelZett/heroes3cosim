@@ -116,4 +116,48 @@ class ExperimentControllerIT {
         mockMvc().perform(get("/api/experiments/matrix/does-not-exist"))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void faction_matrix_runs_asynchronously_and_reports_each_solver() throws Exception {
+        String body = """
+                {"factions":["CASTLE","TOWER"],"solvers":["GREEDY","STRATEGIC"],"seedsPerPair":1,"terrain":"GRASS"}
+                """;
+
+        MvcResult startResult = mockMvc().perform(post("/api/experiments/faction-matrix")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(2 * 2 * 2))
+                .andReturn();
+        String jobId = JsonPath.read(startResult.getResponse().getContentAsString(), "$.jobId");
+
+        Awaitility.await().atMost(Duration.ofMinutes(2)).pollInterval(Duration.ofMillis(200))
+                .untilAsserted(() -> mockMvc().perform(get("/api/experiments/faction-matrix/" + jobId))
+                        .andExpect(jsonPath("$.status").value("COMPLETED")));
+
+        mockMvc().perform(get("/api/experiments/faction-matrix/" + jobId))
+                .andExpect(jsonPath("$.completed").value(8))
+                .andExpect(jsonPath("$.report.factions.length()").value(2))
+                .andExpect(jsonPath("$.report.terrain").value("GRASS"))
+                .andExpect(jsonPath("$.report.matrices.length()").value(2))
+                .andExpect(jsonPath("$.report.matrices[0].solver").value("GREEDY"))
+                .andExpect(jsonPath("$.report.matrices[1].pairings.length()").value(4))
+                .andExpect(jsonPath("$.report.matrices[1].standings.length()").value(2));
+    }
+
+    @Test
+    void faction_matrix_rejects_invalid_requests() throws Exception {
+        for (String body : new String[]{
+                "{\"factions\":[\"CASTLE\"]}",
+                "{\"factions\":[\"CASTLE\",\"NEUTRAL\"]}",
+                "{\"seedsPerPair\":0}",
+                "{\"terrain\":\"WATER\",\"magicTerrain\":\"MAGIC_PLAINS\"}"}) {
+            mockMvc().perform(post("/api/experiments/faction-matrix")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isBadRequest());
+        }
+        mockMvc().perform(get("/api/experiments/faction-matrix/does-not-exist"))
+                .andExpect(status().isNotFound());
+    }
 }

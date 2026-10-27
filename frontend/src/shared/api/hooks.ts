@@ -6,6 +6,8 @@ import type {
   ArmyBattleSimulation,
   BattleConfigRequest,
   BattleSimulationDto,
+  FactionMatrixReport,
+  FactionMatrixRequestDto,
   MatrixProgress,
   MatrixReport,
   MatrixRequestDto,
@@ -42,21 +44,33 @@ export function useSimulateBattle(
   });
 }
 
-async function pollMatrixJob(
-  jobId: string,
+interface JobSnapshot<R> {
+  jobId: string;
+  status: 'RUNNING' | 'COMPLETED' | 'FAILED';
+  completed: number;
+  total: number;
+  report: R | null;
+  error: string | null;
+}
+
+/** Wartet auf das Ergebnis eines asynchronen Laufs und meldet den Fortschritt. */
+async function awaitJob<R>(
+  start: JobSnapshot<R>,
+  poll: (jobId: string) => Promise<JobSnapshot<R>>,
   onProgress: (p: MatrixProgress) => void,
-): Promise<MatrixReport> {
+): Promise<R> {
+  let snap = start;
   for (;;) {
-    await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
-    const snap = await api.getMatrixJob(jobId);
     onProgress({ completed: snap.completed, total: snap.total });
     if (snap.status === 'COMPLETED') {
-      if (!snap.report) throw new Error('Matrix job completed without report');
+      if (!snap.report) throw new Error('Job completed without report');
       return snap.report;
     }
     if (snap.status === 'FAILED') {
-      throw new Error(snap.error ?? 'Matrix experiment failed');
+      throw new Error(snap.error ?? 'Experiment failed');
     }
+    await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+    snap = await poll(snap.jobId);
   }
 }
 
@@ -73,21 +87,16 @@ export function useSimulateArmyBattle(
   });
 }
 
-export function useRunMatrix(onSuccess: (report: MatrixReport, request: MatrixRequestDto) => void) {
+/** Startet einen asynchronen Lauf, pollt ihn bis zum Ende und hält den Fortschritt. */
+function useJob<Q, R>(
+  start: (request: Q) => Promise<JobSnapshot<R>>,
+  poll: (jobId: string) => Promise<JobSnapshot<R>>,
+  onSuccess: (report: R, request: Q) => void,
+) {
   const [progress, setProgress] = useState<MatrixProgress | null>(null);
 
   const mutation = useMutation({
-    mutationFn: async (request: MatrixRequestDto) => {
-      const start = await api.startMatrix(request);
-      setProgress({ completed: start.completed, total: start.total });
-      if (start.status === 'COMPLETED' && start.report) {
-        return start.report;
-      }
-      if (start.status === 'FAILED') {
-        throw new Error(start.error ?? 'Matrix experiment failed');
-      }
-      return pollMatrixJob(start.jobId, setProgress);
-    },
+    mutationFn: async (request: Q) => awaitJob(await start(request), poll, setProgress),
     onSuccess: (report, request) => {
       setProgress(null);
       onSuccess(report, request);
@@ -96,4 +105,14 @@ export function useRunMatrix(onSuccess: (report: MatrixReport, request: MatrixRe
   });
 
   return Object.assign(mutation, { progress });
+}
+
+export function useRunMatrix(onSuccess: (report: MatrixReport, request: MatrixRequestDto) => void) {
+  return useJob(api.startMatrix, api.getMatrixJob, onSuccess);
+}
+
+export function useRunFactionMatrix(
+  onSuccess: (report: FactionMatrixReport, request: FactionMatrixRequestDto) => void,
+) {
+  return useJob(api.startFactionMatrix, api.getFactionMatrixJob, onSuccess);
 }
