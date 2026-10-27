@@ -68,7 +68,9 @@ class SeaBattleTest {
 
     @Test
     void there_is_no_magical_terrain_at_sea() {
-        assertThatThrownBy(() -> simulate(new ArmySpec(PIKEMEN, "Sorsha"), new ArmySpec(PIKEMEN, "Crag Hack"),
-                MagicTerrain.HOLY_GROUND)).isInstanceOf(ResponseStatusException.class);
+        ArmySpec attacker = new ArmySpec(PIKEMEN, "Sorsha");
+        ArmySpec defender = new ArmySpec(PIKEMEN, "Crag Hack");
+        assertThatThrownBy(() -> simulate(attacker, defender, MagicTerrain.HOLY_GROUND))
+                .isInstanceOf(ResponseStatusException.class);
     }
 }

@@ -92,14 +92,17 @@ class CreatureBankBattleTest {
 
     @Test
     void only_a_hero_visits_a_bank_and_a_bank_is_no_town() {
-        ArmySpec heroless = ArmySpec.withoutHero(ARMY);
         CreatureBankSpec crypt = new CreatureBankSpec(CreatureBank.CRYPT, 1);
-        assertThatThrownBy(() -> service.simulate(new ArmyBattleRequest(heroless, null, SEED, null, null, null, null,
-                null, crypt), SEED)).isInstanceOf(ResponseStatusException.class);
         ArmySpec hero = new ArmySpec(ARMY, "Sorsha");
-        assertThatThrownBy(() -> service.simulate(new ArmyBattleRequest(hero, null, SEED, Fortification.FORT,
-                null, null, null, null, crypt), SEED)).isInstanceOf(ResponseStatusException.class);
-        assertThatThrownBy(() -> service.simulate(new ArmyBattleRequest(hero, null, SEED), SEED))
+        ArmyBattleRequest heroless = new ArmyBattleRequest(ArmySpec.withoutHero(ARMY), null, SEED, null, null, null,
+                null, null, crypt);
+        ArmyBattleRequest siege = new ArmyBattleRequest(hero, null, SEED, Fortification.FORT, null, null, null, null,
+                crypt);
+        ArmyBattleRequest noDefender = new ArmyBattleRequest(hero, null, SEED);
+
+        assertThatThrownBy(() -> service.simulate(heroless, SEED)).isInstanceOf(ResponseStatusException.class);
+        assertThatThrownBy(() -> service.simulate(siege, SEED)).isInstanceOf(ResponseStatusException.class);
+        assertThatThrownBy(() -> service.simulate(noDefender, SEED))
                 .as("ohne Bank braucht es einen Verteidiger").isInstanceOf(ResponseStatusException.class);
     }
 }
