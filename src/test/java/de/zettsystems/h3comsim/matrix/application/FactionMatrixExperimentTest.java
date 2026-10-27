@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class FactionMatrixExperimentTest {
 
@@ -71,6 +72,17 @@ class FactionMatrixExperimentTest {
         assertThat(other.heroes()).isFalse();
         assertThat(other.terrain()).isEqualTo(Terrain.GRASS);
         assertThat(other.matrices().getFirst().pairings()).hasSize(4);
+    }
+
+    @Test
+    void parallelism_must_be_a_percentage() {
+        DefaultArmyBattleService service = new DefaultArmyBattleService();
+        FactionPresetCatalog presets = new FactionPresetCatalog();
+
+        assertThatThrownBy(() -> new FactionMatrixExperiment(service, presets, 0))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new FactionMatrixExperiment(service, presets, 101))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     private static FactionPairing cell(SolverMatrix matrix, Faction faction, Faction opponent) {
