@@ -35,3 +35,6 @@ build
 .gradle
 
 files/*
+
+# Eigene Eingabeordner des Users
+_input*/
